@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
-import "./globals.css";
+import { Toaster } from "react-hot-toast";
+
 
 // Import Poppins
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"], // adjust as needed
+  weight: ["300", "400", "500", "600", "700"], 
 });
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   description: "Adalyze - Nextgen AI Tool for your Creativity",
 };
 
-export default function RootLayout({
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} antialiased`}>
+        <Toaster position="top-center" reverseOrder={false} />
         {children}
       </body>
     </html>

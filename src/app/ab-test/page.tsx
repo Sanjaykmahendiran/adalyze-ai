@@ -132,7 +132,7 @@ export default function AdComparisonUpload() {
                 }
                 toast.success("A/B analysis completed successfully!", { id: "analyze" })
                 // Navigate to A/B results page
-                router.push(`/ab-results?ab_id_a=${result.ad_upload_id_a}&ab_id_b=${result.ad_upload_id_b}`)
+                router.push(`/ab-results?ad_id_a=${result.ad_upload_id_a}&ad_id_b=${result.ad_upload_id_b}`)
             } else {
                 throw new Error(result.message || 'A/B analysis failed')
             }

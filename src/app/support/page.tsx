@@ -31,9 +31,10 @@ export default function SupportPage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-  const [isProUser, setIsProUser] = useState(false)
   const [showExpertDialog, setShowExpertDialog] = useState(false)
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false)
+  // Check if user is pro
+  const isProUser = userDetails?.payment_status === 1
 
   const [formData, setFormData] = useState({
     name: "",
@@ -56,12 +57,6 @@ export default function SupportPage() {
   })
 
   const categories = ["all", "General", "Pricing", "Technical", "Uploads", "Scoring", "Subscription"]
-
-  // Check if user is pro
-  useEffect(() => {
-    const paymentStatus = userDetails?.payment_status || ''
-    setIsProUser(paymentStatus === 1)
-  }, [])
 
   // Fetch FAQs
   useEffect(() => {
@@ -350,7 +345,7 @@ export default function SupportPage() {
               {/* AI Chatbot / Expert Call */}
               <div className="bg-black rounded-lg p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Ask AdalyzeBot</h3>
+                  <h3 className="text-lg font-semibold">Ask Adalyze Expert</h3>
                   {!isProUser && <Badge className="bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00]">Pro Only</Badge>}
                 </div>
                 <p className="text-gray-400 text-sm mb-4">

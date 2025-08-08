@@ -1,222 +1,198 @@
-"use client"
+'use client'
 
-import { useState, useCallback, useEffect } from "react"
-import Image from "next/image"
-import { ArrowRight, ArrowLeft, Star } from "lucide-react"
-import useEmblaCarousel from "embla-carousel-react"
-import user1 from "@/assets/login-below/women1.webp"
-import user2 from "@/assets/login-below/varma.webp"
-import user3 from "@/assets/login-below/santhosh.webp"
-import user4 from "@/assets/login-below/sanjay.webp"
-import user5 from "@/assets/login-below/women2.webp"
-import user6 from "@/assets/login-below/bhai.webp"
-import { Button } from "../ui/button";
-import { useRouter } from "next/navigation"
+import { useState } from 'react'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 
-export default function TestimonialsSection() {
-  const router = useRouter()
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: true,
-    align: "center",
-    containScroll: "trimSnaps",
-  })
-
-  const [prevBtnEnabled, setPrevBtnEnabled] = useState(false)
-  const [nextBtnEnabled, setNextBtnEnabled] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
-
-  const handleMouseEnter = () => setIsPaused(true)
-  const handleMouseLeave = () => setIsPaused(false)
-
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return
-    setPrevBtnEnabled(emblaApi.canScrollPrev())
-    setNextBtnEnabled(emblaApi.canScrollNext())
-  }, [emblaApi])
-
-  useEffect(() => {
-    if (!emblaApi) return
-
-    onSelect()
-    emblaApi.on("select", onSelect)
-
-    let timeoutId: NodeJS.Timeout
-
-    const autoScroll = () => {
-      if (emblaApi && !isPaused) {
-        emblaApi.scrollNext()
+const testimonialData = [
+  {
+    mainQuote: "Andalye helped me launch a beautiful site in minutes. It’s the most seamless design experience I’ve ever had.",
+    author: {
+      name: "Neha Varma",
+      title: "Founder, StartupNest",
+      image: "https://randomuser.me/api/portraits/women/6.jpg"
+    },
+    reviews: [
+      {
+        text: "Andalye’s interface is smooth and intuitive. I created a full website with just one prompt. The customization tools are incredibly powerful and flexible.",
+        name: "Ravi Patel",
+        rating: 5
+      },
+      {
+        text: "The best AI design tool out there. I’ve tried many platforms, but Andalye stands out for its simplicity and creative output. Love how fast it gets things done.",
+        name: "Lena Schmidt",
+        rating: 5
+      },
+      {
+        text: "Quick setup and amazing results. Andalye saved me hours of work and the outcome was better than what I expected from traditional dev routes.",
+        name: "Carlos Mendes",
+        rating: 5
       }
-      timeoutId = setTimeout(autoScroll, 4000)
-    }
+    ]
+  },
+  {
+    mainQuote: "With Andalye, it feels like I have a full design team working alongside me – at a fraction of the cost.",
+    author: {
+      name: "Ishaan Desai",
+      title: "Product Manager, Launchly",
+      image: "https://randomuser.me/api/portraits/women/5.jpg"
+    },
+    reviews: [
+      {
+        text: "Andalye changed how I think about launching products. I can test ideas and create polished landing pages instantly. It’s a game-changer for solo founders.",
+        name: "Priya Khanna",
+        rating: 5
+      },
+      {
+        text: "Everything just works. From prompt to page, Andalye delivers clean, modern, and responsive designs. It's like magic for people who don't code.",
+        name: "Tom Nguyen",
+        rating: 5
+      },
+      {
+        text: "Super easy to learn, and the support team is top-notch. I’ve used Andalye for multiple client projects and it's now my go-to platform.",
+        name: "Melissa Ray",
+        rating: 5
+      }
+    ]
+  },
+  {
+    mainQuote: "Andalye has redefined speed and quality in web development. From idea to live site, it’s just minutes.",
+    author: {
+      name: "Aarav Mehta",
+      title: "Design Lead, Visionary",
+      image: "https://randomuser.me/api/portraits/men/7.jpg"
+    },
+    reviews: [
+      {
+        text: "Impressive design intelligence. Andalye generates layouts that actually follow good UX practices – something I rarely see in other tools.",
+        name: "Sophie Tan",
+        rating: 5
+      },
+      {
+        text: "Fits perfectly into our agency workflow. We now prototype faster, iterate better, and deliver on time every time thanks to Andalye.",
+        name: "Marcus Lee",
+        rating: 5
+      },
+      {
+        text: "The value is unmatched. Andalye cuts down dev costs and still gives our clients premium-quality web pages. Total win.",
+        name: "Elena Petrova",
+        rating: 5
+      }
+    ]
+  }
+]
 
-    timeoutId = setTimeout(autoScroll, 4000)
+export default function TestimonialCarousel() {
+  const [currentIndex, setCurrentIndex] = useState(0)
 
-    return () => clearTimeout(timeoutId)
-  }, [emblaApi, onSelect, isPaused])
+  const nextTestimonial = () => {
+    setCurrentIndex((prev) => (prev + 1) % testimonialData.length)
+  }
 
-  const scrollPrev = useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev()
-  }, [emblaApi])
+  const prevTestimonial = () => {
+    setCurrentIndex((prev) => (prev - 1 + testimonialData.length) % testimonialData.length)
+  }
 
-  const scrollNext = useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext()
-  }, [emblaApi])
-
-  const testimonials = [
-    {
-      name: "Lavanya",
-      role: "Movie Enthusiast",
-      title: "Love the Watch Room!",
-      content:
-        "Watching movies with friends in Suggesto’s Watch Room is amazing. It feels like a real theater experience—together from anywhere!",
-      avatar: user1,
-    },
-    {
-      name: "Varma",
-      role: "Cinephile",
-      title: "Spot-On Recommendations",
-      content:
-        "Suggesto’s AI suggestions are incredibly accurate. Every weekend, I have something new to watch that fits my mood perfectly.",
-      avatar: user2,
-    },
-    {
-      name: "Santhosh",
-      role: "Film Blogger",
-      title: "Game-Changer for Movie Nights",
-      content:
-        "Suggesto made planning movie nights easier. Our group uses it every Friday to pick the perfect film!",
-      avatar: user3,
-    },
-    {
-      name: "Sanjay Kumar",
-      role: "Binge Watcher",
-      title: "My Watch List is Smarter Now",
-      content:
-        "I used to forget what I wanted to watch. Now Suggesto keeps track and even reminds me about new releases!",
-      avatar: user4,
-    },
-    {
-      name: "Akila",
-      role: "Family Viewer",
-      title: "Great for All Ages",
-      content:
-        "We use Suggesto as a family. It gives age-appropriate and fun options for kids and adults. No more arguments!",
-      avatar: user5,
-    },
-    {
-      name: "Ibrahim",
-      role: "Techie + Movie Buff",
-      title: "AI at its Best!",
-      content:
-        "Suggesto’s tech blew me away. The AI learns what I like, and now I discover hidden gems regularly.",
-      avatar: user6,
-    },
-  ]
+  const currentTestimonial = testimonialData[currentIndex]
 
   return (
-    <section className="py-16">
-      <div className="container px-4 mx-auto">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="flex flex-col lg:flex-row gap-16">
-            {/* Left Section */}
-            <div className="lg:w-[30%]">
-              <div className="inline-block px-4 py-1.5 rounded-full border border-purple-100 bg-white text-primary text-sm font-medium mb-5">
-                User Love
-              </div>
-              <h2 className="text-[1.75rem] leading-[1.15] font-bold mb-4">
-                How Movie Lovers Enjoy Suggesto
-              </h2>
-              <p className="text-gray-400 mb-10">
-                Discover how Suggesto transforms movie nights with AI-powered suggestions and community features.
-              </p>
+    <div className="max-w-6xl mx-auto px-4 py-12">
+      
+      {/* ✅ Static Main Section Heading */}
+      <h2 className="text-center text-4xl md:text-5xl font-bold text-primary mb-12 leading-tight">
+        What our customers say
+      </h2>
 
-              <Button
-                onClick={() => router.push("/download")}
-                className="hidden sm:flex items-center gap-2 px-8 py-6 text-white text-lg font-semibold rounded-lg transition-colors"
-              >
-                Join Our Movie Club
-                <ArrowRight className="h-5 w-5" />
-              </Button>
+      {/* ✅ Carousel Quote from Current Index */}
+      <div className="text-center mb-12">
+        <h3 className="text-2xl md:text-3xl text-white font-medium mb-8 leading-tight">
+          "{currentTestimonial.mainQuote}"
+        </h3>
 
-              <div className="flex gap-3 mt-10">
-                <button
-                  onClick={scrollPrev}
-                  className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm hover:shadow-md transition-all"
-                  disabled={!prevBtnEnabled}
-                >
-                  <ArrowLeft className="h-5 w-5 text-gray-700" />
-                </button>
-                <button
-                  onClick={scrollNext}
-                  className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm hover:shadow-md transition-all"
-                  disabled={!nextBtnEnabled}
-                >
-                  <ArrowRight className="h-5 w-5 text-primary" />
-                </button>
-              </div>
-            </div>
-
-            {/* Right Section - Testimonials */}
-            <div className="lg:w-[70%]">
-              <div
-                className="overflow-hidden"
-                ref={emblaRef}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                <div className="flex">
-                  {testimonials.map((testimonial, index) => (
-                    <div
-                      key={index}
-                      className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_33.33%] pl-4"
-                    >
-                      <div className="bg-[#2b2b2b] p-6 rounded-xl shadow-sm h-full">
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className="w-16 h-16 relative">
-                            <Image
-                              src={testimonial.avatar}
-                              alt={testimonial.name}
-                              fill
-                              className="rounded-full object-cover"
-                              sizes="(max-width: 768px) 48px, 48px"
-                              priority
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{testimonial.name}</h3>
-                            <p className="text-sm text-gray-400">{testimonial.role}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-1 mb-3">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className="w-5 h-5 fill-yellow-500 text-yellow-500"
-                            />
-                          ))}
-                        </div>
-                        <h4 className="font-semibold mb-2">{testimonial.title}</h4>
-                        <p className="text-gray-400">{testimonial.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Mobile Button */}
-              <div className="mt-10 flex justify-center sm:hidden">
-                <Button
-                  onClick={() => router.push("/download")}
-                  className="flex items-center gap-2 px-8 py-6 text-white text-lg font-semibold rounded-lg transition-colors"
-                >
-                  Join Our Movie Club
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
+        {/* Author Profile */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="relative">
+            <Image
+              src={currentTestimonial.author.image || "/placeholder.svg"}
+              alt={currentTestimonial.author.name}
+              width={80}
+              height={80}
+              className="rounded-full object-cover"
+            />
+          </div>
+          <div className="text-left">
+            <h4 className="text-xl font-semibold text-white">
+              {currentTestimonial.author.name}
+            </h4>
+            <p className="text-gray-300 flex items-center gap-2">
+              {currentTestimonial.author.title}
+              {currentTestimonial.author.name === "Jijo Sunny" && (
+                <span className="text-2xl">☕</span>
+              )}
+            </p>
           </div>
         </div>
       </div>
-    </section>
+
+      {/* Reviews Grid */}
+      <div className="grid md:grid-cols-3 gap-8">
+        {currentTestimonial.reviews.map((review, index) => (
+          <div key={index} className="space-y-4">
+            <p className="text-gray-300 leading-relaxed">{review.text}</p>
+
+            <div className="space-y-2">
+              <h4 className="font-semibold text-white">{review.name}</h4>
+              <div className="flex items-center gap-2">
+                <div className="flex">
+                  {[...Array(5)].map((_, starIndex) => (
+                    <Star
+                      key={starIndex}
+                      className="w-4 h-4 fill-[#db4900] text-[#db4900]"
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-white">
+                  {review.rating}/5 Rating
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Navigation Buttons */}
+      <div className="flex items-center justify-center gap-4 mt-12">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={prevTestimonial}
+          className="rounded-full h-12 w-12 border-gray-600"
+        >
+          <ChevronLeft className="h-5 w-5 text-white" />
+        </Button>
+
+        <div className="flex gap-2">
+          {testimonialData.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`w-3 h-3 rounded-full transition-colors ${
+                index === currentIndex ? 'bg-white' : 'bg-gray-600'
+              }`}
+            />
+          ))}
+        </div>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={nextTestimonial}
+          className="rounded-full h-12 w-12 border-gray-600"
+        >
+          <ChevronRight className="h-5 w-5 text-white" />
+        </Button>
+      </div>
+    </div>
   )
 }

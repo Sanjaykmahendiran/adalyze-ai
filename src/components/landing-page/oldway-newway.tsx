@@ -1,189 +1,123 @@
-"use client";
+import React from 'react';
+import Image from 'next/image';
+import workflow1 from "@/assets/old-way.jpg";
+import workflow2 from "@/assets/New-way.jpg";
+import workflow3 from "@/assets/step3.png";
+import { Button } from '../ui/button';
+import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
-import { ArrowRight, CuboidIcon, Box } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import oldWay from "@/assets/old-way.jpg";
-import newWay from "@/assets/New-way.jpg";
-import { useRef } from "react";
-import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-
-export default function OldWayNewWay() {
+const WorkflowSection = () => {
   const router = useRouter();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const steps = [
+    {
+      stepNumber: "01",
+      title: "Before Adalyze: Creative Guesswork",
+      image: workflow1,
+      alt: "Struggling with ad results",
+      features: [
+        "No clear feedback or performance score",
+        "Wasted budget on low-performing ads",
+        "Time-consuming manual analysis"
+      ]
+    },
+    {
+      stepNumber: "02",
+      title: "After Adalyze AI: Data-Driven Clarity",
+      image: workflow2,
+      alt: "AI-enhanced ad analysis and insights",
+      features: [
+        "Instant AI-powered performance score",
+        "Actionable creative insights",
+        "Data-backed optimization suggestions"
+      ]
+    }
+  ];
 
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 50 },
-    visible: (i = 0) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.2,
-        duration: 0.6,
-        ease: [0.25, 0.1, 0.25, 1],
-      },
-    }),
-  };
-
-  const itemFadeIn = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i = 0) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.15,
-        duration: 0.4,
-        ease: [0.25, 0.1, 0.25, 1],
-      },
-    }),
-  };
 
   return (
-    <section className="py-12 md:py-16">
-      {/* Header */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeInUp}
-        className="text-center mb-10 px-4"
-      >
-        <div className="inline-block bg-[#db4900]/20 text-primary px-4 py-1 rounded-full text-sm font-medium mb-6">
-          Why Adalyze?
+    <section className="relative py-20 mt-6 mb-6">
+      <div className="container mx-auto px-4">
+        {/* Section Title */}
+        <div className="text-center py-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">
+            How Adalyze Works – <span className='text-[#db4900]'>Smart, Data-Driven Optimization</span>
+          </h2>
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+            From uploading your ad to iterating with AI feedback — turn every creative into a high-performing campaign with Adalyze.
+          </p>
         </div>
-        <h2 className="text-3xl md:text-5xl font-bold leading-tight">
-          Understand Your Ad Impact Instantly
-          <br className="hidden sm:block" />
-          <span className="mt-2 bg-gradient-to-r from-[#db4900] to-[#b71c1c] bg-clip-text text-transparent">
-            with AI-Powered Analysis & Feedback
-          </span>
-        </h2>
 
-        <p className="text-gray-400 max-w-2xl mx-auto mt-3 text-base md:text-lg">
-          Manual ad evaluation is slow and uncertain. Adalyze gives you instant performance insights, a clear score, and actionable recommendations so you can launch with confidence.
-        </p>
-      </motion.div>
-
-      {/* Comparison Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-6 md:px-10">
-        {/* Old Way */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: false, amount: 0.2 }}
-          custom={0}
-          variants={fadeInUp}
-          className="p-6 flex flex-col"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <CuboidIcon className="" size={24} />
-            <h3 className="text-lg md:text-xl font-bold ">Before</h3>
-          </div>
-          <div className="relative flex-1">
-            <Image
-              src={oldWay}
-              alt="Old ad evaluation process"
-              width={600}
-              height={450}
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="rounded-xl shadow-md w-full h-auto object-cover"
-              priority
-            />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mt-6">
-            {[
-              { label: "Insight Delay", value: "Hours" },
-              { label: "Creative Selection", value: "Guesswork" },
-              { label: "Team Alignment", value: "Hard to Sync" },
-              { label: "Outcome", value: "Unpredictable" },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                variants={itemFadeIn}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={index}
-                className="text-center px-2 py-3"
+        {/* Updated Steps Container */}
+        <div className="relative mt-10">
+          {steps.map((step, index) => (
+            <div
+              key={index}
+              className="sticky top-30 gap-10 flex items-center justify-center"
+              style={{ zIndex: index + 1 }}
+            >
+              <div
+                className="relative rounded-3xl overflow-hidden mt-10 w-full max-w-6xl mx-auto h-[600px]"
               >
-                <p className="text-sm text-gray-300 leading-tight">{item.label}</p>
-                <p className="font-semibold text-sm sm:text-lg leading-tight">{item.value}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+                {/* Full Background Image Container */}
+                <div className="absolute inset-0 w-full h-full">
+                  <Image
+                    src={step.image || "/placeholder.svg"}
+                    alt={step.alt}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 1200px"
+                  />
+                  {/* Dark overlay for better text readability */}
+                  <div className="absolute inset-0 bg-black/40"></div>
+                </div>
 
-        {/* New Way */}
+                {/* Text Content Container */}
+                <div className="relative z-10 h-full flex items-center justify-start pl-8 md:pl-16">
+                  <div className="bg-[#121212] backdrop-blur-sm rounded-2xl p-8 md:p-10 max-w-lg shadow-2xl border border-white/20">
+
+                    {/* Title */}
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-[#db4900] to-[#b71c1c] bg-clip-text text-transparent leading-tight">
+                      {step.title}
+                    </h2>
+
+                    {/* Feature highlights */}
+                    <div className="space-y-3 mt-6">
+                      {step.features?.map((feature, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="text-2xl">✨</span>
+                          <span className="text-gray-200 font-medium">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: false, amount: 0.2 }}
-          custom={1}
-          variants={fadeInUp}
-          className="p-6 flex flex-col"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="flex flex-col items-center mt-8 px-4"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Box className="text-primary" size={24} />
-            <h3 className="text-lg md:text-xl font-bold text-primary">Now</h3>
-          </div>
-          <div className="relative flex-1">
-            <Image
-              src={newWay}
-              alt="AI-driven ad optimization"
-              width={600}
-              height={450}
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="rounded-xl shadow-md w-full h-auto object-cover"
-              priority
-            />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4">
-            {[
-              { label: "Insight Delay", value: "< 1 Min" },
-              { label: "Creative Selection", value: "Data-Driven" },
-              { label: "Team Alignment", value: "Seamless" },
-              { label: "Outcome", value: "Clear" },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                variants={itemFadeIn}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={index}
-                className="bg-[#121212] px-2 py-3 rounded-xl shadow-sm text-center"
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <div className="flex flex-col items-center space-y-2 sm:space-y-3 mt-4">
+              <Button
+                onClick={() => router.push("/login")}
+                className="flex items-center gap-2 px-8 py-6 text-white text-lg font-semibold rounded-lg transition-colors"
               >
-                <p className="text-sm text-gray-300 leading-tight">{item.label}</p>
-                <p className="font-semibold text-sm sm:text-lg font-semibold bg-gradient-to-r from-[#db4900] to-[#b71c1c] bg-clip-text text-transparent leading-tight">
-                  {item.value}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+                Analyze Your Ad
+              </Button>
+            </div>
+          </motion.div>
         </motion.div>
       </div>
-
-      {/* CTA Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-        viewport={{ once: true }}
-        className="flex flex-col items-center mt-8 px-4"
-      >
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <div className="flex flex-col items-center space-y-2 sm:space-y-3 mt-4">
-            <Button
-              onClick={() => router.push("/login")}
-              className="flex items-center gap-2 px-8 py-8 text-white text-lg font-semibold rounded-lg transition-colors"
-            >
-              Try Adalyze Now <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <p className="text-gray-500 text-xs md:text-sm">*Optimize every campaign.</p>
-          </div>
-        </motion.div>
-      </motion.div>
     </section>
   );
-}
+};
+
+export default WorkflowSection;

@@ -22,6 +22,7 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: UploadCloud, label: "Upload", href: "/upload" },
+    { icon: UploadCloud, label: "Video Upload", href: "/video-upload" },
   { icon: Split, label: "A/B Test", href: "/ab-test" },
   { icon: MonitorPlay, label: "MyAds", href: "/my-ads" },
   { icon: Zap, label: "Pro", href: "/pro" },

@@ -328,7 +328,7 @@ export default function Dashboard() {
                 return (
                   <div
                     key={ad.ad_id}
-                    onClick={() => router.push(`/results?ad_id  =${ad.ad_id}`)}
+                    onClick={() => router.push(`/results?ad_id=${ad.ad_id}`)}
                     className="bg-[#1a1a1a] rounded-2xl space-y-3 group hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300"
                   >
                     <div className="aspect-square rounded-lg overflow-hidden">

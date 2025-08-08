@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,6 +15,36 @@ import toast from "react-hot-toast"
 import UserLayout from "@/components/layouts/user-layout"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 
+interface Country {
+    id: string
+    name: string
+    iso3: string
+    numeric_code: string
+    iso2: string
+    phonecode: string
+    region_id: string
+    subregion_id: string
+    created_at: string
+    updated_at: string
+    flag: string
+}
+
+interface State {
+    id: string
+    name: string
+    country_id: string
+    country_code: string
+    fips_code: string
+    iso2: string
+    type: string
+    latitude: string
+    longitude: string
+    created_at: string
+    updated_at: string
+    flag: string
+    wikiDataId: string
+}
+
 export default function UploadPage() {
     const { userDetails } = useFetchUserDetails()
     const router = useRouter()
@@ -22,9 +52,82 @@ export default function UploadPage() {
     const [adName, setAdName] = useState("")
     const [platform, setPlatform] = useState("")
     const [industry, setIndustry] = useState("")
+    const [age, setAge] = useState("")
+    const [gender, setGender] = useState("")
+    const [country, setCountry] = useState("")
+    const [state, setState] = useState("")
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null)
+    const [countries, setCountries] = useState<Country[]>([])
+    const [states, setStates] = useState<State[]>([])
+    const [loadingCountries, setLoadingCountries] = useState(false)
+    const [loadingStates, setLoadingStates] = useState(false)
+    const [countrySearch, setCountrySearch] = useState("")
+    const [stateSearch, setStateSearch] = useState("")
     const userId = cookies.get("userId") || ""
+
+    // Fetch countries on component mount
+    useEffect(() => {
+        fetchCountries()
+    }, [])
+
+    // Fetch states when country changes
+    useEffect(() => {
+        if (country) {
+            fetchStates(country)
+            setState("") // Reset state when country changes
+            setStateSearch("") // Reset state search when country changes
+        } else {
+            setStates([])
+            setState("")
+            setStateSearch("")
+        }
+    }, [country])
+
+    // Filter countries based on search
+    const filteredCountries = countries.filter(countryItem =>
+        countryItem.name.toLowerCase().includes(countrySearch.toLowerCase())
+    )
+
+    // Filter states based on search
+    const filteredStates = states.filter(stateItem =>
+        stateItem.name.toLowerCase().includes(stateSearch.toLowerCase())
+    )
+
+    const fetchCountries = async () => {
+        setLoadingCountries(true)
+        try {
+            const response = await fetch('https://techades.com/App/api.php?gofor=countrieslist')
+            if (!response.ok) {
+                throw new Error('Failed to fetch countries')
+            }
+            const data: Country[] = await response.json()
+            setCountries(data)
+        } catch (error) {
+            console.error('Error fetching countries:', error)
+            toast.error('Failed to load countries')
+        } finally {
+            setLoadingCountries(false)
+        }
+    }
+
+    const fetchStates = async (countryId: string) => {
+        setLoadingStates(true)
+        try {
+            const response = await fetch(`https://techades.com/App/api.php?gofor=stateslist&country_id=${countryId}`)
+            if (!response.ok) {
+                throw new Error('Failed to fetch states')
+            }
+            const data: State[] = await response.json()
+            setStates(data)
+        } catch (error) {
+            console.error('Error fetching states:', error)
+            toast.error('Failed to load states')
+        } finally {
+            setLoadingStates(false)
+        }
+    }
+
     const handleFileChange = async (uploadedFile: File | null) => {
         setFile(uploadedFile)
 
@@ -82,14 +185,20 @@ export default function UploadPage() {
         setIsAnalyzing(true)
 
         try {
-            toast.loading("Analyzing your ad...", { id: "analyze" })
+            // Get country and state names from their IDs
+            const selectedCountry = countries.find(c => c.id === country)
+            const selectedState = states.find(s => s.id === state)
 
             const analyzeData = {
                 imagePath: uploadedImagePath,
                 user_id: userId,
                 ads_name: adName || file.name.split(".")[0],
                 industry: industry || "",
-                platform: platform || ""
+                platform: platform || "",
+                age: age || "",
+                gender: gender || "",
+                country: selectedCountry?.name || "",
+                state: selectedState?.name || ""
             }
 
             const response = await fetch('https://adalyzeai.xyz/App/analyze.php', {
@@ -149,7 +258,7 @@ export default function UploadPage() {
                                     {/* Form Fields */}
                                     <div className="space-y-3">
                                         <Label htmlFor="adName" className="text-gray-300 font-semibold">
-                                            Ad Name (Optional)
+                                            Ad Name
                                         </Label>
                                         <Input
                                             id="adName"
@@ -163,7 +272,7 @@ export default function UploadPage() {
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div className="space-y-3">
                                             <Label htmlFor="industry" className="text-gray-300 font-semibold">
-                                                Industry Category (Optional)
+                                                Industry Category
                                             </Label>
                                             <Select value={industry} onValueChange={setIndustry}>
                                                 <SelectTrigger
@@ -215,7 +324,7 @@ export default function UploadPage() {
 
                                         <div className="space-y-3">
                                             <Label htmlFor="platform" className="text-gray-300 font-semibold">
-                                                Platform Target (Optional)
+                                                Platform Target
                                             </Label>
                                             <Select value={platform} onValueChange={setPlatform}>
                                                 <SelectTrigger
@@ -251,6 +360,169 @@ export default function UploadPage() {
                                                     </SelectItem>
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+                                    </div>
+
+                                    {/* Demographics Section */}
+                                    <div className="space-y-6">
+                                        <div className="border-t border-[#2b2b2b] pt-6">
+                                            <h3 className="text-lg font-semibold text-gray-300 mb-4">Target Demographics</h3>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                                <Label htmlFor="age" className="text-gray-300 font-semibold">
+                                                    Age Group
+                                                </Label>
+                                                <Select value={age} onValueChange={setAge}>
+                                                    <SelectTrigger
+                                                        id="age"
+                                                        className="w-full bg-[#121212] border-[#2b2b2b] text-white rounded-2xl py-6 focus:border-blue-500 focus:ring-blue-500"
+                                                    >
+                                                        <SelectValue placeholder="Select age group" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
+                                                        <SelectItem value="13-17" className="text-white hover:bg-gray-800">
+                                                            13-17 years
+                                                        </SelectItem>
+                                                        <SelectItem value="18-24" className="text-white hover:bg-gray-800">
+                                                            18-24 years
+                                                        </SelectItem>
+                                                        <SelectItem value="25-34" className="text-white hover:bg-gray-800">
+                                                            25-34 years
+                                                        </SelectItem>
+                                                        <SelectItem value="35-44" className="text-white hover:bg-gray-800">
+                                                            35-44 years
+                                                        </SelectItem>
+                                                        <SelectItem value="45-54" className="text-white hover:bg-gray-800">
+                                                            45-54 years
+                                                        </SelectItem>
+                                                        <SelectItem value="55-64" className="text-white hover:bg-gray-800">
+                                                            55-64 years
+                                                        </SelectItem>
+                                                        <SelectItem value="65+" className="text-white hover:bg-gray-800">
+                                                            65+ years
+                                                        </SelectItem>
+                                                        <SelectItem value="all" className="text-white hover:bg-gray-800">
+                                                            All Ages
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <Label htmlFor="gender" className="text-gray-300 font-semibold">
+                                                    Gender
+                                                </Label>
+                                                <Select value={gender} onValueChange={setGender}>
+                                                    <SelectTrigger
+                                                        id="gender"
+                                                        className="w-full bg-[#121212] border-[#2b2b2b] text-white rounded-2xl py-6 focus:border-blue-500 focus:ring-blue-500"
+                                                    >
+                                                        <SelectValue placeholder="Select gender" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
+                                                        <SelectItem value="male" className="text-white hover:bg-gray-800">
+                                                            Male
+                                                        </SelectItem>
+                                                        <SelectItem value="female" className="text-white hover:bg-gray-800">
+                                                            Female
+                                                        </SelectItem>
+                                                        <SelectItem value="non-binary" className="text-white hover:bg-gray-800">
+                                                            Non-binary
+                                                        </SelectItem>
+                                                        <SelectItem value="all" className="text-white hover:bg-gray-800">
+                                                            All Genders
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                                <Label htmlFor="country" className="text-gray-300 font-semibold">
+                                                    Country
+                                                </Label>
+                                                <Select value={country} onValueChange={setCountry} disabled={loadingCountries}>
+                                                    <SelectTrigger
+                                                        id="country"
+                                                        className="w-full bg-[#121212] border-[#2b2b2b] text-white rounded-2xl py-6 focus:border-blue-500 focus:ring-blue-500"
+                                                    >
+                                                        <SelectValue placeholder={loadingCountries ? "Loading countries..." : "Select country"} />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
+                                                        <div className="p-2">
+                                                            <Input
+                                                                placeholder="Search countries..."
+                                                                value={countrySearch}
+                                                                onChange={(e) => setCountrySearch(e.target.value)}
+                                                                className="bg-[#121212] border-[#2b2b2b] text-white placeholder-gray-500 h-8 text-sm"
+                                                            />
+                                                        </div>
+                                                        <div className="max-h-48 overflow-y-auto">
+                                                            {filteredCountries.length > 0 ? (
+                                                                filteredCountries.map((countryItem) => (
+                                                                    <SelectItem
+                                                                        key={countryItem.id}
+                                                                        value={countryItem.id}
+                                                                        className="text-white hover:bg-gray-800"
+                                                                    >
+                                                                        {countryItem.name}
+                                                                    </SelectItem>
+                                                                ))
+                                                            ) : (
+                                                                <div className="p-2 text-gray-400 text-sm">No countries found</div>
+                                                            )}
+                                                        </div>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <Label htmlFor="state" className="text-gray-300 font-semibold">
+                                                    State/Province
+                                                </Label>
+                                                <Select value={state} onValueChange={setState} disabled={!country || loadingStates}>
+                                                    <SelectTrigger
+                                                        id="state"
+                                                        className="w-full bg-[#121212] border-[#2b2b2b] text-white rounded-2xl py-6 focus:border-blue-500 focus:ring-blue-500"
+                                                    >
+                                                        <SelectValue placeholder={
+                                                            !country ? "Select country first" :
+                                                                loadingStates ? "Loading states..." :
+                                                                    "Select state"
+                                                        } />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
+                                                        {states.length > 0 && (
+                                                            <div className="p-2">
+                                                                <Input
+                                                                    placeholder="Search states..."
+                                                                    value={stateSearch}
+                                                                    onChange={(e) => setStateSearch(e.target.value)}
+                                                                    className="bg-[#121212] border-[#2b2b2b] text-white placeholder-gray-500 h-8 text-sm"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <div className="max-h-48 overflow-y-auto">
+                                                            {filteredStates.length > 0 ? (
+                                                                filteredStates.map((stateItem) => (
+                                                                    <SelectItem
+                                                                        key={stateItem.id}
+                                                                        value={stateItem.id}
+                                                                        className="text-white hover:bg-gray-800"
+                                                                    >
+                                                                        {stateItem.name}
+                                                                    </SelectItem>
+                                                                ))
+                                                            ) : states.length > 0 ? (
+                                                                <div className="p-2 text-gray-400 text-sm">No states found</div>
+                                                            ) : null}
+                                                        </div>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                     </div>
 

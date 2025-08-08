@@ -81,7 +81,7 @@ const useFetchUserDetails = () => {
     };
 
     fetchUserDetails();
-  }, [userId, pathname]); // Remove logout from dependencies to prevent recreation
+  }, [userId, pathname]); 
 
   return { loading, userDetails };
 };

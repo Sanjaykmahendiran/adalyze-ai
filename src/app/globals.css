@@ -173,3 +173,20 @@
   scrollbar-width: none;     /* Firefox */
 }
 
+@keyframes neonMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient {
+  background: linear-gradient(135deg, #db4900, #ff4d00, #9f00ff);
+  background-size: 300% 300%;
+  animation: neonMove 8s ease infinite;
+}

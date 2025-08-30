@@ -1,57 +1,81 @@
-import { cn } from "@/lib/utils"
-import { TestimonialCard, TestimonialAuthor } from "@/components/ui/testimonial-card"
+"use client"
 
-interface TestimonialsSectionProps {
-  title: string
-  description: string
-  testimonials: Array<{
-    author: TestimonialAuthor
-    text: string
-    href?: string
-  }>
-  className?: string
-}
+import { AnimatedTestimonials } from "@/components/landing-page/animated-testimonials"
+import { motion } from "framer-motion"
+import image1 from "@/assets/testimonial-1.jpg"
+import image2 from "@/assets/testimonial-2.jpg"
+import image3 from "@/assets/testimonial-3.jpg"
+import image4 from "@/assets/testimonial-4.jpg"
+import image5 from "@/assets/testimonial-5.jpg"
 
-export function TestimonialsSection({ 
-  title,
-  description,
-  testimonials,
-  className 
-}: TestimonialsSectionProps) {
+export default function Testimonials() {
+  const testimonials = [
+    {
+      quote:
+        "Adalyze’s AI-driven insights have completely transformed the way we analyze and optimize our ad campaigns. This is exactly the intelligence we’ve been looking for.",
+      name: "Sarah Chen",
+      designation: "Product Manager at TechFlow",
+      src: image1.src,
+    },
+    {
+      quote:
+        "Implementation was seamless and the ad performance improvements exceeded our expectations. Adalyze’s flexibility lets us adapt to every campaign need instantly.",
+      name: "Michael Rodriguez",
+      designation: "CTO at InnovateSphere",
+      src: image2.src,
+    },
+    {
+      quote:
+        "Adalyze has significantly boosted our ad ROI. The intuitive dashboard turns complex performance metrics into clear, actionable insights.",
+      name: "Emily Watson",
+      designation: "Operations Director at CloudScale",
+      src: image3.src,
+    },
+    {
+      quote:
+        "The level of support and depth of AI analysis is outstanding. Adalyze consistently delivers on its promise to make every ad dollar work harder.",
+      name: "James Kim",
+      designation: "Engineering Lead at DataPro",
+      src: image4.src,
+    },
+    {
+      quote:
+        "The scalability and precision targeting powered by Adalyze have been game-changing for our campaigns. It’s a must-have for any growing brand.",
+      name: "Lisa Thompson",
+      designation: "VP of Technology at FutureNet",
+      src: image5.src,
+    },
+  ]
+
   return (
-    <section className={cn(
-      "bg-background text-foreground",
-      "py-12 sm:py-24 md:py-32 px-0",
-      className
-    )}>
-      <div className="mx-auto flex max-w-container flex-col items-center gap-4 text-center sm:gap-16">
-        <div className="flex flex-col items-center gap-4 px-4 sm:gap-8">
-          <h2 className="max-w-[720px] text-3xl font-semibold leading-tight sm:text-5xl sm:leading-tight">
-            {title}
-          </h2>
-          <p className="text-md max-w-[600px] font-medium text-muted-foreground sm:text-xl">
-            {description}
-          </p>
-        </div>
+    <div className="text-center px-4 sm:px-6 lg:px-8 py-8 sm:py-10 ">
+      <motion.div
+        initial={{ y: -100, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        viewport={{ once: false, amount: 0.3 }}
+        
+      >
+        {/* Heading */}
+        <h2 className="text-2xl sm:text-3xl md:text-4xl text-primary font-bold mb-3">Why Marketers Trust Adalyze</h2>
 
-        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
-          <div className="group flex overflow-hidden p-2 [--gap:1rem] [gap:var(--gap)] flex-row [--duration:40s]">
-            <div className="flex shrink-0 justify-around [gap:var(--gap)] animate-marquee flex-row group-hover:[animation-play-state:paused]">
-              {[...Array(4)].map((_, setIndex) => (
-                testimonials.map((testimonial, i) => (
-                  <TestimonialCard 
-                    key={`${setIndex}-${i}`}
-                    {...testimonial}
-                  />
-                ))
-              ))}
-            </div>
-          </div>
+        {/* Description */}
+        <p className="text-gray-300 max-w-xl sm:max-w-2xl mx-auto mb-6 sm:mb-8 text-sm sm:text-base">
+          Adalyze empowers marketing teams with AI-driven ad analysis, helping them uncover insights, optimize
+          campaigns, and maximize ROI. Here's what industry leaders have to say about how Adalyze transformed their
+          advertising strategy.
+        </p>
+      </motion.div>
+      {/* Testimonials */}
+      <AnimatedTestimonials testimonials={testimonials} />
 
-          <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-1/3 bg-gradient-to-r from-background sm:block" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/3 bg-gradient-to-l from-background sm:block" />
-        </div>
-      </div>
-    </section>
+      <motion.div
+        className="max-w-screen-xl mx-auto border-t border-[#db4900]/40 mt-12 sm:mt-16"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.5 }}
+      />
+    </div>
   )
 }

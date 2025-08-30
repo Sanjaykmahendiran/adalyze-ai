@@ -22,7 +22,6 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: UploadCloud, label: "Upload", href: "/upload" },
-    { icon: UploadCloud, label: "Video Upload", href: "/video-upload" },
   { icon: Split, label: "A/B Test", href: "/ab-test" },
   { icon: MonitorPlay, label: "MyAds", href: "/my-ads" },
   { icon: Zap, label: "Pro", href: "/pro" },
@@ -67,14 +66,14 @@ export function Sidebar({ isCollapsed = false }: SidebarProps) {
                         rounded-lg cursor-pointer
                         ${isActive
                 ? "bg-[#db4900]/30 font-semibold text-primary hover:bg-[#db4900] hover:text-white group"
-                : "text-gray-400 hover:bg-[#121212] hover:text-[#db4900] group"}
+                : "text-gray-300 hover:bg-[#121212] hover:text-[#db4900] group"}
                      `}
           >
             <item.icon
               className={`${isCollapsed ? "mx-auto" : "mr-3"} h-5 w-5
                         ${isActive
                   ? "text-primary group-hover:text-white"
-                  : "text-gray-400 group-hover:text-[#db4900]"}
+                  : "text-gray-300 group-hover:text-[#db4900]"}
                   `}
             />
             {!isCollapsed && item.label}

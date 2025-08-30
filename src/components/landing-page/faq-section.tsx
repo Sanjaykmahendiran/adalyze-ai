@@ -11,40 +11,36 @@ interface FAQ {
 
 const faqs: FAQ[] = [
   {
-    question: "What is Suggesto, and how does it work?",
+    question: "What is Adalyze AI?",
     answer:
-      "Suggesto is an AI-powered movie discovery platform that helps you find the perfect film based on your mood, preferences, and watch history. It learns your taste to suggest better titles every time.",
+      "Adalyze AI is a smart ad analysis tool that evaluates your creatives and provides actionable insights using AI.",
   },
   {
-    question: "Can I use Suggesto with friends or family?",
-    answer:
-      "Yes! Suggesto lets you create shared watchlists and group recommendations. Everyone votes, and the AI picks something you’ll all enjoy together.",
+    question: "Who can use Adalyze AI?",
+    answer: "Anyone who runs ads — marketers, designers, startups, and agencies — can benefit from Adalyze AI.",
   },
   {
-    question: "Is Suggesto free to use?",
-    answer:
-      "Suggesto offers a free version with core features like smart recommendations and personal watchlists. Premium plans unlock advanced filters, synced devices, and exclusive content insights.",
+    question: "Do I need any technical skills to use Adalyze?",
+    answer: "No. Adalyze is built to be simple and user-friendly for everyone.",
   },
   {
-    question: "How are recommendations generated?",
-    answer:
-      "Our AI analyzes your viewing history, genre preferences, mood inputs, and trending data to suggest films that feel personal—like a movie buddy who *really* knows you.",
+    question: "Which ad formats are supported?",
+    answer: "Currently, we support image creatives in formats like JPG, PNG, and JPEG.",
   },
   {
-    question: "Can I track what I’ve watched?",
-    answer:
-      "Absolutely! Suggesto helps you log watched content automatically, rate films, and organize your movie journey across time and platforms.",
+    question: "Is there a free plan available?",
+    answer: "Yes. You can start with our Free plan which includes up to 5 uploads per month and basic AI analysis.",
   },
-  {
-    question: "Does Suggesto support multiple streaming services?",
-    answer:
-      "Yes. Suggesto pulls data and listings from major platforms like Netflix, Prime Video, Disney+, and more—so you can discover and jump straight into a movie from anywhere.",
-  },
-  {
-    question: "Is there a mobile app for Suggesto?",
-    answer:
-      "Yes! You can download Suggesto from the Google Play Store or App Store to enjoy on-the-go recommendations and group movie nights wherever you are.",
-  },
+  // {
+  //   question: "What is the cost of the Pro plan?",
+  //   answer:
+  //     "Our Pro plan costs ₹499/month or $7/month with extended features and 25 uploads.",
+  // },
+  // {
+  //   question: "Do you offer yearly billing?",
+  //   answer:
+  //     "We currently support only monthly billing. Yearly plans are coming soon.",
+  // },
 ]
 
 const FAQItem = ({
@@ -60,21 +56,11 @@ const FAQItem = ({
 }) => {
   return (
     <div
-      className={`rounded-2xl transition-all duration-300 ${isOpen ? "bg-[#212121]" : "bg-[#121212]"
-        }`}
+      className={`rounded-2xl transition-all duration-300 ${isOpen ? "bg-[#212121]" : "bg-[#121212]"}
+        `}
     >
-      <div
-        className="flex items-center justify-between px-6 py-8 cursor-pointer"
-        onClick={onClick}
-      >
-        <h3
-          className={`text-base md:text-lg font-bold ${isOpen
-              ? " text-[#db4900]"
-              : "text-white"
-            }`}
-        >
-          {question}
-        </h3>
+      <div className="flex items-center justify-between px-6 py-8 cursor-pointer" onClick={onClick}>
+        <h3 className={`text-base md:text-lg font-bold ${isOpen ? " text-[#db4900]" : "text-white"}`}>{question}</h3>
         <div className="ml-4">
           {isOpen ? (
             <ArrowUpIcon className="w-5 h-5 text-primary transition-transform rotate-180" />
@@ -101,22 +87,21 @@ const FAQItem = ({
   )
 }
 
-
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number>(0)
 
   return (
-    <section className="py-24" id="faq">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-20 items-stretch">
+    <section className="py-12 sm:py-16 md:py-20 lg:py-24" id="faq">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-20 items-stretch">
           {/* Title */}
           <div className="lg:col-span-4 flex flex-col">
             <div className="flex flex-col h-full">
               <span className="inline-block w-[60px] text-sm font-semibold bg-[#db4900]/20 text-primary px-3 py-1 rounded-full mb-4">
                 FAQS
               </span>
-              <h2 className="text-5xl font-bold  leading-tight mb-6">
-                Suggesto
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6">
+                Adalyze AI
                 <br />
                 User FAQs
               </h2>

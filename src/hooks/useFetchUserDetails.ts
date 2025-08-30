@@ -26,13 +26,15 @@ interface UserDetails {
   register_level_status: string | null;
   emailver_status: number;
   status: number;
+  ads_limit: number;
+  valid_till: string;
 }
 
 const useFetchUserDetails = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  
+
   const pathname = usePathname();
   const logout = useLogout();
   const userId = Cookies.get("userId");
@@ -45,7 +47,7 @@ const useFetchUserDetails = () => {
       }
 
       if (!userId) {
-        if (pathname !== "/register" && pathname !== "/") {
+        if (pathname !== "/register" && pathname !== "/" && pathname !== "/pricing") {
           logout();
         }
         setUserDetails(null);
@@ -81,7 +83,7 @@ const useFetchUserDetails = () => {
     };
 
     fetchUserDetails();
-  }, [userId, pathname]); 
+  }, [userId, pathname]);
 
   return { loading, userDetails };
 };

@@ -13,7 +13,6 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<Spinner />}>
-      <Toaster position="top-center" reverseOrder={false} />
       {children}</Suspense>
   );
 }

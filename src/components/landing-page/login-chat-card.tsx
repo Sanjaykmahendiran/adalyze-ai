@@ -21,14 +21,14 @@ interface LoginChatCardProps {
 interface FormState {
     email: string;
     category: string;
-    query: string;
+    description: string;
 }
 
 const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
     const [formState, setFormState] = useState<FormState>({
         email: "",
         category: "",
-        query: "",
+        description: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,21 +43,21 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
     const handleSubmit = async () => {
         if (isSubmitting) return;
 
-        const { email, category, query } = formState;
+        const { email, category, description } = formState;
 
         try {
             setIsSubmitting(true);
 
-            const response = await fetch("https://suggesto.xyz/App/api.php", {
+            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    gofor: "needhelp",
+                    gofor: "sendquery",
                     email,
                     category,
-                    query,
+                    description,
                 }),
             });
 
@@ -130,13 +130,13 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="query" className="block text-sm font-medium mb-1 text-white">
+                        <label htmlFor="description" className="block text-sm font-medium mb-1 text-white">
                             Message
                         </label>
                         <Textarea
-                            id="query"
-                            name="query"
-                            value={formState.query}
+                            id="description"
+                            name="description"
+                            value={formState.description}
                             onChange={handleChange}
                             placeholder="Describe your issue or feedback..."
                             rows={5}
@@ -148,7 +148,7 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
                 <CardFooter>
                     <Button
                         onClick={handleSubmit}
-                        disabled={isSubmitting || !formState.email || !formState.category || !formState.query}
+                        disabled={isSubmitting || !formState.email || !formState.category || !formState.description}
                         className="w-full"
                     >
                         {isSubmitting ? (

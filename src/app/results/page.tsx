@@ -4,7 +4,7 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Download,
   Search,
@@ -12,52 +12,41 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  RefreshCw,
   Lock,
   PenTool,
   GitCompareArrows,
+  Eye,
+  Heart,
+  Target,
+  TrendingUp,
+  Palette,
+  Image as ImageIcon,
+  FileText,
+  Award,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Users,
+  Zap,
+  Shield,
+  Activity,
+  BarChart3,
+  Camera,
+  Type,
+  Layout,
+  DollarSign,
+  Upload,
+  ArrowLeft,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import cokkies from "js-cookie"
-import Spinner from "@/components/overlay"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
-import AbResultsLoadingSkeleton from "@/components/Skeleton-loading/ab-results-loading"
 import ResultsPageLoadingSkeleton from "@/components/Skeleton-loading/results-loading"
-
-// Interface for API response
-interface AdCopy {
-  platform: string
-  tone: string
-  copy_text: string
-}
-
-interface ApiResponse {
-  ad_id: number
-  title: string
-  image: string
-  uploaded_on: string
-  industry: string
-  score_out_of_100: number
-  platform_suits: string[] | string
-  platform_notsuits: string[] | string
-  issues: string[]
-  suggestions: string[]
-  visual_clarity: string
-  emotional_appeal: string
-  text_visual_balance: string
-  cta_visibility: string
-  scroll_stoppower: string
-  estimated_ctr: string
-  conversion_probability: string
-  match_score: string
-  top_audience: string
-  industry_audience: string
-  mismatch_warnings: string[]
-  ad_copies: AdCopy[]
-}
+import { cn } from "@/lib/utils"
+import { generatePDFReport, ApiResponse } from "@/lib/pdfGenerator"
+import logo from "@/assets/ad-icon-logo.png"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -67,6 +56,7 @@ export default function ResultsPage() {
   const [apiData, setApiData] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   const isProUser = userDetails?.payment_status === 1
 
@@ -80,8 +70,8 @@ export default function ResultsPage() {
           throw new Error('Failed to fetch ad details')
         }
 
-        const data = await response.json()
-        setApiData(data)
+        const result = await response.json()
+        setApiData(result.data) // Access data from the response
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
@@ -92,21 +82,21 @@ export default function ResultsPage() {
     fetchAdDetails()
   }, [searchParams])
 
+  // Helper function to safely get array or return empty array
+  const safeArray = (arr: any): any[] => {
+    return Array.isArray(arr) ? arr : []
+  }
+
   // Helper function to parse platform suitability
   const getPlatformSuitability = () => {
     if (!apiData) return []
 
-    const suitablePlatforms = Array.isArray(apiData.platform_suits)
-      ? apiData.platform_suits.map(p => p.toLowerCase())
-      : typeof apiData.platform_suits === 'string'
-        ? apiData.platform_suits.split(',').map(p => p.trim().toLowerCase())
-        : []
-
-    const notSuitablePlatforms = Array.isArray(apiData.platform_notsuits)
-      ? apiData.platform_notsuits.map(p => p.toLowerCase())
-      : typeof apiData.platform_notsuits === 'string'
-        ? apiData.platform_notsuits.split(',').map(p => p.trim().toLowerCase())
-        : []
+    const suitablePlatforms = safeArray(apiData.platform_suits).map(p =>
+      typeof p === 'string' ? p.toLowerCase() : String(p).toLowerCase()
+    )
+    const notSuitablePlatforms = safeArray(apiData.platform_notsuits).map(p =>
+      typeof p === 'string' ? p.toLowerCase() : String(p).toLowerCase()
+    )
 
     const allPlatforms = ['Facebook', 'Instagram', 'LinkedIn', 'Twitter', 'Flyer']
 
@@ -121,7 +111,6 @@ export default function ResultsPage() {
       }
     })
 
-    // Sort suitable platforms first
     return suitabilityList.sort((a, b) => {
       if (a.suitable && !b.suitable) return -1
       if (!a.suitable && b.suitable) return 1
@@ -141,554 +130,229 @@ export default function ResultsPage() {
 
   // Helper function to get filtered ad copies based on selected tone
   const getFilteredAdCopies = () => {
-    if (!apiData?.ad_copies) return []
+    const adCopies = safeArray(apiData?.ad_copies)
 
     if (!isProUser) {
-      // Return only the first ad copy for free users
-      return apiData.ad_copies.slice(0, 1)
+      return adCopies.slice(0, 1)
     }
 
-    // For pro users, filter by tone if a specific tone is selected
     if (selectedTone === "friendly") {
-      return apiData.ad_copies
+      return adCopies
     }
 
-    return apiData.ad_copies.filter(copy =>
-      copy.tone.toLowerCase().includes(selectedTone.toLowerCase())
+    return adCopies.filter(copy =>
+      copy.tone?.toLowerCase().includes(selectedTone.toLowerCase())
     )
   }
 
-  //   const generateReportHTML = () => {
-  //   if (!apiData) return ''
+  // Image navigation functions
+  const nextImage = () => {
+    const images = safeArray(apiData?.images)
+    if (images.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length)
+    }
+  }
 
-  //   const platformSuitability = getPlatformSuitability()
-  //   const filteredAdCopies = getFilteredAdCopies()
+  const prevImage = () => {
+    const images = safeArray(apiData?.images)
+    if (images.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+    }
+  }
 
-  //   return `
-  // <!DOCTYPE html>
-  // <html>
-  // <head>
-  //     <meta charset="UTF-8">
-  //     <title>Ad Analysis Report - ${apiData.title}</title>
-  //     <style>
-  //         * { margin: 0; padding: 0; box-sizing: border-box; }
-  //         body { 
-  //             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  //             background: #000000;
-  //             color: #ffffff;
-  //             padding: 20px;
-  //             line-height: 1.6;
-  //         }
-  //         .container { max-width: 1200px; margin: 0 auto; }
-  //         .header { text-align: center; margin-bottom: 40px; }
-  //         .main-title { font-size: 36px; font-weight: bold; margin-bottom: 8px; }
-  //         .subtitle { font-size: 16px; color: #9ca3af; }
-
-  //         /* Card styling matching your design */
-  //         .card { 
-  //             background: #000000; 
-  //             border: 1px solid #121212;
-  //             border-radius: 24px; 
-  //             padding: 32px; 
-  //             margin-bottom: 32px;
-  //             box-shadow: 0 4px 6px rgba(255, 255, 255, 0.05);
-  //         }
-
-  //         /* Ad Overview Section */
-  //         .ad-overview { display: grid; grid-template-columns: 1fr 2fr; gap: 32px; margin-bottom: 32px; }
-  //         .ad-image { 
-  //             aspect-ratio: 1;
-  //             background: #121212;
-  //             border: 1px solid #121212;
-  //             border-radius: 16px;
-  //             display: flex;
-  //             align-items: center;
-  //             justify-content: center;
-  //             overflow: hidden;
-  //         }
-  //         .ad-image img { 
-  //             max-width: 100%; 
-  //             max-height: 100%; 
-  //             object-fit: contain;
-  //             border-radius: 16px;
-  //         }
-
-  //         .ad-info h2 { font-size: 30px; font-weight: bold; margin-bottom: 8px; }
-  //         .upload-date { color: #9ca3af; margin-bottom: 16px; }
-  //         .industry-badge { 
-  //             display: inline-block;
-  //             background: rgba(37, 99, 235, 0.2); 
-  //             color: #60a5fa; 
-  //             border: 1px solid rgba(37, 99, 235, 0.3);
-  //             padding: 8px 16px; 
-  //             border-radius: 12px; 
-  //             font-size: 14px;
-  //             font-weight: bold;
-  //             margin-bottom: 24px;
-  //         }
-
-  //         .score-section { 
-  //             background: #121212; 
-  //             border: 1px solid #121212;
-  //             border-radius: 16px; 
-  //             padding: 24px; 
-  //         }
-  //         .score-header { display: flex; justify-content: between; align-items: center; margin-bottom: 16px; }
-  //         .score-title { font-size: 24px; font-weight: 600; }
-  //         .score-value { font-size: 36px; font-weight: bold; color: #4ade80; }
-
-  //         .platform-title { font-size: 18px; font-weight: 600; color: #d1d5db; margin-bottom: 12px; }
-  //         .platforms { display: flex; flex-wrap: wrap; gap: 12px; }
-  //         .platform-badge { 
-  //             display: flex;
-  //             align-items: center;
-  //             gap: 8px;
-  //             padding: 8px 12px; 
-  //             border-radius: 12px; 
-  //             font-size: 14px;
-  //             font-weight: bold;
-  //         }
-  //         .platform-suitable { background: rgba(22, 163, 74, 0.2); color: #4ade80; border: 1px solid rgba(22, 163, 74, 0.3); }
-  //         .platform-warning { background: rgba(217, 119, 6, 0.2); color: #fbbf24; border: 1px solid rgba(217, 119, 6, 0.3); }
-  //         .platform-unsuitable { background: rgba(220, 38, 38, 0.2); color: #f87171; border: 1px solid rgba(220, 38, 38, 0.3); }
-
-  //         /* Issues and Suggestions Grid */
-  //         .issues-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-  //         .issues-card, .suggestions-card { 
-  //             background: #000000; 
-  //             border: 1px solid #121212;
-  //             border-radius: 16px; 
-  //             padding: 24px; 
-  //         }
-  //         .section-header { 
-  //             display: flex; 
-  //             align-items: center; 
-  //             font-size: 20px; 
-  //             font-weight: 600; 
-  //             margin-bottom: 16px; 
-  //         }
-  //         .issues-header { color: #f87171; }
-  //         .suggestions-header { color: #60a5fa; }
-  //         .icon { margin-right: 12px; }
-  //         .issue-list, .suggestion-list { list-style: none; }
-  //         .issue-item, .suggestion-item { 
-  //             display: flex; 
-  //             align-items: flex-start; 
-  //             margin-bottom: 12px; 
-  //             color: #d1d5db;
-  //         }
-  //         .bullet { margin-right: 12px; font-weight: bold; }
-  //         .issue-bullet { color: #f87171; }
-  //         .suggestion-bullet { color: #60a5fa; }
-
-  //         /* Performance Insights */
-  //         .insights-section { margin-bottom: 32px; }
-  //         .insights-title { 
-  //             font-size: 24px; 
-  //             font-weight: bold; 
-  //             margin-bottom: 24px;
-  //             display: flex;
-  //             align-items: center;
-  //             color: #60a5fa;
-  //         }
-  //         .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-
-  //         .engagement-section, .audience-section { }
-  //         .metric-header { 
-  //             display: flex; 
-  //             justify-content: between; 
-  //             align-items: center; 
-  //             margin-bottom: 16px; 
-  //         }
-  //         .metric-label { font-size: 18px; font-weight: 600; }
-  //         .metric-big-value { font-size: 30px; font-weight: bold; color: #60a5fa; }
-
-  //         .progress-bar { 
-  //             width: 100%; 
-  //             height: 12px; 
-  //             background: #1f2937; 
-  //             border-radius: 6px; 
-  //             margin-bottom: 24px;
-  //             overflow: hidden;
-  //         }
-  //         .progress-fill { 
-  //             height: 100%; 
-  //             background: linear-gradient(90deg, #60a5fa, #34d399); 
-  //             border-radius: 6px;
-  //         }
-
-  //         .key-drivers { margin-bottom: 24px; }
-  //         .driver-title { font-size: 18px; font-weight: 600; color: #d1d5db; margin-bottom: 12px; }
-  //         .driver-item { 
-  //             display: flex; 
-  //             justify-content: between; 
-  //             align-items: center; 
-  //             margin-bottom: 12px; 
-  //         }
-  //         .driver-name { color: #d1d5db; }
-  //         .driver-value { font-weight: 600; }
-  //         .driver-progress { 
-  //             width: 100%; 
-  //             height: 8px; 
-  //             background: #1f2937; 
-  //             border-radius: 4px; 
-  //             margin-top: 4px;
-  //         }
-  //         .driver-progress-fill { 
-  //             height: 100%; 
-  //             background: #60a5fa; 
-  //             border-radius: 4px;
-  //         }
-
-  //         .traffic-prediction { 
-  //             background: #121212; 
-  //             border: 1px solid #121212;
-  //             border-radius: 16px; 
-  //             padding: 24px; 
-  //         }
-  //         .prediction-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #d1d5db; }
-  //         .prediction-item { 
-  //             display: flex; 
-  //             justify-content: between; 
-  //             align-items: center; 
-  //             margin-bottom: 16px; 
-  //         }
-  //         .prediction-label { color: #9ca3af; }
-  //         .prediction-value { font-weight: bold; color: #4ade80; }
-
-  //         .audience-info { 
-  //             background: #121212; 
-  //             border: 1px solid #121212;
-  //             border-radius: 16px; 
-  //             padding: 24px; 
-  //             margin-bottom: 24px;
-  //         }
-  //         .audience-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #d1d5db; }
-  //         .audience-item { 
-  //             display: flex; 
-  //             justify-content: between; 
-  //             margin-bottom: 8px; 
-  //         }
-  //         .audience-label { color: #9ca3af; }
-  //         .audience-value { color: #ffffff; }
-
-  //         .warnings-section { margin-top: 24px; }
-  //         .warning-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #d1d5db; }
-  //         .warning-item { 
-  //             display: flex; 
-  //             align-items: flex-start; 
-  //             padding: 12px; 
-  //             background: rgba(217, 119, 6, 0.1); 
-  //             border: 1px solid rgba(217, 119, 6, 0.3); 
-  //             border-radius: 8px; 
-  //             margin-bottom: 12px;
-  //         }
-  //         .warning-icon { color: #fbbf24; margin-right: 12px; margin-top: 2px; }
-  //         .warning-text { color: #fde68a; font-size: 14px; }
-
-  //         /* Ad Copy Section */
-  //         .copy-section-title { 
-  //             font-size: 24px; 
-  //             font-weight: bold; 
-  //             margin-bottom: 24px;
-  //             display: flex;
-  //             align-items: center;
-  //         }
-  //         .copy-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-  //         .copy-content { }
-  //         .copy-generated-title { font-size: 18px; font-weight: 600; color: #d1d5db; margin-bottom: 16px; }
-  //         .ad-copy-item { 
-  //             background: #121212; 
-  //             border: 1px solid #121212;
-  //             border-radius: 16px; 
-  //             padding: 24px; 
-  //             margin-bottom: 16px;
-  //         }
-  //         .copy-header { 
-  //             display: flex; 
-  //             justify-content: between; 
-  //             align-items: flex-start; 
-  //             margin-bottom: 8px; 
-  //         }
-  //         .copy-meta { font-size: 14px; color: #9ca3af; }
-  //         .copy-text { color: #ffffff; font-weight: 500; }
-
-  //         @page { margin: 0.5in; }
-  //         @media print {
-  //             body { -webkit-print-color-adjust: exact !important; }
-  //             .card { break-inside: avoid; }
-  //         }
-  //     </style>
-  // </head>
-  // <body>
-  //     <div class="container">
-  //         <!-- Header -->
-  //         <div class="header">
-  //             <h1 class="main-title">Analysis Results</h1>
-  //             <p class="subtitle">AI-powered insights for your ad creative</p>
-  //         </div>
-
-  //         <!-- Ad Overview Card -->
-  //         <div class="card">
-  //             <div class="ad-overview">
-  //                 <!-- Ad Preview -->
-  //                 <div class="ad-image">
-  //                     <img src="${apiData.image}" alt="${apiData.title}" />
-  //                 </div>
-
-  //                 <!-- Basic Info and Score -->
-  //                 <div class="ad-info">
-  //                     <h2>${apiData.title}</h2>
-  //                     <p class="upload-date">Uploaded on: ${formatDate(apiData.uploaded_on)}</p>
-  //                     <div class="industry-badge">Industry: ${apiData.industry}</div>
-
-  //                     <!-- Score Section -->
-  //                     <div class="score-section">
-  //                         <div class="score-header">
-  //                             <h3 class="score-title">Performance Score</h3>
-  //                             <div class="score-value">${apiData.score_out_of_100}/100</div>
-  //                         </div>
-
-  //                         <!-- Platform Suitability -->
-  //                         <div>
-  //                             <h4 class="platform-title">Platform Suitability</h4>
-  //                             <div class="platforms">
-  //                                 ${platformSuitability.map(platform => `
-  //                                     <div class="platform-badge ${platform.suitable ? 'platform-suitable' : platform.warning ? 'platform-warning' : 'platform-unsuitable'}">
-  //                                         <span>${platform.suitable ? '✓' : platform.warning ? '⚠' : '✗'}</span>
-  //                                         ${platform.platform}
-  //                                     </div>
-  //                                 `).join('')}
-  //                             </div>
-  //                         </div>
-  //                     </div>
-  //                 </div>
-  //             </div>
-  //         </div>
-
-  //         <!-- Issues and Suggestions Grid -->
-  //         <div class="issues-grid">
-  //             <!-- Issues Section -->
-  //             <div class="issues-card">
-  //                 <h3 class="section-header issues-header">
-  //                     <span class="icon">🔍</span>
-  //                     Issues Detected
-  //                 </h3>
-  //                 <ul class="issue-list">
-  //                     ${apiData.issues.map(issue => `
-  //                         <li class="issue-item">
-  //                             <span class="bullet issue-bullet">•</span>
-  //                             <span>${issue}</span>
-  //                         </li>
-  //                     `).join('')}
-  //                 </ul>
-  //             </div>
-
-  //             <!-- Suggestions Section -->
-  //             <div class="suggestions-card">
-  //                 <h3 class="section-header suggestions-header">
-  //                     <span class="icon">✨</span>
-  //                     Suggestions for Improvement
-  //                 </h3>
-  //                 <ul class="suggestion-list">
-  //                     ${apiData.suggestions.map(suggestion => `
-  //                         <li class="suggestion-item">
-  //                             <span class="bullet suggestion-bullet">•</span>
-  //                             <span>${suggestion}</span>
-  //                         </li>
-  //                     `).join('')}
-  //                 </ul>
-  //             </div>
-  //         </div>
-
-  //         <!-- Performance Insights -->
-  //         <div class="card">
-  //             <h3 class="insights-title">
-  //                 <span class="icon">✨</span>
-  //                 Ad Performance Insights
-  //             </h3>
-
-  //             <div class="insights-grid">
-  //                 <!-- Engagement Score -->
-  //                 <div class="engagement-section">
-  //                     <div class="metric-header">
-  //                         <span class="metric-label">Overall Score</span>
-  //                         <span class="metric-big-value">${apiData.score_out_of_100}/100</span>
-  //                     </div>
-  //                     <div class="progress-bar">
-  //                         <div class="progress-fill" style="width: ${apiData.score_out_of_100}%"></div>
-  //                     </div>
-
-  //                     <div class="key-drivers">
-  //                         <h4 class="driver-title">Key Drivers</h4>
-  //                         ${[
-  //                             { label: "Visual Clarity", value: parseInt(apiData.visual_clarity) },
-  //                             { label: "Emotional Appeal", value: parseInt(apiData.emotional_appeal) },
-  //                             { label: "Text-to-Visual Balance", value: parseInt(apiData.text_visual_balance) },
-  //                             { label: "CTA Visibility", value: parseInt(apiData.cta_visibility) }
-  //                         ].map(item => `
-  //                             <div class="driver-item">
-  //                                 <div>
-  //                                     <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-  //                                         <span class="driver-name">${item.label}</span>
-  //                                         <span class="driver-value">${item.value}/100</span>
-  //                                     </div>
-  //                                     <div class="driver-progress">
-  //                                         <div class="driver-progress-fill" style="width: ${item.value}%"></div>
-  //                                     </div>
-  //                                 </div>
-  //                             </div>
-  //                         `).join('')}
-  //                     </div>
-
-  //                     <div class="traffic-prediction">
-  //                         <h4 class="prediction-title">Traffic Prediction</h4>
-  //                         <div class="prediction-item">
-  //                             <span class="prediction-label">Scroll Stop Power</span>
-  //                             <span class="prediction-value">${apiData.scroll_stoppower}</span>
-  //                         </div>
-  //                         <div class="prediction-item">
-  //                             <span class="prediction-label">Estimated CTR</span>
-  //                             <span class="prediction-value">${apiData.estimated_ctr}</span>
-  //                         </div>
-  //                         <div class="prediction-item">
-  //                             <span class="prediction-label">Conversion Probability</span>
-  //                             <span class="prediction-value">${apiData.conversion_probability}</span>
-  //                         </div>
-  //                     </div>
-  //                 </div>
-
-  //                 <!-- Audience Analysis -->
-  //                 <div class="audience-section">
-  //                     <div class="metric-header">
-  //                         <span class="metric-label">Match Score</span>
-  //                         <span class="metric-big-value">${apiData.match_score}%</span>
-  //                     </div>
-  //                     <div class="progress-bar">
-  //                         <div class="progress-fill" style="width: ${parseInt(apiData.match_score)}%"></div>
-  //                     </div>
-
-  //                     <div class="audience-info">
-  //                         <h4 class="audience-title">Target Audience</h4>
-  //                         <div class="audience-item">
-  //                             <span class="audience-label">Audience:</span>
-  //                             <span class="audience-value">${apiData.top_audience}</span>
-  //                         </div>
-  //                         <div class="audience-item">
-  //                             <span class="audience-label">Industry:</span>
-  //                             <span class="audience-value">${apiData.industry_audience}</span>
-  //                         </div>
-  //                     </div>
-
-  //                     ${apiData.mismatch_warnings.length > 0 ? `
-  //                     <div class="warnings-section">
-  //                         <h4 class="warning-title">Mismatch Warnings</h4>
-  //                         ${apiData.mismatch_warnings.map(warning => `
-  //                             <div class="warning-item">
-  //                                 <span class="warning-icon">⚠</span>
-  //                                 <span class="warning-text">${warning}</span>
-  //                             </div>
-  //                         `).join('')}
-  //                     </div>
-  //                     ` : ''}
-  //                 </div>
-  //             </div>
-  //         </div>
-
-  //         <!-- Ad Copy Section -->
-  //         <div class="card">
-  //             <h3 class="copy-section-title">
-  //                 <span class="icon">✏️</span>
-  //                 AI-Written Ad Copy Generator
-  //             </h3>
-
-  //             <div class="copy-grid">
-  //                 <div class="copy-content">
-  //                     <h4 class="copy-generated-title">Generated Ad Copy</h4>
-  //                     ${filteredAdCopies.map(copy => `
-  //                         <div class="ad-copy-item">
-  //                             <div class="copy-header">
-  //                                 <span class="copy-meta">${copy.platform} | ${copy.tone}</span>
-  //                                 <span style="color: #4ade80;">✨</span>
-  //                             </div>
-  //                             <p class="copy-text">${copy.copy_text}</p>
-  //                         </div>
-  //                     `).join('')}
-  //                 </div>
-
-  //                 <div style="margin-top: 40px; background: linear-gradient(135deg, #111, #1a1a1a); border: 1px solid #222; border-radius: 16px; padding: 24px;">
-  //                     <div style="color: #60a5fa; font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center;">
-  //                         <span style="margin-right: 8px;">🔄</span>
-  //                         Ad Comparison
-  //                     </div>
-  //                     <p style="font-size: 14px; color: #9ca3af; line-height: 1.5;">
-  //                         Compare ads side-by-side to test different versions of your ad copy, evaluate tone and platform variations, and discover what resonates most with your audience.
-  //                     </p>
-  //                 </div>
-  //             </div>
-  //         </div>
-  //     </div>
-
-  //     <script>
-  //         // Auto-print when page loads
-  //         window.onload = function() {
-  //             setTimeout(function() {
-  //                 window.print();
-  //                 // Close window after printing (optional)
-  //                 setTimeout(function() {
-  //                     window.close();
-  //                 }, 1000);
-  //             }, 500);
-  //         }
-  //     </script>
-  // </body>
-  // </html>
-  //   `
-  // }
-
-  // const handleDownloadClick = () => {
-  //   if (!isProUser) {
-  //     router.push("/pro")
-  //     return
-  //   }
-
-  //   try {
-  //     // Generate the properly formatted HTML report
-  //     const reportHTML = generateReportHTML()
-
-  //     // Open in new window
-  //     const printWindow = window.open('', '_blank', 'width=1200,height=800')
-
-  //     if (!printWindow) {
-  //       alert('Please allow popups to generate the PDF report.')
-  //       return
-  //     }
-
-  //     printWindow.document.write(reportHTML)
-  //     printWindow.document.close()
-
-  //     // The print dialog will open automatically via the onload script
-
-  //   } catch (error) {
-  //     console.error('PDF generation failed:', error)
-  //     alert('Failed to generate PDF report. Please try again.')
-  //   }
-  // }
+  // PDF generation handler
 
   const ProOverlay = ({ children, message }: { children: React.ReactNode; message: string }) => (
     <div className="relative">
       <div className={isProUser ? "" : "blur-sm pointer-events-none"}>{children}</div>
       {!isProUser && (
-        <div className="absolute inset-0 bg-[#121212]/50 flex items-center justify-center rounded-2xl">
+        <div className="absolute inset-0 bg-[#121212]/70 flex flex-col items-center justify-center rounded-2xl">
           <div className="text-center p-4">
             <Lock className="w-8 h-8 mx-auto mb-2 text-blue-400" />
-            <p className="text-white font-semibold">{message}</p>
+            <p className="text-white font-semibold mb-4">{message}</p>
+            <Button
+              onClick={() => router.push("/pro")}
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+            >
+              Upgrade
+            </Button>
           </div>
         </div>
       )}
     </div>
   )
 
+  const handleGeneratePDF = async () => {
+    if (!apiData) return
+
+    try {
+      // Import html2pdf dynamically to avoid SSR issues
+      const html2pdf = (await import('html2pdf.js')).default
+
+      // Get the results page element
+      const element = document.getElementById('results-page')
+
+      if (!element) {
+        throw new Error('Results page element not found')
+      }
+
+      // Configure PDF options to preserve your dark theme
+      const opt = {
+        margin: 0.3,
+        filename: `ad-analysis-${apiData.title || 'report'}-${new Date().toISOString().split('T')[0]}.pdf`,
+        image: {
+          type: 'jpeg',
+          quality: 0.95
+        },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#000000', // Your black background
+          scrollX: 0,
+          scrollY: 0,
+          width: element.scrollWidth,
+          height: element.scrollHeight,
+          ignoreElements: (element) => {
+            // Skip elements that shouldn't be in PDF
+            return element.classList?.contains('no-print') || false
+          }
+        },
+        jsPDF: {
+          unit: 'in',
+          format: 'a4',
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: {
+          mode: ['avoid-all', 'css', 'legacy'],
+          before: '.page-break-before',
+          after: '.page-break-after'
+        }
+      }
+
+      // Show loading state with your theme colors
+
+
+      // Temporarily ensure all colors are preserved during capture
+      const originalBodyStyle = document.body.style.cssText
+      document.body.style.cssText += '; background: #000000 !important;'
+
+      // Generate PDF
+      await html2pdf().set(opt).from(element).save()
+
+      // Restore original styles
+      document.body.style.cssText = originalBodyStyle
+
+
+    } catch (error) {
+      console.error('PDF generation error:', error)
+
+      // Show error with your theme colors
+      const errorToast = document.createElement('div')
+      errorToast.innerHTML = `
+      <div style="position: fixed; top: 20px; right: 20px; background: #1a1a1a; color: #ff6b6b; padding: 16px 24px; border-radius: 12px; z-index: 9999; border: 1px solid #ff6b6b;">
+        Failed to generate PDF. Please try again.
+      </div>
+    `
+      document.body.appendChild(errorToast)
+      setTimeout(() => document.body.removeChild(errorToast), 3000)
+    }
+  }
+
+  // Alternative implementation using jsPDF + html2canvas for more control
+  const handleGeneratePDFAlternative = async () => {
+    if (!apiData) return
+
+    try {
+      // Import libraries dynamically
+      const html2canvas = (await import('html2canvas')).default
+      const jsPDF = (await import('jspdf')).jsPDF
+
+      const element = document.getElementById('results-page')
+
+      if (!element) {
+        throw new Error('Results page element not found')
+      }
+
+      // Show loading state
+      const originalOverflow = document.body.style.overflow
+      document.body.style.overflow = 'visible'
+
+      // Capture the element as canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#000000',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        scrollX: 0,
+        scrollY: 0
+      })
+
+      // Restore original overflow
+      document.body.style.overflow = originalOverflow
+
+      // Calculate PDF dimensions
+      const imgWidth = 210 // A4 width in mm
+      const pageHeight = 295 // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      let heightLeft = imgHeight
+
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      let position = 0
+
+      // Add first page
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+
+      // Add additional pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+
+      // Save the PDF
+      const filename = `ad-analysis-${apiData.title || 'report'}-${new Date().toISOString().split('T')[0]}.pdf`
+      pdf.save(filename)
+
+    } catch (error) {
+      console.error('PDF generation error:', error)
+      alert('Failed to generate PDF report. Please try again.')
+    }
+  }
+
+  // CSS additions to improve PDF output (add to your global CSS or component styles)
+  const pdfOptimizedStyles = `
+  @media print {
+    #results-page {
+      background: white !important;
+      color: black !important;
+    }
+    
+    #results-page * {
+      background: white !important;
+      color: black !important;
+      box-shadow: none !important;
+    }
+    
+    .page-break-before {
+      page-break-before: always;
+    }
+    
+    .page-break-after {
+      page-break-after: always;
+    }
+    
+    .no-print {
+      display: none !important;
+    }
+  }
+`
 
   if (error) {
     return (
@@ -696,7 +360,26 @@ export default function ResultsPage() {
         <div className="text-center">
           <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
           <p className="text-xl mb-4">Failed to load analysis results</p>
-          <p className="text-gray-400 mb-6">{error}</p>
+          <p className="text-gray-300 mb-6">{error}</p>
+          <Button onClick={() => router.push('/upload')} className="bg-blue-600 hover:bg-blue-700">
+            Go Back to Upload
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return <ResultsPageLoadingSkeleton />
+  }
+
+  if (!apiData) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+          <p className="text-xl mb-4">No data available</p>
+          <p className="text-gray-300 mb-6">Unable to load analysis results</p>
           <Button onClick={() => router.push('/upload')} className="bg-blue-600 hover:bg-blue-700">
             Go Back to Upload
           </Button>
@@ -707,375 +390,1419 @@ export default function ResultsPage() {
 
   const platformSuitability = getPlatformSuitability()
   const filteredAdCopies = getFilteredAdCopies()
+  const images = safeArray(apiData?.images)
+  const issues = safeArray(apiData?.issues)
+  const suggestions = safeArray(apiData?.suggestions)
+  const feedbackDesigner = safeArray(apiData?.feedback_designer)
+  const feedbackDigitalMark = safeArray(apiData?.feedback_digitalmark)
+  const mismatchWarnings = safeArray(apiData?.mismatch_warnings).filter(warning => warning && warning.trim() !== '')
 
   return (
-    <UserLayout userDetails={userDetails}>
-      {loading ? <ResultsPageLoadingSkeleton /> : !apiData ? (
-        <div className="min-h-screen bg-black text-white flex items-center justify-center">
-          <div className="text-center">
-            <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-            <p className="text-xl mb-4">No data available</p>
-            <p className="text-gray-400 mb-6">Unable to load analysis results</p>
-            <Button onClick={() => router.push('/upload')} className="bg-blue-600 hover:bg-blue-700">
-              Go Back to Upload
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="min-h-screen text-white">
-          <main className="container mx-auto px-6 py-12">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-2">Analysis Results</h1>
-              <p className="text-gray-400">AI-powered insights for your ad creative</p>
+    <TooltipProvider>
+      <div className="min-h-screen text-white max-w-7xl mx-auto" id="results-page">
+        <main className="container mx-auto px-6 py-12">
+          <div className="flex items-center justify-between mb-8">
+            {/* Left: Back + Title + Subtitle */}
+            <div className="flex items-center gap-4">
+              {/* Back Button */}
+              <button
+                onClick={() => router.back()}
+                className="flex items-center bg-[#121212] text-gray-300 hover:text-white rounded-full p-2 transition-all"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+
+
+              {/* Title + Subtitle */}
+              <div className="text-left">
+                <h1 className="text-4xl font-bold mb-1">Analysis Results</h1>
+                <p className="text-gray-300">AI-powered insights for your ad creative</p>
+              </div>
             </div>
 
-            <div className="w-full mx-auto space-y-8">
-              {/* Ad Overview Card */}
-              <div className="bg-black rounded-3xl shadow-lg shadow-white/5 border-none">
-                <div className="p-8">
-                  <div className="grid lg:grid-cols-3 gap-8 mb-8">
-                    {/* Ad Preview Section */}
-                    <div className="lg:col-span-1">
-                      <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#121212] border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
-                        <Image
-                          src={apiData.image}
-                          alt={apiData.title}
-                          fill
-                          className="object-contain"
-                        />
+            {/* Right: Logo */}
+            <div>
+              <Image src={logo} alt="Logo" className="h-14 w-auto" />
+            </div>
+          </div>
+
+
+          <div className="w-full mx-auto space-y-8">
+            {/* Ad Overview Card */}
+            <div className="bg-black rounded-3xl shadow-lg shadow-white/10 border-none">
+              <div className="p-8 space-y-8">
+                {/* Row 1: Ad Preview + Basic Info */}
+                <div className="grid lg:grid-cols-3 gap-8">
+                  {/* Ad Preview Section */}
+                  <div className="lg:col-span-1">
+                    <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#121212] border  border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+                      {apiData.ad_type === "video" && apiData.video ? (
+                        <video
+                          src={apiData.video}
+                          controls
+                          className="w-full h-full object-contain"
+                          poster={images.length > 0 ? images[0] : undefined}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : (
+                        images.length > 0 && (
+                          <>
+                            <Image
+                              src={images[currentImageIndex]}
+                              alt={apiData.title || "Ad Image"}
+                              fill
+                              className="object-contain"
+                            />
+
+                            {/* Navigation */}
+                            {images.length > 1 && (
+                              <>
+                                <button
+                                  onClick={prevImage}
+                                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all"
+                                >
+                                  <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={nextImage}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all"
+                                >
+                                  <ChevronRight className="w-4 h-4" />
+                                </button>
+
+                                {/* Indicators */}
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                                  {images.map((_, index) => (
+                                    <button
+                                      key={index}
+                                      onClick={() => setCurrentImageIndex(index)}
+                                      className={cn(
+                                        "w-2 h-2 rounded-full transition-all",
+                                        index === currentImageIndex
+                                          ? "bg-white"
+                                          : "bg-white/50 hover:bg-white/75"
+                                      )}
+                                    />
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </>
+                        )
+                      )}
+                    </div>
+
+                    {/* Counter / Label */}
+                    {apiData.ad_type === "video" && apiData.video ? (
+                      <div className="text-center mt-2 text-sm text-gray-400">Video Ad</div>
+                    ) : (
+                      images.length > 1 && (
+                        <div className="text-center mt-2 text-sm text-gray-400">
+                          {currentImageIndex + 1} of {images.length}
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  {/* Basic Info + Scores */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Title + Meta */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h2 className="text-3xl font-bold mb-2">
+                          {apiData.title || "Untitled Ad"}
+                        </h2>
+                        <div className="text-gray-300 flex items-center gap-2">
+                          <Upload className="w-5 h-5" />
+                          {apiData.uploaded_on ? formatDate(apiData.uploaded_on) : "Unknown"}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <Badge className="bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600/30">
+                          Industry: {apiData.industry || "N/A"}
+                        </Badge>
+                        <Badge className="bg-purple-600/20 text-purple-400 border border-purple-600/30">
+                          {apiData.ad_type || "Unknown"}
+                        </Badge>
+                        {platformSuitability.map((platform) => (
+                          <Badge
+                            key={platform.platform}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300",
+                              platform.suitable
+                                ? "bg-green-600/20 text-green-400 border border-green-600/30"
+                                : platform.warning
+                                  ? "bg-amber-600/20 text-amber-400 border border-amber-600/30"
+                                  : "bg-red-600/20 text-red-400 border border-red-600/30"
+                            )}
+                          >
+                            {platform.suitable ? (
+                              <CheckCircle className="w-4 h-4" />
+                            ) : platform.warning ? (
+                              <AlertTriangle className="w-4 h-4" />
+                            ) : (
+                              <XCircle className="w-4 h-4" />
+                            )}
+                            {platform.platform}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Basic Info and Score Section */}
-                    <div className="lg:col-span-2 space-y-6">
-                      <div>
-                        <h2 className="text-3xl font-bold mb-2">{apiData.title}</h2>
-                        <p className="text-gray-400 mb-4">Uploaded on: {formatDate(apiData.uploaded_on)}</p>
-                        <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 hover:bg-blue-600/30">
-                          Industry: {apiData.industry}
-                        </Badge>
+                    {/* Score Section */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Performance Score */}
+                      <div
+                        className="p-4 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] transition-all duration-300 text-center shadow-lg hover:scale-[1.01] transition-all duration-300"
+
+                        style={{
+                          transition: "all 0.3s",
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                        }}>
+
+                        <h3 className="text-base font-medium text-gray-300 mb-2">Performance Score</h3>
+                        <div
+                          className={`text-3xl font-bold ${apiData.score_out_of_100 < 50
+                            ? "text-red-400"
+                            : apiData.score_out_of_100 < 75
+                              ? "text-yellow-400"
+                              : "text-[#22C55E]"
+                            }`}
+                        >
+                          {apiData.score_out_of_100}/100
+                        </div>
+
                       </div>
 
-                      {/* Score Section */}
-                      <div className="bg-[#121212] rounded-2xl p-6 border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-2xl font-semibold">Performance Score</h3>
-                          <div className="text-4xl font-bold text-green-400">{apiData.score_out_of_100}/100</div>
+                      {/* Confidence Score */}
+                      <div
+                        className="p-4 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] transition-all duration-300 text-center shadow-lg hover:scale-[1.01] transition-all duration-300"
+                        style={{
+                          transition: "all 0.3s",
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                        }}>
+                        <h3 className="text-base font-medium text-gray-300 mb-2">Confidence Score</h3>
+                        <div
+                          className={`text-3xl font-bold ${apiData.confidence_score < 50
+                            ? "text-red-400"
+                            : apiData.confidence_score < 75
+                              ? "text-yellow-400"
+                              : "text-[#22C55E]"
+                            }`}
+                        >
+                          {apiData.confidence_score || 0}/100
                         </div>
 
-                        {/* Platform Suitability */}
-                        <div>
-                          <h4 className="text-lg font-semibold mb-3 text-gray-300">Platform Suitability</h4>
-                          <div className="flex flex-wrap gap-3">
-                            {platformSuitability.map((platform) => (
-                              <Badge
-                                key={platform.platform}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-xl hover:shadow-lg hover:scale-[1.01] transition-all duration-300 ${platform.suitable
-                                  ? "bg-green-600/20 text-green-400 border-green-600/30"
-                                  : platform.warning
-                                    ? "bg-amber-600/20 text-amber-400 border-amber-600/30"
-                                    : "bg-red-600/20 text-red-400 border-red-600/30"
-                                  }`}
-                              >
-                                {platform.suitable ? (
-                                  <CheckCircle className="w-4 h-4" />
-                                ) : platform.warning ? (
-                                  <AlertTriangle className="w-4 h-4" />
-                                ) : (
-                                  <XCircle className="w-4 h-4" />
-                                )}
-                                {platform.platform}
-                              </Badge>
-                            ))}
-                          </div>
+                      </div>
+
+                      {/* Match Score */}
+                      <div
+                        className="p-4 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] transition-all duration-300 text-center shadow-lg hover:scale-[1.01] transition-all duration-300"
+                        style={{
+                          transition: "all 0.3s",
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                        }}>
+                        <h3 className="text-base font-medium text-gray-300 mb-2">Match Score</h3>
+                        <div
+                          className={`text-3xl font-bold ${apiData.match_score < 50
+                            ? "text-red-400"
+                            : apiData.match_score < 75
+                              ? "text-yellow-400"
+                              : "text-[#22C55E]"
+                            }`}
+                        >
+                          {apiData.match_score || 0}/100
                         </div>
+
+                      </div>
+
+                      {/* Issues Detected */}
+                      <div
+                        className="p-4 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] transition-all duration-300 text-center shadow-lg hover:scale-[1.01] transition-all duration-300"
+                        style={{
+                          transition: "all 0.3s",
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                        }}>
+                        <h3 className="text-base font-medium text-gray-300 mb-2">Issues Detected</h3>
+                        <div
+                          className={`text-3xl font-bold ${issues.length < 8 ? "text-[#22C55E]" : "text-red-400"
+                            }`}
+                        >
+                          {String(issues.length).padStart(2, "0")}
+                        </div>
+
+                      </div>
+                    </div>
+
+
+                    {/* Mismatch Warnings */}
+                    {mismatchWarnings.length > 0 && (
+                      <div className="mt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-gray-300">Mismatch Warnings</h4>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="w-50 bg-[#2b2b2b]">
+                              <p>
+                                Potential inconsistencies between your ad elements that might affect performance or brand alignment.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <div className="space-y-3">
+                          {mismatchWarnings.map((warning, index) => (
+                            <div
+                              key={index}
+                              className="flex items-start p-3 bg-amber-600/10 border border-amber-600/30 rounded-lg hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                            >
+                              <AlertTriangle className="w-5 h-5 text-amber-400 mr-3 mt-0.5 flex-shrink-0" />
+                              <span className="text-amber-200 text-sm">{warning}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Engagement Insights */}
+            <ProOverlay message="🔐 Upgrade to Pro to see detailed engagement insights.">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Traffic Prediction */}
+                <div className="bg-black rounded-2xl p-4 border  border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                  style={{
+                    transition: "all 0.3s",
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                  }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-primary">Traffic Prediction</h4>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>Predicted user engagement metrics including scroll-stopping ability, click-through rates, and conversion likelihood.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Scroll Stop Power</span>
+                      <span className="font-bold text-green-400">{apiData.scroll_stoppower || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Estimated CTR</span>
+                      <span className="font-bold text-green-400">{apiData.estimated_ctr || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Conversion Probability</span>
+                      <span className="font-bold text-green-400">{apiData.conversion_probability || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Predicted Reach</span>
+                      <span className="font-bold text-blue-400">{apiData.predicted_reach?.toLocaleString() || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Budget & ROI */}
+                <div className="bg-black rounded-2xl p-4 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                  style={{
+                    transition: "all 0.3s",
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                  }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-primary">Budget & ROI Insights</h4>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>Financial optimization insights including recommended budget levels, expected costs, and return on investment projections.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Budget Level</span>
+                      <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30">
+                        {apiData.budget_level || 'N/A'}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Expected CPM</span>
+                      <span className="font-bold text-yellow-400">{apiData.expected_cpm || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">ROI Range</span>
+                      <span className="font-bold text-green-400">
+                        {apiData.roi_min || 0}x - {apiData.roi_max || 0}x
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Spend Efficiency</span>
+                      <span className="font-bold text-purple-400">{apiData.spend_efficiency || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Audience */}
+                <div className="bg-black rounded-2xl p-4 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                  style={{
+                    transition: "all 0.3s",
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                  }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-primary">Target Audience & Colors</h4>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b] space-y-2">
+                        <p>AI-identified primary audience segments and demographic targeting recommendations for maximum ad effectiveness.</p>
+                        <p>The primary colors detected in your ad that influence brand perception and emotional response.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <div className="space-y-5">
+                    {/* Primary Audience */}
+                    <div>
+                      <span className="block text-gray-300 text-sm mb-1">Primary Audience:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {safeArray(apiData.top_audience).map((audience, idx) => (
+                          <Badge
+                            key={idx}
+                            className="bg-green-600/20 text-green-400 border-green-600/30"
+                          >
+                            {audience}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Industry Focus */}
+                    <div>
+                      <span className="block text-gray-300 text-sm mb-1">Industry Focus:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {safeArray(apiData.industry_audience).map((industry, idx) => (
+                          <Badge
+                            key={idx}
+                            className="bg-blue-600/20 text-blue-400 border-blue-600/30"
+                          >
+                            {industry}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dominant Colors */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-300 mb-2">Dominant Colors</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {safeArray(apiData.dominant_colors).map((color, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-[#2b2b2b] bg-[#1a1a1a]"
+                          >
+                            <span
+                              className="w-3 h-3 rounded-full border border-gray-600"
+                              style={{ backgroundColor: String(color).trim() }}
+                            />
+                            <span className="text-xs text-gray-200">{String(color).trim()}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Issues and Suggestions Grid */}
-              <div className="grid lg:grid-cols-2 gap-8">
-                {/* Issues Section */}
-                <div className="bg-black border border-[#121212] rounded-2xl shadow-lg shadow-white/5 hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
-                  <div className="p-6">
-                    <h3 className="flex items-center text-xl font-semibold text-red-400 mb-4">
+
+              </div>
+            </ProOverlay>
+
+            {/* Issues and Suggestions */}
+            <div className="grid lg:grid-cols-2 gap-4">
+              {/* Issues Section */}
+              <div
+                className="bg-black border  border-[#2b2b2b] rounded-2xl  hover:scale-[1.01] transition-all duration-300"
+                style={{
+                  transition: "all 0.3s",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="flex items-center text-xl font-semibold text-red-400">
                       <Search className="mr-3 h-5 w-5" />
                       Issues Detected
                     </h3>
-                    <ul className="space-y-3">
-                      {apiData.issues.map((issue, index) => (
-                        <li key={index} className="flex items-start text-gray-300">
-                          <span className="mr-3 text-red-400 text-lg">•</span>
-                          <span>{issue}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>AI-identified problems in your ad that could negatively impact performance or user engagement.</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
+                  <ul className="space-y-3">
+                    {issues.map((issue, index) => (
+                      <li key={index} className="flex items-start text-gray-300">
+                        <span className="mr-3 text-red-400 text-lg">•</span>
+                        <span>{issue}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {issues.length === 0 && (
+                    <div className="text-gray-400 italic">No issues detected</div>
+                  )}
                 </div>
+              </div>
 
-                {/* Suggestions Section */}
-                <div className="bg-black border border-[#121212] rounded-2xl shadow-lg shadow-white/5 hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
-                  <div className="p-6">
-                    <h3 className="flex items-center text-xl font-semibold text-blue-400 mb-4">
+
+              {/* Suggestions Section */}
+              <div
+                className="bg-black border  border-[#2b2b2b] rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                style={{
+                  transition: "all 0.3s",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="flex items-center text-xl font-semibold text-blue-400">
                       <Sparkles className="mr-3 h-5 w-5" />
                       Suggestions for Improvement
                     </h3>
-                    <ol className="space-y-3">
-                      {apiData.suggestions.map((suggestion, index) => (
-                        <li key={index} className="flex items-start text-gray-300">
-                          <span className="mr-3 text-blue-400 font-semibold">•</span>
-                          <span>{suggestion}</span>
-                        </li>
-                      ))}
-                    </ol>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>Actionable recommendations to optimize your ad's performance and increase engagement rates.</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
+                  <ol className="space-y-3">
+                    {suggestions.map((suggestion, index) => (
+                      <li key={index} className="flex items-start text-gray-300">
+                        <span className="mr-3 text-blue-400 font-semibold">•</span>
+                        <span>{suggestion}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  {suggestions.length === 0 && (
+                    <div className="text-gray-400 italic">No suggestions available</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Feedback */}
+            <div className="grid lg:grid-cols-2 gap-4">
+              {/* Designer Feedback */}
+              <div
+                className="bg-black border  border-[#2b2b2b] rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                style={{
+                  transition: "all 0.3s",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="flex items-center text-xl font-semibold text-purple-400">
+                      <Palette className="mr-3 h-5 w-5" />
+                      Designer Feedback
+                    </h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>Professional design insights focusing on visual elements, layout, typography, and overall aesthetic appeal.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <ul className="space-y-3">
+                    {feedbackDesigner.map((feedback, index) => (
+                      <li key={index} className="flex items-start text-gray-300">
+                        <span className="mr-3 text-purple-400 text-lg">•</span>
+                        <span>{feedback}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {feedbackDesigner.length === 0 && (
+                    <div className="text-gray-400 italic">No designer feedback available</div>
+                  )}
                 </div>
               </div>
 
-              {/* Combined Engagement + Audience Analysis Section */}
-              <div className="bg-black rounded-3xl shadow-lg shadow-white/5 border border-[#121212]">
-                <div className="p-8">
-                  <h3 className="text-2xl font-bold mb-6 flex items-center">
-                    <Sparkles className="mr-3 h-6 w-6 text-blue-400" />
-                    Ad Performance Insights
-                    {!isProUser && (
-                      <Badge className="ml-3 bg-blue-600/20 text-blue-400 border-blue-600/30">Pro Feature</Badge>
-                    )}
+              {/* Digital Marketing Feedback */}
+              <div
+                className="bg-black border  border-[#2b2b2b] rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                style={{
+                  transition: "all 0.3s",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="flex items-center text-xl font-semibold text-green-400">
+                      <TrendingUp className="mr-3 h-5 w-5" />
+                      Marketing Expert Feedback
+                    </h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>Strategic marketing advice on messaging, audience targeting, conversion optimization, and campaign effectiveness.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <ul className="space-y-3">
+                    {feedbackDigitalMark.map((feedback, index) => (
+                      <li key={index} className="flex items-start text-gray-300">
+                        <span className="mr-3 text-green-400 text-lg">•</span>
+                        <span>{feedback}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {feedbackDigitalMark.length === 0 && (
+                    <div className="text-gray-400 italic">No marketing feedback available</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Engagement & Performance Metrics - NEW SECTION */}
+            <div className="grid lg:grid-cols-2 gap-4">
+              {/* Engagement Metrics */}
+              <div className="bg-black rounded-3xl shadow-lg shadow-white/10 p-6 flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold flex items-center">
+                    <Activity className="mr-3 h-6 w-6 text-primary" />
+                    Engagement Metrics
                   </h3>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-5 h-5 text-gray-400 hover:text-white cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="w-64 bg-[#2b2b2b] text-sm">
+                      <p>
+                        Advanced engagement analytics and technical performance indicators
+                        for your ad campaign.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
 
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Predictive Engagement Score */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-lg font-semibold">Overall Score</span>
-                        <span className="text-3xl font-bold text-blue-400">
-                          {isProUser ? apiData.score_out_of_100 : 65}/100
-                        </span>
+                <div className="space-y-4 flex-1">
+                  {/* Engagement Score Full Row */}
+                  <div
+                    className="bg-[#121212] rounded-xl p-4 border border-[#2b2b2b] transition-all duration-300"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow =
+                        apiData.engagement_score <= 50
+                          ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                          : apiData.engagement_score <= 75
+                            ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                            : "0 0 14px 4px rgba(34,197,94,0.7)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow =
+                        "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <Users
+                          className={`w-5 h-5 mr-3 ${apiData.engagement_score <= 50
+                            ? "text-red-500"
+                            : apiData.engagement_score <= 75
+                              ? "text-yellow-500"
+                              : "text-green-500"
+                            }`}
+                        />
+                        <span className="text-gray-300 font-medium">Engagement Score</span>
                       </div>
-                      <Progress value={isProUser ? apiData.score_out_of_100 : 65} className="h-3 mb-6 bg-gray-800" />
-
-                      <ProOverlay message="🔐 Upgrade to Pro to see detailed engagement insights.">
-                        <div className="space-y-4">
-                          <h4 className="text-lg font-semibold text-gray-300 mb-3">Key Drivers</h4>
-                          <div className="space-y-3">
-                            {[
-                              { label: "Visual Clarity", value: parseInt(apiData.visual_clarity) },
-                              { label: "Emotional Appeal", value: parseInt(apiData.emotional_appeal) },
-                              { label: "Text-to-Visual Balance", value: parseInt(apiData.text_visual_balance) },
-                              { label: "CTA Visibility", value: parseInt(apiData.cta_visibility) }
-                            ].map((item, i) => (
-                              <div key={i}>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-gray-300">{item.label}</span>
-                                  <span className="font-semibold">{item.value}/100</span>
-                                </div>
-                                <Progress value={item.value} className="h-2 bg-gray-800" />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="bg-[#121212] rounded-2xl p-6 border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300 mt-6">
-                          <h4 className="text-lg font-semibold mb-4 text-gray-300">Traffic Prediction</h4>
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-400">Scroll Stop Power</span>
-                              <span className="font-bold text-green-400">{apiData.scroll_stoppower}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-400">Estimated CTR</span>
-                              <span className="font-bold text-green-400">{apiData.estimated_ctr}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-400">Conversion Probability</span>
-                              <span className="font-bold text-green-400">{apiData.conversion_probability}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </ProOverlay>
+                      <span className="font-semibold text-white">
+                        {Math.round(apiData.engagement_score || 0)}/100
+                      </span>
                     </div>
+                    <Progress
+                      value={apiData.engagement_score || 0}
+                      className="h-1 w-full bg-gray-800"
+                      indicatorClassName={
+                        apiData.engagement_score <= 50
+                          ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
+                          : apiData.engagement_score <= 75
+                            ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
+                            : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
+                      }
+                    />
+                  </div>
 
-                    {/* Target Audience Alignment */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-lg font-semibold">Match Score</span>
-                        <span className="text-3xl font-bold text-blue-400">
-                          {isProUser ? apiData.match_score : 68}%
-                        </span>
+                  {/* Other Engagement Metrics */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      {
+                        label: "Viral Potential",
+                        value: apiData.viral_potential_score || 0,
+                        icon: TrendingUp,
+                      },
+                      {
+                        label: "FOMO Score",
+                        value: apiData.fomo_score || 0,
+                        icon: Zap,
+                      },
+                      {
+                        label: "Trust Signal Score",
+                        value: apiData.trust_signal_score || 0,
+                        icon: Shield,
+                      },
+                      {
+                        label: "Urgency Trigger",
+                        value: apiData.urgency_trigger_score || 0,
+                        icon: AlertTriangle,
+                      },
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        className="bg-[#121212] rounded-xl p-4 border border-[#2b2b2b] transition-all duration-300"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow =
+                            item.value <= 50
+                              ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                              : item.value <= 75
+                                ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                                : "0 0 14px 4px rgba(34,197,94,0.7)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow =
+                            "0 0 10px rgba(255,255,255,0.05)";
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <item.icon
+                              className={`w-5 h-5 mr-3 ${item.value <= 50
+                                ? "text-red-500"
+                                : item.value <= 75
+                                  ? "text-yellow-500"
+                                  : "text-green-500"
+                                }`}
+                            />
+                            <span className="text-gray-300 font-medium">
+                              {item.label}
+                            </span>
+                          </div>
+                          <span className="font-semibold text-white">
+                            {Math.round(item.value)}/100
+                          </span>
+                        </div>
+                        <Progress
+                          value={item.value}
+                          className="h-1 w-full bg-gray-800"
+                          indicatorClassName={
+                            item.value <= 50
+                              ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
+                              : item.value <= 75
+                                ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
+                                : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
+                          }
+                        />
                       </div>
-                      <Progress
-                        value={isProUser ? parseInt(apiData.match_score) : 68}
-                        className="h-3 mb-6 bg-gray-800"
-                      />
-
-                      <ProOverlay message="🔐 Unlock detailed audience analysis with Pro Plan">
-                        <div className="bg-[#121212] rounded-2xl p-6 border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
-                          <h4 className="text-lg font-semibold mb-4 text-gray-300">Target Audience</h4>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Audience:</span>
-                              <span className="text-white">{apiData.top_audience}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Industry:</span>
-                              <span className="text-white">{apiData.industry_audience}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-6">
-                          <h4 className="text-lg font-semibold mb-4 text-gray-300">Mismatch Warnings</h4>
-                          <div className="space-y-3">
-                            {apiData.mismatch_warnings.map((warning, index) => (
-                              <div
-                                key={index}
-                                className="flex items-start p-3 bg-amber-600/10 border border-amber-600/30 rounded-lg hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                              >
-                                <AlertTriangle className="w-5 h-5 text-amber-400 mr-3 mt-0.5 flex-shrink-0" />
-                                <span className="text-amber-200 text-sm">{warning}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </ProOverlay>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-black rounded-3xl shadow-lg shadow-white/5 border border-[#121212]">
-                <div className="p-8 space-y-8">
-                  {/* Top: Title and Tone Selector */}
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
+              {/* Technical Metrics */}
+              <div className="bg-black rounded-3xl shadow-lg shadow-white/10 p-6 flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold flex items-center">
+                    <Activity className="mr-3 h-6 w-6 text-primary" />
+                    Technical Analysis
+                  </h3>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-5 h-5 text-gray-400 hover:text-white cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="w-64 bg-[#2b2b2b] text-sm">
+                      <p>
+                        Advanced technical performance indicators and ad creative
+                        structure.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+
+                <div className="space-y-4 flex-1">
+                  {/* Budget Utilization */}
+                  <div
+                    className="bg-[#121212] rounded-xl p-4 border border-[#2b2b2b] transition-all duration-300"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow =
+                        apiData.budget_utilization_score <= 50
+                          ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                          : apiData.budget_utilization_score <= 75
+                            ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                            : "0 0 14px 4px rgba(34,197,94,0.7)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow =
+                        "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <DollarSign
+                          className={`w-5 h-5 mr-3 ${apiData.budget_utilization_score <= 50
+                            ? "text-red-500"
+                            : apiData.budget_utilization_score <= 75
+                              ? "text-yellow-500"
+                              : "text-green-500"
+                            }`}
+                        />
+                        <span className="text-gray-300 font-medium">
+                          Budget Utilization
+                        </span>
+                      </div>
+                      <span className="font-semibold text-white">
+                        {Math.round(apiData.budget_utilization_score || 0)}/100
+                      </span>
+                    </div>
+                    <Progress
+                      value={apiData.budget_utilization_score || 0}
+                      className="h-1 w-full bg-gray-800"
+                      indicatorClassName={
+                        apiData.budget_utilization_score <= 50
+                          ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
+                          : apiData.budget_utilization_score <= 75
+                            ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
+                            : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
+                      }
+                    />
+                  </div>
+
+                  {/* Other Technical Metrics */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      {
+                        label: "Faces Detected",
+                        value: apiData.faces_detected || 0,
+                        icon: Camera,
+                        max: 10,
+                      },
+                      {
+                        label: "Logo Visibility",
+                        value: apiData.logo_visibility_score || 0,
+                        icon: Award,
+                        max: 100,
+                      },
+                      {
+                        label: "Text Percentage",
+                        value: apiData.text_percentage_score || 0,
+                        icon: Type,
+                        max: 100,
+                      },
+                      {
+                        label: "Layout Symmetry",
+                        value: apiData.layout_symmetry_score || 0,
+                        icon: Layout,
+                        max: 100,
+                      },
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        className="bg-[#121212] rounded-xl p-4 border border-[#2b2b2b] transition-all duration-300"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow =
+                            item.max === 100
+                              ? item.value <= 50
+                                ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                                : item.value <= 75
+                                  ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                                  : "0 0 14px 4px rgba(34,197,94,0.7)"
+                              : "0 0 14px 4px #DB4900";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow =
+                            "0 0 10px rgba(255,255,255,0.05)";
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <item.icon
+                              className={`w-5 h-5 mr-3 ${item.max === 100
+                                ? item.value <= 50
+                                  ? "text-red-500"
+                                  : item.value <= 75
+                                    ? "text-yellow-500"
+                                    : "text-green-500"
+                                : "text-primary"
+                                }`}
+                            />
+                            <span className="text-gray-300 font-medium">
+                              {item.label}
+                            </span>
+                          </div>
+                          <span className="font-semibold text-white">
+                            {Math.round(item.value)}
+                            {item.max === 100 ? "/100" : ""}
+                          </span>
+                        </div>
+                        {item.max === 100 && (
+                          <Progress
+                            value={item.value}
+                            className="h-1 w-full bg-gray-800"
+                            indicatorClassName={
+                              item.value <= 50
+                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
+                                : item.value <= 75
+                                  ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
+                                  : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
+                            }
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Wins & Insights - NEW SECTION */}
+            {(apiData.quick_win_tip || apiData.shareability_comment) && (
+              <div className="bg-black rounded-3xl shadow-lg shadow-white/10 border  border-[#2b2b2b]"
+                style={{
+                  transition: "all 0.3s",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
+              >
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold flex items-center">
+                      <Sparkles className="mr-3 h-6 w-6 text-primary" />
+                      Quick Wins & Insights
+                    </h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-5 h-5 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>Actionable insights and quick optimization tips for immediate performance improvements.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <div className="grid lg:grid-cols-2 gap-6">
+                    {apiData.quick_win_tip && (
+                      <div className="bg-gradient-to-br from-green-600/10 to-green-800/10 rounded-xl p-6 border border-green-600/20">
+                        <h4 className="text-lg font-semibold text-green-400 mb-3 flex items-center">
+                          <Zap className="w-5 h-5 mr-2" />
+                          Quick Win Tip
+                        </h4>
+                        <p className="text-gray-300">{apiData.quick_win_tip}</p>
+                      </div>
+                    )}
+
+                    {apiData.shareability_comment && (
+                      <div className="bg-gradient-to-br from-blue-600/10 to-blue-800/10 rounded-xl p-6 border border-blue-600/20">
+                        <h4 className="text-lg font-semibold text-blue-400 mb-3 flex items-center">
+                          <BarChart3 className="w-5 h-5 mr-2" />
+                          Shareability Assessment
+                        </h4>
+                        <p className="text-gray-300">{apiData.shareability_comment}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {/* Emotional + Visual Analysis Combined Section */}
+            <div className="grid lg:grid-cols-2 gap-4">
+              <div className="bg-black rounded-3xl shadow-lg shadow-white/10 border  border-[#2b2b2b]">
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold flex items-center">
+                      <Heart className="mr-2 h-6 w-6 text-primary" />
+                      Emotional, Color Analysis
+                    </h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-5 h-5 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-60 bg-[#2b2b2b]">
+                        <p>
+                          Combined insights on emotional impact, color psychology, and visual
+                          quality metrics of your advertisement.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  {/* LEFT COLUMN → Emotional + Color Analysis */}
+                  <div className="space-y-6">
+                    {/* Emotional Insights */}
+                    <div
+                      className="bg-[#121212] rounded-xl p-5 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
+                      onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900")}
+                      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)")}
+                    >
+                      <h4 className="text-lg font-semibold text-primary mb-4">Emotional Insights</h4>
+
+                      <div className="space-y-3">
+                        {/* Primary Emotion */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-300">Primary Emotion</span>
+                          <Badge className="bg-pink-600/20 text-pink-400 border-pink-600/30">
+                            {apiData.primary_emotion || "N/A"}
+                          </Badge>
+                        </div>
+
+                        {/* Emotional Alignment */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-300">Emotional Alignment</span>
+                          <Badge className="bg-purple-600/20 text-purple-400 border-purple-600/30">
+                            {apiData.emotional_alignment || "N/A"}
+                          </Badge>
+                        </div>
+
+                        {/* Emotional Boost Suggestions */}
+                        {safeArray(apiData.emotional_boost_suggestions).length > 0 && (
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-sm font-semibold text-gray-300 mb-1">
+                              Emotional Boost Suggestions
+                            </h5>
+                            <div className="space-y-1">
+                              {safeArray(apiData.emotional_boost_suggestions).map((suggestion, idx) => (
+                                <div key={idx} className="flex items-start">
+                                  <span className="text-pink-400 mr-1">•</span>
+                                  <span className="text-gray-300 text-sm">{suggestion}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Color Analysis */}
+                    <div
+                      className="bg-[#121212] rounded-xl p-5 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
+                      onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900")}
+                      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)")}
+                    >
+                      <h4 className="text-lg font-semibold text-primary mb-4">Color Analysis</h4>
+
+                      <div className="space-y-4">
+                        {/* Suggested Colors */}
+                        {safeArray(apiData.suggested_colors).length > 0 && (
+                          <div className="flex items-start justify-between gap-4">
+                            <h5 className="text-sm font-semibold text-gray-300 min-w-[140px]">
+                              Suggested Colors
+                            </h5>
+                            <div className="flex flex-wrap gap-2">
+                              {safeArray(apiData.suggested_colors).map((color, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a]"
+                                >
+                                  <span
+                                    className="w-4 h-4 rounded-full border border-gray-600"
+                                    style={{ backgroundColor: String(color).trim() }}
+                                  />
+                                  <span className="text-sm text-gray-200">{String(color).trim()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Font Feedback */}
+                        {apiData.font_feedback && (
+                          <div className="flex items-start justify-between gap-4">
+                            <h5 className="text-sm font-semibold text-gray-300 min-w-[140px]">
+                              Font Feedback
+                            </h5>
+                            <p className="text-gray-300 text-sm">{apiData.font_feedback}</p>
+                          </div>
+                        )}
+
+                        {/* Color Harmony Feedback */}
+                        {apiData.color_harmony_feedback && (
+                          <div className="flex items-start justify-between gap-4">
+                            <h5 className="text-sm font-semibold text-gray-300 min-w-[140px]">
+                              Color Harmony Feedback
+                            </h5>
+                            <p className="text-gray-300 text-sm text-right">{apiData.color_harmony_feedback}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-black rounded-3xl shadow-lg shadow-white/10 border  border-[#2b2b2b]">
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold flex items-center">
+                      <Heart className="mr-2 h-6 w-6 text-primary" />
+                      Visual Analysis
+                    </h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-5 h-5 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-60 bg-[#2b2b2b]">
+                        <p>
+                          Combined insights on emotional impact, color psychology, and visual
+                          quality metrics of your advertisement.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  {/* RIGHT COLUMN stays as you had it */}
+                  <div className="space-y-6">
+                    <h4 className="text-lg font-semibold text-primary mb-4">
+                      Visual Quality Assessment
+                    </h4>
+
+                    {/* Core Visual Metrics */}
+                    <div className="grid lg:grid-cols-2 gap-4">
+                      {[
+                        { label: "Visual Clarity", value: parseInt(String(apiData.visual_clarity)) || 0, icon: Eye, max: 100 },
+                        { label: "Emotional Appeal", value: parseInt(String(apiData.emotional_appeal)) || 0, icon: Heart, max: 100 },
+                        { label: "Text-Visual Balance", value: parseInt(String(apiData.text_visual_balance)) || 0, icon: FileText, max: 100 },
+                        { label: "CTA Visibility", value: parseInt(String(apiData.cta_visibility)) || 0, icon: Target, max: 100 }
+                      ].map((item, i) => (
+                        <div
+                          key={i}
+                          className="bg-[#121212] rounded-xl p-4 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow =
+                              item.value <= 50
+                                ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                                : item.value <= 75
+                                  ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                                  : "0 0 14px 4px rgba(34,197,94,0.7)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow =
+                              "0 0 10px rgba(255,255,255,0.05)";
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                              <item.icon
+                                className={`w-5 h-5 mr-2 ${item.value <= 50
+                                  ? "text-red-500"
+                                  : item.value <= 75
+                                    ? "text-yellow-500"
+                                    : "text-green-500"
+                                  }`}
+                              />
+                              <span className="text-gray-300">{item.label}</span>
+                            </div>
+                            <span className="font-semibold text-white">
+                              {Math.round(item.value)}/100
+                            </span>
+                          </div>
+                          <Progress
+                            value={item.value}
+                            className="h-1 w-full bg-gray-800"
+                            indicatorClassName={
+                              item.value <= 50
+                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
+                                : item.value <= 75
+                                  ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
+                                  : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Design Quality */}
+                    <h4 className="text-lg font-semibold text-primary mb-4">Design Quality</h4>
+                    <div className="grid lg:grid-cols-2 gap-4">
+                      {[
+                        { label: "Color Harmony", value: apiData.color_harmony || 0, icon: Palette, max: 100 },
+                        { label: "Brand Alignment", value: apiData.brand_alignment || 0, icon: Award, max: 100 },
+                        { label: "Text Readability", value: apiData.text_readability || 0, icon: FileText, max: 100 },
+                        { label: "Image Quality", value: apiData.image_quality || 0, icon: ImageIcon, max: 100 }
+                      ].map((item, i) => (
+                        <div
+                          key={i}
+                          className="bg-[#121212] rounded-xl p-4 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow =
+                              item.value <= 50
+                                ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                                : item.value <= 75
+                                  ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                                  : "0 0 14px 4px rgba(34,197,94,0.7)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow =
+                              "0 0 10px rgba(255,255,255,0.05)";
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                              <item.icon
+                                className={`w-5 h-5 mr-2 ${item.value <= 50
+                                  ? "text-red-500"
+                                  : item.value <= 75
+                                    ? "text-yellow-500"
+                                    : "text-green-500"
+                                  }`}
+                              />
+                              <span className="text-gray-300">{item.label}</span>
+                            </div>
+                            <span className="font-semibold text-white">
+                              {Math.round(item.value)}/100
+                            </span>
+                          </div>
+                          <Progress
+                            value={item.value}
+                            className="h-1 w-full bg-gray-800"
+                            indicatorClassName={
+                              item.value <= 50
+                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
+                                : item.value <= 75
+                                  ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
+                                  : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Ad Copy Generator */}
+            <div className="bg-black rounded-3xl shadow-lg shadow-white/10 border  border-[#2b2b2b]">
+              <div className="p-8 space-y-8">
+                {/* Top: Title */}
+                <div className="flex flex-col md:flex-row justify-between gap-4">
+                  <div className="flex items-center justify-between w-full">
                     <h3 className="text-2xl font-bold flex items-center">
                       <PenTool className="mr-3 h-6 w-6 text-primary" />
                       AI-Written Ad Copy Generator
                     </h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-5 h-5 text-gray-400 hover:text-white cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>AI-generated ad copy variations optimized for different platforms and tones to maximize engagement and conversions.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Tone Selector {!isProUser && <span className="text-blue-400">(Pro Only)</span>}
-                      </label>
-                      <Select value={selectedTone} onValueChange={setSelectedTone} disabled={!isProUser}>
-                        <SelectTrigger className="w-48 bg-[#121212] border-gray-700">
-                          <SelectValue placeholder="Select tone" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#121212] border-gray-700">
-                          <SelectItem value="friendly">Friendly</SelectItem>
-                          <SelectItem value="professional">Professional</SelectItem>
-                          <SelectItem value="excited">Excited</SelectItem>
-                          <SelectItem value="urgent">Urgent</SelectItem>
-                        </SelectContent>
-                      </Select>
+                {/* Bottom: Ad Copy Output & CTA Buttons */}
+                <div className="flex flex-col md:flex-row justify-between gap-6">
+                  {/* Left: Ad Copy Output */}
+                  <div className="md:w-[70%] w-full space-y-6">
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-semibold text-primary">Generated Ad Copy</h4>
+
+                      {/* Display filtered ad copies */}
+                      <div className="space-y-4">
+                        {filteredAdCopies.map((adCopy, index) => (
+                          <div key={index} className="bg-[#121212] rounded-2xl p-6 border  border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                            style={{
+                              transition: "all 0.3s",
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                            }}>
+                            <div className="flex items-start justify-between mb-2">
+                              <span className="text-sm text-gray-300">{adCopy.platform || 'N/A'} | {adCopy.tone || 'N/A'}</span>
+                              <Sparkles className="w-4 h-4 text-green-400" />
+                            </div>
+                            <p className="text-white font-medium">{adCopy.copy_text || 'No copy text available'}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Show message if no ad copies */}
+                      {filteredAdCopies.length === 0 && (
+                        <div className="text-gray-400 italic text-center py-8">
+                          No ad copies available
+                        </div>
+                      )}
+
+                      {/* Pro overlay for additional copies */}
+                      {!isProUser && safeArray(apiData?.ad_copies).length > 1 && (
+                        <ProOverlay message="🔐 Pro users see all ad copy variations.">
+                          <div className="space-y-4">
+                            {safeArray(apiData?.ad_copies).slice(1).map((adCopy, index) => (
+                              <div key={index + 1} className="bg-[#121212] rounded-2xl p-6 border  border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                                style={{
+                                  transition: "all 0.3s",
+                                }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                }}>
+                                <div className="flex items-start justify-between mb-2">
+                                  <span className="text-sm text-gray-300">{adCopy.platform || 'N/A'} | {adCopy.tone || 'N/A'}</span>
+                                  <span className="text-orange-400">🔥</span>
+                                </div>
+                                <p className="text-white font-medium">{adCopy.copy_text || 'No copy text available'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </ProOverlay>
+                      )}
                     </div>
                   </div>
 
-                  {/* Bottom: Ad Copy Output (70%) & CTA Buttons (30%) */}
-                  <div className="flex flex-col md:flex-row justify-between gap-6">
-                    {/* Left: Ad Copy Output */}
-                    <div className="md:w-[70%] w-full space-y-6">
-                      <div className="space-y-4">
-                        <h4 className="text-lg font-semibold text-gray-300">Generated Ad Copy</h4>
-
-                        {/* Display filtered ad copies */}
-                        <div className="space-y-4">
-                          {filteredAdCopies.map((adCopy, index) => (
-                            <div key={index} className="bg-[#121212] rounded-2xl p-6 border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
-                              <div className="flex items-start justify-between mb-2">
-                                <span className="text-sm text-gray-400">{adCopy.platform} | {adCopy.tone}</span>
-                                <Sparkles className="w-4 h-4 text-green-400" />
-                              </div>
-                              <p className="text-white font-medium">{adCopy.copy_text}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Pro overlay for additional copies */}
-                        {!isProUser && apiData?.ad_copies && apiData.ad_copies.length > 1 && (
-                          <ProOverlay message="🔐 Pro users see all ad copy variations.">
-                            <div className="space-y-4">
-                              {apiData.ad_copies.slice(1).map((adCopy, index) => (
-                                <div key={index + 1} className="bg-[#121212] rounded-2xl p-6 border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <span className="text-sm text-gray-400">{adCopy.platform} | {adCopy.tone}</span>
-                                    <span className="text-orange-400">🔥</span>
-                                  </div>
-                                  <p className="text-white font-medium">{adCopy.copy_text}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </ProOverlay>
-                        )}
-
-                        {/* Regenerate Button */}
-                        <div className="flex items-center justify-end">
-                          <Button
-                            variant="outline"
-                            className="bg-transparent border-green-600 text-green-400 hover:bg-green-600/20 w-full md:w-auto"
-                            disabled={!isProUser}
-                          >
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Regenerate
-                          </Button>
-                        </div>
+                  {/* Right: CTA Section */}
+                  <div className="md:w-[30%] mt-10 w-full bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[#222] rounded-2xl p-6 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between"
+                    style={{
+                      transition: "all 0.3s",
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}>
+                    <div className="space-y-4">
+                      <div className="flex items-center text-white mb-1">
+                        <GitCompareArrows className="w-5 h-5 mr-2 text-primary" />
+                        <h4 className="text-lg font-semibold">Ad Comparison</h4>
                       </div>
+                      <p className="text-sm text-gray-300">
+                        Want to compare ads side-by-side? Use our Ad Comparison tool to test different versions of your ad copy, evaluate tone and platform variations, and discover what resonates most with your audience — all in one place.
+                      </p>
                     </div>
 
-                    {/* Right: CTA Section */}
-                    <div className="md:w-[30%] mt-10 w-full bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[#222] rounded-2xl p-6 shadow-md flex flex-col justify-between">
-                      <div className="space-y-4">
-                        <div className="flex items-center text-white mb-1">
-                          <GitCompareArrows className="w-5 h-5 mr-2 text-primary" />
-                          <h4 className="text-lg font-semibold">Ad Comparison</h4>
-                        </div>
-                        <p className="text-sm text-gray-400">
-                          Want to compare ads side-by-side? Use our Ad Comparison tool to test different versions of your ad copy, evaluate tone and platform variations, and discover what resonates most with your audience — all in one place.
+                    <div className="mt-6">
+                      <Button
+                        className="w-full text-white font-semibold rounded-xl py-2 transition duration-200"
+                        disabled={!isProUser}
+                        onClick={() => router.push("/ab-test")}
+                      >
+                        <GitCompareArrows className="w-4 h-4 mr-2" />
+                        Compare Now
+                      </Button>
+                      {!isProUser && (
+                        <p className="mt-2 text-xs text-gray-300 text-center">
+                          Unlock with Pro to access ad comparison.
                         </p>
-                      </div>
-
-                      <div className="mt-6">
-                        <Button
-                          className="w-full text-white font-semibold rounded-xl py-2 transition duration-200"
-                          disabled={!isProUser}
-                          onClick={() => router.push("/ab-test")}
-                        >
-                          <GitCompareArrows className="w-4 h-4 mr-2" />
-                          Compare Now
-                        </Button>
-                        {!isProUser && (
-                          <p className="mt-2 text-xs text-gray-400 text-center">
-                            Unlock with Pro to access ad comparison.
-                          </p>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {/* <Button
-                  className=" text-white font-semibold rounded-xl py-2 transition duration-200"
-                  onClick={() => router.push("/pro")}
-                >
-                  <Download className="h-5 w-5 mr-2" />
-                  Download PDF Report
-                </Button> */}
-                <Button
-                  onClick={() => router.push("/upload")}
-                  // variant="outline"
-                  className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200 "
-                >
-                  Re-analyze
-                </Button>
-              </div>
             </div>
-          </main>
-        </div>
-      )}
-    </UserLayout>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={() => router.push("/upload")}
+                className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
+              >
+                Re-analyze
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleGeneratePDF}
+                disabled={loading || !apiData}
+                className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Report
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </TooltipProvider>
   )
 }

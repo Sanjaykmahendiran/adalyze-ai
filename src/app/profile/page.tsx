@@ -200,7 +200,7 @@ export default function MyProfile() {
 
   return (
     <UserLayout userDetails={userDetails}>
-      <div className="mx-auto py-6 px-4 max-w-4xl">
+      <div className="mx-auto py-6 px-4 max-w-4xl pb-20">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Profile</h1>
           <p className="text-muted-foreground">Manage your account settings and preferences</p>

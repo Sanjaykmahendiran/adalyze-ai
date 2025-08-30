@@ -2,49 +2,57 @@
 
 import { useState, useEffect } from "react"
 import {
-  Eye,
-  Target,
-  Palette,
-  Type,
-  Facebook,
-  Instagram,
-  MessageCircle,
-  FileImage,
-  Play,
-  CheckCircle,
-  XCircle,
-  User,
+  Eye, Target, Palette, Type, Facebook, Instagram, MessageCircle, FileImage, Play,
+  CheckCircle, XCircle, User, BookOpen, Clock, TrendingUp, Lightbulb, AlertCircle,
+  Zap, Award, Search, Calculator, Shield, Youtube, Linkedin, Printer, Filter,
 } from "lucide-react"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import GuideLoadingSkeleton from "@/components/Skeleton-loading/guideloading"
+import { SiGoogle } from "react-icons/si"
 
-// Type definitions
-interface AnatomyData {
-  anatomy_id: string
+// Color system
+const colors = {
+  // Backgrounds
+  bg: {
+    main: "bg-[#0a0a0a]",
+    card: "bg-black",
+    section: "bg-[#121212]",
+    input: "bg-[#2b2b2b]",
+  },
+  // Primary orange gradient
+  primary: "bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00]",
+  // Borders
+  border: {
+    default: "border-[#2b2b2b]",
+    focus: "border-orange-500",
+  },
+  // Text colors  
+  text: {
+    primary: "text-white",
+    secondary: "text-gray-300",
+    muted: "text-gray-400",
+  }
+}
+
+// Type definitions (keeping your existing interfaces)
+interface Guide {
+  guide_id: number
   title: string
-  description: string
-  tips: string
-  icon?: string
-  display_order: number
-}
-
-interface PlatformTip {
-  tip_id: string
+  slug: string
+  type: 'glossary' | 'tip' | 'tutorial' | 'checklist' | 'troubleshooter' | 'formula' | 'policy'
   platform: string
-  headline: string
-  content: string
-  icon?: string
-  display_order: number
-}
-
-interface Example {
-  example_id: string
-  image_url_good: string
-  image_url_bad: string
-  reason_good: string
-  reason_bad: string
-  display_order: number
+  goal: string
+  read_time_sec: number
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  summary: string
+  body_md: string
+  media_url: string | null
+  checklist_json: string | null
+  troubleshoot_for: string | null
+  status: number
+  created_at: string
+  updated_at: string
 }
 
 const scoreBreakdown = [
@@ -56,71 +64,164 @@ const scoreBreakdown = [
   { category: "Brand Consistency", weight: 10, description: "Alignment with brand guidelines and identity" },
 ]
 
-// Icon mapping for anatomy cards
-const iconMap: Record<string, React.ComponentType<any>> = {
-  Target,
-  Palette,
-  Eye,
-  Type,
+// Platform and type mappings (keeping your existing ones)
+const platformIcons: Record<string, React.ComponentType<any>> = {
+  facebook: Facebook, instagram: Instagram, whatsapp: MessageCircle,
+  google: SiGoogle, universal: Target, youtube: Youtube,
+  linkedin: Linkedin, print: Printer,
+}
+
+const typeIcons: Record<string, React.ComponentType<any>> = {
+  glossary: BookOpen, tip: Lightbulb, tutorial: Play,
+  checklist: CheckCircle, troubleshooter: AlertCircle,
+  formula: Calculator, policy: Shield,
+}
+
+// Fixed difficulty styles with proper contrast
+const difficultyStyles = {
+  beginner: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+  intermediate: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+  advanced: "bg-rose-500/20 text-rose-300 border border-rose-500/30",
 }
 
 export default function GuidePage() {
-      const { userDetails } = useFetchUserDetails()
-  const [activeTab, setActiveTab] = useState("facebook")
-  const [anatomyData, setAnatomyData] = useState<AnatomyData[]>([])
-  const [platformTips, setPlatformTips] = useState<PlatformTip[]>([])
-  const [examples, setExamples] = useState<Example[]>([])
+  const { userDetails } = useFetchUserDetails()
+  const [activeTab, setActiveTab] = useState("all")
+  const [activeType, setActiveType] = useState("all")
+  const [guides, setGuides] = useState<Guide[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
 
-  // Fetch data from APIs
+  // Your existing useEffect and filtering logic...
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-
-        // Fetch all data in parallel
-        const [anatomyResponse, platformResponse, examplesResponse] = await Promise.all([
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=anatomylist'),
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=platformtipslist'),
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=exampleslist')
-        ])
-
-        const anatomyData = await anatomyResponse.json() as AnatomyData[]
-        const platformData = await platformResponse.json() as PlatformTip[]
-        const examplesData = await examplesResponse.json() as Example[]
-
-        setAnatomyData(anatomyData.sort((a, b) => a.display_order - b.display_order))
-        setPlatformTips(platformData.sort((a, b) => a.display_order - b.display_order))
-        setExamples(examplesData.sort((a, b) => a.display_order - b.display_order))
-
+        const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=guideslist')
+        const guidesData = await response.json() as Guide[]
+        setGuides(guidesData.filter(guide => guide.status === 1))
       } catch (err) {
-        setError('Failed to load data. Please try again later.')
-        console.error('Error fetching data:', err)
+        setError('Failed to load guides. Please try again later.')
+        console.error('Error fetching guides:', err)
       } finally {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [])
 
-  // Get icon component by name
-  const getIconComponent = (iconName: string) => {
-    const cleanedName = iconName.replace(/\s+/g, '')
-    const IconComponent = iconMap[cleanedName] || Target
-    return IconComponent
+  const filteredGuides = guides.filter(guide => {
+    const matchesType = activeType === "all" || guide.type === activeType
+    const matchesPlatform = activeTab === "all" || guide.platform === activeTab
+    const matchesSearch = searchTerm === "" ||
+      guide.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      guide.summary.toLowerCase().includes(searchTerm.toLowerCase())
+
+    return matchesType && matchesPlatform && matchesSearch
+  })
+
+  const platforms = ["all", ...Array.from(new Set(guides.map(g => g.platform)))]
+  const types = ["all", ...Array.from(new Set(guides.map(g => g.type)))]
+
+  const formatReadTime = (seconds: number) => {
+    const minutes = Math.ceil(seconds / 60)
+    return `${minutes} min read`
   }
 
-  // Group platform tips by platform
-  const groupedPlatformTips = platformTips.reduce((acc: Record<string, PlatformTip[]>, tip) => {
-    const platform = tip.platform.toLowerCase()
-    if (!acc[platform]) {
-      acc[platform] = []
+  // Updated render function with consistent colors
+  const renderGuideCard = (guide: Guide) => {
+    const TypeIcon = typeIcons[guide.type] || BookOpen
+    const PlatformIcon = platformIcons[guide.platform] || Target
+
+    const baseCardClasses = `${colors.bg.card} rounded-lg p-4 sm:p-6 shadow-lg shadow-white/5 ${colors.border.default} border hover:scale-[1.02] transition-all duration-300 cursor-pointer`
+
+    // Type-specific color schemes
+    const typeStyles = {
+      glossary: {
+        bg: "bg-indigo-500/20",
+        text: "text-indigo-400",
+        contentBg: "bg-indigo-500/10 border border-indigo-500/20",
+        contentText: "text-indigo-100"
+      },
+      tip: {
+        bg: "bg-yellow-500/20",
+        text: "text-yellow-400",
+        contentBg: "bg-yellow-500/10 border border-yellow-500/20",
+        contentText: "text-yellow-100"
+      },
+      tutorial: {
+        bg: "bg-green-500/20",
+        text: "text-green-400",
+        contentBg: "bg-green-500/10 border border-green-500/20",
+        contentText: "text-green-100"
+      },
+      checklist: {
+        bg: "bg-sky-500/20",
+        text: "text-sky-400",
+        contentBg: "bg-sky-500/10 border border-sky-500/20",
+        contentText: "text-sky-100"
+      },
+      troubleshooter: {
+        bg: "bg-red-500/20",
+        text: "text-red-400",
+        contentBg: "bg-red-500/10 border border-red-500/20",
+        contentText: "text-red-100"
+      },
+      formula: {
+        bg: "bg-cyan-500/20",
+        text: "text-cyan-400",
+        contentBg: "bg-cyan-500/10 border border-cyan-500/20",
+        contentText: "text-cyan-100"
+      },
+      policy: {
+        bg: "bg-gray-500/20",
+        text: "text-gray-300",
+        contentBg: "bg-gray-500/10 border border-gray-500/20",
+        contentText: "text-gray-200"
+      },
     }
-    acc[platform].push(tip)
-    return acc
-  }, {})
+
+
+    const style = typeStyles[guide.type as keyof typeof typeStyles] || typeStyles.glossary
+
+    return (
+      <div key={guide.guide_id} className={`${baseCardClasses} `}>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 ${style.bg} rounded-lg flex items-center justify-center`}>
+              <TypeIcon className={`w-4 h-4 ${style.text}`} />
+            </div>
+            <span className={`text-xs px-2 py-1 ${style.bg} ${style.text} rounded-full capitalize`}>
+              {guide.type}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficultyStyles[guide.difficulty]}`}>
+              {guide.difficulty}
+            </span>
+            <PlatformIcon className="w-4 h-4 text-gray-400" />
+          </div>
+        </div>
+
+        <h3 className="text-lg font-semibold mb-2 text-white">{guide.title}</h3>
+        <p className="text-sm text-gray-300 mb-3 line-clamp-2">{guide.summary}</p>
+
+        {guide.body_md && (
+          <div className={`${style.contentBg} rounded-lg p-3 mb-3`}>
+            <p className={`text-xs ${style.contentText} whitespace-pre-wrap line-clamp-4`}>
+              {guide.body_md}
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between text-xs text-gray-400">
+          <span className="capitalize">{guide.platform}</span>
+          <span>{formatReadTime(guide.read_time_sec)}</span>
+        </div>
+      </div>
+    )
+  }
 
   if (error) {
     return (
@@ -128,10 +229,10 @@ export default function GuidePage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Error Loading Content</h2>
-            <p className="text-gray-400">{error}</p>
+            <h2 className="text-xl font-semibold mb-2 text-white">Error Loading Content</h2>
+            <p className="text-gray-300">{error}</p>
             <button
-              className="mt-4 px-4 py-2 bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00] text-white rounded-lg hover:opacity-90 transition-opacity"
+              className={`mt-4 px-4 py-2 ${colors.primary} text-white rounded-lg hover:opacity-90 transition-opacity`}
               onClick={() => window.location.reload()}
             >
               Try Again
@@ -144,219 +245,128 @@ export default function GuidePage() {
 
   return (
     <UserLayout userDetails={userDetails}>
-       {loading ? <GuideLoadingSkeleton /> : (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Ad Creation Guide</h1>
-        <p className="text-gray-400">Learn best practices and understand how our AI scoring works</p>
-      </div>
+      {loading ? <GuideLoadingSkeleton /> : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 pb-20">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white">Ad Creation Guide</h1>
+            <p className="text-gray-300 text-sm sm:text-base">Learn best practices and understand how our AI scoring works</p>
+          </div>
 
-      {/* Ad Anatomy 101 */}
-      <section className="mb-16">
-        <h2 className="text-2xl font-bold mb-8">Ad Anatomy 101</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {anatomyData.map((card) => {
-            const IconComponent = getIconComponent(card.title)
-            return (
-              <div key={card.anatomy_id} className="bg-black rounded-lg p-6 shadow-lg shadow-white/5 border border-[#121212] hover:scale-[1.01] transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00] rounded-lg flex items-center justify-center mb-4">
-                  {card.icon ? (
-                    <span className="text-xl">{card.icon}</span>
-                  ) : (
-                    <IconComponent className="w-6 h-6 text-white" />
-                  )}
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{card.title}</h3>
-                <p className="text-gray-300 text-sm mb-4">{card.description}</p>
-                <ul className="space-y-1">
-                  {card.tips.split('. ').filter(tip => tip.trim()).map((tip, tipIndex) => (
-                    <li key={tipIndex} className="text-xs text-gray-400 flex items-start gap-2">
-                      <div className="w-1 h-1 bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00] rounded-full mt-2 flex-shrink-0"></div>
-                      {tip.trim()}
-                    </li>
+          {/* Search and Filters */}
+          <div className={`mb-8 ${colors.bg.section} rounded-xl p-6 ${colors.border.default} border shadow-xl`}>
+            {/* Search */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search guides, topics, or content..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-12 pr-4 py-3 ${colors.bg.input} ${colors.border.default} border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20`}
+                />
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+              {/* Type Filter */}
+              <div>
+                <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
+                  <Filter className="w-4 h-4" />
+                  Content Type
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {types.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setActiveType(type)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${activeType === type
+                        ? `${colors.primary} text-white shadow-lg`
+                        : `${colors.bg.input} text-gray-300 hover:bg-[#121212] ${colors.border.default} border`
+                        }`}
+                    >
+                      {type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
                   ))}
-                </ul>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* Platform Tips */}
-      <section className="mb-16">
-        <h2 className="text-2xl font-bold mb-8">Platform-Specific Tips</h2>
-        <div className="bg-black rounded-lg p-6">
-          <div className="grid w-full grid-cols-4 bg-[#121212] rounded-lg p-1 mb-6">
-            <button
-              onClick={() => setActiveTab("facebook")}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "facebook" ? "bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00]" : ""
-                }`}
-            >
-              <Facebook className="w-4 h-4" />
-              Facebook
-            </button>
-
-            <button
-              onClick={() => setActiveTab("instagram")}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "instagram" ? "bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00]" : ""
-                }`}
-            >
-              <Instagram className="w-4 h-4" />
-              Instagram
-            </button>
-
-            <button
-              onClick={() => setActiveTab("whatsapp")}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "whatsapp" ? "bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00]" : ""
-                }`}
-            >
-              <MessageCircle className="w-4 h-4" />
-              WhatsApp
-            </button>
-
-            <button
-              onClick={() => setActiveTab("flyers")}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "flyers" ? "bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00]" : ""
-                }`}
-            >
-              <FileImage className="w-4 h-4" />
-              Flyers
-            </button>
-          </div>
-
-          <div className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {groupedPlatformTips[activeTab]?.map((tip) => (
-                <div key={tip.tip_id} className="flex items-start gap-3 p-4 bg-[#121212] rounded-lg shadow-lg shadow-white/5 border border-[#121212] hover:scale-[1.01] transition-all duration-300">
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {tip.icon && <span className="text-lg">{tip.icon}</span>}
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-sm mb-1">{tip.headline}</h4>
-                    <span className="text-sm text-gray-300">{tip.content}</span>
-                  </div>
                 </div>
-              )) || (
-                  <div className="col-span-2 text-center text-gray-400 py-8">
-                    No tips available for this platform yet.
-                  </div>
-                )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Scoring Explained */}
-      <section className="mb-16">
-        <h2 className="text-2xl font-bold mb-8">How Our AI Scoring Works</h2>
-        <div className="bg-black rounded-lg p-6 mb-6">
-          <p className="text-gray-400 mb-6">
-            Our AI analyzes your ads across multiple dimensions to provide a comprehensive score out of 100. Here's how
-            each category contributes to your final score:
-          </p>
-          <div className="space-y-4">
-            {scoreBreakdown.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-[#121212] rounded-lg shadow-lg shadow-white/5 border border-[#121212] hover:scale-[1.01] transition-all duration-300">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-1">{item.category}</h3>
-                  <p className="text-sm text-gray-400">{item.description}</p>
-                </div>
-                <span className="ml-4 px-3 py-1 border border-gray-600 rounded-full text-sm">
-                  {item.weight}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Sample Ads Comparison */}
-      <section className="mb-16">
-        <h2 className="text-2xl font-bold mb-8">Good vs Bad Examples</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Good Example */}
-          {examples.length > 0 && (
-            <div className="bg-black rounded-lg p-6 group hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">High-Performing Ad</h3>
-                <span className="bg-green-600 px-3 py-1 rounded-full text-sm">Score: 92</span>
               </div>
 
-              <div className="w-40 mx-auto">
-                <img
-                  src={examples[0].image_url_good}
-                  alt="High-Performing Ad"
-                  className="aspect-square object-cover rounded-lg mb-4 transform group-hover:scale-105 transition-all duration-300"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/160x160/22c55e/ffffff?text=Good+Ad"
-                  }}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">{examples[0].reason_good}</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">High contrast text</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Balanced composition</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Platform-appropriate sizing</span>
+              {/* Platform Filter */}
+              <div>
+                <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
+                  <Target className="w-4 h-4" />
+                  Platform
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {platforms.map((platform) => {
+                    const PlatformIcon = platformIcons[platform] || Target
+                    return (
+                      <button
+                        key={platform}
+                        onClick={() => setActiveTab(platform)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${activeTab === platform
+                          ? `${colors.primary} text-white shadow-lg`
+                          : `${colors.bg.input} text-gray-300 hover:bg-[#121212] ${colors.border.default} border`
+                          }`}
+                      >
+                        {platform !== 'all' && <PlatformIcon className="w-3 h-3" />}
+                        {platform === 'all' ? 'All' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Bad Example */}
-          {examples.length > 0 && (
-            <div className="bg-black rounded-lg p-6 group hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Low-Performing Ad</h3>
-                <span className="bg-red-600 px-3 py-1 rounded-full text-sm">Score: 34</span>
+          {/* Guides Grid */}
+          <section className="mb-12 sm:mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                {filteredGuides.length} Guide{filteredGuides.length !== 1 ? 's' : ''}
+                {activeType !== 'all' && ` - ${activeType.charAt(0).toUpperCase() + activeType.slice(1)}`}
+                {activeTab !== 'all' && ` for ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`}
+              </h2>
+            </div>
+
+            {filteredGuides.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {filteredGuides.map(renderGuideCard)}
               </div>
-
-              <div className="w-40 mx-auto">
-                <img
-                  src={examples[0].image_url_bad}
-                  alt="Low-Performing Ad"
-                  className="aspect-square object-cover rounded-lg mb-4 transform group-hover:scale-105 transition-all duration-300"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/160x160/ef4444/ffffff?text=Bad+Ad"
-                  }}
-                />
+            ) : (
+              <div className="text-center py-12">
+                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2 text-white">No guides found</h3>
+                <p className="text-gray-400">Try adjusting your filters or search term</p>
               </div>
+            )}
+          </section>
 
-              <div className="space-y-2">
-                <div className="flex items-start gap-3">
-                  <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">{examples[0].reason_bad}</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Poor text contrast</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Weak or missing CTA</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Inconsistent branding</span>
-                </div>
+          {/* AI Scoring Section */}
+          <section className="mb-12 sm:mb-16">
+            <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-white">How Our AI Scoring Works</h2>
+            <div className={`${colors.bg.card} rounded-lg p-4 sm:p-6 mb-6`}>
+              <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-base">
+                Our AI analyzes your ads across multiple dimensions to provide a comprehensive score out of 100. Here's how
+                each category contributes to your final score:
+              </p>
+              <div className="space-y-3 sm:space-y-4">
+                {scoreBreakdown.map((item, index) => (
+                  <div key={index} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 ${colors.bg.section} rounded-lg shadow-lg shadow-white/5 ${colors.border.default} border hover:scale-[1.01] transition-all duration-300 gap-3 sm:gap-4`}>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold mb-1 text-sm sm:text-base text-white">{item.category}</h3>
+                      <p className="text-xs sm:text-sm text-gray-300 break-words">{item.description}</p>
+                    </div>
+                    <span className="px-3 py-1 border border-gray-600 rounded-full text-xs sm:text-sm flex-shrink-0 self-start sm:self-center text-gray-300">
+                      {item.weight}%
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+          </section>
         </div>
-      </section>
-    </div>
       )}
     </UserLayout>
   )

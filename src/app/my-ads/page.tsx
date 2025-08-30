@@ -104,7 +104,7 @@ export default function MyAdsPage() {
     const [abLoading, setAbLoading] = useState(false)
     const [scoreFilter, setScoreFilter] = useState("all")
     const [activeTab, setActiveTab] = useState<"ads" | "ab-ads">("ads")
-    
+
     // Delete functionality states
     const [deleteLoading, setDeleteLoading] = useState<number[]>([])
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -182,16 +182,16 @@ export default function MyAdsPage() {
     // Single ad delete function
     const handleDeleteAd = async (adId: number) => {
         setDeleteLoading(prev => [...prev, adId])
-        
+
         try {
             const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=deletead&ad_upload_id=${adId}`)
-            
+
             if (!response.ok) {
                 throw new Error('Failed to delete ad')
             }
 
             const result = await response.json()
-            
+
             if (result.response === "Ad Deleted") {
                 toast.success("Ad deleted successfully")
                 setAds(prev => prev.filter(ad => ad.ad_id !== adId))
@@ -309,7 +309,7 @@ export default function MyAdsPage() {
                         <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 hover:bg-blue-600/30">
                             {ad.industry}
                         </Badge>
-                        <p className="text-xs text-gray-400">{dateFormatted}</p>
+                        <p className="text-xs text-gray-300">{dateFormatted}</p>
                     </div>
 
                     <div className="flex gap-2 items-center">
@@ -353,15 +353,15 @@ export default function MyAdsPage() {
                                 <AlertDialogContent className="bg-[#1a1a1a] border-[#2b2b2b]">
                                     <AlertDialogHeader>
                                         <AlertDialogTitle className="text-white">Delete Ad</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-gray-400">
+                                        <AlertDialogDescription className="text-gray-300">
                                             Are you sure you want to delete "{ad.ads_name}"? This action cannot be undone.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                        <AlertDialogCancel className="bg-transparent border-[#2b2b2b] text-gray-400 hover:bg-[#2b2b2b] hover:text-white">
+                                        <AlertDialogCancel className="bg-transparent border-[#2b2b2b] text-gray-300 hover:bg-[#2b2b2b] hover:text-white">
                                             Cancel
                                         </AlertDialogCancel>
-                                        <AlertDialogAction 
+                                        <AlertDialogAction
                                             onClick={() => handleDeleteAd(ad.ad_id)}
                                             className="bg-red-600 hover:bg-red-700 text-white"
                                             disabled={deleteLoading.includes(ad.ad_id)}
@@ -410,7 +410,7 @@ export default function MyAdsPage() {
                                     <Badge className="bg-blue-600 text-white text-xs">A</Badge>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-400 truncate" title={abAdPair.ad_a.ads_name}>
+                            <p className="text-xs text-gray-300 truncate" title={abAdPair.ad_a.ads_name}>
                                 {abAdPair.ad_a.ads_name}
                             </p>
                         </div>
@@ -430,7 +430,7 @@ export default function MyAdsPage() {
                                     <Badge className="bg-green-600 text-white text-xs">B</Badge>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-400 truncate" title={abAdPair.ad_b.ads_name}>
+                            <p className="text-xs text-gray-300 truncate" title={abAdPair.ad_b.ads_name}>
                                 {abAdPair.ad_b.ads_name}
                             </p>
                         </div>
@@ -441,7 +441,7 @@ export default function MyAdsPage() {
                             <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30">
                                 {abAdPair.ad_a.industry}
                             </Badge>
-                            <p className="text-xs text-gray-400">{formatDate(abAdPair.ad_a.uploaded_on)}</p>
+                            <p className="text-xs text-gray-300">{formatDate(abAdPair.ad_a.uploaded_on)}</p>
                         </div>
 
                         <div className="flex gap-2">
@@ -477,11 +477,11 @@ export default function MyAdsPage() {
     return (
         <UserLayout userDetails={userDetails}>
             {loading ? <MyAdsSkeleton /> : (
-                <div className="w-full min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="w-full min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28">
                     <div className="flex items-center justify-between mb-8">
                         <div className="">
                             <h1 className="text-3xl font-bold mb-2">My Ads</h1>
-                            <p className="text-gray-400">
+                            <p className="text-gray-300 text-sm">
                                 Manage and analyze your creative assets here
                             </p>
                         </div>
@@ -499,19 +499,22 @@ export default function MyAdsPage() {
                     {/* Search and Filters */}
                     <div className="bg-[#1a1a1a] rounded-lg p-6 mb-8 border border-[#2b2b2b]">
                         <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                            {/* Search */}
                             <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-300 w-4 h-4" />
                                 <Input
                                     placeholder="Search ads by name..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10 bg-[#121212] border-[#2b2b2b] focus:border-[#db4900] outline-none text-white placeholder:text-gray-400"
+                                    className="pl-10 bg-[#121212] border-[#2b2b2b] focus:border-[#db4900] outline-none text-white placeholder:text-gray-300"
                                 />
                             </div>
+
+                            {/* Filters */}
                             {activeTab === "ads" && (
-                                <>
+                                <div className="grid grid-cols-2 sm:grid-cols-1 md:flex gap-4 w-full md:w-auto">
                                     <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                                        <SelectTrigger className="w-full bg-[#121212] sm:w-48 border-[#2b2b2b] text-white">
+                                        <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-white">
                                             <SelectValue placeholder="Platform" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
@@ -522,8 +525,9 @@ export default function MyAdsPage() {
                                             <SelectItem value="flyer">Flyer</SelectItem>
                                         </SelectContent>
                                     </Select>
+
                                     <Select value={scoreFilter} onValueChange={setScoreFilter}>
-                                        <SelectTrigger className="w-full bg-[#121212] sm:w-48 border-[#2b2b2b] text-white">
+                                        <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-white">
                                             <SelectValue placeholder="Score Range" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
@@ -534,52 +538,55 @@ export default function MyAdsPage() {
                                             <SelectItem value="0-69">Below 70 (Needs Improvement)</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </>
+                                </div>
                             )}
                         </div>
 
                         {/* Filter summary */}
-                        {(searchTerm || (activeTab === "ads" && (selectedPlatform !== "all" || scoreFilter !== "all"))) && (
-                            <div className="flex flex-wrap gap-2 pt-4 border-t border-[#2b2b2b]">
-                                <span className="text-sm text-gray-400">Active filters:</span>
-                                {searchTerm && (
-                                    <Badge variant="secondary" className="bg-[#2b2b2b] text-gray-300">
-                                        Search: "{searchTerm}"
-                                    </Badge>
-                                )}
-                                {activeTab === "ads" && selectedPlatform !== "all" && (
-                                    <Badge variant="secondary" className="bg-[#2b2b2b] text-gray-300">
-                                        Platform: {selectedPlatform}
-                                    </Badge>
-                                )}
-                                {activeTab === "ads" && scoreFilter !== "all" && (
-                                    <Badge variant="secondary" className="bg-[#2b2b2b] text-gray-300">
-                                        Score: {scoreFilter}
-                                    </Badge>
-                                )}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSearchTerm("")
-                                        setSelectedPlatform("all")
-                                        setScoreFilter("all")
-                                    }}
-                                    className="text-xs h-6 px-2 text-gray-400 hover:text-white"
-                                >
-                                    Clear all
-                                </Button>
-                            </div>
-                        )}
+                        {(searchTerm ||
+                            (activeTab === "ads" &&
+                                (selectedPlatform !== "all" || scoreFilter !== "all"))) && (
+                                <div className="flex flex-wrap gap-2 pt-4 border-t border-[#2b2b2b]">
+                                    <span className="text-sm text-gray-300">Active filters:</span>
+                                    {searchTerm && (
+                                        <Badge variant="secondary" className="bg-[#2b2b2b] text-gray-300">
+                                            Search: "{searchTerm}"
+                                        </Badge>
+                                    )}
+                                    {activeTab === "ads" && selectedPlatform !== "all" && (
+                                        <Badge variant="secondary" className="bg-[#2b2b2b] text-gray-300">
+                                            Platform: {selectedPlatform}
+                                        </Badge>
+                                    )}
+                                    {activeTab === "ads" && scoreFilter !== "all" && (
+                                        <Badge variant="secondary" className="bg-[#2b2b2b] text-gray-300">
+                                            Score: {scoreFilter}
+                                        </Badge>
+                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSearchTerm("");
+                                            setSelectedPlatform("all");
+                                            setScoreFilter("all");
+                                        }}
+                                        className="text-xs h-6 px-2 text-gray-300 hover:text-white"
+                                    >
+                                        Clear all
+                                    </Button>
+                                </div>
+                            )}
                     </div>
+
 
                     {/* Tabs */}
                     <div className="flex space-x-1 mb-6 bg-[#1a1a1a] p-1 rounded-lg border border-[#2b2b2b]">
                         <button
                             onClick={() => setActiveTab("ads")}
                             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === "ads"
-                                    ? "bg-[#db4900] text-white"
-                                    : "text-gray-400 hover:text-white hover:bg-[#2b2b2b]"
+                                ? "bg-[#db4900] text-white"
+                                : "text-gray-300 hover:text-white hover:bg-[#2b2b2b]"
                                 }`}
                         >
                             Ads ({ads.length})
@@ -587,8 +594,8 @@ export default function MyAdsPage() {
                         <button
                             onClick={() => setActiveTab("ab-ads")}
                             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === "ab-ads"
-                                    ? "bg-[#db4900] text-white"
-                                    : "text-gray-400 hover:text-white hover:bg-[#2b2b2b]"
+                                ? "bg-[#db4900] text-white"
+                                : "text-gray-300 hover:text-white hover:bg-[#2b2b2b]"
                                 }`}
                         >
                             A/B Ads ({abAds.length})
@@ -599,14 +606,14 @@ export default function MyAdsPage() {
                     {((activeTab === "ads" && filteredAds.length === 0) ||
                         (activeTab === "ab-ads" && filteredAbAds.length === 0 && !abLoading)) && !loading && (
                             <div className="text-center py-12">
-                                <FileImage className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                <FileImage className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                                 <h3 className="text-lg font-medium text-gray-300 mb-2">
                                     {activeTab === "ads"
                                         ? (ads.length === 0 ? "No ads found" : "No ads match your filters")
                                         : (abAds.length === 0 ? "No A/B ads found" : "No A/B ads match your filters")
                                     }
                                 </h3>
-                                <p className="text-gray-400 mb-4">
+                                <p className="text-gray-300 mb-4">
                                     {activeTab === "ads"
                                         ? (ads.length === 0
                                             ? "You haven't uploaded any ads yet."
@@ -653,8 +660,8 @@ export default function MyAdsPage() {
 
                     {/* Ads Grid */}
                     <div className={`grid gap-6 ${activeTab === "ads"
-                            ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                            : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                        : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
                         }`}>
                         {activeTab === "ads"
                             ? filteredAds.map(renderAdCard)
@@ -662,15 +669,7 @@ export default function MyAdsPage() {
                         }
                     </div>
 
-                    {/* Results summary */}
-                    {((activeTab === "ads" && filteredAds.length > 0) ||
-                        (activeTab === "ab-ads" && filteredAbAds.length > 0)) && (
-                            <div className="flex justify-center mt-8">
-                                <p className="text-sm text-gray-400">
-                                    Showing {activeTab === "ads" ? filteredAds.length : filteredAbAds.length} of {activeTab === "ads" ? ads.length : abAds.length} {activeTab === "ads" ? "ads" : "A/B tests"}
-                                </p>
-                            </div>
-                        )}
+
 
                     {/* Pagination - placeholder for future implementation */}
                     {((activeTab === "ads" && filteredAds.length > 12) ||

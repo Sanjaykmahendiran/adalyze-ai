@@ -189,21 +189,21 @@ export default function SupportPage() {
   return (
     <UserLayout userDetails={userDetails}>
       {loading ? <SupportPageSkeleton /> : (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Support Center</h1>
-            <p className="text-gray-400">Get help and find answers to common questions</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Support Center</h1>
+            <p className="text-sm sm:text-base text-gray-300">Get help and find answers to common questions</p>
           </div>
 
           {/* Search Bar */}
-          <div className="bg-black rounded-lg p-6 mb-8">
+          <div className="bg-black rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
             <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-300 w-4 h-4 sm:w-5 sm:h-5" />
               <Input
                 placeholder="Search for help articles, FAQs, or topics..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-[#121212] border-[#2b2b2b] focus:border-primary outline-none text-white placeholder:text-gray-300"
+                className="pl-8 sm:pl-10 bg-[#121212] border-[#2b2b2b] focus:border-primary outline-none text-white placeholder:text-gray-300 text-sm sm:text-base"
               />
             </div>
 
@@ -214,7 +214,7 @@ export default function SupportPage() {
                   variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(category)}
-                  className={selectedCategory === category ? "bg-primary" : "border-[#2b2b2b]"}
+                  className={`text-xs sm:text-sm ${selectedCategory === category ? "bg-primary" : "border-[#2b2b2b]"}`}
                 >
                   {category === "all" ? "All Topics" : category}
                 </Button>
@@ -222,51 +222,53 @@ export default function SupportPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
             {/* FAQ Section */}
-            <div className="lg:col-span-2">
-              <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+            <div className="xl:col-span-2 order-2 xl:order-1">
+              <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Frequently Asked Questions</h2>
 
               {loading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="bg-black rounded-lg p-6 animate-pulse">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-20 h-5 bg-[#2b2b2b] rounded"></div>
-                        <div className="flex-1 h-5 bg-[#2b2b2b] rounded"></div>
+                    <div key={i} className="bg-black rounded-lg p-4 sm:p-6 animate-pulse">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                        <div className="w-16 sm:w-20 h-4 sm:h-5 bg-[#2b2b2b] rounded"></div>
+                        <div className="flex-1 h-4 sm:h-5 bg-[#2b2b2b] rounded"></div>
                       </div>
-                      <div className="h-4 bg-[#2b2b2b] rounded w-3/4"></div>
+                      <div className="h-3 sm:h-4 bg-[#2b2b2b] rounded w-3/4"></div>
                     </div>
                   ))}
                 </div>
               ) : filteredFaqs.length === 0 ? (
-                <div className="bg-black rounded-lg p-8 text-center">
-                  <p className="text-gray-300">No FAQs found matching your search.</p>
+                <div className="bg-black rounded-lg p-6 sm:p-8 text-center">
+                  <p className="text-sm sm:text-base text-gray-300">No FAQs found matching your search.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {filteredFaqs.map((faq, index) => (
                     <div key={faq.faq_id} className="bg-black rounded-lg">
                       <button
-                        className="w-full p-6 text-left flex items-center justify-between hover:bg-[#121212] transition-colors"
+                        className="w-full p-4 sm:p-6 text-left flex items-start sm:items-center justify-between hover:bg-[#121212] transition-colors gap-3"
                         onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
                       >
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="text-xs bg-[#121212]">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <Badge variant="outline" className="text-xs bg-[#121212] self-start sm:self-auto shrink-0">
                             {faq.category}
                           </Badge>
-                          <span className="font-medium">{faq.question}</span>
+                          <span className="font-medium text-sm sm:text-base break-words">{faq.question}</span>
                         </div>
-                        {expandedFaq === index ? (
-                          <ChevronUp className="w-5 h-5 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-400" />
-                        )}
+                        <div className="shrink-0 mt-1 sm:mt-0">
+                          {expandedFaq === index ? (
+                            <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
+                          )}
+                        </div>
                       </button>
 
                       {expandedFaq === index && (
-                        <div className="px-6 pb-6">
-                          <p className="text-gray-300 leading-relaxed">{faq.answer}</p>
+                        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                          <p className="text-sm sm:text-base text-gray-300 leading-relaxed">{faq.answer}</p>
                         </div>
                       )}
                     </div>
@@ -276,10 +278,10 @@ export default function SupportPage() {
             </div>
 
             {/* Right Sidebar */}
-            <div>
+            <div className="order-1 xl:order-2 space-y-4 sm:space-y-6">
               {/* Contact Form */}
-              <div className="bg-black rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold mb-4">Contact Support</h3>
+              <div className="bg-black rounded-lg p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold mb-4">Contact Support</h3>
 
                 <form onSubmit={handleSupportSubmit} className="space-y-4">
                   <div>
@@ -287,7 +289,7 @@ export default function SupportPage() {
                     <Input
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="bg-[#121212] border-[#2b2b2b]"
+                      className="bg-[#121212] border-[#2b2b2b] text-sm sm:text-base"
                       placeholder="Your Name"
                       required
                     />
@@ -299,7 +301,7 @@ export default function SupportPage() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="bg-[#121212] border-[#2b2b2b]"
+                      className="bg-[#121212] border-[#2b2b2b] text-sm sm:text-base"
                       placeholder="your.email@example.com"
                       required
                     />
@@ -311,7 +313,7 @@ export default function SupportPage() {
                       value={formData.category}
                       onValueChange={(value) => setFormData({ ...formData, category: value })}
                     >
-                      <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b]">
+                      <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-sm sm:text-base">
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -329,75 +331,80 @@ export default function SupportPage() {
                     <Textarea
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      className="bg-[#121212] border-[#2b2b2b] min-h-[120px]"
+                      className="bg-[#121212] border-[#2b2b2b] min-h-[100px] sm:min-h-[120px] text-sm sm:text-base"
                       placeholder="Describe your issue or question..."
                       required
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    <Send className="w-4 h-4 mr-2" />
+                  <Button type="submit" className="w-full text-sm sm:text-base" disabled={loading}>
+                    <Send className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     {loading ? "Sending..." : "Send Message"}
                   </Button>
                 </form>
               </div>
 
               {/* AI Chatbot / Expert Call */}
-              <div className="bg-black rounded-lg p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Ask Adalyze Expert</h3>
-                  {!isProUser && <Badge className="bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00]">Pro Only</Badge>}
+              <div className="bg-black rounded-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                  <h3 className="text-base sm:text-lg font-semibold">Ask Adalyze Expert</h3>
+                  {!isProUser && <Badge className="bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00] self-start sm:self-auto">Pro Only</Badge>}
                 </div>
-                <p className="text-gray-400 text-sm mb-4">
+                <p className="text-gray-300 text-xs sm:text-sm mb-4">
                   {isProUser ? "Schedule a call with our AI experts for personalized guidance." : "Get instant answers from our AI assistant trained on Adalyze knowledge."}
                 </p>
                 <Button
                   variant={isProUser ? "default" : "outline"}
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                   disabled={!isProUser}
                   onClick={() => isProUser && setShowExpertDialog(true)}
                 >
-                  {isProUser ? <Phone className="w-4 h-4 mr-2" /> : <MessageCircle className="w-4 h-4 mr-2" />}
-                  {isProUser ? "Schedule Call" : "Start Chat (Upgrade to Pro)"}
+                  {isProUser ? <Phone className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> : <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />}
+                  <span className="hidden sm:inline">
+                    {isProUser ? "Schedule Call" : "Start Chat (Upgrade to Pro)"}
+                  </span>
+                  <span className="sm:hidden">
+                    {isProUser ? "Schedule Call" : "Upgrade to Pro"}
+                  </span>
                 </Button>
               </div>
 
               {/* Feedback Section */}
-              <div className="bg-black rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold mb-4">Share Your Feedback</h3>
-                <p className="text-gray-400 text-sm mb-4">
+              <div className="bg-black rounded-lg p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold mb-4">Share Your Feedback</h3>
+                <p className="text-gray-300 text-xs sm:text-sm mb-4">
                   Help us improve by sharing your experience with Adalyze AI.
                 </p>
                 <Button
                   variant="outline"
-                  className="w-full border-[#2b2b2b]"
+                  className="w-full border-[#2b2b2b] text-sm sm:text-base"
                   onClick={() => setShowFeedbackDialog(true)}
                 >
-                  <Star className="w-4 h-4 mr-2" />
+                  <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                   Give Feedback
                 </Button>
               </div>
 
               {/* Response Time Notice */}
-              <div className="bg-black rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold mb-2">Response Time</h3>
-                <p className="text-gray-400 text-sm">
+              <div className="bg-black rounded-lg p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold mb-2">Response Time</h3>
+                <p className="text-gray-300 text-xs sm:text-sm">
                   We typically respond to support requests within 24 hours during business days.
                 </p>
               </div>
 
               {/* Contact Links */}
-              <div className="bg-black rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Other Ways to Reach Us</h3>
+              <div className="bg-black rounded-lg p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold mb-4">Other Ways to Reach Us</h3>
                 <div className="space-y-3">
                   <a
                     href="mailto:support@adalyze.com"
                     className="flex items-center gap-3 p-3 bg-[#121212] rounded-lg hover:bg-[#2b2b2b] transition-colors"
                   >
-                    <Mail className="w-5 h-5 text-blue-400" />
-                    <div>
-                      <div className="font-medium">Email Support</div>
-                      <div className="text-sm text-gray-400">support@adalyze.com</div>
+                    <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm sm:text-base">Email Support</div>
+                      <div className="text-xs sm:text-sm text-gray-300 break-all">support@adalyze.com</div>
                     </div>
                   </a>
 
@@ -405,10 +412,10 @@ export default function SupportPage() {
                     href="https://wa.me/1234567890"
                     className="flex items-center gap-3 p-3 bg-[#121212] rounded-lg hover:bg-[#2b2b2b] transition-colors"
                   >
-                    <MessageCircle className="w-5 h-5 text-green-400" />
+                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 shrink-0" />
                     <div>
-                      <div className="font-medium">WhatsApp</div>
-                      <div className="text-sm text-gray-400">Quick support chat</div>
+                      <div className="font-medium text-sm sm:text-base">WhatsApp</div>
+                      <div className="text-xs sm:text-sm text-gray-300">Quick support chat</div>
                     </div>
                   </a>
                 </div>
@@ -418,10 +425,10 @@ export default function SupportPage() {
 
           {/* Expert Call Dialog */}
           {showExpertDialog && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-black border border-[#2b2b2b] rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-black border border-[#2b2b2b] rounded-lg p-4 sm:p-6 w-full max-w-md">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Schedule Expert Call</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">Schedule Expert Call</h3>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -438,7 +445,7 @@ export default function SupportPage() {
                       type="date"
                       value={expertCallData.prefdate}
                       onChange={(e) => setExpertCallData({ ...expertCallData, prefdate: e.target.value })}
-                      className="bg-[#121212] border-[#2b2b2b]"
+                      className="bg-[#121212] border-[#2b2b2b] text-sm sm:text-base"
                       required
                     />
                   </div>
@@ -449,7 +456,7 @@ export default function SupportPage() {
                       type="time"
                       value={expertCallData.preftime}
                       onChange={(e) => setExpertCallData({ ...expertCallData, preftime: e.target.value })}
-                      className="bg-[#121212] border-[#2b2b2b]"
+                      className="bg-[#121212] border-[#2b2b2b] text-sm sm:text-base"
                       required
                     />
                   </div>
@@ -459,22 +466,22 @@ export default function SupportPage() {
                     <Textarea
                       value={expertCallData.comments}
                       onChange={(e) => setExpertCallData({ ...expertCallData, comments: e.target.value })}
-                      className="bg-[#121212] border-[#2b2b2b] min-h-[100px]"
+                      className="bg-[#121212] border-[#2b2b2b] min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
                       placeholder="What would you like to discuss?"
                       required
                     />
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       type="button"
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 text-sm sm:text-base"
                       onClick={() => setShowExpertDialog(false)}
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" className="flex-1" disabled={loading}>
+                    <Button type="submit" className="flex-1 text-sm sm:text-base" disabled={loading}>
                       {loading ? "Scheduling..." : "Schedule Call"}
                     </Button>
                   </div>
@@ -485,10 +492,10 @@ export default function SupportPage() {
 
           {/* Feedback Dialog */}
           {showFeedbackDialog && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-black border border-[#2b2b2b] rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-black border border-[#2b2b2b] rounded-lg p-4 sm:p-6 w-full max-w-md">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Share Your Feedback</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">Share Your Feedback</h3>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -504,7 +511,7 @@ export default function SupportPage() {
                     <Input
                       value={feedbackData.ad_upload_id}
                       onChange={(e) => setFeedbackData({ ...feedbackData, ad_upload_id: e.target.value })}
-                      className="bg-[#121212] border-[#2b2b2b]"
+                      className="bg-[#121212] border-[#2b2b2b] text-sm sm:text-base"
                       placeholder="Enter ad upload ID if applicable"
                     />
                   </div>
@@ -515,7 +522,7 @@ export default function SupportPage() {
                       value={feedbackData.rating}
                       onValueChange={(value) => setFeedbackData({ ...feedbackData, rating: value })}
                     >
-                      <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b]">
+                      <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-sm sm:text-base">
                         <SelectValue placeholder="Select rating" />
                       </SelectTrigger>
                       <SelectContent>
@@ -533,22 +540,22 @@ export default function SupportPage() {
                     <Textarea
                       value={feedbackData.comments}
                       onChange={(e) => setFeedbackData({ ...feedbackData, comments: e.target.value })}
-                      className="bg-[#121212] border-[#2b2b2b] min-h-[100px]"
+                      className="bg-[#121212] border-[#2b2b2b] min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
                       placeholder="Share your thoughts and suggestions..."
                       required
                     />
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       type="button"
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 text-sm sm:text-base"
                       onClick={() => setShowFeedbackDialog(false)}
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" className="flex-1" disabled={loading}>
+                    <Button type="submit" className="flex-1 text-sm sm:text-base" disabled={loading}>
                       {loading ? "Submitting..." : "Submit Feedback"}
                     </Button>
                   </div>
@@ -559,6 +566,6 @@ export default function SupportPage() {
         </div>
       )}
     </UserLayout>
-
   )
+
 }

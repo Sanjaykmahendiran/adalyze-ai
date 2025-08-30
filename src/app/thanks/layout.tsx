@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
-import { Suspense } from "react";
+import UserLayout from "@/components/layouts/user-layout";
 import { Toaster } from "react-hot-toast";
+import { Suspense } from "react";
 
 // Import Poppins
 const poppins = Poppins({
@@ -23,12 +24,11 @@ export default function Layout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} antialiased`}>
-          <div className="bg-[#0a0a0a]">
-             <Toaster position="top-center" reverseOrder={false} />
+        <div className="bg-[#0a0a0a]">
           <Suspense>
-            {children}
-            </Suspense>
-          </div>
+          {children}
+          </Suspense>
+        </div>
       </body>
     </html>
   );

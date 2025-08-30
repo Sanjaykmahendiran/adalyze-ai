@@ -59,7 +59,7 @@
   --popover-foreground:#ffffff;
   --primary: #db4900;
   --primary-foreground: #ffffff;
-  --secondary: #292929;
+  --secondary: #2b2b2b;
   --secondary-foreground: hsl(222.2 47.4% 11.2%);
   --muted: #333333;
   --muted-foreground: #bbbbbb;
@@ -71,22 +71,6 @@
   --input: #121212;
   --ring: #db4900;
   
-  /* Chart colors */
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  
-  /* Sidebar colors */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
@@ -110,22 +94,6 @@
   --input: hsl(217.2 32.6% 17.5%);
   --ring: hsl(142.1 61.1% 50.6%);
   
-  /* Dark theme chart colors */
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  
-  /* Dark theme sidebar colors */
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
@@ -173,20 +141,49 @@
   scrollbar-width: none;     /* Firefox */
 }
 
-@keyframes neonMove {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
+
+
+@keyframes bounceSlow {
+
+  0%,
   100% {
-    background-position: 0% 50%;
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-20px);
   }
 }
 
-.animated-gradient {
-  background: linear-gradient(135deg, #db4900, #ff4d00, #9f00ff);
-  background-size: 300% 300%;
-  animation: neonMove 8s ease infinite;
+.bounce-slow {
+  animation: bounceSlow 2s infinite;
 }
+
+.shine-effect::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-20deg);
+    z-index: 1;
+}
+
+.shine-effect:hover::before {
+    animation: shine 0.8s ease-in-out forwards;
+}
+
+@keyframes shine {
+    100% {
+        left: 125%;
+    }
+}
+
+

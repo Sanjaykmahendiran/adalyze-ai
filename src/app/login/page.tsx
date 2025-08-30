@@ -8,7 +8,7 @@ import Cookies from "js-cookie"
 import toast from "react-hot-toast"
 import loginlogo from "@/assets/ad-logo.png"
 import AuthLoginForm from "@/app/login/_components/auth-login-form"
-import Background from "@/assets/ad-login-banner.jpg"
+import Background from "@/assets/register-page-image.png"
 
 interface LoginFormData {
   email: string;
@@ -110,7 +110,7 @@ const LoginPage = () => {
               {/* Header */}
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-bold text-white mb-2">Login to Your Account</h1>
-                <p className="text-gray-400 text-sm">Your Own Digital Campaign</p>
+                <p className="text-gray-300 text-sm">Your Own Digital Campaign</p>
               </div>
               <div className="mt-8">
                 {/* Auth form with API integration */}

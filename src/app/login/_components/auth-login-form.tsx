@@ -73,7 +73,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                       required: "Please enter your email",
                     })}
                   />
-                  <span className="mr-4 text-gray-400">|</span>
+                  <span className="mr-4 text-gray-300">|</span>
                   <button
                     type="button"
                     className="text-sm mr-4 font-medium text-orange-500 hover:text-orange-400"
@@ -232,9 +232,9 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                   onClick={togglePasswordType}
                 >
                   {passwordType === "password" ? (
-                    <Eye className="h-4 w-4 text-gray-400 hover:text-gray-300" />
+                    <Eye className="h-4 w-4 text-gray-300 hover:text-gray-300" />
                   ) : (
-                    <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-300" />
+                    <EyeOff className="h-4 w-4 text-gray-300 hover:text-gray-300" />
                   )}
                 </div>
               </div>
@@ -248,7 +248,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
               <button
                 type="button"
                 onClick={() => setShowResetPassword(true)}
-                className="text-sm text-gray-400 hover:text-gray-300 hover:underline"
+                className="text-sm text-gray-300 hover:text-gray-300 hover:underline"
               >
                 Forgot Password?
               </button>
@@ -263,12 +263,12 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
               {loading ? "Please wait" : "Login to Your Account"}
             </Button>
 
-            <GoogleSignInButton />
+            <GoogleSignInButton onSubmit={(userData: any) => onSubmit(userData)} />
 
             <div className="text-center">
               <Link
                 href="/register"
-                className="text-sm text-gray-400 flex justify-center"
+                className="text-sm text-gray-300 flex justify-center"
               >
                 <span className="pr-1">Don't have an account?</span>
                 <span className="hover:underline pl-1 text-primary">Register Now</span>

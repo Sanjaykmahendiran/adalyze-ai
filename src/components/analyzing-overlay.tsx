@@ -47,7 +47,7 @@ export function AnalyzingOverlay() {
         {/* Main Text */}
         <div className="space-y-4">
           <h2 className="text-4xl font-bold text-white">Analyzing your creative...</h2>
-          <p className="text-xl text-gray-400">
+          <p className="text-xl text-gray-300">
             Our AI is examining your ad for design elements, messaging, and performance factors.
           </p>
         </div>
@@ -55,7 +55,7 @@ export function AnalyzingOverlay() {
         {/* Loading Indicator */}
         <div className="flex items-center space-x-3">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span className="text-gray-400">Processing...</span>
+          <span className="text-gray-300">Processing...</span>
         </div>
 
         {/* Fun Fact Card */}

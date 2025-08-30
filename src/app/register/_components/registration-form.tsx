@@ -15,11 +15,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import GoogleSignInButton from "@/app/login/_components/GoogleSign-In";
 import Cookies from "js-cookie";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { event } from "@/lib/gtm";
 
 const sourceOptions = [
   "Google",
@@ -28,6 +29,7 @@ const sourceOptions = [
   "LinkedIn",
   "Twitter",
   "Word of Mouth",
+  "Referral",
   "Other",
 ];
 
@@ -46,6 +48,7 @@ const registrationSchema = z.object({
   role: z.string().min(1, { message: "Please select a role." }),
   city: z.string().min(2, { message: "City must be at least 2 characters." }),
   source: z.string().min(1, { message: "Please select a source." }),
+  referral_code: z.string().optional(),
 });
 
 export default function RegistrationForm() {
@@ -54,7 +57,14 @@ export default function RegistrationForm() {
   const [step, setStep] = useState(1);
   const [emailValue, setEmailValue] = useState("");
   const [userId, setUserId] = useState("");
+  const [referredBy, setReferredBy] = useState("");
+  const [isCheckingReferral, setIsCheckingReferral] = useState(false);
+  const [referralUserId, setReferralUserId] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get referral code from search params
+  const referralCode = searchParams.get('referral_code') || '';
 
   // Effect to persist the step and user data in localStorage
   useEffect(() => {
@@ -101,9 +111,65 @@ export default function RegistrationForm() {
       password: "",
       role: "",
       city: "",
-      source: "",
+      source: referralCode ? "Referral" : "",
+      referral_code: referralCode,
     },
   });
+
+  // Function to check referral code and get referred by name and user ID
+  const checkReferralCode = async (code: string) => {
+    if (!code.trim()) {
+      setReferredBy("");
+      setReferralUserId("");
+      return;
+    }
+
+    setIsCheckingReferral(true);
+    try {
+      const response = await fetch(
+        `https://adalyzeai.xyz/App/api.php?gofor=usergetbyref&referral_code=${code}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+
+        if (data.user_id && data.name) {
+          // Store the user_id separately
+          setReferralUserId(data.user_id.toString());
+          // Display the user name
+          setReferredBy(data.name);
+        } else {
+          setReferredBy("");
+          setReferralUserId("");
+          toast.error("Invalid referral code");
+        }
+      } else {
+        setReferredBy("");
+        setReferralUserId("");
+        toast.error("Invalid referral code");
+      }
+    } catch (error) {
+      console.error("Error checking referral code:", error);
+      setReferredBy("");
+      setReferralUserId("");
+      toast.error("Error validating referral code");
+    } finally {
+      setIsCheckingReferral(false);
+    }
+  };
+
+  // Watch source field to handle referral selection
+  const sourceValue = registrationForm.watch("source");
+  const referralCodeValue = registrationForm.watch("referral_code");
+
+  // Effect to check referral code when it changes
+  useEffect(() => {
+    if (sourceValue === "Referral" && referralCodeValue) {
+      checkReferralCode(referralCodeValue);
+    } else {
+      setReferredBy("");
+    }
+  }, [sourceValue, referralCodeValue]);
 
   // Step 1 submission - Email verification with real API
   async function onSubmitEmail(values: z.infer<typeof emailSchema>) {
@@ -138,32 +204,44 @@ export default function RegistrationForm() {
     }
   }
 
-  // Handle Google Sign-In
-  async function handleGoogleSignIn(userData: any) {
-    // Implementation for Google Sign-In
-    console.log("Google Sign-In data:", userData);
-    // Add your Google Sign-In logic here
-  }
 
   // Step 2 submission - Full registration with real API
   async function onSubmitRegistration(values: z.infer<typeof registrationSchema>) {
     setIsLoading(true);
     try {
+      const payload: {
+        gofor: string;
+        user_id: string;
+        name: string;
+        mobileno: string;
+        password: string;
+        role: string;
+        city: string;
+        source: string;
+        referred_by?: number;
+      } = {
+        gofor: "register",
+        user_id: userId,
+        name: values.name,
+        mobileno: values.mobileno,
+        password: values.password,
+        role: values.role,
+        city: values.city,
+        source: values.source,
+      };
+
+      // Add referred_by field if source is Referral and we have the user ID
+      if (values.source === "Referral" && referralUserId) {
+        // Send the user ID as integer in referred_by field
+        payload.referred_by = parseInt(referralUserId);
+      }
+
       const response = await fetch("https://adalyzeai.xyz/App/api.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          gofor: "register",
-          user_id: userId,
-          name: values.name,
-          mobileno: values.mobileno,
-          password: values.password,
-          role: values.role,
-          city: values.city,
-          source: values.source,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -171,6 +249,12 @@ export default function RegistrationForm() {
       if (data.status === "success") {
         // Save user_id in cookies
         Cookies.set("userId", userId, { expires: 30 }); // Expires in 30 days
+
+        // ✅ GA4 / GTM custom event
+        event("signup", {
+          method: values.source === "Referral" ? "Referral" : values.source || "Email",
+        });
+
 
         toast.success(data.message || "Registration successful!");
         registrationForm.reset();
@@ -181,7 +265,7 @@ export default function RegistrationForm() {
         localStorage.removeItem("registrationUserId");
 
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/pricing");
         }, 2000);
       } else {
         toast.error("Registration failed. Please try again.");
@@ -232,7 +316,7 @@ export default function RegistrationForm() {
                   {isLoading ? "Verifying..." : "Continue"}
                 </Button>
 
-                <GoogleSignInButton />
+                <GoogleSignInButton onSubmit={onSubmitRegistration} />
 
                 <Link href="/login" className="text-sm mt-4 flex justify-center">
                   Already have an account?{" "}
@@ -350,7 +434,6 @@ export default function RegistrationForm() {
                         <SelectValue placeholder="Select Role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CEO">CEO</SelectItem>
                         <SelectItem value="CMO">CMO</SelectItem>
                         <SelectItem value="Manager">Manager</SelectItem>
                         <SelectItem value="Developer">Developer</SelectItem>
@@ -407,6 +490,40 @@ export default function RegistrationForm() {
               )}
             />
 
+            {/* Referral Code Field - Only show when source is "Referral" */}
+            {sourceValue === "Referral" && (
+              <FormField
+                control={registrationForm.control}
+                name="referral_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold">Referral Code</FormLabel>
+                    <FormControl>
+                      <input
+                        placeholder="Enter Referral Code"
+                        {...field}
+                        className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                      />
+                    </FormControl>
+                    <FormMessage />
+
+                    {/* Show referred by name */}
+                    {isCheckingReferral && (
+                      <p className="text-xs text-gray-300 mt-1">Checking referral code...</p>
+                    )}
+                    {referredBy && !isCheckingReferral && (
+                      <p className="text-xs text-green-400 mt-1">
+                        Referred by: <span className="font-semibold">{referredBy}</span>
+                      </p>
+                    )}
+                    {!referredBy && !isCheckingReferral && field.value && (
+                      <p className="text-xs text-red-400 mt-1">Invalid referral code</p>
+                    )}
+                  </FormItem>
+                )}
+              />
+            )}
+
             <div className="pt-2">
               <Button
                 type="submit"
@@ -423,7 +540,7 @@ export default function RegistrationForm() {
               >
                 Back
               </Button>
-              <Link href="/login" className="text-sm text-gray-400 flex justify-center mt-3">
+              <Link href="/login" className="text-sm text-gray-300 flex justify-center mt-3">
                 Already have an account?{" "}
                 <span className="hover:underline pl-1 text-primary">Login</span>
               </Link>

@@ -6,7 +6,7 @@ import Link from "next/link"
 import loginlogo from "@/assets/ad-logo.png"
 import RegistrationForm from "./_components/registration-form"
 import LoginCarousel from "@/components/carousel/login-carousel"
-import Background from "@/assets/ad-login-banner.jpg";
+import Background from "@/assets/register-page-image.png";
 
 const RegisterPage = () => {
   return (
@@ -30,7 +30,7 @@ const RegisterPage = () => {
             {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-white mb-2">Create Your Account</h1>
-              <p className="text-gray-400 text-sm">Your Own Digital Campaign</p>
+              <p className="text-gray-300 text-sm">Your Own Digital Campaign</p>
             </div>
             <div className="mt-4 sm:mt-4">
               <RegistrationForm />

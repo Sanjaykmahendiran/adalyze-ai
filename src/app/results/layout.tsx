@@ -25,7 +25,6 @@ export default function Layout({
       <body className={`${poppins.variable} antialiased`}>
           <Suspense>
           <div className="bg-[#0a0a0a]">
-                  <Toaster position="top-center" reverseOrder={false} />
             {children}
           </div>
           </Suspense>

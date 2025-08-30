@@ -51,7 +51,7 @@ const AbResultsLoadingSkeleton = () => {
                 {/* Tabs Skeleton */}
                 <div className="bg-black rounded-2xl p-2 mb-8 border border-[#121212] inline-flex">
                     <div className="px-6 py-3 rounded-xl bg-primary text-white shadow-lg w-32 h-10 animate-pulse" />
-                    <div className="px-6 py-3 rounded-xl text-gray-400 w-32 h-10 ml-2 animate-pulse" />
+                    <div className="px-6 py-3 rounded-xl text-gray-300 w-32 h-10 ml-2 animate-pulse" />
                 </div>
 
                 {/* Issues/Suggestions Skeleton */}

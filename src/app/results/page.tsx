@@ -48,6 +48,8 @@ import { cn } from "@/lib/utils"
 import logo from "@/assets/ad-icon-logo.png"
 import { ApiResponse } from "./type"
 import DownloadReport from "./_components/download-result"
+import { jsPDF } from "jspdf";
+import * as htmlToImage from "html-to-image";
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -63,11 +65,58 @@ export default function ResultsPage() {
   const isProUser = userDetails?.payment_status === 1
 
   const handleDownloadPDF = async () => {
-    if (!apiData) {
-      alert("No data available to generate PDF");
-      return;
-    }
+    const selector = "body"; // Change if you want a specific container
+    const toHideSelectors = [".skip-block", "noscript"];
 
+    // 1. Hide unwanted elements
+    const hidden = [] as any;
+    toHideSelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        hidden.push({ el, display: el?.style.display });
+        el.style.display = "none";
+      });
+    });
+
+    try {
+      // 2. Take screenshot
+      const node = document.querySelector(selector);
+      if (!node) {
+        throw new Error(`Selector not found: ${selector}`);
+      }
+      const dataUrl = await htmlToImage.toPng(node);
+
+      // 3. Setup PDF
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Paint background black
+      pdf.setFillColor(0, 0, 0);
+      pdf.rect(0, 0, pageWidth, pageHeight, "F");
+
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const imgWidth = imgProps.width;
+      const imgHeight = imgProps.height;
+
+      // Scale to fit within A4
+      const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+      const scaledWidth = imgWidth * ratio;
+      const scaledHeight = imgHeight * ratio;
+
+      const x = (pageWidth - scaledWidth) / 2;
+      const y = (pageHeight - scaledHeight) / 2;
+
+      // Add image on top
+      pdf.addImage(dataUrl, "PNG", x, y, scaledWidth, scaledHeight);
+
+      // 4. Save
+      pdf.save("screenshot.pdf");
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+    } finally {
+      // 5. Restore hidden elements
+      hidden.forEach(({ el, display }) => (el.style.display = display));
+    }
   };
 
   useEffect(() => {
@@ -197,7 +246,7 @@ export default function ResultsPage() {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+          <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400 skip-block" />
           <p className="text-xl mb-4">Failed to load analysis results</p>
           <p className="text-gray-300 mb-6">{error}</p>
           <Button onClick={() => router.push('/upload')} className="bg-blue-600 hover:bg-blue-700">
@@ -1640,7 +1689,7 @@ export default function ResultsPage() {
             </div>
 
             {/* Ad Copy Generator */}
-            <div className="bg-black rounded-3xl shadow-lg shadow-white/10 border  border-[#2b2b2b]">
+            <div className="bg-black rounded-3xl shadow-lg shadow-white/10 border  border-[#2b2b2b] skip-block">
               <div className="p-8 space-y-8">
                 {/* Top: Title */}
                 <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -1766,7 +1815,7 @@ export default function ResultsPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center skip-block">
               <Button
                 onClick={() => router.push("/upload")}
                 className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"

@@ -257,7 +257,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full text-white "
+              className="w-full text-white cursor-pointer"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? "Please wait" : "Login to Your Account"}

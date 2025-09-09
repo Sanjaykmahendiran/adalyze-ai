@@ -3,7 +3,6 @@
 import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Download,
@@ -37,16 +36,18 @@ import {
   DollarSign,
   Upload,
   ArrowLeft,
+  ShieldCheck,
+  ChartNoAxesCombined,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
-import UserLayout from "@/components/layouts/user-layout"
 import ResultsPageLoadingSkeleton from "@/components/Skeleton-loading/results-loading"
 import { cn } from "@/lib/utils"
-import { generatePDFReport, ApiResponse } from "@/lib/pdfGenerator"
 import logo from "@/assets/ad-icon-logo.png"
+import { ApiResponse } from "./type"
+import DownloadReport from "./_components/download-result"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -57,8 +58,17 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false)
+  const [showReport, setShowReport] = useState(false);
   const isProUser = userDetails?.payment_status === 1
+
+  const handleDownloadPDF = async () => {
+    if (!apiData) {
+      alert("No data available to generate PDF");
+      return;
+    }
+
+  };
 
   useEffect(() => {
     const fetchAdDetails = async () => {
@@ -71,7 +81,7 @@ export default function ResultsPage() {
         }
 
         const result = await response.json()
-        setApiData(result.data) // Access data from the response
+        setApiData(result.data) 
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
@@ -182,177 +192,6 @@ export default function ResultsPage() {
     </div>
   )
 
-  const handleGeneratePDF = async () => {
-    if (!apiData) return
-
-    try {
-      // Import html2pdf dynamically to avoid SSR issues
-      const html2pdf = (await import('html2pdf.js')).default
-
-      // Get the results page element
-      const element = document.getElementById('results-page')
-
-      if (!element) {
-        throw new Error('Results page element not found')
-      }
-
-      // Configure PDF options to preserve your dark theme
-      const opt = {
-        margin: 0.3,
-        filename: `ad-analysis-${apiData.title || 'report'}-${new Date().toISOString().split('T')[0]}.pdf`,
-        image: {
-          type: 'jpeg',
-          quality: 0.95
-        },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#000000', // Your black background
-          scrollX: 0,
-          scrollY: 0,
-          width: element.scrollWidth,
-          height: element.scrollHeight,
-          ignoreElements: (element) => {
-            // Skip elements that shouldn't be in PDF
-            return element.classList?.contains('no-print') || false
-          }
-        },
-        jsPDF: {
-          unit: 'in',
-          format: 'a4',
-          orientation: 'portrait',
-          compress: true
-        },
-        pagebreak: {
-          mode: ['avoid-all', 'css', 'legacy'],
-          before: '.page-break-before',
-          after: '.page-break-after'
-        }
-      }
-
-      // Show loading state with your theme colors
-
-
-      // Temporarily ensure all colors are preserved during capture
-      const originalBodyStyle = document.body.style.cssText
-      document.body.style.cssText += '; background: #000000 !important;'
-
-      // Generate PDF
-      await html2pdf().set(opt).from(element).save()
-
-      // Restore original styles
-      document.body.style.cssText = originalBodyStyle
-
-
-    } catch (error) {
-      console.error('PDF generation error:', error)
-
-      // Show error with your theme colors
-      const errorToast = document.createElement('div')
-      errorToast.innerHTML = `
-      <div style="position: fixed; top: 20px; right: 20px; background: #1a1a1a; color: #ff6b6b; padding: 16px 24px; border-radius: 12px; z-index: 9999; border: 1px solid #ff6b6b;">
-        Failed to generate PDF. Please try again.
-      </div>
-    `
-      document.body.appendChild(errorToast)
-      setTimeout(() => document.body.removeChild(errorToast), 3000)
-    }
-  }
-
-  // Alternative implementation using jsPDF + html2canvas for more control
-  const handleGeneratePDFAlternative = async () => {
-    if (!apiData) return
-
-    try {
-      // Import libraries dynamically
-      const html2canvas = (await import('html2canvas')).default
-      const jsPDF = (await import('jspdf')).jsPDF
-
-      const element = document.getElementById('results-page')
-
-      if (!element) {
-        throw new Error('Results page element not found')
-      }
-
-      // Show loading state
-      const originalOverflow = document.body.style.overflow
-      document.body.style.overflow = 'visible'
-
-      // Capture the element as canvas
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#000000',
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        scrollX: 0,
-        scrollY: 0
-      })
-
-      // Restore original overflow
-      document.body.style.overflow = originalOverflow
-
-      // Calculate PDF dimensions
-      const imgWidth = 210 // A4 width in mm
-      const pageHeight = 295 // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      let position = 0
-
-      // Add first page
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      // Add additional pages if needed
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
-
-      // Save the PDF
-      const filename = `ad-analysis-${apiData.title || 'report'}-${new Date().toISOString().split('T')[0]}.pdf`
-      pdf.save(filename)
-
-    } catch (error) {
-      console.error('PDF generation error:', error)
-      alert('Failed to generate PDF report. Please try again.')
-    }
-  }
-
-  // CSS additions to improve PDF output (add to your global CSS or component styles)
-  const pdfOptimizedStyles = `
-  @media print {
-    #results-page {
-      background: white !important;
-      color: black !important;
-    }
-    
-    #results-page * {
-      background: white !important;
-      color: black !important;
-      box-shadow: none !important;
-    }
-    
-    .page-break-before {
-      page-break-before: always;
-    }
-    
-    .page-break-after {
-      page-break-after: always;
-    }
-    
-    .no-print {
-      display: none !important;
-    }
-  }
-`
 
   if (error) {
     return (
@@ -399,7 +238,7 @@ export default function ResultsPage() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen text-white max-w-7xl mx-auto" id="results-page">
+      <div className="min-h-screen text-white max-w-7xl mx-auto" >
         <main className="container mx-auto px-6 py-12">
           <div className="flex items-center justify-between mb-8">
             {/* Left: Back + Title + Subtitle */}
@@ -407,7 +246,7 @@ export default function ResultsPage() {
               {/* Back Button */}
               <button
                 onClick={() => router.back()}
-                className="flex items-center bg-[#121212] text-gray-300 hover:text-white rounded-full p-2 transition-all"
+                className="flex items-center bg-[#121212] text-gray-300 hover:text-white hover:bg-[#2b2b2b] rounded-full p-2 transition-all cursor-pointer no-print"
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
@@ -513,41 +352,44 @@ export default function ResultsPage() {
                         <h2 className="text-3xl font-bold mb-2">
                           {apiData.title || "Untitled Ad"}
                         </h2>
-                        <div className="text-gray-300 flex items-center gap-2">
-                          <Upload className="w-5 h-5" />
+                        <div className="text-gray-300 flex items-center text-sm gap-2">
+                          <Upload className="w-4 h-4" />
                           {apiData.uploaded_on ? formatDate(apiData.uploaded_on) : "Unknown"}
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-3">
-                        <Badge className="bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600/30">
-                          Industry: {apiData.industry || "N/A"}
-                        </Badge>
-                        <Badge className="bg-purple-600/20 text-purple-400 border border-purple-600/30">
-                          {apiData.ad_type || "Unknown"}
-                        </Badge>
-                        {platformSuitability.map((platform) => (
-                          <Badge
-                            key={platform.platform}
-                            className={cn(
-                              "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300",
-                              platform.suitable
-                                ? "bg-green-600/20 text-green-400 border border-green-600/30"
-                                : platform.warning
-                                  ? "bg-amber-600/20 text-amber-400 border border-amber-600/30"
-                                  : "bg-red-600/20 text-red-400 border border-red-600/30"
-                            )}
-                          >
-                            {platform.suitable ? (
-                              <CheckCircle className="w-4 h-4" />
-                            ) : platform.warning ? (
-                              <AlertTriangle className="w-4 h-4" />
-                            ) : (
-                              <XCircle className="w-4 h-4" />
-                            )}
-                            {platform.platform}
+                        <div className="flex items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300" >
+                          Industry:
+                          <Badge className="bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600/30">
+                            {apiData.industry || "N/A"}
                           </Badge>
-                        ))}
+                        </div>
+                        <div className="flex items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300" >
+                          Best Suit for:
+                          {platformSuitability.map((platform) => (
+                            <Badge
+                              key={platform.platform}
+                              className={cn(
+                                "flex items-center gap-2  transition-all duration-300",
+                                platform.suitable
+                                  ? "bg-green-600/20 text-green-400 border border-green-600/30"
+                                  : platform.warning
+                                    ? "bg-amber-600/20 text-amber-400 border border-amber-600/30"
+                                    : "bg-red-600/20 text-red-400 border border-red-600/30"
+                              )}
+                            >
+                              {platform.suitable ? (
+                                <CheckCircle className="w-4 h-4" />
+                              ) : platform.warning ? (
+                                <AlertTriangle className="w-4 h-4" />
+                              ) : (
+                                <XCircle className="w-4 h-4" />
+                              )}
+                              {platform.platform}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -555,107 +397,146 @@ export default function ResultsPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Performance Score */}
                       <div
-                        className="p-4 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] transition-all duration-300 text-center shadow-lg hover:scale-[1.01] transition-all duration-300"
-
-                        style={{
-                          transition: "all 0.3s",
-                        }}
+                        className="p-4 rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
                         onMouseEnter={e => {
                           e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
                         }}
                         onMouseLeave={e => {
                           e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                        }}>
+                        }}
+                      >
+                        <div className="grid grid-cols-3 items-center gap-3">
+                          {/* Column 1 → Icon */}
+                          <div className="flex justify-center">
+                            <ChartNoAxesCombined
+                              className={`h-10 w-10 ${apiData.score_out_of_100 < 50
+                                ? "text-red-400"
+                                : apiData.score_out_of_100 < 75
+                                  ? "text-yellow-400"
+                                  : "text-[#22C55E]"
+                                }`}
+                            />
+                          </div>
 
-                        <h3 className="text-base font-medium text-gray-300 mb-2">Performance Score</h3>
-                        <div
-                          className={`text-3xl font-bold ${apiData.score_out_of_100 < 50
-                            ? "text-red-400"
-                            : apiData.score_out_of_100 < 75
-                              ? "text-yellow-400"
-                              : "text-[#22C55E]"
-                            }`}
-                        >
-                          {apiData.score_out_of_100}/100
+                          {/* Column 2 → Label + Score */}
+                          <div className="text-left col-span-2">
+                            <h3 className="text-lg font-medium text-gray-300">Performance Score</h3>
+                            <div
+                              className={`text-3xl font-bold ${apiData.score_out_of_100 < 50
+                                ? "text-red-400"
+                                : apiData.score_out_of_100 < 75
+                                  ? "text-yellow-400"
+                                  : "text-[#22C55E]"
+                                }`}
+                            >
+                              {apiData.score_out_of_100}/100
+                            </div>
+                          </div>
                         </div>
-
                       </div>
 
                       {/* Confidence Score */}
                       <div
-                        className="p-4 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] transition-all duration-300 text-center shadow-lg hover:scale-[1.01] transition-all duration-300"
-                        style={{
-                          transition: "all 0.3s",
-                        }}
+                        className="p-4 rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
                         onMouseEnter={e => {
                           e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
                         }}
                         onMouseLeave={e => {
                           e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                        }}>
-                        <h3 className="text-base font-medium text-gray-300 mb-2">Confidence Score</h3>
-                        <div
-                          className={`text-3xl font-bold ${apiData.confidence_score < 50
-                            ? "text-red-400"
-                            : apiData.confidence_score < 75
-                              ? "text-yellow-400"
-                              : "text-[#22C55E]"
-                            }`}
-                        >
-                          {apiData.confidence_score || 0}/100
+                        }}
+                      >
+                        <div className="grid grid-cols-3 items-center gap-3">
+                          <div className="flex justify-center">
+                            <ShieldCheck
+                              className={`h-10 w-10 ${apiData.confidence_score < 50
+                                ? "text-red-400"
+                                : apiData.confidence_score < 75
+                                  ? "text-yellow-400"
+                                  : "text-[#22C55E]"
+                                }`}
+                            />
+                          </div>
+                          <div className="text-left col-span-2">
+                            <h3 className="text-lg font-medium text-gray-300">Confidence Score</h3>
+                            <div
+                              className={`text-3xl font-bold ${apiData.confidence_score < 50
+                                ? "text-red-400"
+                                : apiData.confidence_score < 75
+                                  ? "text-yellow-400"
+                                  : "text-[#22C55E]"
+                                }`}
+                            >
+                              {apiData.confidence_score || 0}/100
+                            </div>
+                          </div>
                         </div>
-
                       </div>
 
                       {/* Match Score */}
                       <div
-                        className="p-4 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] transition-all duration-300 text-center shadow-lg hover:scale-[1.01] transition-all duration-300"
-                        style={{
-                          transition: "all 0.3s",
-                        }}
+                        className="p-4 rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
                         onMouseEnter={e => {
                           e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
                         }}
                         onMouseLeave={e => {
                           e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                        }}>
-                        <h3 className="text-base font-medium text-gray-300 mb-2">Match Score</h3>
-                        <div
-                          className={`text-3xl font-bold ${apiData.match_score < 50
-                            ? "text-red-400"
-                            : apiData.match_score < 75
-                              ? "text-yellow-400"
-                              : "text-[#22C55E]"
-                            }`}
-                        >
-                          {apiData.match_score || 0}/100
+                        }}
+                      >
+                        <div className="grid grid-cols-3 items-center gap-3">
+                          <div className="flex justify-center">
+                            <Target
+                              className={`h-10 w-10 ${apiData.match_score < 50
+                                ? "text-red-400"
+                                : apiData.match_score < 75
+                                  ? "text-yellow-400"
+                                  : "text-[#22C55E]"
+                                }`}
+                            />
+                          </div>
+                          <div className="text-left col-span-2">
+                            <h3 className="text-lg font-medium text-gray-300">Match Score</h3>
+                            <div
+                              className={`text-3xl font-bold ${apiData.match_score < 50
+                                ? "text-red-400"
+                                : apiData.match_score < 75
+                                  ? "text-yellow-400"
+                                  : "text-[#22C55E]"
+                                }`}
+                            >
+                              {apiData.match_score || 0}/100
+                            </div>
+                          </div>
                         </div>
-
                       </div>
 
-                      {/* Issues Detected */}
+                      {/* Issues Detected (already in right layout) */}
                       <div
-                        className="p-4 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] transition-all duration-300 text-center shadow-lg hover:scale-[1.01] transition-all duration-300"
-                        style={{
-                          transition: "all 0.3s",
-                        }}
+                        className="p-4 rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
                         onMouseEnter={e => {
                           e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
                         }}
                         onMouseLeave={e => {
                           e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                        }}>
-                        <h3 className="text-base font-medium text-gray-300 mb-2">Issues Detected</h3>
-                        <div
-                          className={`text-3xl font-bold ${issues.length < 8 ? "text-[#22C55E]" : "text-red-400"
-                            }`}
-                        >
-                          {String(issues.length).padStart(2, "0")}
+                        }}
+                      >
+                        <div className="grid grid-cols-3 items-center gap-3">
+                          <div className="flex justify-center">
+                            <AlertTriangle
+                              className={`h-10 w-10 ${issues.length < 8 ? "text-[#22C55E]" : "text-red-400"}`}
+                            />
+                          </div>
+                          <div className="text-left col-span-2">
+                            <h3 className="text-lg font-medium text-gray-300">Issues Detected</h3>
+                            <div
+                              className={`text-3xl font-bold ${issues.length < 8 ? "text-[#22C55E]" : "text-red-400"}`}
+                            >
+                              {String(issues.length).padStart(2, "0")}
+                            </div>
+                          </div>
                         </div>
-
                       </div>
-                    </div>
 
+                    </div>
 
                     {/* Mismatch Warnings */}
                     {mismatchWarnings.length > 0 && (
@@ -718,23 +599,69 @@ export default function ResultsPage() {
                     </Tooltip>
                   </div>
                   <div className="space-y-4">
+                    {/* Scroll Stop Power */}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Scroll Stop Power</span>
-                      <span className="font-bold text-green-400">{apiData.scroll_stoppower || 'N/A'}</span>
+                      <span
+                        className={`font-bold ${apiData.scroll_stoppower === "High"
+                          ? "text-green-400"
+                          : apiData.scroll_stoppower === "Moderate"
+                            ? "text-yellow-400"
+                            : apiData.scroll_stoppower === "Low"
+                              ? "text-red-400"
+                              : "text-gray-400"
+                          }`}
+                      >
+                        {apiData.scroll_stoppower || "N/A"}
+                      </span>
                     </div>
+
+                    {/* Estimated CTR */}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Estimated CTR</span>
-                      <span className="font-bold text-green-400">{apiData.estimated_ctr || 'N/A'}</span>
+                      <span
+                        className={`font-bold ${parseFloat(apiData.estimated_ctr) >= 5
+                          ? "text-green-400"
+                          : parseFloat(apiData.estimated_ctr) >= 2
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                          }`}
+                      >
+                        {apiData.estimated_ctr || "N/A"}
+                      </span>
                     </div>
+
+                    {/* Conversion Probability */}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Conversion Probability</span>
-                      <span className="font-bold text-green-400">{apiData.conversion_probability || 'N/A'}</span>
+                      <span
+                        className={`font-bold ${parseFloat(apiData.conversion_probability) >= 50
+                          ? "text-green-400"
+                          : parseFloat(apiData.conversion_probability) >= 20
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                          }`}
+                      >
+                        {apiData.conversion_probability || "N/A"}
+                      </span>
                     </div>
+
+                    {/* Predicted Reach */}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Predicted Reach</span>
-                      <span className="font-bold text-blue-400">{apiData.predicted_reach?.toLocaleString() || 'N/A'}</span>
+                      <span
+                        className={`font-bold ${apiData.predicted_reach >= 10000
+                          ? "text-green-400"
+                          : apiData.predicted_reach >= 5000
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                          }`}
+                      >
+                        {apiData.predicted_reach?.toLocaleString() || "N/A"}
+                      </span>
                     </div>
                   </div>
+
                 </div>
 
                 {/* Budget & ROI */}
@@ -762,24 +689,69 @@ export default function ResultsPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Budget Level</span>
-                      <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30">
-                        {apiData.budget_level || 'N/A'}
+                      <Badge
+                        className={`
+                             ${apiData.budget_level === "Low"
+                            ? "bg-green-600/20 text-green-400 border-green-600/30"
+                            : apiData.budget_level === "Medium"
+                              ? "bg-yellow-600/20 text-yellow-400 border-yellow-600/30"
+                              : apiData.budget_level === "High"
+                                ? "bg-red-600/20 text-red-400 border-red-600/30"
+                                : "bg-gray-600/20 text-gray-400 border-gray-600/30"
+                          }
+                         `}
+                      >
+                        {apiData.budget_level || "N/A"}
                       </Badge>
                     </div>
+
+                    {/* Expected CPM */}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Expected CPM</span>
-                      <span className="font-bold text-yellow-400">{apiData.expected_cpm || 'N/A'}</span>
+                      <span
+                        className={`font-bold ${Number(apiData.expected_cpm) <= 5
+                          ? "text-green-400"
+                          : Number(apiData.expected_cpm) <= 15
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                          }`}
+                      >
+                        {apiData.expected_cpm || "N/A"}
+                      </span>
                     </div>
+
+                    {/* ROI Range */}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">ROI Range</span>
-                      <span className="font-bold text-green-400">
+                      <span
+                        className={`font-bold ${apiData.roi_max >= 5
+                          ? "text-green-400"
+                          : apiData.roi_max >= 3
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                          }`}
+                      >
                         {apiData.roi_min || 0}x - {apiData.roi_max || 0}x
                       </span>
                     </div>
+
+                    {/* Spend Efficiency */}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Spend Efficiency</span>
-                      <span className="font-bold text-purple-400">{apiData.spend_efficiency || 'N/A'}</span>
+                      <span
+                        className={`font-bold ${apiData.spend_efficiency === "Excellent"
+                          ? "text-green-400"
+                          : apiData.spend_efficiency === "Good"
+                            ? "text-yellow-400"
+                            : apiData.spend_efficiency === "Poor"
+                              ? "text-red-400"
+                              : "text-gray-400"
+                          }`}
+                      >
+                        {apiData.spend_efficiency || "N/A"}
+                      </span>
                     </div>
+
                   </div>
                 </div>
 
@@ -1087,23 +1059,21 @@ export default function ResultsPage() {
                               : "text-green-500"
                             }`}
                         />
-                        <span className="text-gray-300 font-medium">Engagement Score</span>
+                        <span className="text-gray-300 font-medium">
+                          Engagement Score
+                        </span>
                       </div>
-                      <span className="font-semibold text-white">
+                      <span
+                        className={`font-semibold text-xl ${apiData.engagement_score <= 50
+                          ? "text-red-500"
+                          : apiData.engagement_score <= 75
+                            ? "text-yellow-500"
+                            : "text-green-500"
+                          }`}
+                      >
                         {Math.round(apiData.engagement_score || 0)}/100
                       </span>
                     </div>
-                    <Progress
-                      value={apiData.engagement_score || 0}
-                      className="h-1 w-full bg-gray-800"
-                      indicatorClassName={
-                        apiData.engagement_score <= 50
-                          ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
-                          : apiData.engagement_score <= 75
-                            ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
-                            : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
-                      }
-                    />
                   </div>
 
                   {/* Other Engagement Metrics */}
@@ -1160,25 +1130,22 @@ export default function ResultsPage() {
                               {item.label}
                             </span>
                           </div>
-                          <span className="font-semibold text-white">
+                          <span
+                            className={`font-semibold text-xl ${item.value <= 50
+                              ? "text-red-500"
+                              : item.value <= 75
+                                ? "text-yellow-500"
+                                : "text-green-500"
+                              }`}
+                          >
                             {Math.round(item.value)}/100
                           </span>
                         </div>
-                        <Progress
-                          value={item.value}
-                          className="h-1 w-full bg-gray-800"
-                          indicatorClassName={
-                            item.value <= 50
-                              ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
-                              : item.value <= 75
-                                ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
-                                : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
-                          }
-                        />
                       </div>
                     ))}
                   </div>
                 </div>
+
               </div>
 
               {/* Technical Metrics */}
@@ -1232,11 +1199,16 @@ export default function ResultsPage() {
                           Budget Utilization
                         </span>
                       </div>
-                      <span className="font-semibold text-white">
+                      <span className={`font-semibold  text-xl   ${apiData.budget_utilization_score <= 50
+                        ? "text-red-500"
+                        : apiData.budget_utilization_score <= 75
+                          ? "text-yellow-500"
+                          : "text-green-500"
+                        }`}>
                         {Math.round(apiData.budget_utilization_score || 0)}/100
                       </span>
                     </div>
-                    <Progress
+                    {/* <Progress
                       value={apiData.budget_utilization_score || 0}
                       className="h-1 w-full bg-gray-800"
                       indicatorClassName={
@@ -1246,7 +1218,7 @@ export default function ResultsPage() {
                             ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
                             : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
                       }
-                    />
+                    /> */}
                   </div>
 
                   {/* Other Technical Metrics */}
@@ -1276,62 +1248,66 @@ export default function ResultsPage() {
                         icon: Layout,
                         max: 100,
                       },
-                    ].map((item, i) => (
-                      <div
-                        key={i}
-                        className="bg-[#121212] rounded-xl p-4 border border-[#2b2b2b] transition-all duration-300"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.boxShadow =
-                            item.max === 100
-                              ? item.value <= 50
+                    ].map((item, i) => {
+                      // Custom color logic
+                      const getColorClass = () => {
+                        if (item.max === 10) {
+                          // Faces Detected thresholds
+                          if (item.value <= 3) return "text-green-500";
+                          if (item.value <= 7) return "text-yellow-500";
+                          return "text-red-500";
+                        } else {
+                          // Default 100 scale thresholds
+                          if (item.value <= 50) return "text-red-500";
+                          if (item.value <= 75) return "text-yellow-500";
+                          return "text-green-500";
+                        }
+                      };
+
+                      const colorClass = getColorClass();
+
+                      return (
+                        <div
+                          key={i}
+                          className="bg-[#121212] rounded-xl p-4 border border-[#2b2b2b] transition-all duration-300"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow =
+                              colorClass.includes("red")
                                 ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                : item.value <= 75
+                                : colorClass.includes("yellow")
                                   ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                  : "0 0 14px 4px rgba(34,197,94,0.7)"
-                              : "0 0 14px 4px #DB4900";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.boxShadow =
-                            "0 0 10px rgba(255,255,255,0.05)";
-                        }}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center">
-                            <item.icon
-                              className={`w-5 h-5 mr-3 ${item.max === 100
-                                ? item.value <= 50
-                                  ? "text-red-500"
-                                  : item.value <= 75
-                                    ? "text-yellow-500"
-                                    : "text-green-500"
-                                : "text-primary"
-                                }`}
-                            />
-                            <span className="text-gray-300 font-medium">
-                              {item.label}
+                                  : "0 0 14px 4px rgba(34,197,94,0.7)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow =
+                              "0 0 10px rgba(255,255,255,0.05)";
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                              <item.icon className={`w-5 h-5 mr-3 ${colorClass}`} />
+                              <span className="text-gray-300 font-medium">
+                                {item.label}
+                              </span>
+                            </div>
+                            <span className={`font-semibold text-xl ${colorClass}`}>
+                              {Math.round(item.value)}
+                              {item.max === 100 ? "/100" : ""}
                             </span>
                           </div>
-                          <span className="font-semibold text-white">
-                            {Math.round(item.value)}
-                            {item.max === 100 ? "/100" : ""}
-                          </span>
+
+                          {/* {item.max === 100 && (
+          <Progress
+            value={item.value}
+            className="h-1 w-full bg-gray-800"
+            indicatorClassName={`${colorClass} shadow-[0_0_8px_currentColor]`}
+          />
+        )} */}
                         </div>
-                        {item.max === 100 && (
-                          <Progress
-                            value={item.value}
-                            className="h-1 w-full bg-gray-800"
-                            indicatorClassName={
-                              item.value <= 50
-                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
-                                : item.value <= 75
-                                  ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
-                                  : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
-                            }
-                          />
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+
                 </div>
               </div>
             </div>
@@ -1546,7 +1522,7 @@ export default function ResultsPage() {
                       {[
                         { label: "Visual Clarity", value: parseInt(String(apiData.visual_clarity)) || 0, icon: Eye, max: 100 },
                         { label: "Emotional Appeal", value: parseInt(String(apiData.emotional_appeal)) || 0, icon: Heart, max: 100 },
-                        { label: "Text-Visual Balance", value: parseInt(String(apiData.text_visual_balance)) || 0, icon: FileText, max: 100 },
+                        { label: "Text-Visual", value: parseInt(String(apiData.text_visual_balance)) || 0, icon: FileText, max: 100 },
                         { label: "CTA Visibility", value: parseInt(String(apiData.cta_visibility)) || 0, icon: Target, max: 100 }
                       ].map((item, i) => (
                         <div
@@ -1555,10 +1531,10 @@ export default function ResultsPage() {
                           onMouseEnter={(e) => {
                             e.currentTarget.style.boxShadow =
                               item.value <= 50
-                                ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                                ? "0 0 14px 4px rgba(239,68,68,0.7)" // red glow
                                 : item.value <= 75
-                                  ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                  : "0 0 14px 4px rgba(34,197,94,0.7)";
+                                  ? "0 0 14px 4px rgba(250,204,21,0.7)" // yellow glow
+                                  : "0 0 14px 4px rgba(34,197,94,0.7)"; // green glow
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.boxShadow =
@@ -1577,24 +1553,34 @@ export default function ResultsPage() {
                               />
                               <span className="text-gray-300">{item.label}</span>
                             </div>
-                            <span className="font-semibold text-white">
+                            <span
+                              className={`font-semibold text-xl ${item.value <= 50
+                                ? "text-red-500"
+                                : item.value <= 75
+                                  ? "text-yellow-500"
+                                  : "text-green-500"
+                                }`}
+                            >
                               {Math.round(item.value)}/100
                             </span>
                           </div>
-                          <Progress
-                            value={item.value}
-                            className="h-1 w-full bg-gray-800"
-                            indicatorClassName={
-                              item.value <= 50
-                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
-                                : item.value <= 75
-                                  ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
-                                  : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
-                            }
-                          />
+
+                          {/* Progress bar with dynamic color */}
+                          {/* <Progress
+        value={item.value}
+        className="h-1 w-full bg-gray-800"
+        indicatorClassName={
+          item.value <= 50
+            ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
+            : item.value <= 75
+            ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
+            : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
+        }
+      /> */}
                         </div>
                       ))}
                     </div>
+
 
                     {/* Design Quality */}
                     <h4 className="text-lg font-semibold text-primary mb-4">Design Quality</h4>
@@ -1611,10 +1597,10 @@ export default function ResultsPage() {
                           onMouseEnter={(e) => {
                             e.currentTarget.style.boxShadow =
                               item.value <= 50
-                                ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                                ? "0 0 14px 4px rgba(239,68,68,0.7)" // red
                                 : item.value <= 75
-                                  ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                  : "0 0 14px 4px rgba(34,197,94,0.7)";
+                                  ? "0 0 14px 4px rgba(250,204,21,0.7)" // yellow
+                                  : "0 0 14px 4px rgba(34,197,94,0.7)"; // green
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.boxShadow =
@@ -1633,24 +1619,21 @@ export default function ResultsPage() {
                               />
                               <span className="text-gray-300">{item.label}</span>
                             </div>
-                            <span className="font-semibold text-white">
+                            <span
+                              className={`font-semibold text-xl ${item.value <= 50
+                                ? "text-red-500"
+                                : item.value <= 75
+                                  ? "text-yellow-500"
+                                  : "text-green-500"
+                                }`}
+                            >
                               {Math.round(item.value)}/100
                             </span>
                           </div>
-                          <Progress
-                            value={item.value}
-                            className="h-1 w-full bg-gray-800"
-                            indicatorClassName={
-                              item.value <= 50
-                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"
-                                : item.value <= 75
-                                  ? "bg-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.7)]"
-                                  : "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"
-                            }
-                          />
                         </div>
                       ))}
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -1790,19 +1773,52 @@ export default function ResultsPage() {
               >
                 Re-analyze
               </Button>
+              {/* Button */}
+              <Button
+                onClick={() => setShowReport(true)}
+                className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
+              >
+                View Report
+              </Button>
+
+              {showReport && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="bg-black rounded-xl shadow-lg p-6 w-[90%] max-h-[90vh] overflow-auto max-w-4xl relative">
+                    {/* Close Button */}
+                    <button
+                      onClick={() => setShowReport(false)}
+                      className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+                    >
+                      ✕
+                    </button>
+
+                    {/* Report Component */}
+                    {apiData && (
+                      <DownloadReport
+                        apiData={apiData}
+                        currentImageIndex={currentImageIndex}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
               <Button
                 variant="outline"
-                onClick={handleGeneratePDF}
-                disabled={loading || !apiData}
+                onClick={handleDownloadPDF}
+                disabled={isPdfGenerating || !apiData}
                 className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Download Report
+                {isPdfGenerating ? "Generating..." : "Download Report"}
               </Button>
             </div>
           </div>
         </main>
+
+
       </div>
+
+
     </TooltipProvider>
   )
 }

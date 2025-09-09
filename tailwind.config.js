@@ -1,4 +1,3 @@
-/** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
   content: [
@@ -18,40 +17,41 @@ module.exports = {
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        border: "#e2e8f0",
+        input: "#cbd5e1",
+        ring: "#94a3b8",
+        background: "#020817",
+        foreground: "#f8fafc",
         primary: {
           DEFAULT: "#725de8",
-          foreground: "hsl(var(--primary-foreground))",
+          foreground: "#f8fafc",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "#1e293b",
+          foreground: "#f8fafc",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "#ef4444",
+          foreground: "#f8fafc",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "#1e293b",
+          foreground: "#94a3b8",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "#334155",
+          foreground: "#f8fafc",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "#0f172a",
+          foreground: "#f8fafc",
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "#0f172a",
+          foreground: "#f8fafc",
         },
       },
+       // END: === MODIFIED SECTION ===
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -74,4 +74,4 @@ module.exports = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-}
+};

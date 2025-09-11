@@ -185,7 +185,6 @@ export default function DownloadReport({
 
 
   return (
-    <div>
       <div
         className="min-h-screen text-white bg-black max-w-5xl mx-auto print:bg-white print:text-black"
         id="download-report"
@@ -1383,27 +1382,6 @@ export default function DownloadReport({
           </div>
         </main>
       </div>
-      <div className="p-4 border-t border-gray-800 flex justify-end">
-        <Button
-          onClick={handleDownloadPDF}
-          disabled={isDownloading}
-          className="flex items-center gap-2"
-        >
-          {isDownloading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Generating PDF...
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Download PDF
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+    
   )
 }

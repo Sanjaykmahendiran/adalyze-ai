@@ -47,7 +47,6 @@ import ResultsPageLoadingSkeleton from "@/components/Skeleton-loading/results-lo
 import { cn } from "@/lib/utils"
 import logo from "@/assets/ad-icon-logo.png"
 import { ApiResponse } from "./type"
-import DownloadReport from "./_components/download-result"
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 
@@ -61,7 +60,6 @@ export default function ResultsPage() {
   const [error, setError] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isPdfGenerating, setIsPdfGenerating] = useState(false)
-  const [showReport, setShowReport] = useState(false);
   const isProUser = userDetails?.payment_status === 1
 
   const handleDownloadPDF = async () => {
@@ -110,7 +108,7 @@ export default function ResultsPage() {
       pdf.addImage(dataUrl, "PNG", x, y, scaledWidth, scaledHeight);
 
       // 4. Save
-      pdf.save("screenshot.pdf");
+      pdf.save(`ad-analysis-report-${apiData?.title || 'untitled'}-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
       console.error("Error generating PDF:", err);
     } finally {
@@ -130,7 +128,7 @@ export default function ResultsPage() {
         }
 
         const result = await response.json()
-        setApiData(result.data) 
+        setApiData(result.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
@@ -295,7 +293,7 @@ export default function ResultsPage() {
               {/* Back Button */}
               <button
                 onClick={() => router.back()}
-                className="flex items-center bg-[#121212] text-gray-300 hover:text-white hover:bg-[#2b2b2b] rounded-full p-2 transition-all cursor-pointer no-print"
+                className="flex items-center bg-[#121212] text-gray-300 hover:text-white hover:bg-[#2b2b2b] rounded-full p-2 transition-all cursor-pointer no-print skip-block"
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
@@ -1818,48 +1816,21 @@ export default function ResultsPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center skip-block">
               <Button
                 onClick={() => router.push("/upload")}
-                className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
+                className="rounded-lg px-8 py-5 text-lg font-semibold transition-all duration-200"
               >
                 Re-analyze
               </Button>
-              {/* Button */}
-              <Button
-                onClick={() => setShowReport(true)}
-                className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
-              >
-                View Report
-              </Button>
-
-              {showReport && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-black rounded-xl shadow-lg p-6 w-[90%] max-h-[90vh] overflow-auto max-w-4xl relative">
-                    {/* Close Button */}
-                    <button
-                      onClick={() => setShowReport(false)}
-                      className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-                    >
-                      ✕
-                    </button>
-
-                    {/* Report Component */}
-                    {apiData && (
-                      <DownloadReport
-                        apiData={apiData}
-                        currentImageIndex={currentImageIndex}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
+              {isProUser && (
               <Button
                 variant="outline"
                 onClick={handleDownloadPDF}
                 disabled={isPdfGenerating || !apiData}
-                className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
+                className="rounded-lg px-8 py-5 text-lg font-semibold transition-all duration-200"
               >
                 <Download className="w-4 h-4 mr-2" />
                 {isPdfGenerating ? "Generating..." : "Download Report"}
               </Button>
+              )}
             </div>
           </div>
         </main>

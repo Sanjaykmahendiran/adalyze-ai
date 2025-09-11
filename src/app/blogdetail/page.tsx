@@ -27,7 +27,7 @@ interface BlogPost {
 async function getBlogPostById(blogId: string): Promise<BlogPost | null> {
     try {
         const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=getblog&blogs_id=${blogId}`, {
-            cache: 'no-store' // For dynamic data
+            cache: 'no-store'
         })
         if (!response.ok) throw new Error("Failed to fetch blog post")
         return (await response.json()) as BlogPost
@@ -68,7 +68,6 @@ export default function BlogPost() {
                     return
                 }
 
-                // Fetch the specific blog post
                 const blogPost = await getBlogPostById(blogId)
 
                 if (!blogPost) {
@@ -78,7 +77,6 @@ export default function BlogPost() {
 
                 setBlogData(blogPost)
 
-                // Fetch all blog posts for related posts
                 const allPosts = await getAllBlogPosts()
                 const related = allPosts
                     .filter(post => post.blogs_id !== parseInt(blogId))
@@ -107,9 +105,7 @@ export default function BlogPost() {
     };
 
     if (loading) {
-        return (
-            <Spinner />
-        )
+        return <Spinner />
     }
 
     if (error || !blogData) {
@@ -119,115 +115,179 @@ export default function BlogPost() {
     const bannerUrl = blogData.banner;
 
     return (
-        <div className="min-h-screen ">
+        <div className="min-h-screen bg-black">
             <Header />
-            <div className="mt-16 pt-18">
-                <div className="relative bg-cover bg-center h-50 bg-no-repeat bg-fixed" style={{ backgroundImage: `url(${bannerUrl})` }}>
+            
+            {/* Hero Banner Section - Mobile Optimized */}
+            <div className="mt-16 pt-4 sm:pt-8">
+                <div className="relative bg-cover bg-center h-48 sm:h-64 md:h-80 lg:h-96 bg-no-repeat" 
+                     style={{ backgroundImage: `url(${bannerUrl})` }}>
                     <div className="absolute inset-0 bg-black/70"></div>
-                    <div className="container text-center text-white relative z-10 py-16 flex flex-col items-center justify-center">
-                        <h3 className="text-3xl font-bold">{blogData.title}</h3>
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-center relative z-10">
+                        <div className="text-center text-white max-w-4xl">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight px-4">
+                                {blogData.title}
+                            </h1>
+                        </div>
                     </div>
                 </div>
 
-                <div className="container py-12 text-gray-300">
+                {/* Main Content Section - Mobile First */}
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 text-gray-300">
                     <div className="max-w-4xl mx-auto">
-                        <article>
-                            <div className="text-lg">
-                                <div className="flex space-x-4 text-gray-300 mb-6">
+                        <article className="space-y-6 sm:space-y-8">
+                            {/* Meta Information - Mobile Optimized */}
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm sm:text-base text-gray-400 pb-4 border-b border-gray-800">
+                                <div className="flex items-center gap-1">
+                                    <CalendarIcon size={16} className="text-primary" />
                                     <span>{formatDate(blogData.created_at)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <User2Icon size={16} className="text-primary" />
                                     <span>Admin</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <ClockIcon size={16} className="text-primary" />
                                     <span>{blogData.reading_time}</span>
                                 </div>
-                                <h1 className="text-3xl font-bold mb-4 text-primary">{blogData.title}</h1>
-                                {blogData.outline && (
-                                    <div className="mb-6 p-4 bg-[#1a1a1a] rounded-lg border-l-4 border-primary">
-                                        <h2 className="text-xl font-semibold mb-2 text-white">Overview</h2>
-                                        <p className="text-gray-300">{blogData.outline}</p>
-                                    </div>
-                                )}
-                                <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: blogData.content }}></div>
-                                {blogData.key_takeaways && (
-                                    <div className="mt-8 p-4 bg-[#111827] rounded-lg border-l-4 border-blue-500">
-                                        <h2 className="text-xl font-semibold mb-2 text-blue-400">Key Takeaways</h2>
-                                        <div className="text-gray-300" dangerouslySetInnerHTML={{ __html: blogData.key_takeaways }}></div>
-                                    </div>
-                                )}
                             </div>
+
+                            {/* Article Title - Mobile Typography */}
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary leading-tight">
+                                {blogData.title}
+                            </h1>
+
+                            {/* Overview Section - Enhanced Mobile Layout */}
+                            {blogData.outline && (
+                                <div className="p-4 sm:p-6 bg-[#1a1a1a] rounded-lg border-l-4 border-primary">
+                                    <h2 className="text-lg sm:text-xl font-semibold mb-3 text-white flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-primary rounded-full"></span>
+                                        Overview
+                                    </h2>
+                                    <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                                        {blogData.outline}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Main Content - Mobile Optimized Typography */}
+                            <div className="prose prose-invert prose-sm sm:prose-base lg:prose-lg max-w-none text-gray-300 
+                                          prose-headings:text-white prose-headings:font-semibold
+                                          prose-p:leading-relaxed prose-p:mb-4
+                                          prose-img:rounded-lg prose-img:shadow-lg
+                                          prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                                          prose-strong:text-white prose-strong:font-semibold
+                                          prose-ul:space-y-2 prose-ol:space-y-2
+                                          prose-li:leading-relaxed"
+                                 dangerouslySetInnerHTML={{ __html: blogData.content }}>
+                            </div>
+
+                            {/* Key Takeaways - Enhanced Mobile Design */}
+                            {blogData.key_takeaways && (
+                                <div className="mt-8 p-4 sm:p-6 bg-[#111827] rounded-lg border-l-4 border-blue-500">
+                                    <h2 className="text-lg sm:text-xl font-semibold mb-3 text-blue-400 flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                        Key Takeaways
+                                    </h2>
+                                    <div className="text-gray-300 text-sm sm:text-base leading-relaxed 
+                                                  prose prose-invert prose-sm sm:prose-base max-w-none
+                                                  prose-ul:space-y-2 prose-li:leading-relaxed"
+                                         dangerouslySetInnerHTML={{ __html: blogData.key_takeaways }}>
+                                    </div>
+                                </div>
+                            )}
                         </article>
                     </div>
-                    <div className="max-w-7xl mx-auto">
-                        {relatedPosts.length > 0 && (
-                            <div className="mt-12">
-                                <h2 className="text-2xl font-bold mb-6 text-white">Related Posts</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {relatedPosts.map((post) => (
-                                        <div
-                                            key={post.blogs_id}
-                                            className="border border-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-[#1a1a1a]"
-                                        >
-                                            <Link href={`/blogdetail?blogs_id=${post.blogs_id}`}>
-                                                <div className="h-48 relative m-6 rounded-lg overflow-hidden shine-effect">
-                                                    <Image
-                                                        src={post.banner}
-                                                        alt={post.title}
-                                                        className="object-cover"
-                                                        fill
-                                                    />
-                                                    <div className="absolute top-4 left-4 z-10">
-                                                        <Badge className="border border-primary bg-black/70 text-primary px-3 py-1 text-sm hover:bg-primary hover:text-white rounded-full transition">
-                                                            AI Insights
-                                                        </Badge>
+
+                    {/* Related Posts Section - Fully Responsive Grid */}
+                    {relatedPosts.length > 0 && (
+                        <div className="max-w-7xl mx-auto mt-12 sm:mt-16 lg:mt-20">
+                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-6 sm:mb-8 text-white">
+                                Related Posts
+                            </h2>
+                            
+                            {/* Mobile-First Grid Layout */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                                {relatedPosts.map((post) => (
+                                    <article
+                                        key={post.blogs_id}
+                                        className="group bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden 
+                                                 shadow-lg hover:shadow-xl hover:border-gray-700 
+                                                 transition-all duration-300 hover:transform hover:-translate-y-1"
+                                    >
+                                        <Link href={`/blogdetail?blogs_id=${post.blogs_id}`} className="block">
+                                            {/* Image Container - Mobile Optimized */}
+                                            <div className="relative h-40 sm:h-48 lg:h-52 m-4 sm:m-6 rounded-lg overflow-hidden">
+                                                <Image
+                                                    src={post.banner}
+                                                    alt={post.title}
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    fill
+                                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                                                <div className="absolute top-3 left-3">
+                                                    <Badge className="border border-primary bg-black/80 text-primary text-xs 
+                                                                   px-2 py-1 hover:bg-primary hover:text-white 
+                                                                   rounded-full transition-colors">
+                                                        AI Insights
+                                                    </Badge>
+                                                </div>
+                                            </div>
+
+                                            {/* Content Section - Enhanced Mobile Layout */}
+                                            <div className="p-4 sm:p-5 lg:p-6 space-y-3 sm:space-y-4">
+                                                {/* Meta Info - Mobile Optimized */}
+                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-400">
+                                                    <div className="flex items-center gap-1">
+                                                        <User2Icon size={12} className="text-primary" />
+                                                        <span>Admin</span>
+                                                    </div>
+                                                    <span className="text-gray-600">•</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <CalendarIcon size={12} className="text-primary" />
+                                                        <span>{formatDate(post.created_at)}</span>
+                                                    </div>
+                                                    <span className="text-gray-600">•</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <ClockIcon size={12} className="text-primary" />
+                                                        <span>{post.reading_time}</span>
                                                     </div>
                                                 </div>
-                                                <div className="p-5">
-                                                    {/* Meta Info */}
-                                                    <div className="flex items-center justify-between text-sm text-gray-300 mb-3 flex-wrap">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="flex items-center gap-1">
-                                                                <User2Icon size={14} className="text-primary" />
-                                                                <span>Admin</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-1">
-                                                                <CalendarIcon size={14} className="text-primary" />
-                                                                <span>{formatDate(post.created_at)}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <ClockIcon size={14} className="text-primary" />
-                                                            <span>{post.reading_time} read</span>
-                                                        </div>
-                                                    </div>
 
-                                                    {/* Title */}
-                                                    <h2 className="text-lg font-semibold text-white group-hover:text-primary mb-3 transition-colors leading-tight">
-                                                        {post.title}
-                                                    </h2>
+                                                {/* Title - Mobile Typography */}
+                                                <h3 className="text-base sm:text-lg font-semibold text-white 
+                                                             group-hover:text-primary transition-colors 
+                                                             leading-tight line-clamp-2">
+                                                    {post.title}
+                                                </h3>
 
-                                                    {/* Outline */}
-                                                    <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-                                                        {post.outline}
-                                                    </p>
+                                                {/* Excerpt - Mobile Optimized */}
+                                                <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 sm:line-clamp-3">
+                                                    {post.outline}
+                                                </p>
 
-                                                    {/* Read More CTA */}
-                                                    <div className="flex items-center text-primary group-hover:text-primary/70 transition-colors">
-                                                        <span className="text-sm font-medium mr-2">
-                                                            Read More
-                                                        </span>
+                                                {/* CTA - Touch Friendly */}
+                                                <div className="flex items-center justify-between pt-2">
+                                                    <div className="flex items-center text-primary group-hover:text-primary/80 
+                                                                  transition-colors text-sm font-medium">
+                                                        <span className="mr-2">Read Article</span>
                                                         <ArrowRightIcon
                                                             size={16}
                                                             className="group-hover:translate-x-1 transition-transform duration-200"
                                                         />
                                                     </div>
                                                 </div>
-                                            </Link>
-                                        </div>
-                                    ))}
-                                </div>
+                                            </div>
+                                        </Link>
+                                    </article>
+                                ))}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
+            
             <LandingPageFooter />
         </div>
     );

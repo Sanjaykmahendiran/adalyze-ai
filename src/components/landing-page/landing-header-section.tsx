@@ -1,165 +1,170 @@
-"use client"
+"use client";
 
-import { Play, Pause } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "../ui/button"
-import { motion } from "framer-motion"
-import { Squares } from "./squares-background"
-import image1 from "@/assets/b-1.png"
-import image2 from "@/assets/b-2.png"
-import image3 from "@/assets/b-3.png"
-import image4 from "@/assets/b-4.png"
-import Header from "./header"
+import { Play, Pause } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "../ui/button";
+import { motion } from "framer-motion";
+import { Squares } from "./squares-background";
+import image1 from "@/assets/b-1.png";
+import image2 from "@/assets/b-2.png";
+import image3 from "@/assets/b-3.png";
+import image4 from "@/assets/b-4.png";
+import Header from "./header";
 
-const words = ["Ad Performance Score", "AI Feedback", "Creative Optimization", "Platform Insights"]
+const words = [
+  "Ad Performance Score",
+  "AI Feedback",
+  "Creative Optimization",
+  "Platform Insights",
+];
 
 export default function LandingPageHeader() {
-  const router = useRouter()
-  const [text, setText] = useState("")
-  const [wordIndex, setWordIndex] = useState(0)
-  const [charIndex, setCharIndex] = useState(0)
-  const [isTyping, setIsTyping] = useState(true)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isResourcesOpen, setIsResourcesOpen] = useState(false)
-  const videoRef = useRef<HTMLVideoElement | null>(null)
-  const videoContainerRef = useRef<HTMLDivElement | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [showControls, setShowControls] = useState(true)
-  const [scrollY, setScrollY] = useState(0)
-  const [scrollDirection, setScrollDirection] = useState("down")
-  const [lastScrollY, setLastScrollY] = useState(0)
-  const [isMobile, setIsMobile] = useState(false)
+  const router = useRouter();
+  const [text, setText] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [scrollY, setScrollY] = useState(0);
+  const [scrollDirection, setScrollDirection] = useState("down");
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Check if mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
+      setIsMobile(window.innerWidth < 768);
+    };
 
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Typewriter effect
   useEffect(() => {
-    const currentWord = words[wordIndex]
-    let timeout
+    const currentWord = words[wordIndex];
+    let timeout;
     if (charIndex < currentWord.length) {
-      setIsTyping(true)
+      setIsTyping(true);
       timeout = setTimeout(() => {
-        setText((prev) => prev + currentWord.charAt(charIndex))
-        setCharIndex((prev) => prev + 1)
-      }, 50)
+        setText((prev) => prev + currentWord.charAt(charIndex));
+        setCharIndex((prev) => prev + 1);
+      }, 50);
     } else {
-      setIsTyping(false)
+      setIsTyping(false);
       timeout = setTimeout(() => {
-        setText("")
-        setCharIndex(0)
-        setWordIndex((prev) => (prev + 1) % words.length)
-        setIsTyping(true)
-      }, 1000)
+        setText("");
+        setCharIndex(0);
+        setWordIndex((prev) => (prev + 1) % words.length);
+        setIsTyping(true);
+      }, 1000);
     }
-    return () => clearTimeout(timeout)
-  }, [charIndex, wordIndex])
+    return () => clearTimeout(timeout);
+  }, [charIndex, wordIndex]);
 
   // Handle mobile menu resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
-        setIsMobileMenuOpen(false)
-        setIsResourcesOpen(false)
+        setIsMobileMenuOpen(false);
+        setIsResourcesOpen(false);
       }
-    }
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: any) => {
       if (isMobileMenuOpen && !event.target.closest(".mobile-menu-container")) {
-        setIsMobileMenuOpen(false)
-        setIsResourcesOpen(false)
+        setIsMobileMenuOpen(false);
+        setIsResourcesOpen(false);
       }
-    }
+    };
 
     if (isMobileMenuOpen) {
-      document.addEventListener("click", handleClickOutside)
+      document.addEventListener("click", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener("click", handleClickOutside)
-    }
-  }, [isMobileMenuOpen])
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   // Video play/pause toggle
   const togglePlay = async () => {
     if (videoRef.current) {
       try {
         if (videoRef.current.paused) {
-          await videoRef.current.play()
-          setIsPlaying(true)
+          await videoRef.current.play();
+          setIsPlaying(true);
         } else {
-          videoRef.current.pause()
-          setIsPlaying(false)
+          videoRef.current.pause();
+          setIsPlaying(false);
         }
       } catch (error) {
-        console.error("Error toggling video playback:", error)
+        console.error("Error toggling video playback:", error);
       }
     }
-  }
+  };
 
   // Video event listeners
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
-    const handleEnded = () => setIsPlaying(false)
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => setIsPlaying(false);
 
-    video.addEventListener("play", handlePlay)
-    video.addEventListener("pause", handlePause)
-    video.addEventListener("ended", handleEnded)
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+    video.addEventListener("ended", handleEnded);
 
     return () => {
-      video.removeEventListener("play", handlePlay)
-      video.removeEventListener("pause", handlePause)
-      video.removeEventListener("ended", handleEnded)
-    }
-  }, [])
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, []);
 
   // Video controls visibility
-  const handleMouseEnter = () => setShowControls(true)
+  const handleMouseEnter = () => setShowControls(true);
   const handleMouseLeave = () => {
     if (isPlaying) {
-      setShowControls(false)
+      setShowControls(false);
     }
-  }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY
+      const currentScrollY = window.scrollY;
 
       // Determine scroll direction
       if (currentScrollY > lastScrollY) {
-        setScrollDirection("down")
+        setScrollDirection("down");
       } else if (currentScrollY < lastScrollY) {
-        setScrollDirection("up")
+        setScrollDirection("up");
       }
 
-      setScrollY(currentScrollY)
-      setLastScrollY(currentScrollY)
-    }
+      setScrollY(currentScrollY);
+      setLastScrollY(currentScrollY);
+    };
 
-    window.addEventListener("scroll", handleScroll, { passive: true })
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
-      window.removeEventListener("scroll", handleScroll)
-    }
-  }, [lastScrollY])
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
 
   return (
     <main className="flex flex-col min-h-screen items-center overflow-x-hidden">
@@ -176,18 +181,17 @@ export default function LandingPageHeader() {
           />
         </div>
 
-        {/* === Overlay Layer === */}
         <div className="absolute inset-0 z-0" />
 
-        {/* === Header === */}
         <Header />
 
-        {/* === Hero Content === */}
         <div className="relative z-10 w-full container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-38 pb-6 sm:pb-8 md:pb-12 lg:pb-16 flex flex-col items-center">
-          {/* Badge */}
-          <div className="inline-flex items-center justify-center px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 mb-3 sm:mb-4 md:mb-6 rounded-full bg-[#db4900]/10 text-[#db4900] font-medium text-xs sm:text-sm md:text-base">
-            AI-Powered Ad Analysis
-          </div>
+         <div className="pt-8">
+  <div className="flex items-center justify-center px-3 py-0.5 mb-2 rounded-full bg-[#db4900]/10 text-[#db4900] font-medium text-sm">
+    AI-Powered Ad Analysis
+  </div>
+</div>
+
 
           {/* Main Heading */}
           <motion.h1
@@ -199,13 +203,17 @@ export default function LandingPageHeader() {
           >
             <div className="break-words px-1 sm:px-2 md:px-0">
               Real-Time Ad Optimization{" "}
-              <span className="text-primary font-semibold block sm:inline mt-1 sm:mt-0">AI Insights</span>
+              <span className="text-primary font-semibold block sm:inline mt-1 sm:mt-0">
+                AI Insights
+              </span>
             </div>
 
             <div className="mt-2 sm:mt-3 break-words px-1 sm:px-2 md:px-0">
               <span className="bg-gradient-to-r from-orange-300 via-[#db4900] to-yellow-400 bg-clip-text text-transparent font-semibold inline-block text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl">
                 {text}
-                <span className={`${isTyping ? "animate-pulse" : "opacity-0"}`}>|</span>
+                <span className={`${isTyping ? "animate-pulse" : "opacity-0"}`}>
+                  |
+                </span>
               </span>
             </div>
           </motion.h1>
@@ -218,8 +226,9 @@ export default function LandingPageHeader() {
             transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
             className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 text-center mx-auto max-w-xl sm:max-w-2xl lg:max-w-3xl mt-3 sm:mt-4 md:mt-6 px-2 sm:px-4 md:px-2 leading-relaxed"
           >
-            Adalyze scores your ads across platforms, pinpoints weak spots with AI feedback, and gives clear steps to
-            improve performance before you launch.
+            Adalyze scores your ads across platforms, pinpoints weak spots with
+            AI feedback, and gives clear steps to improve performance before you
+            launch.
           </motion.p>
 
           {/* CTA Button */}
@@ -250,7 +259,6 @@ export default function LandingPageHeader() {
               </div>
             </motion.div>
           </motion.div>
-
 
           {/* === Video Section with Floating Images === */}
           <div className="w-full max-w-sm sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-6xl mx-auto mt-6 sm:mt-8 md:mt-12 lg:mt-16 relative z-10 px-2 sm:px-4 md:px-8 lg:px-12 xl:px-24">
@@ -397,13 +405,14 @@ export default function LandingPageHeader() {
                   src="https://adalyzeai.top/uploads/video.mp4"
                 />
                 <div
-                  className={`absolute inset-0 flex  items-center justify-center transition-all duration-300 ${showControls || !isPlaying ? "opacity-100" : "opacity-70"
-                    } rounded-xl sm:rounded-2xl md:rounded-3xl`}
+                  className={`absolute inset-0 flex  items-center justify-center transition-all duration-300 ${
+                    showControls || !isPlaying ? "opacity-100" : "opacity-70"
+                  } rounded-xl sm:rounded-2xl md:rounded-3xl`}
                 >
                   <button
                     onClick={(e) => {
-                      e.stopPropagation()
-                      togglePlay()
+                      e.stopPropagation();
+                      togglePlay();
                     }}
                     className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-2 sm:p-3 md:p-4 transition-all duration-200 transform hover:scale-110"
                     aria-label={isPlaying ? "Pause video" : "Play video"}
@@ -418,6 +427,7 @@ export default function LandingPageHeader() {
               </div>
             </div>
           </div>
+        
         </div>
 
         {/* Extra animation keyframes */}
@@ -433,21 +443,22 @@ export default function LandingPageHeader() {
           .animate-slide {
             animation: slide 6s linear infinite;
           }
-          
+
           @keyframes float {
-            0%, 100% {
+            0%,
+            100% {
               transform: translateY(0px) rotate(var(--rotation));
             }
             50% {
               transform: translateY(-10px) rotate(var(--rotation));
             }
           }
-          
+
           .float-animation {
             animation: float 3s ease-in-out infinite;
           }
         `}</style>
       </div>
     </main>
-  )
+  );
 }

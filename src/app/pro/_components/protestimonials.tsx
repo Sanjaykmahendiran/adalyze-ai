@@ -75,7 +75,6 @@ function ProTestimonials({ testimonialData }: TestimonialsProps) {
                                                     </h3>
                                                 </div>
                                                 <p className="flex flex-row gap-2 text-sm items-center">
-                                                    <span className="text-muted-foreground">By</span>{" "}
                                                     <Avatar className="h-6 w-6">
                                                         <AvatarFallback className="bg-gradient-to-br from-[#ff6a00] to-[#a63a00] text-white text-xs">
                                                             {testimonial.name.charAt(0).toUpperCase()}

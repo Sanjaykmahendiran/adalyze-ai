@@ -852,9 +852,9 @@ const ProPage: React.FC = () => {
                     </div>
 
                     {/* Testimonials - hidden on mobile (smaller than lg) */}
-                    <div className="hidden lg:block">
+                    {/* <div className="hidden lg:block"> */}
                         <ProTestimonials testimonialData={testimonialData} />
-                    </div>
+                    {/* </div> */}
 
                     {/* FAQs - Always render */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">

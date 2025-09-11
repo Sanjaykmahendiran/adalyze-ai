@@ -98,7 +98,7 @@ export default function CaseStudiesPage() {
   return (
     <main className="min-h-screen">
       <Header />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-36">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-34">
         <div className="flex items-center text-sm text-gray-200 mb-6">
           <Link href="/" className="hover:text-gray-300">
             Home

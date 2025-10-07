@@ -13,6 +13,7 @@ import {
   LifeBuoy,
   ShieldAlert,
   User,
+  UserCheck,
 } from "lucide-react";
 
 type MenuItem = {
@@ -28,6 +29,7 @@ const menuItems: MenuItem[] = [
   { icon: MonitorPlay, label: "MyAds", href: "/my-ads" },
   { icon: Zap, label: "Pro", href: "/pro" },
   { icon: BookOpen, label: "Guide", href: "/guide" },
+  { icon: UserCheck, label: "Campaign Coach", href: "/campaign-coach" },
   { icon: LifeBuoy, label: "Support", href: "/support" },
   { icon: User, label: "Account", href: "/myaccount" },
 

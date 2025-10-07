@@ -1,10 +1,11 @@
+import { Crown, Check, Zap, Target, TrendingUp } from "lucide-react";
 
-import { Crown, Check, Zap, Target, TrendingUp   } from "lucide-react";
+interface CompetitorTableProps {
+    basicPrice: string;
+}
 
-export default function CompetitorTable() {
-
+export default function CompetitorTable({ basicPrice }: CompetitorTableProps) {
     return (
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8 sm:mb-12">
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6">
@@ -37,7 +38,7 @@ export default function CompetitorTable() {
                         <tbody>
                             <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
                                 <td className="p-4 sm:p-6 font-medium">Starting Price (per month)</td>
-                                <td className="text-center p-4 sm:p-6 bg-green-900/10 font-bold text-green-400">$3 (₹199)</td>
+                                <td className="text-center p-4 sm:p-6 bg-green-900/10 font-bold text-green-400">{basicPrice}</td>
                                 <td className="text-center p-4 sm:p-6 text-gray-300">$2,000+</td>
                                 <td className="text-center p-4 sm:p-6 text-gray-300">$600+</td>
                                 <td className="text-center p-4 sm:p-6 text-gray-300">$3,000+</td>
@@ -68,6 +69,46 @@ export default function CompetitorTable() {
                                 <td className="text-center p-4 sm:p-6 text-red-400">No</td>
                             </tr>
                             <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-4 sm:p-6 font-medium">Go/No-Go Decision Engine</td>
+                                <td className="text-center p-4 sm:p-6 bg-green-900/10"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-4 sm:p-6 font-medium">Ad Fatigue Score & Prediction</td>
+                                <td className="text-center p-4 sm:p-6 bg-green-900/10"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-4 sm:p-6 font-medium">Best Day/Time to Post Analysis</td>
+                                <td className="text-center p-4 sm:p-6 bg-green-900/10"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-4 sm:p-6 font-medium">Readability & Clarity Meter</td>
+                                <td className="text-center p-4 sm:p-6 bg-green-900/10"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-yellow-400">Basic</td>
+                                <td className="text-center p-4 sm:p-6 text-yellow-400">Basic</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-4 sm:p-6 font-medium">Competitor Uniqueness Meter</td>
+                                <td className="text-center p-4 sm:p-6 bg-green-900/10"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                                <td className="text-center p-4 sm:p-6 text-red-400">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
                                 <td className="p-4 sm:p-6 font-medium">Platform Fit Scoring (FB, Insta, LinkedIn, YouTube)</td>
                                 <td className="text-center p-4 sm:p-6 bg-green-900/10"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                                 <td className="text-center p-4 sm:p-6 text-red-400">No</td>
@@ -77,7 +118,7 @@ export default function CompetitorTable() {
                             </tr>
                             <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
                                 <td className="p-4 sm:p-6 font-medium">A/B Testing / Comparison</td>
-                                <td className="text-center p-4 sm:p-6 bg-green-900/10 text-green-400 text-sm">Yes (10–50 ads)</td>
+                                <td className="text-center p-4 sm:p-6 bg-green-900/10"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                                 <td className="text-center p-4 sm:p-6"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                                 <td className="text-center p-4 sm:p-6"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                                 <td className="text-center p-4 sm:p-6"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
@@ -93,7 +134,7 @@ export default function CompetitorTable() {
                             </tr>
                             <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
                                 <td className="p-4 sm:p-6 font-medium">Team / Multi-user Support</td>
-                                <td className="text-center p-4 sm:p-6 bg-green-900/10 text-green-400 text-sm">Yes (from $69)</td>
+                                <td className="text-center p-4 sm:p-6 bg-green-900/10"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                                 <td className="text-center p-4 sm:p-6"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                                 <td className="text-center p-4 sm:p-6"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                                 <td className="text-center p-4 sm:p-6"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
@@ -146,10 +187,17 @@ export default function CompetitorTable() {
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-300">Starting Price</span>
-                                <span className="font-bold text-green-400">$3 (₹199)</span>
+                                <span className="font-bold text-green-400">{basicPrice}</span>
                             </div>
                             <div className="text-sm text-green-400 font-medium">
                                 ✓ All premium features ✓ No setup required ✓ Instant results
+                            </div>
+                            <div className="text-sm text-green-400 space-y-1">
+                                <div>✓ Go/No-Go Decision Engine</div>
+                                <div>✓ Ad Fatigue Score (7-14 days prediction)</div>
+                                <div>✓ Best Day/Time to Post Analysis</div>
+                                <div>✓ Readability & Clarity Meter (65% avg)</div>
+                                <div>✓ Competitor Uniqueness Meter (60% avg)</div>
                             </div>
                             <div className="text-xs text-gray-300 italic">
                                 USP: Affordable, instant, made for freelancers, startups & agencies
@@ -166,7 +214,7 @@ export default function CompetitorTable() {
                                     <span className="text-gray-300">Price</span>
                                     <span className="text-red-400">$2,000+</span>
                                 </div>
-                                <div className="text-xs text-gray-500">Enterprise-only</div>
+                                <div className="text-xs text-gray-500">Enterprise-only, no unique analysis features</div>
                             </div>
                         </div>
 
@@ -177,7 +225,7 @@ export default function CompetitorTable() {
                                     <span className="text-gray-300">Price</span>
                                     <span className="text-red-400">$600+</span>
                                 </div>
-                                <div className="text-xs text-gray-500">Expensive AI generation focus</div>
+                                <div className="text-xs text-gray-500">AI generation focus, missing analysis depth</div>
                             </div>
                         </div>
 
@@ -188,7 +236,7 @@ export default function CompetitorTable() {
                                     <span className="text-gray-300">Price</span>
                                     <span className="text-red-400">$3,000+</span>
                                 </div>
-                                <div className="text-xs text-gray-500">Enterprise analytics</div>
+                                <div className="text-xs text-gray-500">Enterprise analytics, no timing insights</div>
                             </div>
                         </div>
 
@@ -199,7 +247,7 @@ export default function CompetitorTable() {
                                     <span className="text-gray-300">Price</span>
                                     <span className="text-gray-300">$19</span>
                                 </div>
-                                <div className="text-xs text-gray-500">Just heatmaps</div>
+                                <div className="text-xs text-gray-500">Just heatmaps, no decision support</div>
                             </div>
                         </div>
                     </div>
@@ -207,26 +255,25 @@ export default function CompetitorTable() {
             </div>
 
             {/* Bottom CTA */}
-            <div className="text-center mt-8 sm:mt-12">
-                <div className="bg-gradient-to-r from-[#ff6a00]/10 to-[#a63a00]/10 rounded-lg p-6 sm:p-8 border border-[#ff6a00]/20">
-                    <h3 className="text-lg sm:text-xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-[#ff6a00] to-[#ff8533]">
+            <div className="text-center mt-10">
+                <div className="bg-[#1a1a1a]/80 rounded-lg p-6 sm:p-8 border border-[#ff6a00]/20 shadow-sm">
+                    <h3 className="text-xl sm:text-2xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-[#ff6a00] to-[#ff8533]">
                         Why Choose Adalyze AI?
                     </h3>
                     <p className="text-sm sm:text-base text-gray-300 mb-4 max-w-2xl mx-auto">
-                        Get enterprise-level ad analysis at a fraction of the cost. No complex setup,
-                        no lengthy contracts - just instant, actionable insights for your ads.
+                        Get enterprise-level ad analysis at a fraction of the cost. No complex setup, no lengthy contracts — just instant, actionable insights for your ads.
                     </p>
-                    <div className="flex flex-wrap justify-center gap-4 text-xs sm:text-sm text-green-400">
-                        <span className="flex items-center gap-1">
-                            <Zap className="w-3 h-3" />
+                    <div className="flex flex-wrap justify-center gap-4 text-sm text-green-400 mb-4">
+                        <span className="flex items-center gap-2">
+                            <Zap className="w-4 h-4" />
                             Instant Analysis
                         </span>
-                        <span className="flex items-center gap-1">
-                            <Target className="w-3 h-3" />
+                        <span className="flex items-center gap-2">
+                            <Target className="w-4 h-4" />
                             Platform-Specific Scoring
                         </span>
-                        <span className="flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3" />
+                        <span className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4" />
                             99% More Affordable
                         </span>
                     </div>

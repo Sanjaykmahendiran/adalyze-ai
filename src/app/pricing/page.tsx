@@ -26,7 +26,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import toast from "react-hot-toast"
-import logo from "@/assets/ad-logo.png"
+import logo from "@/assets/ad-logo.webp"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import StaticProSkeleton from "@/components/Skeleton-loading/pro-skeleton"
@@ -44,10 +44,13 @@ declare global {
     }
 }
 
+// Updated interface to include original prices
 interface PricingPlan {
     package_id: number
     plan_name: string
     price_inr: number
+    ori_price_inr: number  // Added original INR price
+    ori_price_usd: number  // Added original USD price
     price_usd: string
     features: string
     ads_limit: number
@@ -149,7 +152,7 @@ const ProPage: React.FC = () => {
     const [testimonialData, setTestimonialData] = useState<Testimonial[]>([])
     const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
-    const [paymentLoading, setPaymentLoading] = useState<boolean>(false)
+    const [paymentLoading, setPaymentLoading] = useState<{ [key: number]: boolean }>({})
     const [freeTrialLoading, setFreeTrialLoading] = useState<boolean>(false)
     const [razorpayLoaded, setRazorpayLoaded] = useState<boolean>(false)
     const [userCurrency, setUserCurrency] = useState<Currency>("INR")
@@ -219,14 +222,7 @@ const ProPage: React.FC = () => {
         }
     }, [])
 
-    const next = () => {
-        scrollRef.current?.scrollBy({ left: scrollAmount, behavior: "smooth" })
-    }
-
-    const prev = () => {
-        scrollRef.current?.scrollBy({ left: -scrollAmount, behavior: "smooth" })
-    }
-
+    // Fetch data from API
     useEffect(() => {
         let cancelled = false
 
@@ -297,21 +293,34 @@ const ProPage: React.FC = () => {
         [growthPlan]
     )
 
-    // Helper function to get price display based on user currency
+    // Updated helper function to get price display with discount logic
     const getPriceDisplay = (plan: PricingPlan) => {
         if (userCurrency === "INR") {
+            const hasDiscount = plan.ori_price_inr > plan.price_inr
             return {
+                discountedPrice: `₹${plan.price_inr}`,
+                originalPrice: `₹${plan.ori_price_inr}`,
+                hasDiscount,
                 primary: `₹${plan.price_inr}`,
                 secondary: `$${plan.price_usd}`,
                 primaryCurrency: "INR" as Currency,
-                secondaryCurrency: "USD" as Currency
+                secondaryCurrency: "USD" as Currency,
+                discountPercentage: hasDiscount ? Math.round(((plan.ori_price_inr - plan.price_inr) / plan.ori_price_inr) * 100) : 0
             }
         } else {
+            const oriPriceUsd = typeof plan.ori_price_usd === 'string' ? parseFloat(plan.ori_price_usd) : plan.ori_price_usd
+            const priceUsd = typeof plan.price_usd === 'string' ? parseFloat(plan.price_usd) : plan.price_usd
+            const hasDiscount = oriPriceUsd > priceUsd
+            
             return {
+                discountedPrice: `$${plan.price_usd}`,
+                originalPrice: `$${plan.ori_price_usd}`,
+                hasDiscount,
                 primary: `$${plan.price_usd}`,
                 secondary: `₹${plan.price_inr}`,
                 primaryCurrency: "USD" as Currency,
-                secondaryCurrency: "INR" as Currency
+                secondaryCurrency: "INR" as Currency,
+                discountPercentage: hasDiscount ? Math.round(((oriPriceUsd - priceUsd) / oriPriceUsd) * 100) : 0
             }
         }
     }
@@ -388,67 +397,71 @@ const ProPage: React.FC = () => {
     // Initiate payment function
     const initiatePayment = async (currency: Currency, selectedPlan: PricingPlan) => {
         if (!userDetails?.user_id || !selectedPlan || !razorpayLoaded) {
-            toast.error("Unable to initiate payment. Please try again.")
-            return
+            toast.error("Unable to initiate payment. Please try again.");
+            return;
         }
 
-        setPaymentLoading(true)
+        // Set loading only for the clicked plan
+        setPaymentLoading(prev => ({ ...prev, [selectedPlan.package_id]: true }));
 
         try {
+            // Fetch Razorpay key from API
+            const configResponse = await fetch('https://adalyzeai.xyz/App/api.php?gofor=config');
+            const configData = await configResponse.json();
+
+            if (!configResponse.ok || !configData.rzpaykey) {
+                throw new Error('Failed to fetch Razorpay key');
+            }
+
+            const rzpKey = configData.rzpaykey;
+
+            // Create order
             const orderResponse = await fetch('https://adalyzeai.xyz/App/razorpay.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: userDetails.user_id.toString(),
                     package_id: selectedPlan.package_id.toString(),
                     ctype: currency,
                 }),
-            })
+            });
 
-            const orderData = await orderResponse.json()
+            const orderData = await orderResponse.json();
 
             if (!orderResponse.ok || !orderData.order_id) {
-                throw new Error(orderData.message || 'Failed to create order')
+                throw new Error(orderData.message || 'Failed to create order');
             }
 
             const options = {
-                key: 'rzp_test_28UhRPu2GtFse3',
+                key: rzpKey,
                 amount: currency === 'INR' ? selectedPlan.price_inr * 100 : Math.round(parseFloat(selectedPlan.price_usd) * 100),
                 currency: currency,
                 name: 'Adalyze AI',
                 description: `${selectedPlan.plan_name} Plan Subscription`,
                 order_id: orderData.order_id,
                 handler: function (response: RazorpayResponse) {
-                    verifyPayment(response, selectedPlan)
+                    verifyPayment(response, selectedPlan);
                 },
                 prefill: {
                     name: userDetails.name || '',
                     email: userDetails.email || '',
                     contact: userDetails.mobileno || '',
                 },
-                theme: {
-                    color: '#ff6a00',
-                },
+                theme: { color: '#db4900' },
                 modal: {
                     ondismiss: function () {
-                        setPaymentLoading(false)
-                        toast("Payment cancelled. You can retry anytime.", {
-                            icon: 'ℹ️',
-                        })
+                        setPaymentLoading(prev => ({ ...prev, [selectedPlan.package_id]: false }));
+                        toast("Payment cancelled. You can retry anytime.", { icon: 'ℹ️' });
                     }
                 }
-            }
+            };
 
-            const paymentObject = new window.Razorpay(options)
-            paymentObject.open()
-
+            const paymentObject = new window.Razorpay(options);
+            paymentObject.open();
         } catch (error) {
-            console.error('Payment initiation error:', error)
-            toast.error(error instanceof Error ? error.message : "Unable to process payment")
-        } finally {
-            setPaymentLoading(false)
+            console.error('Payment initiation error:', error);
+            toast.error(error instanceof Error ? error.message : "Unable to process payment");
+            setPaymentLoading(prev => ({ ...prev, [selectedPlan.package_id]: false }));
         }
     }
 
@@ -495,27 +508,20 @@ const ProPage: React.FC = () => {
                             </div>
                         )}
                         {isDashboardPage && (
-                            <><h1 className="font-bold mb-4 sm:mb-6 leading-tight px-2 sm:px-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">
-                                Unlock smarter ad insights with Adalyze AI
-                            </h1><p className="text-sm sm:text-base lg:text-lg text-gray-300 max-w-3xl mx-auto px-4">
-                                    Take your ad performance to the next level with advanced AI analysis,
-                                    comprehensive reporting, and premium features.
-                                </p></>
+                            <>
+                                <h1 className="font-bold mb-4 sm:mb-6 leading-tight px-2 sm:px-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">
+                                    Smarter Ad Insights with Adalyze AI
+                                </h1>
+                                <p className="text-sm sm:text-base lg:text-lg text-gray-300 max-w-2xl mx-auto px-4">
+                                    Boost your ad performance with AI-powered analysis and detailed reports.
+                                </p>
+                            </>
+
                         )}
                     </div>
 
                     {/* Pricing Section */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-8 sm:mb-12">
-                            <div className="flex items-center justify-center gap-4 mb-4">
-                                <h2 className="text-2xl md:text-4xl font-bold">
-                                    Choose Your Plan
-                                </h2>
-                            </div>
-                            <p className="text-sm sm:text-base text-gray-300 max-w-2xl mx-auto">
-                                Start with our free trial or select the plan that best fits your ad analysis needs.
-                            </p>
-                        </div>
 
                         {/* Free Trial - Full Width Row */}
                         <div className="mb-8 sm:mb-12">
@@ -535,8 +541,10 @@ const ProPage: React.FC = () => {
                                         </h3>
 
                                         <div className="flex items-baseline gap-2 mb-3">
-                                            <span className="text-3xl sm:text-4xl font-bold">$0</span>
-                                            <span className="text-base sm:text-lg text-gray-300">Validity: 2 days</span>
+                                            <span className="text-3xl sm:text-4xl font-bold">
+                                                {userCurrency === "INR" ? "₹0" : "$0"}
+                                            </span>
+                                            <span className="text-base sm:text-lg text-gray-300">Validity: 5 days</span>
                                         </div>
                                         <div className="text-base text-green-400">
                                             Access all premium features for 1 ad
@@ -583,35 +591,49 @@ const ProPage: React.FC = () => {
                                         <h3 className="text-lg sm:text-xl font-semibold mb-3">
                                             {basicPlan.plan_name}
                                         </h3>
-
+                                        
+                                        {/* Price Display with Strikethrough */}
                                         {currencyLoading ? (
                                             <div className="mb-4">
                                                 <div className="h-8 bg-gray-700 rounded animate-pulse mb-2"></div>
                                                 <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
                                             </div>
                                         ) : (
-                                            <>
-                                                <div className="text-2xl sm:text-3xl font-bold mb-2 flex flex items-center justify-between">
-                                                    <span>{getPriceDisplay(basicPlan).primary}</span>
-                                                    <span className="text-base sm:text-lg ">
-                                                        Validity: {basicPlan.valid_till} days
-                                                    </span>
-                                                </div>
-                                            </>
+                                            <div className="mb-4">
+                                                {(() => {
+                                                    const priceInfo = getPriceDisplay(basicPlan)
+                                                    return (
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-2">
+                                                                {priceInfo.hasDiscount && (
+                                                                    <span className="text-lg sm:text-xl text-gray-400 line-through">
+                                                                        {priceInfo.originalPrice}
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-2xl sm:text-3xl font-bold text-white">
+                                                                    {priceInfo.discountedPrice}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-base sm:text-lg text-gray-300">
+                                                                Validity: {basicPlan.valid_till} days
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })()}
+                                            </div>
                                         )}
 
-                                        <div className="text-sm text-primary mb-6">
+                                        <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
                                             {basicPlan.ads_limit} ad analysis included
                                         </div>
 
                                         <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                                            {/* FIXED: Use basicFeatures instead of starterFeatures */}
                                             {basicFeatures.map((feature, index) => (
                                                 <li
                                                     key={`${feature.text}-${index}`}
                                                     className="flex items-start gap-3 text-sm sm:text-base"
                                                 >
-                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
                                                     <span className="leading-relaxed">{feature.text}</span>
                                                 </li>
                                             ))}
@@ -630,9 +652,10 @@ const ProPage: React.FC = () => {
                                                     initiatePayment(userCurrency, basicPlan);
                                                 }
                                             }}
-                                            disabled={(paymentLoading || !razorpayLoaded || currencyLoading) && !isDashboardPage}
+                                            disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[basicPlan.package_id]))}
+
                                         >
-                                            {paymentLoading && !isDashboardPage ? (
+                                            {paymentLoading[basicPlan.package_id] && !isDashboardPage ? (
                                                 <>
                                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                     Processing...
@@ -640,7 +663,7 @@ const ProPage: React.FC = () => {
                                             ) : (
                                                 <>
                                                     <CreditCard className="w-4 h-4 mr-2" />
-                                                    {isDashboardPage ? "Pay" : `Pay ${getPriceDisplay(basicPlan).primary}`}
+                                                    {isDashboardPage ? "Analyze Ad" : `Pay ${getPriceDisplay(basicPlan).primary}`}
                                                 </>
                                             )}
                                         </Button>
@@ -667,23 +690,38 @@ const ProPage: React.FC = () => {
                                             {starterPlan.plan_name}
                                         </h3>
 
+                                        {/* Price Display with Strikethrough */}
                                         {currencyLoading ? (
                                             <div className="mb-4">
                                                 <div className="h-8 bg-gray-700 rounded animate-pulse mb-2"></div>
                                                 <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
                                             </div>
                                         ) : (
-                                            <>
-                                                <div className="text-2xl sm:text-3xl font-bold mb-2 flex flex items-center justify-between">
-                                                    <span>{getPriceDisplay(starterPlan).primary}</span>
-                                                    <span className="text-base sm:text-lg ">
-                                                        Validity: {starterPlan.valid_till} days
-                                                    </span>
-                                                </div>
-                                            </>
+                                            <div className="mb-4">
+                                                {(() => {
+                                                    const priceInfo = getPriceDisplay(starterPlan)
+                                                    return (
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-2">
+                                                                {priceInfo.hasDiscount && (
+                                                                    <span className="text-lg sm:text-xl text-gray-400 line-through">
+                                                                        {priceInfo.originalPrice}
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-2xl sm:text-3xl font-bold text-white">
+                                                                    {priceInfo.discountedPrice}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-base sm:text-lg text-gray-300">
+                                                                Validity: {starterPlan.valid_till} days
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })()}
+                                            </div>
                                         )}
 
-                                        <div className="text-sm text-primary mb-6">
+                                        <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
                                             {starterPlan.ads_limit} ad analyses included
                                         </div>
 
@@ -693,7 +731,7 @@ const ProPage: React.FC = () => {
                                                     key={`${feature.text}-${index}`}
                                                     className="flex items-start gap-3 text-sm sm:text-base"
                                                 >
-                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
                                                     <span className="leading-relaxed">{feature.text}</span>
                                                 </li>
                                             ))}
@@ -711,9 +749,10 @@ const ProPage: React.FC = () => {
                                                     initiatePayment(userCurrency, starterPlan);
                                                 }
                                             }}
-                                            disabled={(paymentLoading || !razorpayLoaded || currencyLoading) && !isDashboardPage}
+                                            disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[starterPlan.package_id]))}
+
                                         >
-                                            {paymentLoading && !isDashboardPage ? (
+                                            {paymentLoading[starterPlan.package_id] && !isDashboardPage ? (
                                                 <>
                                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                     Processing...
@@ -721,7 +760,7 @@ const ProPage: React.FC = () => {
                                             ) : (
                                                 <>
                                                     <CreditCard className="w-4 h-4 mr-2" />
-                                                    {isDashboardPage ? "Pay" : `Pay ${getPriceDisplay(starterPlan).primary}`}
+                                                    {isDashboardPage ? "Analyze Ad" : `Pay ${getPriceDisplay(starterPlan).primary}`}
                                                 </>
                                             )}
                                         </Button>
@@ -738,34 +777,43 @@ const ProPage: React.FC = () => {
                             {/* Growth Plan */}
                             {growthPlan && (
                                 <div className="bg-[#121212] rounded-lg p-6 sm:p-8 relative shadow-lg shadow-white/5 border border-[#2a2a2a] hover:scale-[1.02] transition-all duration-300 flex flex-col w-full">
-                                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                                        <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 sm:px-4 py-1 text-xs sm:text-sm">
-                                            <Crown className="w-3 h-3 mr-1" />
-                                            Premium
-                                        </Badge>
-                                    </div>
                                     <div className="flex-1">
                                         <h3 className="text-lg sm:text-xl font-semibold mb-3">
                                             {growthPlan.plan_name}
                                         </h3>
 
+                                        {/* Price Display with Strikethrough */}
                                         {currencyLoading ? (
                                             <div className="mb-4">
                                                 <div className="h-8 bg-gray-700 rounded animate-pulse mb-2"></div>
                                                 <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
                                             </div>
                                         ) : (
-                                            <>
-                                                <div className="text-2xl sm:text-3xl font-bold mb-2 flex flex items-center justify-between">
-                                                    <span>{getPriceDisplay(growthPlan).primary}</span>
-                                                    <span className="text-base sm:text-lg ">
-                                                        Validity: {growthPlan.valid_till} days
-                                                    </span>
-                                                </div>
-                                            </>
+                                            <div className="mb-4">
+                                                {(() => {
+                                                    const priceInfo = getPriceDisplay(growthPlan)
+                                                    return (
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-2">
+                                                                {priceInfo.hasDiscount && (
+                                                                    <span className="text-lg sm:text-xl text-gray-400 line-through">
+                                                                        {priceInfo.originalPrice}
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-2xl sm:text-3xl font-bold text-white">
+                                                                    {priceInfo.discountedPrice}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-base sm:text-lg text-gray-300">
+                                                                Validity: {growthPlan.valid_till} days
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })()}
+                                            </div>
                                         )}
 
-                                        <div className="text-sm text-primary mb-6">
+                                        <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
                                             {growthPlan.ads_limit} ad analyses included
                                         </div>
 
@@ -775,7 +823,7 @@ const ProPage: React.FC = () => {
                                                     key={`${feature.text}-${index}`}
                                                     className="flex items-start gap-3 text-sm sm:text-base"
                                                 >
-                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
                                                     <span className="leading-relaxed">{feature.text}</span>
                                                 </li>
                                             ))}
@@ -792,9 +840,10 @@ const ProPage: React.FC = () => {
                                                     initiatePayment(userCurrency, growthPlan);
                                                 }
                                             }}
-                                            disabled={(paymentLoading || !razorpayLoaded || currencyLoading) && !isDashboardPage}
+                                            disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[growthPlan.package_id]))}
+
                                         >
-                                            {paymentLoading && !isDashboardPage ? (
+                                            {paymentLoading[growthPlan.package_id] && !isDashboardPage ? (
                                                 <>
                                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                     Processing...
@@ -802,7 +851,7 @@ const ProPage: React.FC = () => {
                                             ) : (
                                                 <>
                                                     <CreditCard className="w-4 h-4 mr-2" />
-                                                    {isDashboardPage ? "Pay" : `Pay ${getPriceDisplay(growthPlan).primary}`}
+                                                    {isDashboardPage ? "Analyze Ad " : `Pay ${getPriceDisplay(growthPlan).primary}`}
                                                 </>
                                             )}
                                         </Button>
@@ -819,7 +868,10 @@ const ProPage: React.FC = () => {
                     </div>
 
                     {/* Conditionally render CompetitorTable only when dashboard page */}
-                    {isDashboardPage && <CompetitorTable />}
+                    {isDashboardPage && basicPlan && (
+                        <CompetitorTable basicPrice={getPriceDisplay(basicPlan).primary} />
+                    )}
+
 
                     {/* Features Grid */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -834,7 +886,7 @@ const ProPage: React.FC = () => {
                                         key={feature.title}
                                         className="bg-[#121212] rounded-lg p-4 sm:p-6 shadow-lg shadow-white/5 border border-[#2a2a2a] hover:scale-[1.02] transition-all duration-300 flex flex-col h-full"
                                     >
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00] rounded-lg flex items-center justify-center mb-3 sm:mb-4 flex-shrink-0">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-b from-[#db4900] via-[#db4900] to-[#a63a00] rounded-lg flex items-center justify-center mb-3 sm:mb-4 flex-shrink-0">
                                             <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                         </div>
                                         <div className="flex-1">
@@ -851,10 +903,7 @@ const ProPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Testimonials - hidden on mobile (smaller than lg) */}
-                    {/* <div className="hidden lg:block"> */}
-                        <ProTestimonials testimonialData={testimonialData} />
-                    {/* </div> */}
+                    <ProTestimonials testimonialData={testimonialData} />
 
                     {/* FAQs - Always render */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">

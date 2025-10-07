@@ -55,7 +55,7 @@ export default function AffiliatePage() {
                         Promote cutting-edge AI solutions for marketers, agencies, and business owners.
                     </p>
                     <Button
-                        onClick={() => router.push("/register")}
+                       onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
                         size="lg" 
                         className="text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
                     >
@@ -103,7 +103,7 @@ export default function AffiliatePage() {
                     {/* Apply button under steps - Mobile Optimized */}
                     <div className="text-center mt-8 sm:mt-12">
                         <Button 
-                            onClick={() => router.push("/register")} 
+                            onClick={() => window.open("/register", "_blank", "noopener,noreferrer")} 
                             className="text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-base sm:text-lg font-semibold w-full sm:w-auto max-w-xs"
                         >
                             Start Your Journey
@@ -259,7 +259,7 @@ export default function AffiliatePage() {
                                 No experience required - we'll guide you every step of the way.
                             </p>
                             <Button 
-                                onClick={() => router.push("/register")} 
+                                onClick={() => window.open("/register", "_blank", "noopener,noreferrer")} 
                                 size="lg"
                                 className="text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto"
                             >

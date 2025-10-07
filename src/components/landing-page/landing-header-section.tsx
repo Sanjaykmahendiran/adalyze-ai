@@ -2,25 +2,32 @@
 
 import { Play, Pause } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Squares } from "./squares-background";
-import image1 from "@/assets/b-1.png";
-import image2 from "@/assets/b-2.png";
-import image3 from "@/assets/b-3.png";
-import image4 from "@/assets/b-4.png";
+import image1 from "@/assets/Landing-page/b-1.webp";
+import image2 from "@/assets/Landing-page/b-2.webp";
+import image3 from "@/assets/Landing-page/b-3.webp";
+import image4 from "@/assets/Landing-page/b-4.webp";
 import Header from "./header";
 
-const words = [
-  "Ad Performance Score",
-  "AI Feedback",
-  "Creative Optimization",
-  "Platform Insights",
-];
+interface BannerData {
+  tagline: string;
+  heading: string;
+  subheading: string;
+  brief: string;
+  pcta: string;
+  scta: string;
+  trust_line: string;
+  typeword1: string;
+  typeword2: string;
+  typeword3: string;
+  typeword4: string;
+}
 
 export default function LandingPageHeader() {
-  const router = useRouter();
+  const [bannerData, setBannerData] = useState<BannerData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [text, setText] = useState("");
   const [wordIndex, setWordIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
@@ -35,8 +42,69 @@ export default function LandingPageHeader() {
   const [scrollDirection, setScrollDirection] = useState("down");
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
 
-  // Check if mobile on mount and resize
+  // New state and refs for auto-hide functionality
+  const [isMouseOverVideo, setIsMouseOverVideo] = useState(false);
+  const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mouseMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch banner data from API
+  useEffect(() => {
+    const fetchBannerData = async () => {
+      try {
+        const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=getbanner&banner_id=1');
+        const data = await response.json();
+        setBannerData(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching banner data:', error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchBannerData();
+  }, []);
+
+  // Get typewriter words from API data
+  const words = bannerData ? [
+    bannerData.typeword3,
+    bannerData.typeword1,
+    bannerData.typeword4,
+    bannerData.typeword2,
+  ] : ["Loading..."];
+
+  // Set up viewport height tracking for mobile with proper calculations
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      // Use the larger of window.innerHeight or window.visualViewport.height for better mobile support
+      const height = window.visualViewport?.height || window.innerHeight;
+      setViewportHeight(height);
+    };
+
+    updateViewportHeight();
+
+    // Listen to both resize and visualViewport changes for better mobile support
+    window.addEventListener("resize", updateViewportHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updateViewportHeight);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateViewportHeight);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", updateViewportHeight);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -49,6 +117,8 @@ export default function LandingPageHeader() {
 
   // Typewriter effect
   useEffect(() => {
+    if (!bannerData) return;
+
     const currentWord = words[wordIndex];
     let timeout;
     if (charIndex < currentWord.length) {
@@ -67,9 +137,8 @@ export default function LandingPageHeader() {
       }, 1000);
     }
     return () => clearTimeout(timeout);
-  }, [charIndex, wordIndex]);
+  }, [charIndex, wordIndex, bannerData]);
 
-  // Handle mobile menu resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -81,7 +150,6 @@ export default function LandingPageHeader() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: any) => {
       if (isMobileMenuOpen && !event.target.closest(".mobile-menu-container")) {
@@ -99,16 +167,61 @@ export default function LandingPageHeader() {
     };
   }, [isMobileMenuOpen]);
 
-  // Video play/pause toggle
+  // Auto-hide controls functionality
+  const startHideControlsTimer = () => {
+    // Clear existing timer
+    if (hideControlsTimeoutRef.current) {
+      clearTimeout(hideControlsTimeoutRef.current);
+    }
+
+    // Set new timer to hide controls after 2 seconds if video is playing
+    if (isPlaying) {
+      hideControlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 2000);
+    }
+  };
+
+  const showControlsTemporarily = () => {
+    setShowControls(true);
+    startHideControlsTimer();
+  };
+
+  // Handle mouse movement over video
+  const handleMouseMove = () => {
+    // Clear existing mouse move timer
+    if (mouseMoveTimeoutRef.current) {
+      clearTimeout(mouseMoveTimeoutRef.current);
+    }
+
+    // Show controls immediately on mouse move
+    setShowControls(true);
+
+    // Start timer to hide controls after mouse stops moving
+    if (isPlaying) {
+      mouseMoveTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 1000);
+    }
+  };
+
   const togglePlay = async () => {
     if (videoRef.current) {
       try {
         if (videoRef.current.paused) {
           await videoRef.current.play();
           setIsPlaying(true);
+          // Start auto-hide timer when video starts playing
+          startHideControlsTimer();
         } else {
           videoRef.current.pause();
           setIsPlaying(false);
+          // Show controls when paused
+          setShowControls(true);
+          // Clear hide timer when paused
+          if (hideControlsTimeoutRef.current) {
+            clearTimeout(hideControlsTimeoutRef.current);
+          }
         }
       } catch (error) {
         console.error("Error toggling video playback:", error);
@@ -116,14 +229,28 @@ export default function LandingPageHeader() {
     }
   };
 
-  // Video event listeners
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-    const handleEnded = () => setIsPlaying(false);
+    const handlePlay = () => {
+      setIsPlaying(true);
+      startHideControlsTimer();
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+      setShowControls(true);
+      // Clear hide timer when paused
+      if (hideControlsTimeoutRef.current) {
+        clearTimeout(hideControlsTimeoutRef.current);
+      }
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setShowControls(true);
+    };
 
     video.addEventListener("play", handlePlay);
     video.addEventListener("pause", handlePause);
@@ -136,19 +263,39 @@ export default function LandingPageHeader() {
     };
   }, []);
 
-  // Video controls visibility
-  const handleMouseEnter = () => setShowControls(true);
-  const handleMouseLeave = () => {
-    if (isPlaying) {
-      setShowControls(false);
+  const handleMouseEnter = () => {
+    setIsMouseOverVideo(true);
+    setShowControls(true);
+    // Clear any existing hide timer when mouse enters
+    if (hideControlsTimeoutRef.current) {
+      clearTimeout(hideControlsTimeoutRef.current);
     }
   };
+
+  const handleMouseLeave = () => {
+    setIsMouseOverVideo(false);
+    // Start hide timer when mouse leaves if video is playing
+    if (isPlaying) {
+      startHideControlsTimer();
+    }
+  };
+
+  // Clean up timers on component unmount
+  useEffect(() => {
+    return () => {
+      if (hideControlsTimeoutRef.current) {
+        clearTimeout(hideControlsTimeoutRef.current);
+      }
+      if (mouseMoveTimeoutRef.current) {
+        clearTimeout(mouseMoveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
-      // Determine scroll direction
       if (currentScrollY > lastScrollY) {
         setScrollDirection("down");
       } else if (currentScrollY < lastScrollY) {
@@ -166,11 +313,34 @@ export default function LandingPageHeader() {
     };
   }, [lastScrollY]);
 
+  // Show loading state
+  if (isLoading || !bannerData) {
+    return (
+      <main className="flex flex-col min-h-screen items-center overflow-x-hidden">
+        <div className="relative w-full flex flex-col items-center overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-[rgba(219,73,0,0.3)] via-[rgba(255,102,0,0.2)] to-[rgba(255,150,50,0.1)] blur-md" />
+            <Squares
+              direction="diagonal"
+              speed={0.5}
+              squareSize={isMobile ? 20 : 40}
+              borderColor="#1a1a1a"
+              hoverFillColor="#0d0d0d"
+            />
+          </div>
+          <Header />
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-white text-xl"></div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex flex-col min-h-screen items-center overflow-x-hidden">
       <div className="relative w-full flex flex-col items-center overflow-hidden">
-        {/* === Background Gradient + Squares === */}
-        <div className="absolute top-0 left-0 w-full h-[85%] sm:h-[90%] md:h-[85%] lg:h-[80%] z-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-[95%] sm:h-[90%] md:h-[85%] lg:h-[80%] z-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-[rgba(219,73,0,0.3)] via-[rgba(255,102,0,0.2)] to-[rgba(255,150,50,0.1)] blur-md" />
           <Squares
             direction="diagonal"
@@ -185,88 +355,193 @@ export default function LandingPageHeader() {
 
         <Header />
 
-        <div className="relative z-10 w-full container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-38 pb-6 sm:pb-8 md:pb-12 lg:pb-16 flex flex-col items-center">
-         <div className="pt-8">
-  <div className="flex items-center justify-center px-3 py-0.5 mb-2 rounded-full bg-[#db4900]/10 text-[#db4900] font-medium text-sm">
-    AI-Powered Ad Analysis
-  </div>
-</div>
-
-
-          {/* Main Heading */}
-          <motion.h1
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.3 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-extrabold tracking-tight text-white text-center leading-tight max-w-full"
-          >
-            <div className="break-words px-1 sm:px-2 md:px-0">
-              Real-Time Ad Optimization{" "}
-              <span className="text-primary font-semibold block sm:inline mt-1 sm:mt-0">
-                AI Insights
-              </span>
-            </div>
-
-            <div className="mt-2 sm:mt-3 break-words px-1 sm:px-2 md:px-0">
-              <span className="bg-gradient-to-r from-orange-300 via-[#db4900] to-yellow-400 bg-clip-text text-transparent font-semibold inline-block text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl">
-                {text}
-                <span className={`${isTyping ? "animate-pulse" : "opacity-0"}`}>
-                  |
-                </span>
-              </span>
-            </div>
-          </motion.h1>
-
-          {/* Description */}
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0.3 }}
-            transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
-            className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 text-center mx-auto max-w-xl sm:max-w-2xl lg:max-w-3xl mt-3 sm:mt-4 md:mt-6 px-2 sm:px-4 md:px-2 leading-relaxed"
-          >
-            Adalyze scores your ads across platforms, pinpoints weak spots with
-            AI feedback, and gives clear steps to improve performance before you
-            launch.
-          </motion.p>
-
-          {/* CTA Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.8,
-              delay: 0.2,
-              type: "spring",
-              stiffness: 80,
+        {isMobile ? (
+          <div
+            className="relative z-10 w-full flex flex-col mt-8"
+            style={{
+              minHeight: `${viewportHeight}px`, // total mobile viewport
             }}
-            viewport={{ once: true }}
-            className="flex flex-col items-center mt-4 sm:mt-6 md:mt-8 px-2 sm:px-4"
           >
-            <motion.div
-              whileHover={{ scale: 1.1, rotate: 2 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300 }}
+            {/* Content section - 80% viewport */}
+            <div
+              className="flex flex-col items-center justify-center sm:px-4"
+              style={{
+                minHeight: `${viewportHeight * 0.8}px`,
+              }}
             >
-              <div className="flex flex-col items-center space-y-2 sm:space-y-3 mt-2 sm:mt-4">
-                <Button
-                  onClick={() => router.push("/register")}
-                  className="flex items-center cursor-pointer gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 lg:py-6 text-white text-sm sm:text-base md:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[180px] sm:min-w-[200px]"
-                >
-                  Analyze Now
-                </Button>
+              <div className="pt-20 sm:pt-24">
+                <div className="flex items-center justify-center px-3 py-1 mb-3 rounded-full bg-[#db4900]/10 text-[#db4900] font-semibold text-base">
+                  {bannerData.tagline}
+                </div>
               </div>
-            </motion.div>
-          </motion.div>
 
-          {/* === Video Section with Floating Images === */}
-          <div className="w-full max-w-sm sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-6xl mx-auto mt-6 sm:mt-8 md:mt-12 lg:mt-16 relative z-10 px-2 sm:px-4 md:px-8 lg:px-12 xl:px-24">
-            <div className="relative flex items-center justify-center w-full">
-              {/* === Floating Images (Only show on larger screens) === */}
-              {!isMobile && (
+              <motion.h1
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="text-5xl sm:text-6xl font-extrabold tracking-tight text-white text-center leading-snug max-w-full mt-4"
+              >
+                <div className="">
+                  {bannerData.heading}{" "}
+                  <span className="text-primary font-semibold block sm:inline mt- sm:mt-0">
+                    {bannerData.subheading}
+                  </span>
+                </div>
+
+                <div className="mt-4 px-2">
+                  <span className="bg-gradient-to-r from-orange-300 via-[#db4900] to-yellow-400 bg-clip-text text-transparent font-bold inline-block text-xl sm:text-2xl">
+                    {text}
+                    <span className={`${isTyping ? "animate-pulse" : "opacity-0"}`}>|</span>
+                  </span>
+                </div>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+                className="text-base sm:text-lg text-gray-300 text-center mx-auto max-w-md mt-5 px-3 leading-relaxed"
+              >
+                {bannerData.brief}
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2, type: "spring", stiffness: 80 }}
+                className="flex flex-col items-center mt-6"
+              >
+                <Button
+                  onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                  className="flex items-center cursor-pointer gap-2 px-6 py-6 text-white text-lg font-semibold rounded-xl transition-colors w-full sm:w-auto min-w-[200px] shadow-lg shadow-orange-500/20"
+                >
+                  {bannerData.pcta}
+                </Button>
+                <div className="flex items-center justify-center gap-2 mt-2 text-white/70 text-xs text-center">
+                  <span>{bannerData.scta}</span>
+                </div>
+              </motion.div>
+            </div>
+            {/* Video section - 10% visible, rest overflows downward */}
+            <div
+              ref={videoContainerRef}
+              className="w-full flex items-center justify-center overflow-visible rounded-xl sm:rounded-2xl z-20 shadow-xl bg-black/20 backdrop-blur-sm my-8 "
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              onMouseMove={handleMouseMove}
+              onClick={togglePlay}
+            >
+              <video
+                ref={videoRef}
+                className="w-full h-auto object-cover rounded-xl sm:rounded-2xl"
+                poster="https://adalyze.app/uploads/thumbnail-mobile.webp"
+                playsInline
+                preload="metadata"
+                src="https://adalyze.app/uploads/video.mp4"
+              />
+
+              {/* Play/Pause button */}
+              <motion.div
+                initial={{ opacity: 1 }}
+                animate={{ opacity: showControls ? 1 : 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePlay();
+                  }}
+                  className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-3 transition-all duration-200 transform hover:scale-110"
+                  aria-label={isPlaying ? "Pause video" : "Play video"}
+                >
+                  {isPlaying ? (
+                    <Pause className="w-6 h-6 text-white" />
+                  ) : (
+                    <Play className="w-6 h-6 text-white ml-0.5" />
+                  )}
+                </button>
+              </motion.div>
+            </div>
+          </div>
+
+
+        ) : (
+          <div className="relative z-10 w-full container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-38 pb-6 sm:pb-8 md:pb-12 lg:pb-16 flex flex-col items-center">
+            <div className="pt-8">
+              <div className="flex items-center justify-center px-3 py-0.5 mb-2 rounded-full bg-[#db4900]/10 text-[#db4900] font-medium text-sm">
+                {bannerData.tagline}
+              </div>
+            </div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: false, amount: 0.3 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-extrabold tracking-tight text-white text-center leading-tight max-w-full"
+            >
+              <div className="break-words px-1 sm:px-2 md:px-0">
+                {bannerData.heading}{" "}
+                <span className="text-primary font-semibold block sm:inline mt-1 sm:mt-0">
+                  {bannerData.subheading}
+                </span>
+              </div>
+
+              <div className="mt-2 sm:mt-3 break-words px-1 sm:px-2 md:px-0">
+                <span className="bg-gradient-to-r from-orange-300 via-[#db4900] to-yellow-400 bg-clip-text text-transparent font-semibold inline-block text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl">
+                  {text}
+                  <span className={`${isTyping ? "animate-pulse" : "opacity-0"}`}>
+                    |
+                  </span>
+                </span>
+              </div>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: false, amount: 0.3 }}
+              transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+              className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 text-center mx-auto max-w-xl sm:max-w-2xl lg:max-w-3xl mt-3 sm:mt-4 md:mt-6 px-2 sm:px-4 md:px-2 leading-relaxed"
+            >
+              {bannerData.brief}
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.8,
+                delay: 0.2,
+                type: "spring",
+                stiffness: 80,
+              }}
+              viewport={{ once: true }}
+              className="flex flex-col items-center mt-4 sm:mt-6 md:mt-8 px-2 sm:px-4"
+            >
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 2 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <div className="flex flex-col items-center space-y-2 sm:space-y-3 mt-2 sm:mt-4">
+                  <Button
+                    onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                    className="flex items-center cursor-pointer gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 lg:py-6 text-white text-sm sm:text-base md:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[180px] sm:min-w-[200px]"
+                  >
+                    {bannerData.pcta}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-center gap-2 mt-1 text-white/70 text-center text-xs sm:whitespace-nowrap">
+                  <span>{bannerData.scta}</span>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            <div className="w-full max-w-sm sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-6xl mx-auto mt-6 sm:mt-8 md:mt-12 lg:mt-16 relative z-10 px-2 sm:px-4 md:px-8 lg:px-12 xl:px-24">
+              <div className="relative flex items-center justify-center w-full">
                 <>
-                  {/* Top Left Image */}
                   <motion.div
                     key={`top-left-${scrollDirection}`}
                     initial={{
@@ -296,7 +571,6 @@ export default function LandingPageHeader() {
                     </div>
                   </motion.div>
 
-                  {/* Top Right Image */}
                   <motion.div
                     key={`top-right-${scrollDirection}`}
                     initial={{
@@ -326,7 +600,6 @@ export default function LandingPageHeader() {
                     </div>
                   </motion.div>
 
-                  {/* Bottom Left Image */}
                   <motion.div
                     key={`bottom-left-${scrollDirection}`}
                     initial={{
@@ -356,7 +629,6 @@ export default function LandingPageHeader() {
                     </div>
                   </motion.div>
 
-                  {/* Bottom Right Image */}
                   <motion.div
                     key={`bottom-right-${scrollDirection}`}
                     initial={{
@@ -386,78 +658,54 @@ export default function LandingPageHeader() {
                     </div>
                   </motion.div>
                 </>
-              )}
 
-              {/* === Video Container === */}
-              <div
-                ref={videoContainerRef}
-                className="relative w-full group cursor-pointer flex items-center justify-center overflow-hidden aspect-video rounded-xl sm:rounded-2xl md:rounded-3xl z-20 shadow-2xl bg-black/20 backdrop-blur-sm"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onClick={togglePlay}
-              >
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-cover rounded-xl sm:rounded-2xl md:rounded-3xl"
-                  poster="https://adalyzeai.top/uploads/thumbnail.jpg"
-                  playsInline
-                  preload="metadata"
-                  src="https://adalyzeai.top/uploads/video.mp4"
-                />
                 <div
-                  className={`absolute inset-0 flex  items-center justify-center transition-all duration-300 ${
-                    showControls || !isPlaying ? "opacity-100" : "opacity-70"
-                  } rounded-xl sm:rounded-2xl md:rounded-3xl`}
+                  ref={videoContainerRef}
+                  className="relative w-full group cursor-pointer flex items-center justify-center overflow-hidden aspect-video rounded-xl sm:rounded-2xl md:rounded-3xl z-20 shadow-2xl bg-black/20 backdrop-blur-sm"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                  onMouseMove={handleMouseMove}
+                  onClick={togglePlay}
                 >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      togglePlay();
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover rounded-xl sm:rounded-2xl md:rounded-3xl"
+                    poster="https://adalyze.app/uploads/thumbnail.jpg"
+                    playsInline
+                    preload="metadata"
+                    src="https://adalyze.app/uploads/video.mp4"
+                  />
+                  <motion.div
+                    initial={{ opacity: 1 }}
+                    animate={{
+                      opacity: showControls ? 1 : 0
                     }}
-                    className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-2 sm:p-3 md:p-4 transition-all duration-200 transform hover:scale-110"
-                    aria-label={isPlaying ? "Pause video" : "Play video"}
+                    transition={{
+                      duration: 0.3,
+                      ease: "easeInOut"
+                    }}
+                    className="absolute inset-0 flex items-center justify-center rounded-xl sm:rounded-2xl md:rounded-3xl"
                   >
-                    {isPlaying ? (
-                      <Pause className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-white" />
-                    ) : (
-                      <Play className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-white ml-0.5 sm:ml-1" />
-                    )}
-                  </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePlay();
+                      }}
+                      className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-2 sm:p-3 md:p-4 transition-all duration-200 transform hover:scale-110"
+                      aria-label={isPlaying ? "Pause video" : "Play video"}
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-white" />
+                      ) : (
+                        <Play className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-white ml-0.5 sm:ml-1" />
+                      )}
+                    </button>
+                  </motion.div>
                 </div>
               </div>
             </div>
           </div>
-        
-        </div>
-
-        {/* Extra animation keyframes */}
-        <style jsx>{`
-          @keyframes slide {
-            0% {
-              transform: translateX(-100%) skewX(12deg);
-            }
-            100% {
-              transform: translateX(100%) skewX(12deg);
-            }
-          }
-          .animate-slide {
-            animation: slide 6s linear infinite;
-          }
-
-          @keyframes float {
-            0%,
-            100% {
-              transform: translateY(0px) rotate(var(--rotation));
-            }
-            50% {
-              transform: translateY(-10px) rotate(var(--rotation));
-            }
-          }
-
-          .float-animation {
-            animation: float 3s ease-in-out infinite;
-          }
-        `}</style>
+        )}
       </div>
     </main>
   );

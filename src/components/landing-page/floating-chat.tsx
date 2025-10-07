@@ -3,12 +3,21 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import Image from "next/image"
 import ChatIcon from "@/assets/Chat-icon-suggesto.png"
+import MobileChatIcon from "@/assets/Chat-icon-suggesto-mobile.webp"
 import { Button } from "../ui/button"
 import LoginChatCard from "./login-chat-card"
 
 const FloatingChat = () => {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const chatRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024)
+    handleResize() // initial value
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   const toggleChat = useCallback(() => {
     setIsChatOpen((prev) => !prev)
@@ -42,7 +51,7 @@ const FloatingChat = () => {
           onClick={toggleChat}
         >
           <Image
-            src={ChatIcon || "/placeholder.svg"}
+            src={isMobile ? MobileChatIcon : ChatIcon}
             alt="Chat Icon"
             width={60}
             height={60}

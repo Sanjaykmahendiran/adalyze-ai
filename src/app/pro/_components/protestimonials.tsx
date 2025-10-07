@@ -50,14 +50,14 @@ function ProTestimonials({ testimonialData }: TestimonialsProps) {
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="flex flex-col gap-10">
-                        <h2 className="text-2xl md:text-4xl tracking-tighter  font-semibold text-center text-white">
+                        <h2 className="text-2xl md:text-4xl tracking-tighter  font-semibold text-center text-white/90">
                             What Our Users Say
                         </h2>
                         <Carousel setApi={setApi} className="w-full">
                             <CarouselContent>
                                 {testimonialData.map((testimonial) => (
                                     <CarouselItem className="lg:basis-1/2" key={testimonial.testi_id}>
-                                        <div className="bg-[#121212] border border-[#2a2a2a] rounded-md h-full  p-6  flex  flex-col">
+                                        <div className="bg-black  rounded-md h-full  p-6  flex  flex-col">
                                             {/* Rating stars */}
                                             <div className="flex gap-1 mt-2 mb-4" aria-label="Rating: 5 out of 5">
                                                 {[...Array(5)].map((_, i) => (
@@ -70,7 +70,7 @@ function ProTestimonials({ testimonialData }: TestimonialsProps) {
                                             </div>
                                             <div className="flex flex-col gap-4">
                                                 <div className="flex flex-col">
-                                                    <h3 className="text-xl tracking-tight text-white">
+                                                    <h3 className="text-xl tracking-tight text-gray-300">
                                                         "{testimonial.content}"
                                                     </h3>
                                                 </div>
@@ -80,7 +80,7 @@ function ProTestimonials({ testimonialData }: TestimonialsProps) {
                                                             {testimonial.name.charAt(0).toUpperCase()}
                                                         </AvatarFallback>
                                                     </Avatar>
-                                                    <span className="text-white font-medium">{testimonial.name}</span>
+                                                    <span className="text-white/90 font-medium">{testimonial.name}</span>
                                                     <span className="text-muted-foreground">- {testimonial.role}</span>
                                                 </p>
                                             </div>

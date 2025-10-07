@@ -11,7 +11,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (pathname) {
       const url = pathname + (searchParams?.toString() ? `?${searchParams}` : "");
-      pageview(url); // 👈 send pageview to GTM
+      pageview(url); 
     }
   }, [pathname, searchParams]);
 

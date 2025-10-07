@@ -9,7 +9,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-quicksand);
+  --font-sans: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -47,16 +47,16 @@
 }
 
 :root {
-  --font-quicksand: 'Quicksand', sans-serif;
+  --font-poppins: 'Poppins', sans-serif;
   --radius: 0.5rem;
-  
+
   /* Light theme colors */
-  --background: #0a0a0a;
-  --foreground:#ffffff;
+  --background: #171717;
+  --foreground: #ffffff;
   --card: #121212;
-  --card-foreground:#ffffff;
+  --card-foreground: #ffffff;
   --popover: #121212;
-  --popover-foreground:#ffffff;
+  --popover-foreground: #ffffff;
   --primary: #db4900;
   --primary-foreground: #ffffff;
   --secondary: #2b2b2b;
@@ -70,15 +70,15 @@
   --border: #2b2b2b;
   --input: #121212;
   --ring: #db4900;
-  
+
 }
 
 .dark {
   --background: #0a0a0a;
   --foreground: hsl(210 40% 98%);
-  --card:#ffffff;
+  --card: #ffffff;
   --card-foreground: hsl(210 40% 98%);
-  --popover:#ffffff;
+  --popover: #ffffff;
   --popover-foreground: hsl(210 40% 98%);
   --primary: #db4900;
   --primary-foreground: hsl(210 40% 98%);
@@ -93,54 +93,90 @@
   --border: hsl(217.2 32.6% 17.5%);
   --input: hsl(217.2 32.6% 17.5%);
   --ring: hsl(142.1 61.1% 50.6%);
-  
+
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
-@layer utilities {
-  .thin-scrollbar::-webkit-scrollbar {
-    width: 6px; /* Thin scrollbar */
+
+/* Scrollbar Track */
+::-webkit-scrollbar {
+  width: 8px;
+  /* Adjust the width */
+  height: 8px;
+  /* For horizontal scrollbars */
+}
+
+/* Scrollbar Thumb */
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  /* Thumb color */
+  border-radius: 10px;
+  /* Rounded edges */
+  border: 2px solid transparent;
+  /* Optional: gives spacing effect */
+  background-clip: content-box;
+}
+
+/* Scrollbar Track */
+::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.2);
+  /* Track color */
+  border-radius: 10px;
+}
+
+/* Optional: Hover effect */
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  /* "auto" or "thin" */
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.2);
+}
+
+
+/* Slide animation */
+@keyframes slide {
+  0% {
+    transform: translateX(-100%) skewX(12deg);
   }
 
-  .thin-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #9ca3af; /* gray-400 */
-    border-radius: 4px;
-  }
-
-  .thin-scrollbar::-webkit-scrollbar-track {
-    background-color: #e5e7eb; /* gray-200 */
-  }
-
-  /* Hide scrollbar by default */
-  .scroll-container {
-    overflow-y: hidden;
-  }
-
-  /* Show thin scrollbar on hover */
-  .scroll-container:hover {
-    overflow-y: auto;
+  100% {
+    transform: translateX(100%) skewX(12deg);
   }
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+.animate-slide {
+  animation: slide 6s linear infinite;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+/* Floating animation */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(var(--rotation));
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(var(--rotation));
+  }
 }
 
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
 
 
 @keyframes bounceSlow {
@@ -160,30 +196,28 @@
 }
 
 .shine-effect::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -75%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(
-        120deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.4) 50%,
-        rgba(255, 255, 255, 0) 100%
-    );
-    transform: skewX(-20deg);
-    z-index: 1;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 100%);
+  transform: skewX(-20deg);
+  z-index: 1;
 }
 
 .shine-effect:hover::before {
-    animation: shine 0.8s ease-in-out forwards;
+  animation: shine 0.8s ease-in-out forwards;
 }
 
 @keyframes shine {
-    100% {
-        left: 125%;
-    }
+  100% {
+    left: 125%;
+  }
 }
 
 
@@ -206,6 +240,3 @@
 #download-report .bg-black {
   page-break-inside: avoid;
 }
-
-
-

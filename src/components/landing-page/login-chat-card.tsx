@@ -54,7 +54,7 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    gofor: "sendquery",
+                    gofor: "needhelp",
                     email,
                     category,
                     description,

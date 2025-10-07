@@ -34,7 +34,7 @@ export function AnalyzingOverlay() {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0a0a]/95 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#171717]/95 backdrop-blur-sm">
       <div className="flex flex-col items-center justify-center space-y-8 text-center max-w-2xl mx-auto px-6">
         {/* Loading Animation */}
         <div className="relative">

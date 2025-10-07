@@ -1,92 +1,79 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Cookies from "js-cookie"
 import toast from "react-hot-toast"
-import loginlogo from "@/assets/ad-logo.png"
+import loginlogo from "@/assets/ad-logo.webp"
 import AuthLoginForm from "@/app/login/_components/auth-login-form"
-import Background from "@/assets/register-page-image.png"
+import { login } from "@/services/authService"
 
 interface LoginFormData {
-  email: string;
-  password: string;
+  token?: string;
+  nouptoken?: string;
+  email?: string;
+  password?: string;
 }
 
-interface LoginResponse {
-  status: string;
-  user?: {
-    user_id: number;
-    mobileno: string;
-    password: string;
-    otp: string | null;
-    otp_status: string;
-    email: string;
-    name: string;
-    city: string;
-    role: string;
-    imgname: string | null;
-    company: string;
-    source: string;
-    package_id: number | null;
-    coupon_id: number | null;
-    payment_status: number;
-    created_date: string;
-    modified_date: string;
-    register_level_status: string | null;
-    emailver_status: number;
-    status: number;
-  };
-  message?: string;
-}
 
 const LoginPage = () => {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
+
 
   const onSubmit = async (data: LoginFormData) => {
-    setLoading(true)
+    setLoading(true);
 
     try {
-      // Construct the API URL with parameters
-      const apiUrl = `https://adalyzeai.xyz/App/api.php?gofor=login&email=${encodeURIComponent(data.email)}&password=${encodeURIComponent(data.password)}`
+      let loginData;
 
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok')
+      if (data.token) {
+        loginData = await login({ google_token: data.token });
+      } else if (data.nouptoken) {
+        loginData = await login({ nouptoken: data.nouptoken });
+      } else {
+        loginData = await login(data);
       }
 
-      const result: LoginResponse = await response.json()
+      if (loginData.status === "success" && loginData.user) {
+        const user = loginData.user;
+        Cookies.set("userId", user.user_id.toString(), { expires: 7 });
 
-      if (result.status === 'success' && result.user) {
-        // Store user_id in cookies
-        Cookies.set('userId', result.user.user_id.toString(), {
-          expires: 7,
-        })
-        // Show success message
-        toast.success('Login successful!')
+        toast.success("Login successful!");
 
-        // Redirect to dashboard
-        router.push("/dashboard")
+        if (user.payment_status === 0) {
+          if (user.fretra_status === 1) {
+            router.push("/dashboard"); // Allowed even if unpaid
+          } else {
+            router.push("/pricing"); // Unpaid and fretra_status not 1
+          }
+        } else {
+          router.push("/dashboard"); // Paid users
+        }
       } else {
-        // Handle login failure
-        toast.error(result.message || 'Login failed. Please check your credentials.')
+        toast.error(loginData.message || "Login failed. Please check your credentials.");
       }
     } catch (error) {
-      console.error('Login error:', error)
-      toast.error('Something went wrong. Please try again.')
+      console.error("Login error:", error);
+      toast.error("Something went wrong. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+
+  useEffect(() => {
+    if (searchParams) {
+      const getToken = searchParams.get("token");
+      if (getToken) {
+        onSubmit({ nouptoken: getToken });
+      }
+    }
+  }, [searchParams]);
+
 
   return (
     <div className="min-h-screen relative">
@@ -102,7 +89,7 @@ const LoginPage = () => {
                     src={loginlogo || "/placeholder.svg"}
                     layout="fill"
                     objectFit="contain"
-                    alt="Qualifit"
+                    alt="Adalyze"
                     draggable={false}
                   />
                 </div>
@@ -110,7 +97,7 @@ const LoginPage = () => {
               {/* Header */}
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-bold text-white mb-2">Login to Your Account</h1>
-                <p className="text-gray-300 text-sm">Your Own Digital Campaign</p>
+                <p className="text-gray-300 text-sm">Change Your Own Digital Campaign to Turn every ad into an opportunity</p>
               </div>
               <div className="mt-8">
                 {/* Auth form with API integration */}
@@ -142,18 +129,20 @@ const LoginPage = () => {
         </div>
 
         {/* Right Side (LoginCarousel) */}
-        <div className="hidden xl:block w-1/2">
+        <div className="hidden xl:block w-1/2 bg-black">
           <div className="hidden md:block relative w-full h-screen overflow-hidden">
-            <Image
-              src={Background}
-              alt="Background"
-              fill
-              className="object-cover"
-              priority
+            <video
+              src="https://adalyze.app/uploads/Login-Video.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-contain"
             />
-            <div className="absolute inset-0" /> {/* Semi-transparent white overlay */}
+            <div className="absolute inset-0" />
           </div>
         </div>
+
       </div>
     </div>
   )

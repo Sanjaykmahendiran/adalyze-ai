@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Cookies from "js-cookie";
 import { usePathname } from "next/navigation";
 import useLogout from "@/hooks/useLogout";
@@ -18,13 +18,14 @@ interface UserDetails {
   imgname: string | null;
   company: string;
   source: string;
-  package_id: string | null;
+  package_id: number | null;
   coupon_id: string | null;
   payment_status: number;
   created_date: string;
   modified_date: string;
   register_level_status: string | null;
   emailver_status: number;
+  fretra_status: number;
   status: number;
   ads_limit: number;
   valid_till: string;
@@ -33,57 +34,77 @@ interface UserDetails {
 const useFetchUserDetails = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
+  
   const pathname = usePathname();
   const logout = useLogout();
   const userId = Cookies.get("userId");
+  
+  // Use refs to track if we've already fetched for this userId
+  const fetchedUserIdRef = useRef<string | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
-      // Don't fetch if already loading or if userId hasn't changed
-      if (loading || userId === currentUserId) {
+      // Prevent multiple simultaneous fetches
+      if (isFetchingRef.current) {
+        return;
+      }
+
+      // Don't fetch if we already have data for this userId
+      if (userId === fetchedUserIdRef.current && userDetails) {
         return;
       }
 
       if (!userId) {
-        if (pathname !== "/register" && pathname !== "/" && pathname !== "/pricing") {
+        if (
+          pathname !== "/" &&
+          pathname !== "/login" &&
+          pathname !== "/register" &&
+          pathname !== "/emailconfrimation" &&
+          pathname !== "/pricing" &&
+          pathname !== "/results"
+        ) {
           logout();
         }
         setUserDetails(null);
-        setCurrentUserId(null);
+        fetchedUserIdRef.current = null;
         return;
       }
 
-      setLoading(true);
-      setCurrentUserId(userId);
+      // If userId changed, reset and fetch
+      if (userId !== fetchedUserIdRef.current) {
+        isFetchingRef.current = true;
+        setLoading(true);
 
-      const params = {
-        gofor: "userget",
-        user_id: userId,
-      };
+        const params = {
+          gofor: "userget",
+          user_id: userId,
+        };
 
-      try {
-        const response = await axiosInstance.get<UserDetails>("", { params });
+        try {
+          const response = await axiosInstance.get<UserDetails>("", { params });
 
-        if (!response.data || response.status !== 200) {
+          if (!response.data || response.status !== 200) {
+            logout();
+            fetchedUserIdRef.current = null;
+            return;
+          }
+
+          setUserDetails(response.data);
+          fetchedUserIdRef.current = userId;
+        } catch (err) {
+          console.error("Error fetching user details:", err);
+          fetchedUserIdRef.current = null;
           logout();
-          setCurrentUserId(null);
-          return;
+        } finally {
+          setLoading(false);
+          isFetchingRef.current = false;
         }
-
-        setUserDetails(response.data);
-      } catch (err) {
-        console.error("Error fetching user details:", err);
-        setCurrentUserId(null);
-        logout();
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchUserDetails();
-  }, [userId, pathname]);
+  }, [userId]); // Removed pathname from dependencies
 
   return { loading, userDetails };
 };

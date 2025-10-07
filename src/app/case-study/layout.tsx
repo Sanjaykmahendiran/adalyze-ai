@@ -23,7 +23,7 @@ export default function Layout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} antialiased`}>
-        <div className="bg-[#0a0a0a]">
+        <div className="bg-[#171717]">
           <Suspense>
             {children}
           </Suspense>

@@ -1,127 +1,206 @@
-"use client"
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 
-import { useState } from "react"
-import { ArrowRightIcon, ArrowUpIcon } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-
-interface FAQ {
-  question: string
-  answer: string
+interface FAQItem {
+  faq_id: number;
+  question: string;
+  answer: string;
+  category: string;
+  status: number;
+  created_date: string;
 }
 
-const faqs: FAQ[] = [
-  {
-    question: "What is Adalyze AI?",
-    answer:
-      "Adalyze AI is a smart ad analysis tool that evaluates your creatives and provides actionable insights using AI.",
-  },
-  {
-    question: "Who can use Adalyze AI?",
-    answer: "Anyone who runs ads — marketers, designers, startups, and agencies — can benefit from Adalyze AI.",
-  },
-  {
-    question: "Do I need any technical skills to use Adalyze?",
-    answer: "No. Adalyze is built to be simple and user-friendly for everyone.",
-  },
-  {
-    question: "Which ad formats are supported?",
-    answer: "Currently, we support image creatives in formats like JPG, PNG, and JPEG.",
-  },
-  {
-    question: "Is there a free plan available?",
-    answer: "Yes. You can start with our Free plan which includes up to 5 uploads per month and basic AI analysis.",
-  },
-  // {
-  //   question: "What is the cost of the Pro plan?",
-  //   answer:
-  //     "Our Pro plan costs ₹499/month or $7/month with extended features and 25 uploads.",
-  // },
-  // {
-  //   question: "Do you offer yearly billing?",
-  //   answer:
-  //     "We currently support only monthly billing. Yearly plans are coming soon.",
-  // },
-]
+const FAQSection: React.FC = () => {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [visibleItems, setVisibleItems] = useState<number[]>([]);
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const accordionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-const FAQItem = ({
-  question,
-  answer,
-  isOpen,
-  onClick,
-}: {
-  question: string
-  answer: string
-  isOpen: boolean
-  onClick: () => void
-}) => {
+  // Fetch FAQ data from API
+  useEffect(() => {
+    const fetchFAQs = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=prefaqlist');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch FAQs');
+        }
+
+        const data: FAQItem[] = await response.json();
+        setFaqs(data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+        console.error('Error fetching FAQs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFAQs();
+  }, []);
+
+  // Intersection Observer for scroll animations (both directions)
+  useEffect(() => {
+    if (faqs.length === 0) return;
+
+    const observers: IntersectionObserver[] = [];
+
+    accordionRefs.current.forEach((ref, index) => {
+      if (ref) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                // Add to visible items with stagger delay
+                setTimeout(() => {
+                  setVisibleItems((prev) => {
+                    if (!prev.includes(index)) {
+                      return [...prev, index];
+                    }
+                    return prev;
+                  });
+                }, index * 100);
+              } else {
+                // Remove from visible items when scrolling out of view
+                setVisibleItems((prev) => prev.filter((i) => i !== index));
+              }
+            });
+          },
+          {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+          }
+        );
+
+        observer.observe(ref);
+        observers.push(observer);
+      }
+    });
+
+    return () => {
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, [faqs]);
+
+  const toggleAccordion = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
+  const getAnimationStyle = (index: number) => {
+    const isVisible = visibleItems.includes(index);
+
+    let opacity = 0.1;
+    let scale = 0.75;
+
+    if (isVisible) {
+      opacity = 1;
+      scale = 1;
+    } else if (index === 0) {
+      opacity = 0.98893;
+      scale = 1.0957;
+    } else if (index === 1) {
+      opacity = 0.640918;
+      scale = 0.960357;
+    } else if (index === 2) {
+      opacity = 0.251794;
+      scale = 0.809031;
+    }
+
+    return {
+      opacity,
+      transform: `scale(${scale})`,
+      transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+    };
+  };
+
   return (
-    <div
-      className={`rounded-2xl transition-all duration-300 ${isOpen ? "bg-[#212121]" : "bg-[#121212]"}
-        `}
-    >
-      <div className="flex items-center justify-between px-6 py-8 cursor-pointer" onClick={onClick}>
-        <h3 className={`text-base md:text-lg font-bold ${isOpen ? " text-[#db4900]" : "text-white"}`}>{question}</h3>
-        <div className="ml-4">
-          {isOpen ? (
-            <ArrowUpIcon className="w-5 h-5 text-primary transition-transform rotate-180" />
-          ) : (
-            <ArrowRightIcon className="w-5 h-5 text-primary hover:text-[#db4900] transition-colors" />
-          )}
-        </div>
-      </div>
+    <section className="relative px-[8%] py-20 block ">
+      <div className="mx-auto max-w-[1280px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left Column */}
+          <div className="flex flex-col">
+            <div className="mb-8">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#db4900] bg-[#171717] mb-4">
+                <HelpCircle className="w-4 h-4 text-[#db4900]" />
+                <span className="text-[#db4900] uppercase text-sm font-medium">questions</span>
+              </div>
 
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="px-6 pb-6 text-sm text-white">{answer}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-export default function FAQSection() {
-  const [openIndex, setOpenIndex] = useState<number>(0)
-
-  return (
-    <section className="py-12 sm:py-16 md:py-20 lg:py-24" id="faq">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-20 items-stretch">
-          {/* Title */}
-          <div className="lg:col-span-4 flex flex-col">
-            <div className="flex flex-col h-full">
-              <span className="inline-block w-[60px] text-sm font-semibold bg-[#db4900]/20 text-primary px-3 py-1 rounded-full mb-4">
-                FAQS
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6">
-                Adalyze AI
-                <br />
-                User FAQs
+              {/* Title */}
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                In case you missed anything
               </h2>
+
+              {/* CTA Button */}
+              <button className="inline-flex items-center gap-2 text-lg text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 bg-[#db4900] hover:bg-orange-700">
+                Start Free Trail
+              </button>
             </div>
           </div>
 
-          {/* FAQs */}
-          <div className="lg:col-span-8 space-y-3">
-            {faqs.map((faq, index) => (
-              <FAQItem
-                key={index}
-                question={faq.question}
-                answer={faq.answer}
-                isOpen={openIndex === index}
-                onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
-              />
-            ))}
+          {/* Right Column - Accordion */}
+          <div className="flex flex-col gap-4">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#db4900]"></div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-950 border border-red-800 rounded-lg p-6 text-center">
+                <p className="text-red-400 font-medium">Failed to load FAQs</p>
+                <p className="text-red-500 text-sm mt-2">{error}</p>
+              </div>
+            ) : faqs.length === 0 ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-center">
+                <p className="text-zinc-400">No FAQs available at the moment.</p>
+              </div>
+            ) : (
+              faqs.map((faq, index) => (
+                <div
+                  key={faq.faq_id}
+                  ref={(el) => (accordionRefs.current[index] = el)}
+                  style={getAnimationStyle(index)}
+                  className="rounded-lg bg-black transition-all duration-300 hover:bg-[#db4900]/20 origin-top"
+                >
+                  <button
+                    onClick={() => toggleAccordion(index)}
+                    className="w-full flex items-start justify-between p-6 text-left"
+                  >
+                    <h5
+                      className={`text-lg font-semibold pr-4 transition-colors duration-200 ${openIndex === index ? "text-[#db4900]" : "text-white/80"
+                        }`}
+                    >
+                      {index + 1}. {faq.question}
+                    </h5>
+                    <ChevronDown
+                      className={`w-6 h-6 flex-shrink-0 transition-transform duration-300 ${openIndex === index
+                          ? "rotate-180 text-[#db4900]"
+                          : "text-white/80"
+                        }`}
+                    />
+                  </button>
+
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === index
+                        ? "max-h-96 opacity-100"
+                        : "max-h-0 opacity-0"
+                      }`}
+                  >
+                    <p className="px-6 pb-6 text-white/80 leading-relaxed">
+                      {faq.answer}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
     </section>
-  )
-}
+  );
+};
+
+export default FAQSection;

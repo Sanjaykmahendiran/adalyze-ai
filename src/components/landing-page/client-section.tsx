@@ -88,7 +88,7 @@ export default function ClientSection() {
   const secondRow = clients.slice(Math.ceil(clients.length / 2))
 
   return (
-    <section className="py-12 md:py-14 bg-[#0A0A0A] text-white" ref={containerRef}>
+    <section className="py-12 md:py-14 bg-[#171717] text-white" ref={containerRef}>
       <div className="container px-4 md:px-6 mx-auto text-center max-w-7xl">
         {/* Badge */}
         <div className="inline-flex items-center border-2 border-[#FF6154] rounded-xl px-3 py-2 text-[#FF6154] bg-[#1A1A1A] mb-12">

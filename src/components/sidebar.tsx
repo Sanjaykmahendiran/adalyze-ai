@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import React, { useRef, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   UploadCloud,
@@ -11,6 +11,8 @@ import {
   Zap,
   BookOpen,
   LifeBuoy,
+  ShieldAlert,
+  User,
 } from "lucide-react";
 
 type MenuItem = {
@@ -27,60 +29,53 @@ const menuItems: MenuItem[] = [
   { icon: Zap, label: "Pro", href: "/pro" },
   { icon: BookOpen, label: "Guide", href: "/guide" },
   { icon: LifeBuoy, label: "Support", href: "/support" },
+  { icon: User, label: "Account", href: "/myaccount" },
+
 ];
 
-type SidebarProps = {
-  isCollapsed?: boolean;
-};
-
-export function Sidebar({ isCollapsed = false }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const activeItemRef = useRef<HTMLButtonElement | null>(null);
+  const asideRef = useRef<HTMLDivElement | null>(null);
+
+  const isActive = (href: string) => pathname === href;
 
   useEffect(() => {
-    if (activeItemRef.current) {
-      activeItemRef.current.scrollIntoView({
+    const activeEl = asideRef.current?.querySelector(".active-link");
+    if (activeEl) {
+      (activeEl as HTMLElement).scrollIntoView({
         behavior: "smooth",
         block: "center",
       });
     }
   }, [pathname]);
 
-  const handleClick = (href: string) => {
-    router.push(href);
-  };
-
   return (
-    <div className="w-full p-4 space-y-4">
-      {menuItems.map((item) => {
-        const isActive = pathname === item.href;
-
-        return (
-          <Button
-            key={item.label}
-            ref={isActive ? activeItemRef : null}
-            onClick={() => handleClick(item.href)}
-            variant="ghost"
-            className={`w-full text-base justify-start h-10 ${isCollapsed ? "px-3" : "px-4"}
-                        rounded-lg cursor-pointer
-                        ${isActive
-                ? "bg-[#db4900]/30 font-semibold text-primary hover:bg-[#db4900] hover:text-white group"
-                : "text-gray-300 hover:bg-[#121212] hover:text-[#db4900] group"}
-                     `}
-          >
-            <item.icon
-              className={`${isCollapsed ? "mx-auto" : "mr-3"} h-5 w-5
-                        ${isActive
-                  ? "text-primary group-hover:text-white"
-                  : "text-gray-300 group-hover:text-[#db4900]"}
-                  `}
-            />
-            {!isCollapsed && item.label}
-          </Button>
-
-        );
-      })}
-    </div>
+    <aside
+      ref={asideRef}
+      className="flex flex-col items-center relative overflow-y-auto w-full px-1 py-1 bg-black"
+      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+    >
+      {menuItems.map(({ href, icon: Icon, label }) => (
+        <Link
+          key={href}
+          href={href}
+          className={`w-full flex flex-col items-center justify-center p-2 mb-1 font-medium rounded-md
+            ${isActive(href)
+              ? "active-link text-white bg-[#db4900]/30"
+              : "text-gray-300 hover:bg-[#121212] hover:text-[#db4900]"
+            }`}
+        >
+          <Icon
+            className={`h-6 w-6 ${isActive(href)
+              ? "text-[#db4900]"
+              : "text-gray-300 group-hover:text-[#db4900]"} `}
+            strokeWidth={isActive(href) ? 2 : 1}
+          />
+          <span className="text-[11px] pt-[0.3rem] text-center font-semibold">
+            {label}
+          </span>
+        </Link>
+      ))}
+    </aside>
   );
 }

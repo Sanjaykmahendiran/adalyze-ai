@@ -34,9 +34,9 @@ export function BottomMenu() {
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#000000] via-[#000000]/95 to-transparent z-50 h-24">
+      <div className="fixed -bottom-1 left-0 right-0 bg-gradient-to-t from-[#000000] via-[#000000]/95 to-transparent z-50 h-24">
         <div className="relative z-10 h-full flex items-center justify-center pt-2">
-          <div className="flex items-center justify-between w-full max-w-md px-6">
+          <div className="flex items-center justify-between w-full max-w-md px-6 relative">
             {/* Left items */}
             <div className="flex items-center gap-8">
               {navItems.slice(0, 2).map((item) => {
@@ -68,15 +68,13 @@ export function BottomMenu() {
             </div>
 
             {/* Center Upload Button */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 -top-0 z-20">
-              <motion.button
-                onClick={() => router.push("/upload")}
-                className="w-14 h-14 rounded-full bg-[#db4900] flex items-center justify-center shadow-md hover:scale-105 transition-transform"
-                whileTap={{ scale: 0.95 }}
-              >
-                <UploadCloud className="h-6 w-6 text-white stroke-[2.5]" />
-              </motion.button>
-            </div>
+            <motion.button
+              onClick={() => router.push("/upload")}
+              className="w-14 h-14 rounded-full bg-[#db4900] flex items-center justify-center shadow-md hover:scale-105 transition-transform -translate-y-3 z-20"
+              whileTap={{ scale: 0.95 }}
+            >
+              <UploadCloud className="h-6 w-6 text-white stroke-[2.5]" />
+            </motion.button>
 
             {/* Right items */}
             <div className="flex items-center gap-8">
@@ -116,3 +114,4 @@ export function BottomMenu() {
     </>
   );
 }
+

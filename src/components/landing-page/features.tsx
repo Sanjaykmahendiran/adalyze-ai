@@ -2,144 +2,181 @@
 
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import Visual from "@/assets/visual-ad-analysis.png"
-import Video from "@/assets/video-ad-insights.png"
-import CreativeSuggestion from "@/assets/creative-suggestions.png"
-import PerformanceOptimizer from "@/assets/performance-optimizer.png"
+import Features1 from "@/assets/landing-page/features/Features1.webp"
+import Features2 from "@/assets/landing-page/features/Features2.webp"
+import Features3 from "@/assets/landing-page/features/Features3.webp"
+import Features4 from "@/assets/landing-page/features/Features4.webp"
+import Features5 from "@/assets/landing-page/features/Features5.webp"
+import Features1Mobile from "@/assets/landing-page/features/Features1-mobile.webp"
+import Features2Mobile from "@/assets/landing-page/features/Features2-mobile.webp"
+import Features3Mobile from "@/assets/landing-page/features/Features3-mobile.webp"
+import Features4Mobile from "@/assets/landing-page/features/Features4-mobile.webp"
+import Features5Mobile from "@/assets/landing-page/features/Features5-mobile.webp"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 const features = [
   {
-    title: "Visual Ad Analysis",
+    title: "AI-Powered Ad Performance Prediction",
     description:
-      "Upload your ad creatives and let Adalyze score them based on visual appeal, engagement potential, and platform suitability. Discover what elements work — from colors and layout to focal points and text placement.",
-    buttonText: "Analyze Image",
-    image: Visual,
+      "Predict the effectiveness of any ad — image, carousel, or video — before you launch. Adalyze uses advanced AI to estimate CTR, engagement, and ROI, helping marketers make data-driven decisions and avoid wasted spend.",
+    buttonText: "Predict Now",
+    desktopImage: Features1,
+    mobileImage: Features1Mobile,
   },
   {
-    title: "Video Ad Insights",
+    title: "Multi-Channel Creative Insights",
     description:
-      "Get instant feedback on your video ads. Adalyze breaks down key performance indicators like attention span, message clarity, and brand recall — helping you create high-impact video campaigns.",
-    buttonText: "Analyze Video",
-    image: Video,
+      "Get platform-specific recommendations for Facebook, Instagram, LinkedIn, Google Ads, and more. Adalyze analyzes visual elements, copy, and layout to maximize engagement across channels.",
+    buttonText: "Analyze Across Platforms",
+    desktopImage: Features2,
+    mobileImage: Features2Mobile,
   },
   {
-    title: "Creative Suggestions",
+    title: "Competitor & Market Benchmarking",
     description:
-      "Not sure why an ad isn't converting? Adalyze provides AI-powered improvement tips — from call-to-action wording to image framing — ensuring your creatives stay aligned with audience expectations and platform best practices.",
-    buttonText: "Get Suggestions",
-    image: CreativeSuggestion,
+      "Compare your campaigns against top-performing ads in your industry. Identify trends, design patterns, and messaging strategies to stay ahead and outperform competitors.",
+    buttonText: "Benchmark Your Ads",
+    desktopImage: Features3,
+    mobileImage: Features3Mobile,
   },
   {
-    title: "Performance Optimizer",
+    title: "Automated Creative Optimization",
     description:
-      "Improve ROAS with Adalyze's Performance Optimizer. Compare your ad metrics to industry benchmarks, identify weak spots, and apply recommended enhancements to maximize campaign efficiency.",
-    buttonText: "Optimize Now",
-    image: PerformanceOptimizer,
+      "Adalyze doesn't just identify problems — it provides actionable suggestions for improvement. From call-to-action tweaks to visual framing, instantly optimize creatives for maximum impact.",
+    buttonText: "Optimize Creatives",
+    desktopImage: Features4,
+    mobileImage: Features4Mobile,
   },
-]
+  {
+    title: "Performance & ROI Analytics Dashboard",
+    description:
+      "Track campaign performance with AI-driven analytics. Monitor CTR, conversions, audience engagement, and cost efficiency — all in one intuitive dashboard. Make informed decisions faster than ever.",
+    buttonText: "Explore Dashboard",
+    desktopImage: Features5,
+    mobileImage: Features5Mobile,
+  },
+];
 
 export default function FeaturesSection() {
   const router = useRouter()
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024)
+    handleResize() // initial value
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
   return (
     <div id="features" className="min-h-screen text-white py-12 sm:py-16 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Section Title - Optimized for small screens */}
         <motion.div
-          initial={{ y: -100, opacity: 0 }}
+          initial={{ y: -50, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
           viewport={{ once: false, amount: 0.3 }}
-          className="text-center mb-16 sm:mb-20 space-y-4"
+          className="text-center py-2 sm:py-3 mb-16 sm:mb-20"
         >
-          <span className="inline-block bg-primary/10 text-primary text-sm font-medium px-3 py-1 rounded-full">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
             Our Features
-          </span>
-
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 px-2">
-            AI Tools for Ad Performance Analysis & Optimization
-          </h1>
-          <p className="text-gray-300 text-base sm:text-lg max-w-3xl sm:max-w-4xl mx-auto leading-relaxed px-2">
-            Adalyze empowers marketers with AI-driven insights to optimize ad creatives, improve performance, and
-            outsmart the competition. From analyzing visuals to providing actionable suggestions — here's how Adalyze
-            elevates your campaigns.
+          </h2>
+          <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Tools That Make Your Ads More Effective</p>
+          <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1">
+            Adalyze AI offers powerful features like ad scoring, trend analysis, and performance predictions which give actionable insights to create ads that convert and maximize ROI.
           </p>
         </motion.div>
 
         {/* Features */}
         <div className="space-y-20 sm:space-y-24 lg:space-y-32">
           {features.map((feature, index) => {
-            const isEven = index % 2 === 0
+            const isEven = index % 2 === 0;
 
             return (
-              <div
-                key={index}
-                className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center"
-              >
-                {/* Text Side */}
-                <motion.div
-                  initial={{
-                    x: isEven ? -100 : 100,
-                    opacity: 0,
-                  }}
-                  whileInView={{
-                    x: 0,
-                    opacity: 1,
-                  }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  viewport={{ once: false, amount: 0.3 }}
-                  className={`space-y-4 sm:space-y-6 ${!isEven ? "lg:order-2" : ""} px-2`}
-                >
-                  <h2 className="text-2xl sm:text-3xl font-bold text-primary">
-                    {feature.title}
-                  </h2>
-                  <p className="text-gray-300 text-base sm:text-lg leading-relaxed">
-                    {feature.description}
-                  </p>
-
-                  {/* Button with Floating / Bounce Entry */}
+              <div key={index} className="relative">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
+                  {/* Image Side - Uses CSS order for desktop zigzag */}
                   <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.8,
-                      delay: 0.2,
-                      type: "spring",
-                      stiffness: 80,
+                    initial={{
+                      x: isEven ? -100 : 100,
+                      opacity: 0,
                     }}
-                    viewport={{ once: true }}
-                    whileHover={{ scale: 1.08, rotate: 2 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="inline-block"
+                    whileInView={{
+                      x: 0,
+                      opacity: 1,
+                    }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    viewport={{ once: false, amount: 0.3 }}
+                    className={`flex justify-center lg:flex-none ${isEven ? "lg:order-1" : "lg:order-2"
+                      }`}
                   >
-                    <Button
-                      onClick={() => router.push("/register")}
-                      variant="outline"
-                      className="text-white cursor-pointer hover:bg-primary hover:text-white border-primary text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
-                    >
-                      {feature.buttonText}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    <div className="w-full bounce-slow max-w-2xl h-60 sm:h-72 lg:h-80 flex items-center justify-center shadow-md mx-auto">
+                      <img
+                        src={isMobile ? feature.mobileImage.src : feature.desktopImage.src}
+                        alt={feature.title}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
                   </motion.div>
-                </motion.div>
 
-                {/* Image Side */}
-                <div className={`flex justify-center ${!isEven ? "lg:order-1" : ""}`}>
-                  <div className="w-full bounce-slow max-w-2xl h-60 sm:h-72 lg:h-80 flex items-center justify-center shadow-md mx-auto">
-                    <img
-                      src={feature.image.src || "/placeholder.svg"}
-                      alt={feature.title}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  </div>
+                  {/* Text Side - Uses CSS order for desktop zigzag */}
+                  <motion.div
+                    initial={{
+                      x: isEven ? 100 : -100,
+                      opacity: 0,
+                    }}
+                    whileInView={{
+                      x: 0,
+                      opacity: 1,
+                    }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    viewport={{ once: false, amount: 0.3 }}
+                    className={`space-y-4 sm:space-y-6 px-2 ${isEven ? "lg:order-2" : "lg:order-1"
+                      }`}
+                  >
+                    <h2 className="text-2xl sm:text-3xl font-bold text-primary">{feature.title}</h2>
+                    <p className="text-gray-300 text-base sm:text-lg leading-relaxed">
+                      {feature.description}
+                    </p>
+
+                    {/* Button */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 50 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.8,
+                        delay: 0.2,
+                        type: "spring",
+                        stiffness: 80,
+                      }}
+                      viewport={{ once: true }}
+                      whileHover={{ scale: 1.08, rotate: 2 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="inline-block"
+                    >
+                      <Button
+                        onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                        variant="outline"
+                        className="text-white cursor-pointer hover:bg-primary hover:text-white border-primary text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
+                      >
+                        {feature.buttonText}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  </motion.div>
                 </div>
-              </div>
 
-            )
+                {/* Mobile-only divider after each section */}
+                <div className="block lg:hidden mt-6 border-t border-[#db4900]/40 w-full mx-auto" />
+              </div>
+            );
           })}
         </div>
       </div>
+
       <motion.div
         className="max-w-screen-xl mx-auto border-t border-[#db4900]/40 mt-12 sm:mt-16"
         initial={{ opacity: 0 }}

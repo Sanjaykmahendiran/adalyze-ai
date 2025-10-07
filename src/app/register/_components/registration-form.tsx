@@ -174,6 +174,7 @@ export default function RegistrationForm() {
   // Step 1 submission - Email verification with real API
   async function onSubmitEmail(values: z.infer<typeof emailSchema>) {
     setIsLoading(true);
+
     try {
       const response = await fetch("https://adalyzeai.xyz/App/api.php", {
         method: "POST",
@@ -186,15 +187,20 @@ export default function RegistrationForm() {
         }),
       });
 
-      const data = await response.json();
+      const data: {
+        user_id?: number;
+        status?: string;
+        message?: string;
+      } = await response.json();
 
-      if (response.ok && data.user_id) {
+      if (data.user_id) {
         setEmailValue(values.email);
         setUserId(data.user_id.toString());
         setStep(2);
-        toast.success("Email verified successfully!");
+      } else if (data.status === "error" && data.message) {
+        toast.error(data.message);
       } else {
-        toast.error("Email verification failed. Please try again.");
+        toast.error("Something went wrong. Please try again.");
       }
     } catch (error) {
       console.error("Email verification failed", error);
@@ -203,6 +209,7 @@ export default function RegistrationForm() {
       setIsLoading(false);
     }
   }
+
 
 
   // Step 2 submission - Full registration with real API
@@ -248,7 +255,9 @@ export default function RegistrationForm() {
 
       if (data.status === "success") {
         // Save user_id in cookies
-        Cookies.set("userId", userId, { expires: 30 }); // Expires in 30 days
+        Cookies.set("userId", userId, { expires: 30 });
+        // Save email in cookies
+        Cookies.set("email", emailValue, { expires: 30 });
 
         // ✅ GA4 / GTM custom event
         event("signup", {
@@ -258,14 +267,13 @@ export default function RegistrationForm() {
 
         toast.success(data.message || "Registration successful!");
         registrationForm.reset();
-
         // Clear localStorage
         localStorage.removeItem("registrationStep");
         localStorage.removeItem("registrationEmail");
         localStorage.removeItem("registrationUserId");
 
         setTimeout(() => {
-          router.push("/pricing");
+          router.push("/emailconfrimation");
         }, 2000);
       } else {
         toast.error("Registration failed. Please try again.");
@@ -299,7 +307,7 @@ export default function RegistrationForm() {
                         type="email"
                         placeholder="Your Email"
                         {...field}
-                        className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                        className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
                       />
                     </FormControl>
                     <FormMessage />
@@ -340,7 +348,7 @@ export default function RegistrationForm() {
                 type="email"
                 value={emailValue}
                 readOnly
-                className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
               />
             </div>
 
@@ -354,7 +362,7 @@ export default function RegistrationForm() {
                     <input
                       placeholder="Your Name"
                       {...field}
-                      className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                      className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
                     />
                   </FormControl>
                   <FormMessage />
@@ -373,7 +381,7 @@ export default function RegistrationForm() {
                       type="tel"
                       placeholder="Your Mobile Number"
                       {...field}
-                      className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                      className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
                     />
                   </FormControl>
                   <FormMessage />
@@ -393,7 +401,7 @@ export default function RegistrationForm() {
                         type={showPassword ? "text" : "password"}
                         placeholder="Password"
                         {...field}
-                        className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                        className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
                       />
                       <Button
                         type="button"
@@ -423,24 +431,45 @@ export default function RegistrationForm() {
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Role</FormLabel>
+                  <FormLabel className="font-bold">I'm a</FormLabel>
                   <FormControl>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
                       defaultValue={field.value}
                     >
-                      <SelectTrigger className="w-full px-4 py-5 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors">
-                        <SelectValue placeholder="Select Role" />
+                      <SelectTrigger
+                        className="w-full px-4 py-5.5 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
+                        title={field.value}
+                      >
+                        <SelectValue
+                          placeholder="Select Role"
+                          children={
+                            field.value && field.value.length > 40
+                              ? field.value.slice(0, 40) + "…"
+                              : field.value
+                          }
+                        />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CMO">CMO</SelectItem>
-                        <SelectItem value="Manager">Manager</SelectItem>
-                        <SelectItem value="Developer">Developer</SelectItem>
-                        <SelectItem value="Designer">Designer</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+
+                      <SelectContent className="min-w-full">
+                        <SelectItem value="Freelancer">Freelancer</SelectItem>
+                        <SelectItem value="Digital Marketer">Digital Marketer</SelectItem>
+                        <SelectItem value="Business Owner - Entrepreneur">
+                          Business Owner / Entrepreneur
+                        </SelectItem>
+                        <SelectItem value="Marketing Agency">Marketing Agency</SelectItem>
+                        <SelectItem value="Content Creator">
+                          Content Creator (YouTuber, Blogger, etc.)
+                        </SelectItem>
+                        <SelectItem value="Graphic Designer">Graphic Designer</SelectItem>
+                        <SelectItem value="Social Media Manager">Social Media Manager</SelectItem>
+                        <SelectItem value="Brand Manager">Brand Manager</SelectItem>
+                        <SelectItem value="Startup - SME">Startup / SME</SelectItem>
+                        <SelectItem value="others">Others</SelectItem>
                       </SelectContent>
                     </Select>
+
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -457,7 +486,7 @@ export default function RegistrationForm() {
                     <input
                       placeholder="Your City"
                       {...field}
-                      className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                      className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
                     />
                   </FormControl>
                   <FormMessage />
@@ -473,7 +502,7 @@ export default function RegistrationForm() {
                   <FormLabel className="font-bold">How did you hear about us?</FormLabel>
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                      <SelectTrigger className="w-full px-4 py-5 text-sm bg-[#1a1a1a] text-white rounded-md transition-colors">
+                      <SelectTrigger className="w-full px-4 py-5 text-sm bg-black text-white rounded-md transition-colors">
                         <SelectValue placeholder="Select Source" />
                       </SelectTrigger>
                       <SelectContent>
@@ -502,7 +531,7 @@ export default function RegistrationForm() {
                       <input
                         placeholder="Enter Referral Code"
                         {...field}
-                        className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                        className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
                       />
                     </FormControl>
                     <FormMessage />

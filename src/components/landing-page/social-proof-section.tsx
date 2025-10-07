@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import pic from "@/assets/phone-mockup.png"
+import pic from "@/assets/phone-mockup.webp"
+import MobilePic from "@/assets/phone-mockup-mobile.webp"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 
@@ -16,6 +17,14 @@ export default function SocialProofSection() {
   const [userCount, setUserCount] = useState(0)
   const [suggestionCount, setSuggestionCount] = useState(0)
   const [countryCount, setCountryCount] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024)
+    handleResize() // initial value
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   const animateCount = useCallback((setFn: (val: number) => void, end: number, duration: number) => {
     const start = performance.now()
@@ -56,7 +65,10 @@ export default function SocialProofSection() {
           viewport={{ once: false, amount: 0.4 }} // 👈 triggers every time in view
           className="w-full lg:w-1/2 flex justify-center bounce-slow"
         >
-          <Image src={pic || "/placeholder.svg"} alt="Adalyze App Preview" className="rounded-lg max-w-full h-auto" />
+          <Image
+            src={isMobile ? MobilePic : pic}
+            alt="Adalyze App Preview"
+            className="rounded-lg max-w-full h-auto" />
         </motion.div>
 
         {/* Right - Text Content */}
@@ -111,31 +123,31 @@ export default function SocialProofSection() {
           </motion.div>
 
           {/* CTA Button */}
-<motion.div
-  initial={{ opacity: 0, y: 50 }}
-  whileInView={{ opacity: 1, y: 0 }}
-  transition={{
-    duration: 0.8,
-    delay: 0.3,
-    type: "spring",
-    stiffness: 80,
-  }}
-  viewport={{ once: false, amount: 0.4 }}
-  className="flex flex-col items-center lg:items-start mt-6 sm:mt-8 px-2 sm:px-4"
->
-  <motion.div
-    whileHover={{ scale: 1.08, rotate: 2 }}
-    whileTap={{ scale: 0.95 }}
-    transition={{ type: "spring", stiffness: 300 }}
-  >
-    <Button
-      onClick={() => router.push("/register")}
-      className="flex items-center cursor-pointer gap-2 px-6 sm:px-8 py-4 sm:py-6 text-white text-base sm:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto max-w-[200px]"
-    >
-      Analyze Now
-    </Button>
-  </motion.div>
-</motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.8,
+              delay: 0.3,
+              type: "spring",
+              stiffness: 80,
+            }}
+            viewport={{ once: false, amount: 0.4 }}
+            className="flex flex-col items-center lg:items-start mt-6 sm:mt-8 px-2 sm:px-4"
+          >
+            <motion.div
+              whileHover={{ scale: 1.08, rotate: 2 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Button
+                onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                className="flex items-center cursor-pointer gap-2 px-6 sm:px-8 py-4 sm:py-6 text-white text-base sm:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto max-w-[200px]"
+              >
+                Start Free Trial
+              </Button>
+            </motion.div>
+          </motion.div>
 
         </div>
       </div>

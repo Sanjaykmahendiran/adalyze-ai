@@ -3,7 +3,7 @@
 import React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import loginlogo from "@/assets/ad-logo.png"
+import loginlogo from "@/assets/ad-logo.webp"
 import RegistrationForm from "./_components/registration-form"
 import LoginCarousel from "@/components/carousel/login-carousel"
 import Background from "@/assets/register-page-image.png";
@@ -22,7 +22,7 @@ const RegisterPage = () => {
                   src={loginlogo || "/placeholder.svg"}
                   layout="fill"
                   objectFit="contain"
-                  alt="Qualifit"
+                  alt="Adalyze"
                   draggable={false}
                 />
               </div>
@@ -30,7 +30,7 @@ const RegisterPage = () => {
             {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-white mb-2">Create Your Account</h1>
-              <p className="text-gray-300 text-sm">Your Own Digital Campaign</p>
+              <p className="text-gray-300 text-sm">Change Your Own Digital Campaign to Turn every ad into an opportunity</p>
             </div>
             <div className="mt-4 sm:mt-4">
               <RegistrationForm />
@@ -61,18 +61,20 @@ const RegisterPage = () => {
         </div>
 
         {/* Right Side (LoginCarousel) */}
-        <div className="hidden xl:block w-1/2">
-             <div className="hidden md:block relative w-full h-screen overflow-hidden">
-      <Image
-        src={Background}
-        alt="Background"
-        fill
-        className="object-cover"
-        priority
-      />
-      <div className="absolute inset-0" /> {/* Semi-transparent white overlay */}
-    </div>
+        <div className="hidden xl:block w-1/2 bg-black">
+          <div className="hidden md:block relative w-full h-screen overflow-hidden">
+            <video
+              src="https://adalyze.app/uploads/Login-Video.mp4" 
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-contain "
+            />
+            <div className="absolute inset-0" />
+          </div>
         </div>
+
       </div>
     </div>
   )

@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, ArrowUp } from "lucide-react"
-import { notFound } from "next/navigation"
+import { ArrowLeft, ArrowRight, ArrowUp } from "lucide-react"
+import { notFound, useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Header from "@/components/landing-page/header"
@@ -76,11 +76,15 @@ function ErrorMessage({ message }: { message: string }) {
 
 // Main component
 export default function CaseStudyPage({ params }: { params: { slug: string } }) {
+  const router = useRouter()
   const [caseStudy, setCaseStudy] = useState<CaseStudy | null>(null)
   const [otherCaseStudies, setOtherCaseStudies] = useState<CaseStudy[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
+
+  // Check if this is dashboard view
+  const isDashboard = searchParams.get('type') === 'dashboard'
 
   // Client-side fetch functions
   const fetchAllCaseStudies = () => {
@@ -132,7 +136,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
               setOtherCaseStudies(
                 allStudies
                   .filter(study => study.cs_id !== studyBySlug.cs_id)
-                  .slice(0, 3)
+
               )
             } else {
               setError("Case study not found")
@@ -202,45 +206,57 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
   return (
     <main className="min-h-screen bg-[#0d0d0d] text-gray-100">
-      <Header />
-      
+      {/* Conditionally render Header */}
+      {!isDashboard && <Header />}
+
       {/* Hero Banner - Mobile Optimized */}
-      <div className="mt-16 pt-4 sm:pt-8">
-        <div className="relative bg-cover bg-center h-48 sm:h-64 md:h-80 lg:h-96 bg-no-repeat" 
-             style={{ backgroundImage: `url(${bannerUrl})` }}>
-          <div className="absolute inset-0 bg-black/70"></div>
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-center relative z-10">
-            <div className="text-center text-white max-w-4xl">
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight px-2">
-                {caseStudy.title}
-              </h1>
+      <div className={`${!isDashboard ? 'mt-16' : ''} `}>
+        {!isDashboard && (
+          <div className="relative bg-cover bg-center h-48 sm:h-64 md:h-80 lg:h-96 bg-no-repeat"
+            style={{ backgroundImage: `url(${bannerUrl})` }}>
+            <div className="absolute inset-0 bg-black/70"></div>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-center relative z-10">
+              <div className="text-center text-white max-w-4xl">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight px-2">
+                  {caseStudy.title}
+                </h1>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Hero Section - Mobile First Layout */}
-        <div className="bg-[#121212]">
+        <div className="bg-[#171717]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-            {/* Breadcrumbs - Hidden on mobile, shown on larger screens */}
-            <div className="hidden md:flex items-center text-sm text-gray-300 mb-6">
-              <Link href="/" className="hover:text-white transition-colors">
-                Home
-              </Link>
-              <span className="mx-2">•</span>
-              <Link href="/case-studies" className="hover:text-white transition-colors">
-                Case studies
-              </Link>
-              <span className="mx-2">•</span>
-              <span>{caseStudy.industry}</span>
-            </div>
+            {/* Breadcrumbs - Hidden on mobile and dashboard, shown on larger screens */}
+            {!isDashboard && (
+              <div className="hidden md:flex items-center text-sm text-gray-300 mb-6">
+                <Link href="/" className="hover:text-white transition-colors">
+                  Home
+                </Link>
+                <span className="mx-2">•</span>
+                <Link href="/case-studies" className="hover:text-white transition-colors">
+                  Case studies
+                </Link>
+                <span className="mx-2">•</span>
+                <span>{caseStudy.industry}</span>
+              </div>
+            )}
 
             {/* Mobile-First Grid Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
               {/* Main content - Mobile First */}
               <div className="lg:col-span-2 order-2 lg:order-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-6 sm:mb-8 leading-tight">
-                  {caseStudy.title}
-                </h1>
+                <div className="flex items-center gap-4 mb-6 sm:mb-8">
+                  {isDashboard && (
+                    <div className="bg-[#3d3d3d] p-2 rounded-full flex-shrink-0">
+                      <ArrowLeft className="cursor-pointer" onClick={() => router.back()} />
+                    </div>
+                  )}
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight">
+                    {caseStudy.title}
+                  </h1>
+                </div>
 
                 {/* Client Info - Mobile Optimized */}
                 <div className="mb-6 sm:mb-8">
@@ -275,17 +291,17 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                       PLATFORM
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Badge className="bg-[#1f2937] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
+                      <Badge className="bg-[#3d3d3d] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
                         {caseStudy.platform}
                       </Badge>
-                      <Badge className="bg-[#1f2937] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
+                      <Badge className="bg-[#3d3d3d] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
                         {caseStudy.region}
                       </Badge>
                     </div>
                   </div>
 
                   {/* Divider - Hidden on mobile */}
-                  <div className="w-px bg-gray-700 hidden sm:block"></div>
+                  <div className="w-px bg-[#3d3d3d] hidden sm:block"></div>
 
                   {/* Industry + Tags */}
                   <div className="flex-1">
@@ -293,14 +309,14 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                       INDUSTRY
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Badge className="bg-[#1f2937] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
+                      <Badge className="bg-[#3d3d3d] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
                         {caseStudy.industry}
                       </Badge>
                       {caseStudy.tags &&
                         caseStudy.tags.split(",").map((tag, index) => (
                           <Badge
                             key={index}
-                            className="bg-[#1f2937] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full"
+                            className="bg-[#3d3d3d] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full"
                           >
                             {tag.trim()}
                           </Badge>
@@ -345,7 +361,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
       <div className="bg-[#0d0d0d] relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-            
+
             {/* Mobile Results Section - Shows first on mobile */}
             <div className="lg:hidden bg-[#1a1a1a] p-4 sm:p-6 rounded-lg border border-[#2b2b2b] mt-6">
               <h2 className="text-lg sm:text-xl font-semibold mb-4 text-white">Key Results:</h2>
@@ -410,7 +426,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
                 {/* Testimonial - Mobile Optimized */}
                 {caseStudy.testimonial_quote && (
-                  <div className="border-l-4 border-gray-600 pl-4 sm:pl-6 italic text-gray-300 bg-[#1a1a1a] p-4 sm:p-6 rounded-r-lg">
+                  <div className="border-l-4 border-[#3d3d3d] pl-4 sm:pl-6 italic text-gray-300 bg-[#171717] p-4 sm:p-6 rounded-r-lg">
                     <p className="text-sm sm:text-base leading-relaxed">&quot;{caseStudy.testimonial_quote}&quot;</p>
                     <p className="mt-3 text-xs sm:text-sm font-medium">
                       — {caseStudy.testimonial_name}, {caseStudy.testimonial_role}
@@ -433,8 +449,8 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                   <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-white">Campaign Overview</h3>
                   <div className="overflow-x-auto -mx-4 sm:mx-0">
                     <div className="inline-block min-w-full align-middle">
-                      <table className="min-w-full bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-800">
-                        <thead className="bg-[#2a2a2a] text-gray-300">
+                      <table className="min-w-full bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#3d3d3d]">
+                        <thead className="bg-[#171717] text-gray-300">
                           <tr>
                             <th className="py-2 sm:py-3 px-3 sm:px-4 text-left text-xs sm:text-sm font-semibold">
                               Metric
@@ -445,51 +461,51 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                           </tr>
                         </thead>
                         <tbody className="text-xs sm:text-sm">
-                          <tr className="bg-[#121212]">
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700 font-medium">
+                          <tr className="bg-[#171717]">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d] font-medium">
                               Industry
                             </td>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d]">
                               {caseStudy.industry}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700 font-medium">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d] font-medium">
                               Platform
                             </td>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d]">
                               {caseStudy.platform}
                             </td>
                           </tr>
                           <tr className="bg-[#121212]">
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700 font-medium">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d] font-medium">
                               Region
                             </td>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d]">
                               {caseStudy.region}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700 font-medium">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d] font-medium">
                               Timeframe
                             </td>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d]">
                               {caseStudy.timeframe}
                             </td>
                           </tr>
                           <tr className="bg-[#121212]">
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700 font-medium">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d] font-medium">
                               Objectives
                             </td>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d]">
                               {caseStudy.objectives}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700 font-medium">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d] font-medium">
                               Strategy
                             </td>
-                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-700">
+                            <td className="py-2 sm:py-3 px-3 sm:px-4 border-t border-[#3d3d3d]">
                               {caseStudy.strategy}
                             </td>
                           </tr>
@@ -506,116 +522,175 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                     — {caseStudy.testimonial_name}, {caseStudy.testimonial_role}
                   </p>
                 </div>
-
+                {isDashboard && (
+                  <div className="mb-10" />
+                )}
                 {/* CTA Section - Mobile Optimized */}
-                <div className="bg-[#1a1a1a] p-4 sm:p-6 rounded-lg shadow-sm border border-gray-800">
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-white">
-                    Want Similar Results?
-                  </h3>
-                  <p className="mb-4 sm:mb-6 text-gray-300 text-sm sm:text-base">
-                    Take your first step toward optimizing your campaigns.
-                  </p>
-                  <Link href="/register">
-                    <Button className="w-full sm:w-auto text-white rounded-lg px-6 py-3 font-medium text-sm sm:text-base">
-                      Try Adalyze AI Now
-                    </Button>
-                  </Link>
-                </div>
+                {!isDashboard && (
+                  <div className="bg-[#1a1a1a] p-4 sm:p-6 rounded-lg shadow-sm border border-gray-800">
+                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-white">
+                      Want Similar Results?
+                    </h3>
+                    <p className="mb-4 sm:mb-6 text-gray-300 text-sm sm:text-base">
+                      Take your first step toward optimizing your campaigns.
+                    </p>
+                    <Link href="/register">
+                      <Button className="w-full sm:w-auto text-white rounded-lg px-6 py-3 font-medium text-sm sm:text-base">
+                        Try Adalyze AI Now
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* Related Case Studies - Mobile Responsive Grid */}
-        {otherCaseStudies.length > 0 && (
+        {isDashboard && otherCaseStudies.length > 0 && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 gap-4">
-              <h2 className="text-xl sm:text-2xl font-semibold text-white">More customer stories</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-primary">More customer stories</h2>
               <Link href="/case-study" className="text-sm text-gray-300 flex items-center hover:text-white transition-colors">
                 View all <ArrowRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {otherCaseStudies.map((study) => (
-                <article
-                  key={study.cs_id}
-                  className="bg-[#121212] rounded-lg overflow-hidden shadow-md border border-[#2b2b2b] flex flex-col hover:border-gray-700 transition-colors"
-                >
-                  {/* Banner Image - Mobile Optimized */}
-                  <div className="h-32 sm:h-40 bg-[#2b2b2b] relative flex items-center justify-center">
-                    {study.banner_image_url ? (
-                      <Image
-                        src={study.banner_image_url}
-                        alt={study.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <p className="font-bold text-primary text-lg sm:text-2xl text-center px-4">
-                        {study.industry}
-                      </p>
-                    )}
+            {/* 70% - 30% Layout in same row */}
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mb-8 items-stretch">
+              {/* All case studies with horizontal overflow - 70% width */}
+              <div className="w-full lg:w-[70%] overflow-x-auto scrollbar-hide">
+                <div className="flex gap-4 sm:gap-6 pb-4 h-full ">
+                  {otherCaseStudies.map((study) => (
+                    <article
+                      key={study.cs_id}
+                      className="bg-[#121212] rounded-lg overflow-hidden shadow-md border border-[#2b2b2b] flex flex-col hover:border-[#3d3d3d] transition-colors w-120  flex-shrink-0 "
+                    >
+                      {/* Banner Image - Fixed Height */}
+                      <div className="h-32 sm:h-40 bg-[#2b2b2b] relative flex items-center justify-center flex-shrink-0">
+                        {study.banner_image_url ? (
+                          <Image
+                            src={study.banner_image_url}
+                            alt={study.title}
+                            fill
+                            className="object-cover"
+                            sizes="320px"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <p className="font-bold text-primary text-lg sm:text-2xl text-center px-4">
+                            {study.industry}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
+                        <div className="flex-1">
+                          {/* Banner title */}
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="bg-[#db4900]/20 text-primary rounded-full px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium">
+                              {study.banner_title}
+                            </div>
+                          </div>
+
+                          {/* Case study title & description */}
+                          <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-2 sm:mb-3 text-white leading-tight line-clamp-2">
+                            {study.title}
+                          </h3>
+                          <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base leading-relaxed line-clamp-3">
+                            {study.banner_subtitle}
+                          </p>
+                        </div>
+
+                        <div className="mt-auto">
+                          {/* Client info - Mobile Optimized */}
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="mr-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary text-white flex items-center justify-center text-xs sm:text-sm font-semibold flex-shrink-0">
+                              {study.client_name
+                                .split(" ")
+                                .slice(0, 2)
+                                .map((n: string) => n[0])
+                                .join("")
+                                .toUpperCase()}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-white text-sm sm:text-base truncate">
+                                {study.client_name}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-300 truncate">
+                                {study.industry}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* CTA - Touch Friendly */}
+                          <Link
+                            href={`/case-study-detail?cs_id=${study.cs_id}`}
+                            className="inline-flex items-center text-primary font-medium hover:text-[#db4900]/70 transition-colors text-sm sm:text-base group"
+                          >
+                            {study.banner_cta_label || "Read case study"}{" "}
+                            <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                          </Link>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fixed third card with static content - 30% width */}
+              <div className="w-full lg:w-[30%]">
+                <article className="bg-[#121212] rounded-lg overflow-hidden shadow-md border border-[#2b2b2b] flex flex-col hover:border-[#3d3d3d] transition-colors h-[500px] sm:h-[520px] lg:h-[540px]">
+                  {/* Static Banner - Fixed Height */}
+                  <div className="h-32 sm:h-40 bg-gradient-to-r from-[#db4900] to-[#ff6b35] relative flex items-center justify-center flex-shrink-0">
+                    <p className="font-bold text-white text-lg sm:text-2xl text-center px-4">
+                      Success Stories
+                    </p>
                   </div>
 
-                  <div className="p-4 sm:p-6 flex-1 flex flex-col">
-                    {/* Banner title */}
-                    <div className="flex items-center mb-3 sm:mb-4">
-                      <div className="bg-[#db4900]/20 text-primary rounded-full px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium">
-                        {study.banner_title}
+                  <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
+                    <div className="flex-1">
+                      {/* Static Banner title */}
+                      <div className="flex items-center mb-3 sm:mb-4">
+                        <div className="bg-[#db4900]/20 text-primary rounded-full px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium">
+                          Featured
+                        </div>
                       </div>
+
+                      {/* Static title & description */}
+                      <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-2 sm:mb-3 text-white leading-tight">
+                        Explore More Success Stories
+                      </h3>
+                      <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base leading-relaxed">
+                        Discover how our solutions have transformed businesses across various industries and helped them achieve remarkable growth.
+                      </p>
                     </div>
 
-                    {/* Case study title & description */}
-                    <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-2 sm:mb-3 text-white leading-tight line-clamp-2">
-                      {study.title}
-                    </h3>
-                    <p className="text-gray-300 mb-3 sm:mb-4 flex-1 text-sm sm:text-base leading-relaxed line-clamp-2 sm:line-clamp-3">
-                      {study.banner_subtitle}
-                    </p>
+                    <div className="mt-auto">
+                      <Button
+                        onClick={() => router.push(isDashboard ? "/upload" : "/register")}
+                        className="inline-flex items-center font-medium transition-colors text-sm sm:text-base group"
+                      >
+                        {isDashboard ? "Upload Your Ad" : "Register Now"}
+                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </Button>
 
-                    {/* Client info - Mobile Optimized */}
-                    <div className="flex items-center mb-3 sm:mb-4">
-                      <div className="mr-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary text-white flex items-center justify-center text-xs sm:text-sm font-semibold flex-shrink-0">
-                        {study.client_name
-                          .split(" ")
-                          .slice(0, 2)
-                          .map((n: string) => n[0])
-                          .join("")
-                          .toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-white text-sm sm:text-base truncate">
-                          {study.client_name}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-300 truncate">
-                          {study.industry}
-                        </p>
-                      </div>
+
                     </div>
-
-                    {/* CTA - Touch Friendly */}
-                    <Link
-                      href={`/case-study-detail?cs_id=${study.cs_id}`}
-                      className="inline-flex items-center text-primary font-medium hover:text-[#db4900]/70 transition-colors text-sm sm:text-base group"
-                    >
-                      {study.banner_cta_label || "Read case study"}{" "}
-                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
                   </div>
                 </article>
-              ))}
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      <LandingPageFooter />
+      {!isDashboard && (
+        <LandingPageFooter />
+      )}
     </main>
   )
 }

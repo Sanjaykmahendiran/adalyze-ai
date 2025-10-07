@@ -38,18 +38,19 @@ export default function CaseStudySection() {
         <section className="py-18 px-4 max-w-7xl mx-auto">
             {/* Title Animation */}
             <motion.div
-                className="text-center mb-20"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
+                initial={{ y: -50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                viewport={{ once: false, amount: 0.3 }}
+                className="text-center py-2 sm:py-3 mb-20"
             >
-                <div className="inline-block px-4 py-1.5 mb-4 rounded-full bg-[#db4900]/30 text-primary font-medium text-sm tracking-wide">
-                    SUCCESS STORIES
-                </div>
-                <h3 className="text-4xl md:text-5xl font-bold text-white leading-tight max-w-4xl mx-auto">
-                    Real results from our case studies
-                </h3>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
+                    Success Stories
+                </h2>
+                <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Real Results from Real Clients</p>
+                <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1">
+                    Businesses have transformed their advertising with Adalyze AI, achieving higher engagement and measurable wins.
+                </p>
             </motion.div>
 
             {/* Card Grid with Stagger */}
@@ -132,28 +133,28 @@ export default function CaseStudySection() {
                 ))}
             </motion.div>
 
-                        {/* ✅ View All Button */}
+            {/* ✅ View All Button */}
             <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.8,
-                delay: 0.2,
-                type: "spring",
-                stiffness: 80,
-              }}
-              viewport={{ once: true }}
-              whileHover={{ scale: 1.08, rotate: 2 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex justify-center mt-10"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{
+                    duration: 0.8,
+                    delay: 0.2,
+                    type: "spring",
+                    stiffness: 80,
+                }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.08, rotate: 2 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex justify-center mt-10"
             >
-              <Link
-                href="/case-study"
-                className="px-6 py-3 rounded-lg bg-primary/90 hover:bg-primary text-white font-medium transition-all flex items-center gap-2 shadow-md"
-              >
-                View All
-                <ArrowRightIcon size={18} />
-              </Link>
+                <Link
+                    href="/case-study"
+                    className="px-6 py-3 rounded-lg bg-primary/90 hover:bg-primary text-white font-medium transition-all flex items-center gap-2 shadow-md"
+                >
+                    View All
+                    <ArrowRightIcon size={18} />
+                </Link>
             </motion.div>
 
             <motion.div

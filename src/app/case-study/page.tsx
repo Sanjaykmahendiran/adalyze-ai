@@ -4,9 +4,10 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
+import { useSearchParams, useRouter } from "next/navigation"
 
 interface CaseStudy {
   cs_id: string
@@ -21,9 +22,13 @@ interface CaseStudy {
 }
 
 export default function CaseStudiesPage() {
+  const router = useRouter()
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+
+  const isDashboard = searchParams.get("type") === "dashboard"
 
   useEffect(() => {
     const fetchCaseStudies = () => {
@@ -51,7 +56,7 @@ export default function CaseStudiesPage() {
   if (loading) {
     return (
       <main className="min-h-screen">
-        <Header />
+        {!isDashboard && <Header />}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-36">
           <div className="text-center">
             <div className="animate-pulse">
@@ -70,7 +75,8 @@ export default function CaseStudiesPage() {
             </div>
           </div>
         </div>
-        <LandingPageFooter />
+        {!isDashboard && <LandingPageFooter />}
+
       </main>
     )
   }
@@ -78,7 +84,7 @@ export default function CaseStudiesPage() {
   if (error) {
     return (
       <main className="min-h-screen">
-        <Header />
+        {!isDashboard && <Header />}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-36">
           <div className="text-center py-12">
             <p className="text-red-400 mb-4">{error}</p>
@@ -90,27 +96,48 @@ export default function CaseStudiesPage() {
             </button>
           </div>
         </div>
-        <LandingPageFooter />
+        {!isDashboard && <LandingPageFooter />}
       </main>
     )
   }
 
   return (
     <main className="min-h-screen">
-      <Header />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-34">
-        <div className="flex items-center text-sm text-gray-200 mb-6">
-          <Link href="/" className="hover:text-gray-300">
-            Home
-          </Link>
-          <span className="mx-2">•</span>
-          <span className="text-primary">Case studies</span>
+      {!isDashboard && <Header />}
+      <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ${!isDashboard ? "py-36" : "py-12 pb-8"
+        }`}>
+        {!isDashboard && (
+          <div className="flex items-center text-sm text-gray-200 mb-6">
+            <Link href="/" className="hover:text-gray-300">
+              Home
+            </Link>
+            <span className="mx-2">•</span>
+            <span className="text-primary">Case studies</span>
+          </div>
+        )}
+
+        <div className={`w-full flex items-start justify-start flex-col sm:flex-row sm:items-center mb-12 gap-4`}>
+          {/* Back Arrow (only on dashboard) */}
+          {isDashboard && (
+            <div
+              className="bg-[#3d3d3d] p-2 rounded-full cursor-pointer flex-shrink-0"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft />
+            </div>
+          )}
+
+          {/* Heading and Subtitle */}
+          <div className="text-left">
+            <h1 className="text-4xl font-bold text-white mb-2">
+              Case Studies
+            </h1>
+            <p className="text-xl text-gray-300 max-w-3xl">
+              Discover how Adalyze AI is transforming advertising and helping brands succeed.
+            </p>
+          </div>
         </div>
 
-        <h1 className="text-4xl font-bold text-white mb-4">Case Studies</h1>
-        <p className="text-xl text-gray-300 mb-12 max-w-3xl">
-          Discover how Adalyze AI is transforming advertising and helping brands succeed.
-        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {caseStudies.map((study) => (
@@ -172,7 +199,7 @@ export default function CaseStudiesPage() {
           </div>
         )}
       </div>
-      <LandingPageFooter />
+      {!isDashboard && <LandingPageFooter />}
     </main>
   )
 }

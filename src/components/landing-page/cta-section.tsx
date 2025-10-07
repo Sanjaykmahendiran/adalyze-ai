@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
-import PromoImg from "@/assets/above-cta.png"
+import PromoImg from "@/assets/Landing-page/above-cta.webp"
 import { useRouter } from "next/navigation"
 import { Button } from "../ui/button"
 
@@ -65,10 +65,10 @@ export default function CTASection() {
               className="space-y-2 w-full max-w-md"
             >
               <Button
-                onClick={() => router.push("/register")}
+                onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
                 className="py-4 sm:py-6 cursor-pointer w-full sm:w-auto min-w-[200px] text-sm sm:text-base"
               >
-                Analyze Now <ArrowRight className="ml-2" />
+                Start Free Trail <ArrowRight className="ml-2" />
               </Button>
             </motion.div>
 

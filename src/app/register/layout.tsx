@@ -6,8 +6,8 @@ import { Toaster } from "react-hot-toast";
 const poppins = Poppins({ subsets: ["latin"], weight: ["400", "600"] });
 
 export const metadata = {
-  title: "Qualifit AI- Nextgen AI Tool for your Creativity",
-  description: "Qualifit AI- Nextgen AI Tool for your Creativity",
+  title: "Adalyze AI- Nextgen AI Tool for your Creativity",
+  description: "Adalyze AI- Nextgen AI Tool for your Creativity",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

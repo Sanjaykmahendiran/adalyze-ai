@@ -2,72 +2,106 @@
 
 import { AnimatedTestimonials } from "@/components/landing-page/animated-testimonials"
 import { motion } from "framer-motion"
-import image1 from "@/assets/testimonial-1.jpg"
-import image2 from "@/assets/testimonial-2.jpg"
-import image3 from "@/assets/testimonial-3.jpg"
-import image4 from "@/assets/testimonial-4.jpg"
-import image5 from "@/assets/testimonial-5.jpg"
+import { useEffect, useState } from "react"
+import { cn } from "@/lib/utils"
+
+type TestimonialType = {
+  quote: string
+  name: string
+  designation: string
+  src: string
+  category: string
+}
 
 export default function Testimonials() {
-  const testimonials = [
-    {
-      quote:
-        "Adalyze’s AI-driven insights have completely transformed the way we analyze and optimize our ad campaigns. This is exactly the intelligence we’ve been looking for.",
-      name: "Sarah Chen",
-      designation: "Product Manager at TechFlow",
-      src: image1.src,
-    },
-    {
-      quote:
-        "Implementation was seamless and the ad performance improvements exceeded our expectations. Adalyze’s flexibility lets us adapt to every campaign need instantly.",
-      name: "Michael Rodriguez",
-      designation: "CTO at InnovateSphere",
-      src: image2.src,
-    },
-    {
-      quote:
-        "Adalyze has significantly boosted our ad ROI. The intuitive dashboard turns complex performance metrics into clear, actionable insights.",
-      name: "Emily Watson",
-      designation: "Operations Director at CloudScale",
-      src: image3.src,
-    },
-    {
-      quote:
-        "The level of support and depth of AI analysis is outstanding. Adalyze consistently delivers on its promise to make every ad dollar work harder.",
-      name: "James Kim",
-      designation: "Engineering Lead at DataPro",
-      src: image4.src,
-    },
-    {
-      quote:
-        "The scalability and precision targeting powered by Adalyze have been game-changing for our campaigns. It’s a must-have for any growing brand.",
-      name: "Lisa Thompson",
-      designation: "VP of Technology at FutureNet",
-      src: image5.src,
-    },
-  ]
+  const [testimonials, setTestimonials] = useState<TestimonialType[]>([])
+  const [filteredTestimonials, setFilteredTestimonials] = useState<TestimonialType[]>([])
+  const [activeCategory, setActiveCategory] = useState<string>("All")
+  const [categories, setCategories] = useState<string[]>([])
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=testilist")
+        const data = await res.json()
+
+        const formatted: TestimonialType[] = data
+          .filter((item: any) => item.status === 1)
+          .map((item: any) => ({
+            quote: item.content,
+            name: item.name,
+            designation: item.company ? `${item.role} at ${item.company}` : item.role,
+            src: item.imgname ,
+            category: item.category
+          }))
+
+        setTestimonials(formatted)
+        setFilteredTestimonials(formatted)
+
+        // Extract unique categories
+        const uniqueCategories = ["All", ...Array.from(new Set(formatted.map(item => item.category)))]
+        setCategories(uniqueCategories)
+      } catch (error) {
+        console.error("Error fetching testimonials:", error)
+      }
+    }
+
+    fetchTestimonials()
+  }, [])
+
+  useEffect(() => {
+    if (activeCategory === "All") {
+      setFilteredTestimonials(testimonials)
+    } else {
+      setFilteredTestimonials(testimonials.filter(testimonial => testimonial.category === activeCategory))
+    }
+  }, [activeCategory, testimonials])
+
+  if (testimonials.length === 0) return null
 
   return (
-    <div className="text-center px-4 sm:px-6 lg:px-8 py-8 sm:py-10 ">
+    <div className="text-center px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
       <motion.div
-        initial={{ y: -100, opacity: 0 }}
+        initial={{ y: -50, opacity: 0 }}
         whileInView={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         viewport={{ once: false, amount: 0.3 }}
-        
+        className="text-center py-2 sm:py-3"
       >
-        {/* Heading */}
-        <h2 className="text-2xl sm:text-3xl md:text-4xl text-primary font-bold mb-3">Why Marketers Trust Adalyze</h2>
-
-        {/* Description */}
-        <p className="text-gray-300 max-w-xl sm:max-w-2xl mx-auto mb-6 sm:mb-8 text-sm sm:text-base">
-          Adalyze empowers marketing teams with AI-driven ad analysis, helping them uncover insights, optimize
-          campaigns, and maximize ROI. Here's what industry leaders have to say about how Adalyze transformed their
-          advertising strategy.
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
+          Why Marketers Trust Adalyze
+        </h2>
+        <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Real Stories, Real Results</p>
+        <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1">
+          Marketers and business owners rely on Adalyze AI to make smarter ad decisions, boost engagement, and improve ROI.
         </p>
       </motion.div>
+
+      {/* Category Filter */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="flex flex-wrap justify-center gap-2 sm:gap-3 "
+      >
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => setActiveCategory(category)}
+            className={cn(
+              "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+              activeCategory === category
+                ? "bg-primary text-white shadow-lg"
+                : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+            )}
+          >
+            {category}
+          </button>
+        ))}
+      </motion.div>
+
       {/* Testimonials */}
-      <AnimatedTestimonials testimonials={testimonials} />
+      <AnimatedTestimonials testimonials={filteredTestimonials} />
 
       <motion.div
         className="max-w-screen-xl mx-auto border-t border-[#db4900]/40 mt-12 sm:mt-16"

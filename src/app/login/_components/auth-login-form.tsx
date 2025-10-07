@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import GoogleSignInButton from "@/app/login/_components/GoogleSign-In";
+import toast from "react-hot-toast";
 
 interface LoginFormData {
   email: string;
@@ -31,6 +32,9 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
   const [passwordType, setPasswordType] = useState("password");
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [step, setStep] = useState<"initial" | "resetPassword" | "success">("initial");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState("");
 
   const {
     register,
@@ -42,6 +46,8 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
     register: resetRegister,
     handleSubmit: handleResetSubmit,
     formState: { errors: resetErrors },
+    watch: watchReset,
+    getValues: getResetValues,
   } = useForm<ResetPasswordFormData>();
 
   const togglePasswordType = () => {
@@ -53,32 +59,127 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
     await onSubmit(data);
   };
 
-  return (
-    <div className="w-full max-w-md mx-auto">
+  // Send OTP for password reset
+  const handleSendCode = async () => {
+    const email = getResetValues("email");
+    if (!email) {
+      toast.error("Please enter your email first");
+      return;
+    }
 
+    setResetLoading(true);
+    try {
+      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=forgot_otp&email=${encodeURIComponent(email)}`);
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        toast.success("Verification code sent to your email!");
+        setCodeSent(true);
+      } else {
+        toast.error(result.message || "Failed to send verification code");
+      }
+    } catch (error) {
+      console.error('Send code error:', error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // Verify OTP
+  const handleVerifyOTP = async () => {
+    const email = getResetValues("email");
+    const otp = getResetValues("verificationCode");
+
+    if (!email || !otp) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=forgot_verify_otp&email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        toast.success("OTP verified successfully!");
+        setVerifiedEmail(email);
+        setStep("resetPassword");
+      } else {
+        toast.error(result.message || "Invalid verification code");
+      }
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // Update password
+  const handleUpdatePassword = async (data: ResetPasswordFormData) => {
+    if (data.newPassword !== data.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=updatepassword&email=${encodeURIComponent(verifiedEmail)}&password=${encodeURIComponent(data.newPassword)}&confirmpassword=${encodeURIComponent(data.confirmPassword)}`);
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        toast.success("Password updated successfully!");
+        setStep("success");
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          setShowResetPassword(false);
+          setStep("initial");
+          setCodeSent(false);
+          setVerifiedEmail("");
+        }, 2000);
+      } else {
+        toast.error(result.message || "Failed to update password");
+      }
+    } catch (error) {
+      console.error('Update password error:', error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-md mx-auto ">
       {showResetPassword ? (
         <>
           <h2 className="text-lg font-bold text-center mb-4 text-white">Reset your password</h2>
 
           {step === "initial" && (
-            <>
+            <form onSubmit={(e) => e.preventDefault()}>
               {/* Email Field */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-200">Enter email</label>
-                <div className="relative flex items-center border border-gray-600 rounded-md shadow-sm bg-[#1a1a1a]">
+                <div className="relative flex items-center  rounded-md shadow-sm bg-black">
                   <input
                     type="email"
-                    className="w-full bg-transparent px-3 py-2 text-sm focus:outline-none rounded-md text-white placeholder-gray-400"
+                    className="w-full  px-3 py-2 text-sm focus:outline-none rounded-md text-white placeholder-white/50"
                     {...resetRegister("email", {
                       required: "Please enter your email",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address"
+                      }
                     })}
                   />
-                  <span className="mr-4 text-gray-300">|</span>
+                  <span className="text-gray-300">|</span>
                   <button
                     type="button"
-                    className="text-sm mr-4 font-medium text-orange-500 hover:text-orange-400"
+                    onClick={handleSendCode}
+                    disabled={resetLoading}
+                    className="text-sm px-2 font-medium text-orange-500 hover:text-orange-400 whitespace-nowrap disabled:opacity-50"
                   >
-                    Send code
+                    {resetLoading ? "Sending..." : codeSent ? "Resend" : "Send code"}
                   </button>
                 </div>
                 {resetErrors.email && (
@@ -91,7 +192,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                 <label className="text-sm font-medium text-gray-200">Verification code</label>
                 <input
                   type="text"
-                  className="w-full px-3 bg-[#1a1a1a] py-2 text-sm border border-gray-600 rounded-md text-white placeholder-gray-400"
+                  className="w-full px-3 bg-black py-2 text-sm  rounded-md text-white placeholder-white/50"
                   {...resetRegister("verificationCode", {
                     required: "Verification code is required",
                   })}
@@ -104,37 +205,44 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                 )}
               </div>
 
-              <Button className="w-full text-white mt-6 bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700">
-                Verify OTP
+              <Button
+                type="button"
+                onClick={handleVerifyOTP}
+                disabled={resetLoading}
+                className="w-full text-white mt-6"
+              >
+                {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {resetLoading ? "Verifying..." : "Verify OTP"}
               </Button>
 
               <p className="text-sm mt-4 flex justify-center text-gray-300">
                 Already have an account?
                 <span
                   className="hover:underline pl-1 text-orange-500 cursor-pointer"
-                  onClick={() => setShowResetPassword(false)}
+                  onClick={() => {
+                    setShowResetPassword(false);
+                    setStep("initial");
+                    setCodeSent(false);
+                    setVerifiedEmail("");
+                  }}
                 >
                   Login
                 </span>
               </p>
-            </>
+            </form>
           )}
 
           {step === "resetPassword" && (
-            <>
-              {/* Email Field */}
+            <form onSubmit={handleResetSubmit(handleUpdatePassword)}>
+              {/* Email Field (Read-only) */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-200">Email</label>
                 <input
                   type="email"
-                  className="w-full px-3 bg-[#1a1a1a] py-2 text-sm border border-gray-600 rounded-md text-white placeholder-gray-400"
-                  {...resetRegister("email", {
-                    required: "Please enter your email",
-                  })}
+                  value={verifiedEmail}
+                  readOnly
+                  className="w-full px-3 bg-black py-2 text-sm  rounded-md text-gray-300 cursor-not-allowed"
                 />
-                {resetErrors.email && (
-                  <p className="text-xs text-red-400">{resetErrors.email.message}</p>
-                )}
               </div>
 
               {/* New Password Field */}
@@ -142,9 +250,13 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                 <label className="text-sm font-medium text-gray-200">New Password</label>
                 <input
                   type="password"
-                  className="w-full px-3 py-2 bg-[#1a1a1a] text-sm border border-gray-600 rounded-md text-white placeholder-gray-400"
+                  className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50"
                   {...resetRegister("newPassword", {
                     required: "Please enter your new password",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters"
+                    }
                   })}
                 />
                 {resetErrors.newPassword && (
@@ -157,9 +269,13 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                 <label className="text-sm font-medium text-gray-200">Confirm Password</label>
                 <input
                   type="password"
-                  className="w-full px-3 py-2 bg-[#1a1a1a] text-sm border border-gray-600 rounded-md text-white placeholder-gray-400"
+                  className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50"
                   {...resetRegister("confirmPassword", {
                     required: "Please confirm your password",
+                    validate: (value) => {
+                      const newPassword = watchReset("newPassword");
+                      return value === newPassword || "Passwords do not match";
+                    }
                   })}
                 />
                 {resetErrors.confirmPassword && (
@@ -167,26 +283,44 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                 )}
               </div>
 
-              <Button className="w-full text-white mt-6 bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700">
-                Submit
+              <Button
+                type="submit"
+                disabled={resetLoading}
+                className="w-full text-white mt-6 bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700"
+              >
+                {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {resetLoading ? "Updating..." : "Update Password"}
               </Button>
 
               <p className="text-sm mt-4 flex justify-center text-gray-300">
                 Already have an account?
                 <span
                   className="hover:underline pl-1 text-orange-500 cursor-pointer"
-                  onClick={() => setShowResetPassword(false)}
+                  onClick={() => {
+                    setShowResetPassword(false);
+                    setStep("initial");
+                    setCodeSent(false);
+                    setVerifiedEmail("");
+                  }}
                 >
                   Login
                 </span>
               </p>
-            </>
+            </form>
           )}
 
           {step === "success" && (
             <div className="text-center">
-              <p className="text-green-400 font-medium">Password changed successfully!</p>
-              <p className="mt-2 text-gray-300">Redirecting to login...</p>
+              <div className="mb-4">
+                <div className="w-16 h-16 mx-auto mb-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+              </div>
+              <p className="text-green-400 font-medium text-lg mb-2">Password Reset Successful!</p>
+              <p className="text-gray-300">Your password has been updated successfully.</p>
+              <p className="mt-2 text-gray-400 text-sm">Redirecting to login...</p>
             </div>
           )}
         </>
@@ -198,7 +332,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
               <input
                 type="email"
                 placeholder="Email"
-                className="w-full px-4 py-3 bg-[#1a1a1a] text-white text-sm rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                className="w-full px-4 py-3 bg-black text-white text-sm rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
                 {...register("email", {
                   required: "Email is required",
                   pattern: {
@@ -218,7 +352,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                 <input
                   type={passwordType}
                   placeholder="Password"
-                  className="w-full px-4 py-3 text-sm bg-[#1a1a1a] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
                   {...register("password", {
                     required: "Password is required",
                     minLength: {
@@ -248,7 +382,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
               <button
                 type="button"
                 onClick={() => setShowResetPassword(true)}
-                className="text-sm text-gray-300 hover:text-gray-300 hover:underline"
+                className="text-sm text-white/70 hover:text-gray-300 hover:underline"
               >
                 Forgot Password?
               </button>

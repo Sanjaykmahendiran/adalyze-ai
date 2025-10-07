@@ -28,7 +28,6 @@ import {
   Users,
   Zap,
   Shield,
-  Activity,
   BarChart3,
   Camera,
   Type,
@@ -38,6 +37,12 @@ import {
   ArrowLeft,
   ShieldCheck,
   ChartNoAxesCombined,
+  Settings,
+  MousePointerClick,
+  TrendingDown,
+  Share,
+  Copy,
+  Share2,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -49,6 +54,7 @@ import logo from "@/assets/ad-icon-logo.png"
 import { ApiResponse } from "./type"
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
+import { motion } from "framer-motion"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -60,6 +66,7 @@ export default function ResultsPage() {
   const [error, setError] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isPdfGenerating, setIsPdfGenerating] = useState(false)
+  const [showIntro, setShowIntro] = useState(false);
   const isProUser = userDetails?.payment_status === 1
 
   const handleDownloadPDF = async () => {
@@ -109,27 +116,105 @@ export default function ResultsPage() {
     }
   };
 
+  const getAdIdFromUrl = () => {
+    const token = searchParams.get('token');
+    const directAdId = searchParams.get('ad_id');
+
+    if (token && token.length > 14) {
+      const adIdFromToken = token.substring(8, token.length - 6);
+      return adIdFromToken;
+    }
+
+    // Fallback to direct ad_id from URL
+    return directAdId || '';
+  };
+
+
+  const handleShare = () => {
+    const currentDate = new Date();
+
+    // Format date components (DD MM YYYY)
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const year = currentDate.getFullYear();
+
+    // Format time components (HH MM SS)
+    const hours = String(currentDate.getHours()).padStart(2, '0');
+    const minutes = String(currentDate.getMinutes()).padStart(2, '0');
+    const seconds = String(currentDate.getSeconds()).padStart(2, '0');
+
+    // Get ad_id from either URL param or token (used only for token generation, not for sharing)
+    const adId = getAdIdFromUrl();
+
+    // Generate token: DDMMYYYY + ad_id + HHMMSS
+    const token = `${day}${month}${year}${adId}${hours}${minutes}${seconds}`;
+
+    // Get current domain
+    const currentDomain = window.location.origin;
+
+    // Create share URL
+    const shareUrl = `${currentDomain}/results?token=${token}`;
+
+    // Custom text for sharing (without ad_id)
+    const shareText = `Check out the ad analysis results shared on ${day}-${month}-${year} at ${hours}:${minutes}:${seconds}: ${shareUrl}`;
+
+    // Trigger native share if available
+    if (navigator.share) {
+      navigator.share({
+        title: 'Ad Analysis Results',
+        text: shareText,
+        url: shareUrl,
+      }).catch(console.error);
+    } else {
+      // Fallback to clipboard
+      navigator.clipboard.writeText(shareText).then(() => {
+        alert('Share link copied to clipboard!');
+      }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = shareText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Share link copied to clipboard!');
+      });
+    }
+  };
+
   useEffect(() => {
     const fetchAdDetails = async () => {
       try {
-        const adUploadId = searchParams.get('ad_id') || ''
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adUploadId}`)
+        const adUploadId = getAdIdFromUrl();
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch ad details')
+        if (!adUploadId) {
+          setError('No ad ID found in URL');
+          setLoading(false);
+          return;
         }
 
-        const result = await response.json()
-        setApiData(result.data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
+        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adUploadId}`);
 
-    fetchAdDetails()
-  }, [searchParams])
+        if (!response.ok) {
+          throw new Error('Failed to fetch ad details');
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'API returned error');
+        }
+
+        setApiData(result.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdDetails();
+  }, [searchParams]);
 
   // Helper function to safely get array or return empty array
   const safeArray = (arr: any): any[] => {
@@ -208,6 +293,49 @@ export default function ResultsPage() {
       setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
     }
   }
+
+  const isToday = (d: string | Date) => {
+    const date = new Date(d);
+    const now = new Date();
+    return (
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate()
+    );
+  };
+
+  // 3) Decide whether to show the popup once per ad_id when ad was created today
+  useEffect(() => {
+    if (!apiData) return;
+
+    const adId = getAdIdFromUrl();
+    if (!adId) return;
+
+    // Use the uploaded/created date already shown in the header
+    const createdAt = apiData.uploaded_on;
+    if (!createdAt) return;
+
+    if (!isToday(createdAt)) return; // Only on creation day
+
+    const key = `intro_shown_${adId}`;
+    const alreadyShown = typeof window !== 'undefined' ? localStorage.getItem(key) : '1';
+
+    if (!alreadyShown) {
+      setShowIntro(true);
+    }
+  }, [apiData, searchParams]);
+
+  // 4) Handlers to persist one-time display and route on No Go
+  const handleIntroChoice = (choice: 'go' | 'no-go') => {
+    const adId = getAdIdFromUrl();
+    if (adId && typeof window !== 'undefined') {
+      localStorage.setItem(`intro_shown_${adId}`, '1');
+    }
+    setShowIntro(false);
+    if (choice === 'no-go') {
+      router.push('/upload');
+    }
+  };
 
   const ProOverlay = ({ children, message }: { children: React.ReactNode; message: string }) => (
     <div className="relative">
@@ -334,13 +462,13 @@ export default function ResultsPage() {
                               <>
                                 <button
                                   onClick={prevImage}
-                                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation"
+                                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer"
                                 >
                                   <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
                                 <button
                                   onClick={nextImage}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer"
                                 >
                                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
@@ -385,9 +513,13 @@ export default function ResultsPage() {
                     <div>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
                         <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-0 break-words">
-                          {apiData.title || "Untitled Ad"}
+                          {apiData.title
+                            ? apiData.title.length > 20
+                              ? apiData.title.slice(0, 20) + "..."
+                              : apiData.title
+                            : "Untitled Ad"}
                         </h2>
-                        <div className="text-gray-300 flex items-center text-xs sm:text-sm gap-2 flex-shrink-0">
+                        <div className="text-gray-300 flex items-end text-xs sm:text-sm gap-2 flex-shrink-0">
                           <Upload className="w-4 h-4 flex-shrink-0" />
                           <span className="truncate">{apiData.uploaded_on ? formatDate(apiData.uploaded_on) : "Unknown"}</span>
                         </div>
@@ -401,7 +533,7 @@ export default function ResultsPage() {
                             {apiData.industry || "N/A"}
                           </Badge>
                         </div>
-                        <div className="flex items-start gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300">
+                        <div className="flex flex-wrap items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300">
                           <span className="text-sm flex-shrink-0">Best Suit for:</span>
                           <div className="flex flex-wrap gap-1 sm:gap-2">
                             {platformSuitability.map((platform) => (
@@ -428,6 +560,7 @@ export default function ResultsPage() {
                             ))}
                           </div>
                         </div>
+
                       </div>
                     </div>
 
@@ -435,7 +568,7 @@ export default function ResultsPage() {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       {/* Performance Score */}
                       <div
-                        className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                        className="p-3 sm:p-3 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
                         onMouseEnter={e => {
                           e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
                         }}
@@ -590,8 +723,263 @@ export default function ResultsPage() {
               </div>
             </div>
 
+            {/* Row 3 */}
+            <div className="col-span-4 grid grid-cols-1 lg:grid-cols-6 gap-6 auto-rows-fr">
+              {/* Go/No-Go Only - takes 2 columns */}
+              <div className="lg:col-span-2 h-full">
+                <div
+                  className="relative bg-black rounded-2xl p-6 h-full flex flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
+                  style={{ transition: "all 0.3s" }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                  }}
+                >
+                  {/* Header - top aligned */}
+                  <div className="flex items-center justify-between w-full mb-6">
+                    <div className="flex flex-col">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="text-white font-semibold text-xl">Go / No Go</h3>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                          </TooltipTrigger>
+                          <TooltipContent className="w-50 bg-[#2b2b2b]">
+                            <p>AI-powered assessment that evaluates your ad's overall readiness for launch. A "Go" indicates your ad meets quality standards and is likely to perform well, while "No Go" suggests areas need improvement before running.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <p className="text-white/50 text-sm">Indicates if your ad is ready to run or needs improvement</p>
+                    </div>
+
+                  </div>
+
+                  {/* Decision Text - center */}
+                  <div className="flex-1 flex justify-center items-center">
+                    <p
+                      className={`text-7xl sm:text-6xl md:text-8xl font-bold z-10 ${safeArray(apiData?.go_no_go)[0] === "Go"
+                        ? "text-green-400"
+                        : "text-red-400"
+                        }`}
+                    >
+                      {safeArray(apiData?.go_no_go)[0] || ""}
+                    </p>
+                  </div>
+
+                  {/* Icon from bottom - full width */}
+                  {safeArray(apiData?.go_no_go)[0] === "Go" ? (
+                    <TrendingUp className="left-1 w-full h-40 text-green-500" />
+                  ) : (
+                    <TrendingDown className="left-1 w-full h-40 text-red-500" />
+                  )}
+                </div>
+              </div>
+
+              {/* Readability & Uniqueness - takes 2 columns */}
+              <div className="lg:col-span-2 h-full">
+                <div className="space-y-6 h-full flex flex-col">
+                  {/* Readability */}
+                  <div
+                    className="bg-black px-4 py-4 rounded-2xl flex-1 hover:scale-[1.01] transition-all duration-300"
+                    style={{ transition: "all 0.3s" }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-white font-semibold text-xl">Readability</h3>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                          <p>Measures how easy it is for your target audience to read and understand your ad content. Higher scores indicate clearer messaging, better font choices, and optimal text structure.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-white/50 text-sm mb-4">Clarity of your ad content.</p>
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`text-6xl font-bold ${(apiData?.readability_clarity_meter || 0) >= 70
+                          ? "text-green-400"
+                          : (apiData?.readability_clarity_meter || 0) >= 50
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                          }`}
+                      >
+                        {apiData?.readability_clarity_meter || 0}/100
+                      </div>
+                      <div className="w-16 h-16 flex items-center justify-center">
+                        <FileText className="w-full h-full text-primary" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Uniqueness */}
+                  <div
+                    className="bg-black px-4 py-4 rounded-2xl flex-1 hover:scale-[1.01] transition-all duration-300"
+                    style={{ transition: "all 0.3s" }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-white font-semibold text-xl">Uniqueness</h3>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                          <p>Analyzes how distinctive your ad is compared to competitors in your industry. Higher scores indicate more original content, creative approaches, and unique value propositions that help you stand out.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-white/50 text-sm mb-4">How different your ad is.</p>
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`text-6xl font-bold ${(apiData?.competitor_uniqueness_meter || 0) >= 70
+                          ? "text-green-400"
+                          : (apiData?.competitor_uniqueness_meter || 0) >= 50
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                          }`}
+                      >
+                        {apiData?.competitor_uniqueness_meter || 0}/100
+                      </div>
+                      <div className="w-16 h-16 flex items-center justify-center">
+                        <Sparkles className="w-full h-full text-primary" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Best Days & Time + Ad Fatigue - takes 2 columns */}
+              <div className="lg:col-span-2 h-full">
+                <div className="space-y-6 h-full flex flex-col">
+                  {/* Best Days & Time */}
+                  <div
+                    className="bg-black px-4 py-4 rounded-2xl flex-1 hover:scale-[1.01] transition-all duration-300"
+                    style={{ transition: "all 0.3s" }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-white font-semibold text-xl">Best Posting Time</h3>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                          <p>AI-analyzed optimal timing for posting your ad based on your target audience's online behavior patterns, platform algorithms, and industry best practices to maximize reach and engagement.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-white/50 text-sm mb-4">Recommended days and times for posting your ads to maximize reach.</p>
+
+                    <div className="flex items-center gap-x-4">
+                      {/* Best Days */}
+                      <div>
+                        <h4 className="text-white text-sm mb-2 font-medium">Days</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {safeArray(apiData?.best_day_time_to_post).map((item, index) => {
+                            const isDays = item.toLowerCase().includes('weekday') ||
+                              item.toLowerCase().includes('weekend') ||
+                              ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].some(day =>
+                                item.toLowerCase().includes(day)
+                              );
+
+                            if (isDays) {
+                              return (
+                                <Badge
+                                  key={index}
+                                  className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-xs"
+                                >
+                                  {item}
+                                </Badge>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Best Times */}
+                      <div>
+                        <h4 className="text-white text-sm mb-2 font-medium">Times</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {safeArray(apiData?.best_day_time_to_post).map((item, index) => {
+                            const isTime = item.toLowerCase().includes('am') ||
+                              item.toLowerCase().includes('pm') ||
+                              /\d+:\d+/.test(item) ||
+                              item.toLowerCase().includes('morning') ||
+                              item.toLowerCase().includes('afternoon') ||
+                              item.toLowerCase().includes('evening');
+
+                            if (isTime) {
+                              return (
+                                <Badge
+                                  key={index}
+                                  className="bg-green-600/20 text-green-400 border-green-600/30 text-xs"
+                                >
+                                  {item}
+                                </Badge>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ad Fatigue */}
+                  <div
+                    className="bg-black px-4 py-4 rounded-2xl flex-1 hover:scale-[1.01] transition-all duration-300"
+                    style={{ transition: "all 0.3s" }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-white font-semibold text-xl">Ad Fatigue</h3>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                          <p>Predicts how quickly your audience will become tired of seeing your ad. Lower scores indicate longer-lasting appeal, while higher scores suggest you may need to refresh or rotate your creative sooner.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-white/50 text-sm mb-4">Estimates how quickly your audience may get tired of seeing your ad.</p>
+                    <div className="flex items-center justify-center">
+                      <div className="text-4xl font-bold text-amber-400">
+                        {safeArray(apiData?.ad_fatigue_score)[0] || "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Engagement Insights - Mobile Optimized */}
-            <ProOverlay message="🔐 Upgrade to Pro to see detailed engagement insights.">
+            <ProOverlay message=" Upgrade to Pro to see detailed engagement insights.">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* Traffic Prediction */}
                 <div className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
@@ -1017,155 +1405,184 @@ export default function ResultsPage() {
             {/* Engagement & Performance Metrics - Mobile Responsive */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Engagement Metrics - Mobile Optimized */}
-              <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 p-4 sm:p-6 flex flex-col">
-                <div className="flex items-center justify-between mb-4 sm:mb-6">
-                  <h3 className="text-xl sm:text-2xl font-bold flex items-center">
-                    <Activity className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                    Engagement Metrics
-                  </h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                    </TooltipTrigger>
-                    <TooltipContent className="w-64 bg-[#2b2b2b] text-sm">
-                      <p>
-                        Advanced engagement analytics and technical performance indicators
-                        for your ad campaign.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+              <ProOverlay message=" Upgrade to Pro to unlock advanced engagement analytics and performance insights.">
+                <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 p-4 sm:p-6 flex flex-col">
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <h3 className="text-xl sm:text-2xl font-bold flex items-center">
+                      <MousePointerClick className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                      Engagement Metrics
+                    </h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
+                        <div>
+                          <strong>User Interaction Scores:</strong>
+                          <p className="text-gray-300 text-xs">Measures how actively users engage with your content.</p>
+                        </div>
+                        <div>
+                          <strong>Viral Potential:</strong>
+                          <p className="text-gray-300 text-xs">Assesses the likelihood of your content being widely shared.</p>
+                        </div>
+                        <div>
+                          <strong>Trust Signals:</strong>
+                          <p className="text-gray-300 text-xs">Indicates the credibility and reliability perceived by users.</p>
+                        </div>
+                        <div>
+                          <strong>FOMO Triggers:</strong>
+                          <p className="text-gray-300 text-xs">Highlights urgency or scarcity cues that drive immediate action.</p>
+                        </div>
+                      </TooltipContent>
 
-                <div className="space-y-3 sm:space-y-4 flex-1">
-                  {/* Engagement Score Full Row */}
-                  <div
-                    className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow =
-                        apiData.engagement_score <= 50
-                          ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                          : apiData.engagement_score <= 75
-                            ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                            : "0 0 14px 4px rgba(34,197,94,0.7)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow =
-                        "0 0 10px rgba(255,255,255,0.05)";
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <Users
-                          className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0 ${apiData.engagement_score <= 50
+                    </Tooltip>
+                  </div>
+
+                  <div className="space-y-3 sm:space-y-4 flex-1">
+                    {/* Engagement Score Full Row */}
+                    <div
+                      className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow =
+                          apiData.engagement_score <= 50
+                            ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                            : apiData.engagement_score <= 75
+                              ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                              : "0 0 14px 4px rgba(34,197,94,0.7)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow =
+                          "0 0 10px rgba(255,255,255,0.05)";
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <Users
+                            className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0 ${apiData.engagement_score <= 50
+                              ? "text-red-500"
+                              : apiData.engagement_score <= 75
+                                ? "text-yellow-500"
+                                : "text-green-500"
+                              }`}
+                          />
+                          <span className="text-gray-300 font-medium text-sm sm:text-base">
+                            Engagement Score
+                          </span>
+                        </div>
+                        <span
+                          className={`font-semibold text-lg sm:text-xl ${apiData.engagement_score <= 50
                             ? "text-red-500"
                             : apiData.engagement_score <= 75
                               ? "text-yellow-500"
                               : "text-green-500"
                             }`}
-                        />
-                        <span className="text-gray-300 font-medium text-sm sm:text-base">
-                          Engagement Score
+                        >
+                          {Math.round(apiData.engagement_score || 0)}/100
                         </span>
                       </div>
-                      <span
-                        className={`font-semibold text-lg sm:text-xl ${apiData.engagement_score <= 50
-                          ? "text-red-500"
-                          : apiData.engagement_score <= 75
-                            ? "text-yellow-500"
-                            : "text-green-500"
-                          }`}
-                      >
-                        {Math.round(apiData.engagement_score || 0)}/100
-                      </span>
+                    </div>
+
+                    {/* Other Engagement Metrics - Mobile Grid */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                      {[
+                        {
+                          label: "Viral Potential",
+                          value: apiData.viral_potential_score || 0,
+                          icon: TrendingUp,
+                        },
+                        {
+                          label: "FOMO Score",
+                          value: apiData.fomo_score || 0,
+                          icon: Zap,
+                        },
+                        {
+                          label: "Trust Signal Score",
+                          value: apiData.trust_signal_score || 0,
+                          icon: Shield,
+                        },
+                        {
+                          label: "Urgency Trigger",
+                          value: apiData.urgency_trigger_score || 0,
+                          icon: AlertTriangle,
+                        },
+                      ].map((item, i) => (
+                        <div
+                          key={i}
+                          className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow =
+                              item.value <= 50
+                                ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                                : item.value <= 75
+                                  ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                                  : "0 0 14px 4px rgba(34,197,94,0.7)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow =
+                              "0 0 10px rgba(255,255,255,0.05)";
+                          }}
+                        >
+                          <div className="flex items-center gap-4 ">
+                            {/* Icon on the left, vertically centered */}
+                            <item.icon
+                              className={`w-5 h-5 sm:w-6 sm:h-6 ${item.value <= 50
+                                ? "text-red-500"
+                                : item.value <= 75
+                                  ? "text-yellow-500"
+                                  : "text-green-500"
+                                }`}
+                            />
+
+                            {/* Text block on the right */}
+                            <div className="flex flex-col text-left ">
+                              <span className="text-gray-300 font-medium text-xs sm:text-sm mb-1">
+                                {item.label}
+                              </span>
+                              <span
+                                className={`font-semibold text-sm sm:text-lg ${item.value <= 50
+                                  ? "text-red-500"
+                                  : item.value <= 75
+                                    ? "text-yellow-500"
+                                    : "text-green-500"
+                                  }`}
+                              >
+                                {Math.round(item.value)}/100
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-
-                  {/* Other Engagement Metrics - Mobile Grid */}
-                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                    {[
-                      {
-                        label: "Viral Potential",
-                        value: apiData.viral_potential_score || 0,
-                        icon: TrendingUp,
-                      },
-                      {
-                        label: "FOMO Score",
-                        value: apiData.fomo_score || 0,
-                        icon: Zap,
-                      },
-                      {
-                        label: "Trust Signal Score",
-                        value: apiData.trust_signal_score || 0,
-                        icon: Shield,
-                      },
-                      {
-                        label: "Urgency Trigger",
-                        value: apiData.urgency_trigger_score || 0,
-                        icon: AlertTriangle,
-                      },
-                    ].map((item, i) => (
-                      <div
-                        key={i}
-                        className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.boxShadow =
-                            item.value <= 50
-                              ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                              : item.value <= 75
-                                ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                : "0 0 14px 4px rgba(34,197,94,0.7)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.boxShadow =
-                            "0 0 10px rgba(255,255,255,0.05)";
-                        }}
-                      >
-                        <div className="flex flex-col items-center text-center">
-                          <item.icon
-                            className={`w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 ${item.value <= 50
-                              ? "text-red-500"
-                              : item.value <= 75
-                                ? "text-yellow-500"
-                                : "text-green-500"
-                              }`}
-                          />
-                          <span className="text-gray-300 font-medium text-xs sm:text-sm mb-1">
-                            {item.label}
-                          </span>
-                          <span
-                            className={`font-semibold text-sm sm:text-lg ${item.value <= 50
-                              ? "text-red-500"
-                              : item.value <= 75
-                                ? "text-yellow-500"
-                                : "text-green-500"
-                              }`}
-                          >
-                            {Math.round(item.value)}/100
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
-              </div>
+              </ProOverlay>
 
               {/* Technical Metrics - Mobile Optimized */}
               <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 p-4 sm:p-6 flex flex-col">
                 <div className="flex items-center justify-between mb-4 sm:mb-6">
                   <h3 className="text-xl sm:text-2xl font-bold flex items-center">
-                    <Activity className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                    <Settings className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
                     Technical Analysis
                   </h3>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                     </TooltipTrigger>
-                    <TooltipContent className="w-64 bg-[#2b2b2b] text-sm">
-                      <p>
-                        Advanced technical performance indicators and ad creative
-                        structure.
-                      </p>
+                    <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
+                      <div>
+                        <strong>Budget Utilization:</strong>
+                        <p className="text-gray-300 text-xs">Tracks how effectively the allocated budget is being spent.</p>
+                      </div>
+                      <div>
+                        <strong>Visual Composition:</strong>
+                        <p className="text-gray-300 text-xs">Evaluates layout, symmetry, and design aesthetics of your content.</p>
+                      </div>
+                      <div>
+                        <strong>Structural Optimization:</strong>
+                        <p className="text-gray-300 text-xs">Checks alignment, spacing, and organization for maximum clarity and impact.</p>
+                      </div>
                     </TooltipContent>
+
                   </Tooltip>
                 </div>
 
@@ -1270,22 +1687,31 @@ export default function ResultsPage() {
                               "0 0 10px rgba(255,255,255,0.05)";
                           }}
                         >
-                          <div className="flex flex-col items-center text-center">
-                            <item.icon className={`w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 ${colorClass}`} />
-                            <span className="text-gray-300 font-medium text-xs sm:text-sm mb-1">
-                              {item.label}
-                            </span>
-                            <span className={`font-semibold text-sm sm:text-lg ${colorClass}`}>
-                              {Math.round(item.value)}
-                              {item.max === 100 ? "/100" : ""}
-                            </span>
+                          <div className="flex items-center gap-4">
+                            {/* Icon on the left */}
+                            <item.icon
+                              className={`w-5 h-5 sm:w-6 sm:h-6 ${colorClass}`}
+                            />
+
+                            {/* Text stacked on the right */}
+                            <div className="flex flex-col text-left">
+                              <span className="text-gray-300 font-medium text-xs sm:text-sm mb-1">
+                                {item.label}
+                              </span>
+                              <span className={`font-semibold text-sm sm:text-lg ${colorClass}`}>
+                                {Math.round(item.value)}
+                                {item.max === 100 ? "/100" : ""}
+                              </span>
+                            </div>
                           </div>
                         </div>
+
                       );
                     })}
                   </div>
                 </div>
               </div>
+              {/* </ProOverlay> */}
             </div>
 
             {/* Quick Wins & Insights - Mobile Optimized */}
@@ -1347,7 +1773,7 @@ export default function ResultsPage() {
                 <div className="p-4 sm:p-6 lg:p-8">
                   <div className="flex items-center justify-between mb-4 sm:mb-6">
                     <h3 className="text-xl sm:text-2xl font-bold flex items-center">
-                      <Heart className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                      <Palette className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
                       Emotional, Color Analysis
                     </h3>
                     <Tooltip>
@@ -1356,8 +1782,7 @@ export default function ResultsPage() {
                       </TooltipTrigger>
                       <TooltipContent className="w-60 bg-[#2b2b2b]">
                         <p>
-                          Combined insights on emotional impact, color psychology, and visual
-                          quality metrics of your advertisement.
+                          Emotional impact analysis and color psychology insights including primary emotions, emotional alignment, and suggested color improvements for better audience connection.
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -1384,9 +1809,10 @@ export default function ResultsPage() {
                         {/* Emotional Alignment */}
                         <div className="flex items-center justify-between">
                           <span className="text-gray-300 text-sm sm:text-base">Emotional Alignment</span>
-                          <Badge className="bg-purple-600/20 text-purple-400 border-purple-600/30 text-xs sm:text-sm">
+                          <span className="inline-block bg-purple-600/20 text-purple-400 border border-purple-600/30 text-xs sm:text-sm px-2 py-1 rounded-full">
                             {apiData.emotional_alignment || "N/A"}
-                          </Badge>
+                          </span>
+
                         </div>
 
                         {/* Emotional Boost Suggestions */}
@@ -1466,132 +1892,175 @@ export default function ResultsPage() {
               </div>
 
               {/* Visual Analysis - Mobile Optimized */}
-              <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]">
-                <div className="p-4 sm:p-6 lg:p-8">
-                  <div className="flex items-center justify-between mb-4 sm:mb-6">
-                    <h3 className="text-xl sm:text-2xl font-bold flex items-center">
-                      <Heart className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                      Visual Analysis
-                    </h3>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                      </TooltipTrigger>
-                      <TooltipContent className="w-60 bg-[#2b2b2b]">
-                        <p>
-                          Combined insights on emotional impact, color psychology, and visual
-                          quality metrics of your advertisement.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-
-                  <div className="space-y-4 sm:space-y-6">
-                    <h4 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">
-                      Visual Quality Assessment
-                    </h4>
-
-                    {/* Core Visual Metrics - Mobile Grid */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                      {[
-                        { label: "Visual Clarity", value: parseInt(String(apiData.visual_clarity)) || 0, icon: Eye, max: 100 },
-                        { label: "Emotional Appeal", value: parseInt(String(apiData.emotional_appeal)) || 0, icon: Heart, max: 100 },
-                        { label: "Text-Visual", value: parseInt(String(apiData.text_visual_balance)) || 0, icon: FileText, max: 100 },
-                        { label: "CTA Visibility", value: parseInt(String(apiData.cta_visibility)) || 0, icon: Target, max: 100 }
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              item.value <= 50
-                                ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                : item.value <= 75
-                                  ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                  : "0 0 14px 4px rgba(34,197,94,0.7)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 0 10px rgba(255,255,255,0.05)";
-                          }}
-                        >
-                          <div className="flex flex-col items-center text-center">
-                            <item.icon
-                              className={`w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 ${item.value <= 50
-                                ? "text-red-500"
-                                : item.value <= 75
-                                  ? "text-yellow-500"
-                                  : "text-green-500"
-                                }`}
-                            />
-                            <span className="text-gray-300 text-xs sm:text-sm font-medium mb-1 leading-tight">{item.label}</span>
-                            <span
-                              className={`font-semibold text-sm sm:text-lg ${item.value <= 50
-                                ? "text-red-500"
-                                : item.value <= 75
-                                  ? "text-yellow-500"
-                                  : "text-green-500"
-                                }`}
-                            >
-                              {Math.round(item.value)}/100
-                            </span>
+              <ProOverlay message=" Upgrade to Pro to access comprehensive visual quality analysis and design optimization insights.">
+                <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]">
+                  <div className="p-4 sm:p-6 lg:p-8">
+                    <div className="flex items-center justify-between mb-4 sm:mb-6">
+                      <h3 className="text-xl sm:text-2xl font-bold flex items-center">
+                        <Eye className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                        Visual Analysis
+                      </h3>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="w-60 bg-[#2b2b2b] text-sm space-y-2">
+                          <div>
+                            <strong>Visual Clarity:</strong>
+                            <p className="text-gray-300 text-xs">Evaluates how clear and easily interpretable the visual elements are.</p>
                           </div>
-                        </div>
-                      ))}
+                          <div>
+                            <strong>Emotional Appeal:</strong>
+                            <p className="text-gray-300 text-xs">Measures the ability of visuals to evoke the intended emotional response.</p>
+                          </div>
+                          <div>
+                            <strong>Design Balance:</strong>
+                            <p className="text-gray-300 text-xs">Assesses symmetry, alignment, and proportionality for aesthetic harmony.</p>
+                          </div>
+                          <div>
+                            <strong>Text-Visual Balance:</strong>
+                            <p className="text-gray-300 text-xs">Checks the readability and integration of text with visuals.</p>
+                          </div>
+                          <div>
+                            <strong>CTA Visibility:</strong>
+                            <p className="text-gray-300 text-xs">Analyzes how prominent and actionable call-to-action elements are.</p>
+                          </div>
+                          <div>
+                            <strong>Color & Brand Alignment:</strong>
+                            <p className="text-gray-300 text-xs">Ensures colors and design elements align with the brand identity.</p>
+                          </div>
+                          <div>
+                            <strong>Image & Text Quality:</strong>
+                            <p className="text-gray-300 text-xs">Evaluates image resolution, typography readability, and overall visual polish.</p>
+                          </div>
+                        </TooltipContent>
+
+                      </Tooltip>
                     </div>
 
-                    {/* Design Quality */}
-                    <h4 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">Design Quality</h4>
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                      {[
-                        { label: "Color Harmony", value: apiData.color_harmony || 0, icon: Palette, max: 100 },
-                        { label: "Brand Alignment", value: apiData.brand_alignment || 0, icon: Award, max: 100 },
-                        { label: "Text Readability", value: apiData.text_readability || 0, icon: FileText, max: 100 },
-                        { label: "Image Quality", value: apiData.image_quality || 0, icon: ImageIcon, max: 100 }
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              item.value <= 50
-                                ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                : item.value <= 75
-                                  ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                  : "0 0 14px 4px rgba(34,197,94,0.7)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 0 10px rgba(255,255,255,0.05)";
-                          }}
-                        >
-                          <div className="flex flex-col items-center text-center">
-                            <item.icon
-                              className={`w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 ${item.value <= 50
-                                ? "text-red-500"
-                                : item.value <= 75
-                                  ? "text-yellow-500"
-                                  : "text-green-500"
-                                }`}
-                            />
-                            <span className="text-gray-300 text-xs sm:text-sm font-medium mb-1 leading-tight">{item.label}</span>
-                            <span
-                              className={`font-semibold text-sm sm:text-lg ${item.value <= 50
-                                ? "text-red-500"
-                                : item.value <= 75
-                                  ? "text-yellow-500"
-                                  : "text-green-500"
-                                }`}
-                            >
-                              {Math.round(item.value)}/100
-                            </span>
+                    <div className="space-y-4 sm:space-y-6">
+                      <h4 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">
+                        Visual Quality Assessment
+                      </h4>
+
+                      {/* Core Visual Metrics - Mobile Grid */}
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                        {[
+                          { label: "Visual Clarity", value: parseInt(String(apiData.visual_clarity)) || 0, icon: Eye, max: 100 },
+                          { label: "Emotional Appeal", value: parseInt(String(apiData.emotional_appeal)) || 0, icon: Heart, max: 100 },
+                          { label: "Text-Visual", value: parseInt(String(apiData.text_visual_balance)) || 0, icon: FileText, max: 100 },
+                          { label: "CTA Visibility", value: parseInt(String(apiData.cta_visibility)) || 0, icon: Target, max: 100 }
+                        ].map((item, i) => (
+                          <div
+                            key={i}
+                            className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                item.value <= 50
+                                  ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                                  : item.value <= 75
+                                    ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                                    : "0 0 14px 4px rgba(34,197,94,0.7)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 0 10px rgba(255,255,255,0.05)";
+                            }}
+                          >
+                            <div className="flex items-center gap-4">
+                              {/* Icon on the left */}
+                              <item.icon
+                                className={`w-5 h-5 sm:w-6 sm:h-6 ${item.value <= 50
+                                  ? "text-red-500"
+                                  : item.value <= 75
+                                    ? "text-yellow-500"
+                                    : "text-green-500"
+                                  }`}
+                              />
+
+                              {/* Text stacked on the right */}
+                              <div className="flex flex-col text-left">
+                                <span className="text-gray-300 text-xs sm:text-sm font-medium mb-1 leading-tight">
+                                  {item.label}
+                                </span>
+                                <span
+                                  className={`font-semibold text-sm sm:text-lg ${item.value <= 50
+                                    ? "text-red-500"
+                                    : item.value <= 75
+                                      ? "text-yellow-500"
+                                      : "text-green-500"
+                                    }`}
+                                >
+                                  {Math.round(item.value)}/100
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+
+                        ))}
+                      </div>
+
+                      {/* Design Quality */}
+                      <h4 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">Design Quality</h4>
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                        {[
+                          { label: "Color Harmony", value: apiData.color_harmony || 0, icon: Palette, max: 100 },
+                          { label: "Brand Alignment", value: apiData.brand_alignment || 0, icon: Award, max: 100 },
+                          { label: "Text Readability", value: apiData.text_readability || 0, icon: FileText, max: 100 },
+                          { label: "Image Quality", value: apiData.image_quality || 0, icon: ImageIcon, max: 100 }
+                        ].map((item, i) => (
+                          <div
+                            key={i}
+                            className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                item.value <= 50
+                                  ? "0 0 14px 4px rgba(239,68,68,0.7)"
+                                  : item.value <= 75
+                                    ? "0 0 14px 4px rgba(250,204,21,0.7)"
+                                    : "0 0 14px 4px rgba(34,197,94,0.7)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 0 10px rgba(255,255,255,0.05)";
+                            }}
+                          >
+                            <div className="flex items-center gap-4">
+                              {/* Icon on the left */}
+                              <item.icon
+                                className={`w-5 h-5 sm:w-6 sm:h-6 ${item.value <= 50
+                                  ? "text-red-500"
+                                  : item.value <= 75
+                                    ? "text-yellow-500"
+                                    : "text-green-500"
+                                  }`}
+                              />
+
+                              {/* Text stacked on the right */}
+                              <div className="flex flex-col text-left">
+                                <span className="text-gray-300 text-xs sm:text-sm font-medium mb-1 leading-tight">
+                                  {item.label}
+                                </span>
+                                <span
+                                  className={`font-semibold text-sm sm:text-lg ${item.value <= 50
+                                    ? "text-red-500"
+                                    : item.value <= 75
+                                      ? "text-yellow-500"
+                                      : "text-green-500"
+                                    }`}
+                                >
+                                  {Math.round(item.value)}/100
+                                </span>
+                              </div>
+                            </div>
+
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </ProOverlay>
             </div>
 
             {/* Ad Copy Generator - Mobile Optimized */}
@@ -1625,19 +2094,35 @@ export default function ResultsPage() {
                       {/* Display filtered ad copies */}
                       <div className="space-y-3 sm:space-y-4">
                         {filteredAdCopies.map((adCopy, index) => (
-                          <div key={index} className="bg-[#121212] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                          <div
+                            key={index}
+                            className="bg-[#121212] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
                             style={{ transition: "all 0.3s" }}
                             onMouseEnter={e => {
-                              e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                              e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900"
                             }}
                             onMouseLeave={e => {
-                              e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                            }}>
+                              e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)"
+                            }}
+                          >
                             <div className="flex items-start justify-between mb-2">
-                              <span className="text-xs sm:text-sm text-gray-300">{adCopy.platform || 'N/A'} | {adCopy.tone || 'N/A'}</span>
-                              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                              <span className="text-xs sm:text-sm text-gray-300">
+                                {adCopy.platform || "N/A"} | {adCopy.tone || "N/A"}
+                              </span>
+
+                              {/* Copy button */}
+                              <button
+                                onClick={() => navigator.clipboard.writeText(adCopy.copy_text || "")}
+                                className="p-1 rounded-md hover:bg-[#171717] transition"
+                                title="Copy text"
+                              >
+                                <Copy className="w-4 h-4 text-gray-300 hover:text-primary cursor-pointer" />
+                              </button>
                             </div>
-                            <p className="text-white font-medium text-sm sm:text-base leading-relaxed">{adCopy.copy_text || 'No copy text available'}</p>
+
+                            <p className="text-white font-medium text-sm sm:text-base leading-relaxed">
+                              {adCopy.copy_text || "No copy text available"}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -1651,22 +2136,38 @@ export default function ResultsPage() {
 
                       {/* Pro overlay for additional copies */}
                       {!isProUser && safeArray(apiData?.ad_copies).length > 1 && (
-                        <ProOverlay message="🔐 Pro users see all ad copy variations.">
+                        <ProOverlay message=" Pro users see all ad copy variations.">
                           <div className="space-y-3 sm:space-y-4">
                             {safeArray(apiData?.ad_copies).slice(1).map((adCopy, index) => (
-                              <div key={index + 1} className="bg-[#121212] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                              <div
+                                key={index + 1}
+                                className="bg-[#121212] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
                                 style={{ transition: "all 0.3s" }}
                                 onMouseEnter={e => {
-                                  e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                                  e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900"
                                 }}
                                 onMouseLeave={e => {
-                                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                }}>
+                                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)"
+                                }}
+                              >
                                 <div className="flex items-start justify-between mb-2">
-                                  <span className="text-xs sm:text-sm text-gray-300">{adCopy.platform || 'N/A'} | {adCopy.tone || 'N/A'}</span>
-                                  <span className="text-orange-400">🔥</span>
+                                  <span className="text-xs sm:text-sm text-gray-300">
+                                    {adCopy.platform || "N/A"} | {adCopy.tone || "N/A"}
+                                  </span>
+
+                                  {/* Copy button for locked Pro items */}
+                                  <button
+                                    onClick={() => navigator.clipboard.writeText(adCopy.copy_text || "")}
+                                    className="p-1 rounded-md hover:bg-[#171717] transition "
+                                    title="Copy text"
+                                  >
+                                    <Copy className="w-4 h-4 text-orange-400 hover:text-primary cursor-pointer" />
+                                  </button>
                                 </div>
-                                <p className="text-white font-medium text-sm sm:text-base leading-relaxed">{adCopy.copy_text || 'No copy text available'}</p>
+
+                                <p className="text-white font-medium text-sm sm:text-base leading-relaxed">
+                                  {adCopy.copy_text || "No copy text available"}
+                                </p>
                               </div>
                             ))}
                           </div>
@@ -1717,25 +2218,82 @@ export default function ResultsPage() {
             {/* Action Buttons - Mobile Optimized */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center skip-block">
               <Button
-                onClick={() => router.push("/upload")}
+                onClick={() =>
+                  isProUser ? router.push("/upload") : router.push("/pro")
+                }
                 className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto"
               >
-                Re-analyze
+                {isProUser ? "Re-analyze" : "Upgrade"}
               </Button>
+
+              {/* Share & Download Buttons only for Pro Users */}
               {isProUser && (
-                <Button
-                  variant="outline"
-                  onClick={handleDownloadPDF}
-                  disabled={isPdfGenerating || !apiData}
-                  className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {isPdfGenerating ? "Generating..." : "Download Report"}
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleShare}
+                    className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto hidden sm:flex"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share Results
+                  </Button>
+
+
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadPDF}
+                    disabled={isPdfGenerating || !apiData}
+                    className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    {isPdfGenerating ? "Generating..." : "Download Report"}
+                  </Button>
+                </>
               )}
             </div>
+
           </div>
         </main>
+        {showIntro && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-2xl border border-2b2b2b bg-121212 p-6 shadow-xl">
+              <h3 className="text-xl font-semibold mb-2">Pre-run check</h3>
+
+              <div className="text-sm text-gray-400 mb-1">Go / No Go</div>
+              <p
+                className={cn(
+                  "text-5xl font-bold mb-4",
+                  safeArray(apiData?.go_no_go)[0] === 'Go' ? "text-green-400" : "text-red-400"
+                )}
+              >
+                {safeArray(apiData?.go_no_go)[0] === 'Go' ? 'Go' : 'No Go'}
+              </p>
+
+              <p className="text-sm text-gray-300">
+                AI-powered overview of performance, confidence, match fit, key issues, and quick-win suggestions to decide if this ad is ready to run today.
+              </p>
+
+              <div className="mt-6 flex gap-3">
+                <Button onClick={() => handleIntroChoice('go')} className="flex-1">
+                  View report
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isProUser && (
+          <motion.button
+            className="fixed bottom-4 right-4 w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg sm:hidden"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleShare}
+            aria-label="Share Results"
+          >
+            <Share2 className="h-6 w-6 text-white" />
+          </motion.button>
+
+        )}
       </div>
     </TooltipProvider>
   )

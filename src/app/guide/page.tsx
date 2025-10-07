@@ -2,29 +2,36 @@
 
 import { useState, useEffect } from "react"
 import {
-  Eye, Target, Palette, Type, Facebook, Instagram, MessageCircle, FileImage, Play,
-  CheckCircle, XCircle, User, BookOpen, Clock, TrendingUp, Lightbulb, AlertCircle,
-  Zap, Award, Search, Calculator, Shield, Youtube, Linkedin, Printer, Filter,
+  Target, Facebook, Instagram, MessageCircle, Play,
+  CheckCircle, XCircle, BookOpen, Lightbulb, AlertCircle,
+  Search, Calculator, Shield, Youtube, Linkedin, Printer
 } from "lucide-react"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import GuideLoadingSkeleton from "@/components/Skeleton-loading/guideloading"
 import { SiGoogle } from "react-icons/si"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import NoDataFound from "@/components/no-data-found"
 
 // Color system
 const colors = {
   // Backgrounds
   bg: {
-    main: "bg-[#0a0a0a]",
+    main: "bg-[#171717]",
     card: "bg-black",
-    section: "bg-[#121212]",
-    input: "bg-[#2b2b2b]",
+    section: "bg-black",
+    input: "bg-[#171717]",
   },
   // Primary orange gradient
   primary: "bg-gradient-to-b from-[#ff6a00] via-[#db4900] to-[#a63a00]",
   // Borders
   border: {
-    default: "border-[#2b2b2b]",
     focus: "border-orange-500",
   },
   // Text colors  
@@ -134,7 +141,7 @@ export default function GuidePage() {
     const TypeIcon = typeIcons[guide.type] || BookOpen
     const PlatformIcon = platformIcons[guide.platform] || Target
 
-    const baseCardClasses = `${colors.bg.card} rounded-lg p-4 sm:p-6 shadow-lg shadow-white/5 ${colors.border.default} border hover:scale-[1.02] transition-all duration-300 cursor-pointer`
+    const baseCardClasses = `${colors.bg.card} rounded-lg p-4 sm:p-6 shadow-lg shadow-white/5  hover:scale-[1.02] transition-all duration-300 cursor-pointer`
 
     // Type-specific color schemes
     const typeStyles = {
@@ -204,8 +211,8 @@ export default function GuidePage() {
           </div>
         </div>
 
-        <h3 className="text-lg font-semibold mb-2 text-white">{guide.title}</h3>
-        <p className="text-sm text-gray-300 mb-3 line-clamp-2">{guide.summary}</p>
+        <h3 className="text-lg font-semibold mb-2 text-gray-300">{guide.title}</h3>
+        <p className="text-sm text-white/80 mb-3 line-clamp-2">{guide.summary}</p>
 
         {guide.body_md && (
           <div className={`${style.contentBg} rounded-lg p-3 mb-3`}>
@@ -248,82 +255,79 @@ export default function GuidePage() {
       {loading ? <GuideLoadingSkeleton /> : (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 pb-20">
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white">Ad Creation Guide</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white/80">Ad Creation Guide</h1>
             <p className="text-gray-300 text-sm sm:text-base">Learn best practices and understand how our AI scoring works</p>
           </div>
 
           {/* Search and Filters */}
-          <div className={`mb-8 ${colors.bg.section} rounded-xl p-6 ${colors.border.default} border shadow-xl`}>
-            {/* Search */}
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search guides, topics, or content..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-12 pr-4 py-3 ${colors.bg.input} ${colors.border.default} border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20`}
-                />
-              </div>
-            </div>
-
-            {/* Filters */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-              {/* Type Filter */}
-              <div>
-                <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
-                  <Filter className="w-4 h-4" />
-                  Content Type
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {types.map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setActiveType(type)}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${activeType === type
-                        ? `${colors.primary} text-white shadow-lg`
-                        : `${colors.bg.input} text-gray-300 hover:bg-[#121212] ${colors.border.default} border`
-                        }`}
-                    >
-                      {type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
-                    </button>
-                  ))}
+          <div className={`mb-8 ${colors.bg.section} rounded-xl p-6 shadow-xl`}>
+            <div className="flex flex-col lg:flex-row gap-4 items-end">
+              {/* Search - 60% */}
+              <div className="w-full lg:w-3/5">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search guides, topics, or content..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={`w-full pl-12 pr-4 py-2 ${colors.bg.input} rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20`}
+                  />
                 </div>
               </div>
 
-              {/* Platform Filter */}
-              <div>
-                <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
-                  <Target className="w-4 h-4" />
-                  Platform
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {platforms.map((platform) => {
-                    const PlatformIcon = platformIcons[platform] || Target
-                    return (
-                      <button
-                        key={platform}
-                        onClick={() => setActiveTab(platform)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${activeTab === platform
-                          ? `${colors.primary} text-white shadow-lg`
-                          : `${colors.bg.input} text-gray-300 hover:bg-[#121212] ${colors.border.default} border`
-                          }`}
-                      >
-                        {platform !== 'all' && <PlatformIcon className="w-3 h-3" />}
-                        {platform === 'all' ? 'All' : platform.charAt(0).toUpperCase() + platform.slice(1)}
-                      </button>
-                    )
-                  })}
+              {/* Filters Container - 40% */}
+              <div className="w-full lg:w-2/5 flex gap-4">
+                {/* Type Filter */}
+                <div className="flex-1">
+                  <label className="text-sm font-semibold mb-2 block text-white">
+                    Content Type
+                  </label>
+                  <Select value={activeType} onValueChange={(value) => setActiveType(value)}>
+                    <SelectTrigger className={`w-full ${colors.bg.input} text-white py-5`}>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {types.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type === "all" ? "All Types" : type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Platform Filter */}
+                <div className="flex-1">
+                  <label className="text-sm font-semibold mb-2 block text-white">
+                    Platform
+                  </label>
+                  <Select value={activeTab} onValueChange={(value) => setActiveTab(value)}>
+                    <SelectTrigger className={`w-full ${colors.bg.input} text-white  py-5`}>
+                      <SelectValue placeholder="Select platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {platforms.map((platform) => {
+                        const PlatformIcon = platformIcons[platform] || Target
+                        return (
+                          <SelectItem key={platform} value={platform} className="flex items-center gap-2">
+                            {platform !== "all" && <PlatformIcon className="w-4 h-4 text-gray-400" />}
+                            {platform === "all" ? "All Platforms" : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
           </div>
 
+
           {/* Guides Grid */}
           <section className="mb-12 sm:mb-16">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-white">
+              <h2 className="text-xl sm:text-2xl font-bold text-primary">
                 {filteredGuides.length} Guide{filteredGuides.length !== 1 ? 's' : ''}
                 {activeType !== 'all' && ` - ${activeType.charAt(0).toUpperCase() + activeType.slice(1)}`}
                 {activeTab !== 'all' && ` for ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`}
@@ -335,37 +339,42 @@ export default function GuidePage() {
                 {filteredGuides.map(renderGuideCard)}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2 text-white">No guides found</h3>
-                <p className="text-gray-400">Try adjusting your filters or search term</p>
-              </div>
+                <NoDataFound 
+                title={"No guides found"}
+                description={"Try adjusting your filters or search term"}/>
             )}
           </section>
 
           {/* AI Scoring Section */}
           <section className="mb-12 sm:mb-16">
-            <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-white">How Our AI Scoring Works</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-primary">How Our AI Scoring Works</h2>
             <div className={`${colors.bg.card} rounded-lg p-4 sm:p-6 mb-6`}>
               <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-base">
                 Our AI analyzes your ads across multiple dimensions to provide a comprehensive score out of 100. Here's how
                 each category contributes to your final score:
               </p>
-              <div className="space-y-3 sm:space-y-4">
+
+              {/* 3x3 Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {scoreBreakdown.map((item, index) => (
-                  <div key={index} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 ${colors.bg.section} rounded-lg shadow-lg shadow-white/5 ${colors.border.default} border hover:scale-[1.01] transition-all duration-300 gap-3 sm:gap-4`}>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold mb-1 text-sm sm:text-base text-white">{item.category}</h3>
-                      <p className="text-xs sm:text-sm text-gray-300 break-words">{item.description}</p>
+                  <div
+                    key={index}
+                    className="p-3 sm:p-4 bg-[#171717] rounded-lg shadow-lg shadow-white/5 hover:scale-[1.01] transition-all duration-300 flex flex-col gap-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold mb-1 text-sm sm:text-base text-gray-300">{item.category}</h3>
+                      <span className="px-3 py-1 bg-primary rounded-full text-xs sm:text-sm self-start text-gray-300">
+                        {item.weight}%
+                      </span>
                     </div>
-                    <span className="px-3 py-1 border border-gray-600 rounded-full text-xs sm:text-sm flex-shrink-0 self-start sm:self-center text-gray-300">
-                      {item.weight}%
-                    </span>
+                    <p className="text-xs sm:text-sm text-white/80 break-words">{item.description}</p>
+
                   </div>
                 ))}
               </div>
             </div>
           </section>
+
         </div>
       )}
     </UserLayout>

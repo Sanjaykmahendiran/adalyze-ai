@@ -4,11 +4,10 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { X, Edit2, Settings } from "lucide-react"
+import { X, Image, LayoutList, PlaySquare, Lock } from "lucide-react"
 import { AnalyzingOverlay } from "../../components/analyzing-overlay"
 import { SingleFileUploader } from "./_components/single-file-uploader"
 import { CarouselFileUploader } from "./_components/carousel-file-uploader"
@@ -17,7 +16,6 @@ import cookies from 'js-cookie'
 import toast from "react-hot-toast"
 import UserLayout from "@/components/layouts/user-layout"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
-import UploadTarget from "@/assets/upload-target.png"
 import { event } from "@/lib/gtm"
 
 interface Country {
@@ -67,11 +65,12 @@ export default function UploadPage() {
 
     // Common form states
     const [activeTab, setActiveTab] = useState("single")
-    const [adName, setAdName] = useState("")
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [sidePanelOpen, setSidePanelOpen] = useState(false)
     const [targetInfo, setTargetInfo] = useState<TargetInfo | null>(null)
-    const [showTargetPopup, setShowTargetPopup] = useState(false)
+    const [singleAdName, setSingleAdName] = useState("")
+    const [carouselAdName, setCarouselAdName] = useState("")
+    const [videoAdName, setVideoAdName] = useState("")
 
     // Form states for side panel
     const [platform, setPlatform] = useState("")
@@ -97,6 +96,8 @@ export default function UploadPage() {
     const [videoFile, setVideoFile] = useState<File | null>(null)
     const [videoScreenshots, setVideoScreenshots] = useState<string[]>([])
     const [videoFilePath, setVideoFilePath] = useState<File | null>(null)
+    const [videoTranscript, setVideoTranscript] = useState<string>("")
+    const [videoDuration, setVideoDuration] = useState<number>(0)
     const [isVideoUploaded, setIsVideoUploaded] = useState(false)
     const [isVideoUploading, setIsVideoUploading] = useState(false)
     const [videoUploadProgress, setVideoUploadProgress] = useState(0)
@@ -108,8 +109,41 @@ export default function UploadPage() {
     const [loadingStates, setLoadingStates] = useState(false)
     const [countrySearch, setCountrySearch] = useState("")
     const [stateSearch, setStateSearch] = useState("")
+    const [minAge, setMinAge] = useState("")
+    const [maxAge, setMaxAge] = useState("")
+
 
     const userId = cookies.get("userId") || ""
+    const isFreeTrailUser = userDetails?.fretra_status === 1
+
+    const FreeTrailOverlay = ({
+        children,
+        message,
+        showOverlay
+    }: {
+        children: React.ReactNode
+        message: string
+        showOverlay: boolean
+    }) => (
+        <div className="relative">
+            <div className={showOverlay ? "blur-lg pointer-events-none select-none" : ""}>{children}</div>
+            {showOverlay && (
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-2xl z-10">
+                    <div className="text-center p-4">
+                        <Lock className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-[#db4900]" />
+                        <p className="text-white font-semibold mb-4 text-sm sm:text-base px-2">{message}</p>
+                        <Button
+                            onClick={() => router.push("/pro")}
+                            className="bg-[#db4900] hover:bg-[#c44000] text-white rounded-lg text-sm sm:text-base px-4 py-2"
+                        >
+                            Upgrade to Pro
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+
 
     useEffect(() => {
         if (sidePanelOpen) {
@@ -129,11 +163,6 @@ export default function UploadPage() {
         if (activeTab === "carousel") return carouselFiles.length >= 3 && carouselImageUrls.length >= 3
         if (activeTab === "video") return videoFile && isVideoUploaded && videoScreenshots.length > 0 && videoFilePath
         return false
-    }
-
-    // Check if target info is properly filled
-    const hasTargetInfo = () => {
-        return targetInfo && targetInfo.platform && targetInfo.industry
     }
 
     // Fetch countries on component mount
@@ -202,9 +231,6 @@ export default function UploadPage() {
     const handleSingleFileChange = async (uploadedFile: File | null) => {
         setSingleFile(uploadedFile)
         if (uploadedFile) {
-            if (!adName) {
-                setAdName(uploadedFile.name.split(".")[0])
-            }
             try {
                 await uploadSingleFile(uploadedFile)
             } catch (error) {
@@ -224,7 +250,6 @@ export default function UploadPage() {
             formData.append('file', fileToUpload)
             formData.append('user_id', userId)
 
-            // Simulate progress for demo (replace with actual XMLHttpRequest for real progress)
             const progressInterval = setInterval(() => {
                 setSingleUploadProgress(prev => {
                     if (prev >= 90) {
@@ -248,10 +273,9 @@ export default function UploadPage() {
             }
 
             const result = await response.json()
-
             if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
+                toast.success('File uploaded successfully!')
                 setSingleImageUrl(result.fileUrl)
-                // Don't show toast here, let the component handle it
             } else {
                 throw new Error(result.message || 'Upload failed')
             }
@@ -259,8 +283,7 @@ export default function UploadPage() {
             console.error('File upload error:', err)
             setSingleFile(null)
             setSingleImageUrl(null)
-            // Don't show toast here, let the component handle it
-            throw err // Re-throw to let component handle
+            throw err
         } finally {
             setIsSingleUploading(false)
             setSingleUploadProgress(0)
@@ -271,9 +294,6 @@ export default function UploadPage() {
     const handleCarouselFilesChange = async (uploadedFiles: File[]) => {
         setCarouselFiles(uploadedFiles)
         if (uploadedFiles.length > 0) {
-            if (!adName && uploadedFiles[0]) {
-                setAdName(uploadedFiles[0].name.split(".")[0])
-            }
             try {
                 await uploadCarouselFiles(uploadedFiles)
             } catch (error) {
@@ -315,6 +335,7 @@ export default function UploadPage() {
 
                 const result = await response.json()
                 if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
+                    toast.success('File uploaded successfully!')
                     return result.fileUrl
                 } else {
                     throw new Error(result.message || 'Upload failed')
@@ -325,13 +346,11 @@ export default function UploadPage() {
             clearInterval(progressInterval)
             setCarouselUploadProgress(100)
             setCarouselImageUrls(uploadedUrls)
-            // Don't show toast here, let the component handle it
         } catch (err) {
             console.error('Carousel upload error:', err)
             setCarouselFiles([])
             setCarouselImageUrls([])
-            // Don't show toast here, let the component handle it
-            throw err // Re-throw to let component handle
+            throw err
         } finally {
             setIsCarouselUploading(false)
             setCarouselUploadProgress(0)
@@ -339,22 +358,28 @@ export default function UploadPage() {
     }
 
     // Video file handlers
+    // Add this in handleVideoFileChange
     const handleVideoFileChange = async (uploadedFile: File | null) => {
+        console.log('Video file changed:', uploadedFile?.name)
         setVideoFile(uploadedFile)
         if (uploadedFile) {
-            if (!adName) {
-                setAdName(uploadedFile.name.split(".")[0])
-            }
             try {
                 await uploadVideoFile(uploadedFile)
+                console.log('Upload completed. State:', {
+                    isVideoUploaded,
+                    screenshots: videoScreenshots.length,
+                    filePath: videoFilePath
+                })
             } catch (error) {
-                // Error already handled in uploadVideoFile and component
+                console.error('Upload failed:', error)
             }
         } else {
             setVideoScreenshots([])
             setIsVideoUploaded(false)
+            setVideoFilePath(null)
         }
     }
+
 
     const uploadVideoFile = async (fileToUpload: File) => {
         setIsVideoUploading(true)
@@ -389,11 +414,13 @@ export default function UploadPage() {
 
             const result = await response.json()
 
-            if (result.status === "success" && result.screenshots && result.screenshots.length > 0) {
-                setVideoScreenshots(result.screenshots)
-                setVideoFilePath(result.video)
+            if (result.thumbnails && result.thumbnails.length > 0) {
+                toast.success('File uploaded successfully!')
+                setVideoScreenshots(result.thumbnails)
+                setVideoFilePath(result.video_url)
+                setVideoTranscript(result.transcript)
+                setVideoDuration(result.meta.duration)
                 setIsVideoUploaded(true)
-                // Don't show toast here, let the component handle it
             } else {
                 throw new Error(result.message || 'Upload failed')
             }
@@ -403,35 +430,21 @@ export default function UploadPage() {
             setVideoScreenshots([])
             setVideoFilePath(null)
             setIsVideoUploaded(false)
-            // Don't show toast here, let the component handle it
-            throw err // Re-throw to let component handle
+            throw err
         } finally {
             setIsVideoUploading(false)
             setVideoUploadProgress(0)
         }
     }
 
-    const handleSetTarget = () => {
-        setSidePanelOpen(true)
-        // Pre-fill form with existing target info if available
-        if (targetInfo) {
-            setPlatform(targetInfo.platform)
-            setIndustry(targetInfo.industry)
-            setAge(targetInfo.age)
-            setGender(targetInfo.gender)
-            setCountry(targetInfo.country)
-            setState(targetInfo.state)
-        }
-    }
-
-    const handleSaveTarget = () => {
+    const handleSaveTarget = async () => {
         const selectedCountry = countries.find(c => c.id === country)
         const selectedState = states.find(s => s.id === state)
 
         setTargetInfo({
             platform,
             industry,
-            age,
+            age: `${minAge}-${maxAge}`,
             gender,
             country,
             state,
@@ -439,27 +452,35 @@ export default function UploadPage() {
             stateName: selectedState?.name || ""
         })
         setSidePanelOpen(false)
+
+        // Proceed with analysis after setting target
+        await handleAnalyze()
     }
 
-    const handleAnalyze = async (skipTargetCheck = false) => {
-        // First check if files are uploaded
+    const handleAnalyze = async () => {
+        // Get current ad name based on active tab
+        const currentAdName = activeTab === "single" ? singleAdName :
+            activeTab === "carousel" ? carouselAdName :
+                videoAdName;
+
+        // Validate ad name first
+        if (!currentAdName.trim()) {
+            toast.error('Please enter an ad name to continue');
+            return;
+        }
+
+        // Check if files are uploaded
         if (!hasUploadedFiles()) {
-            toast.error('Please upload files first')
-            return
+            toast.error('Please upload files first');
+            return;
         }
 
-        // Then check if target info is set (unless we're skipping this check)
-        if (!skipTargetCheck && !hasTargetInfo()) {
-            setShowTargetPopup(true)
-            return
-        }
-
-        setIsAnalyzing(true)
+        setIsAnalyzing(true);
 
         try {
             let analyzeData: any = {
                 user_id: userId,
-                ads_name: adName || "Untitled Ad",
+                ads_name: currentAdName,
                 industry: targetInfo?.industry || "",
                 platform: targetInfo?.platform || "",
                 age: targetInfo?.age || "",
@@ -474,6 +495,8 @@ export default function UploadPage() {
             if (activeTab === "carousel") analyzeData.images = carouselImageUrls
             if (activeTab === "video") analyzeData.screenshots = videoScreenshots
             if (activeTab === "video") analyzeData.video = videoFilePath
+            if (activeTab === "video") analyzeData.duration = videoDuration
+            if (activeTab === "video") analyzeData.transcript = videoTranscript
 
             const response = await fetch('https://adalyzeai.xyz/App/analyze.php', {
                 method: 'POST',
@@ -487,11 +510,9 @@ export default function UploadPage() {
             if (result.success) {
                 localStorage.setItem('analysisResults', JSON.stringify(result))
                 event("analyze");
-
-                toast.success("Analysis completed successfully!")
                 router.push(`/results?ad_id=${result.data.ad_upload_id}`)
             } else {
-                throw new Error(result.message || 'Analysis failed')
+                throw new Error(result.error || 'Analysis failed')
             }
         } catch (err) {
             console.error('Analysis error:', err)
@@ -502,497 +523,381 @@ export default function UploadPage() {
     }
 
 
-    // Information Card Component
-    const InformationCard = () => (
-        <div className="bg-[#121212] border-none rounded-2xl sm:rounded-3xl shadow-2xl h-full">
-            <div className="p-5 flex flex-col h-full">
+    const handleContinueWithTarget = () => {
+        // Get current ad name based on active tab
+        const currentAdName = activeTab === "single" ? singleAdName :
+            activeTab === "carousel" ? carouselAdName :
+                videoAdName;
+
+        // Validate ad name first
+        if (!currentAdName.trim()) {
+            toast.error('Please enter an ad name to continue');
+            return;
+        }
+
+        // Check if files are uploaded
+        if (!hasUploadedFiles()) {
+            toast.error('Please upload files first');
+            return;
+        }
+
+        setSidePanelOpen(true);
+    }
 
 
-                {/* Content based on state */}
-                {!hasUploadedFiles() ? (
-
-                    <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
-                        <div className="w-34 h-34  flex items-center justify-center mb-3 overflow-hidden ">
-                            <img
-                                src={UploadTarget.src}
-                                alt="Upload Target"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-
-                        <p className="text-gray-300 text-lg mb-1">Upload your ad creative first</p>
-                        <p className="text-gray-400 text-sm">Then set your target audience</p>
-                    </div>
-                ) : !targetInfo ? (
-                    <div className="flex-1">
-                        {/* Title */}
-                        <div className="flex items-center gap-2 mb-3">
-                            <Settings className="w-5 h-5 text-[#db4900]" />
-                            <h3 className="text-base font-semibold text-white">Ad Information</h3>
-                        </div>
-                        {/* Show ad name even without target info */}
-                        {adName && (
-                            <div className="mb-4">
-                                <div className="bg-[#2b2b2b] p-2 rounded-xl">
-                                    <p className="text-xs text-primary">Ad Name</p>
-                                    <p className="text-white text-sm font-medium truncate overflow-hidden break-words">{adName}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Call to action for setting target */}
-                        <div className="flex flex-col items-center justify-center text-center py-4">
-
-                            <div className="w-24 h-24 rounded-full flex items-center justify-center mb-3 overflow-hidden ">
-                                <img
-                                    src={UploadTarget.src}
-                                    alt="Upload Target"
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                            <p className="text-white text-sm mb-1">Ready to set target!</p>
-                            <p className="text-gray-400 text-xs">Configure your audience settings</p>
-
-                        </div>
-                        <div className="flex flex-col items-center justify-center text-center py-4">
-                            <Button
-                                variant="outline"
-                                onClick={handleSetTarget}
-                                className=" border-[#db4900] text-[#db4900] hover:bg-[#db4900] hover:text-white"
-                            >
-                                Set Target
-                            </Button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex-1 space-y-4">
-                        {/* Ad Details */}
-                        {(adName || targetInfo?.platform || targetInfo?.industry) && (
-                            <div>
-                                <div className="mb-4">
-
-                                    {/* Title */}
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Settings className="w-5 h-5 text-[#db4900]" />
-                                        <h3 className="text-base font-semibold text-white">Ad Details</h3>
-                                    </div>
-                                    {adName && (
-                                        <div className="bg-[#2b2b2b] p-2 rounded-xl">
-                                            <p className="text-xs text-primary">Ad Name</p>
-                                            <p className="text-white text-sm font-medium truncate overflow-hidden break-words">
-                                                {adName}
-                                            </p>
-                                        </div>
-
-                                    )}
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-
-                                    {targetInfo?.platform && (
-                                        <div className="bg-[#2b2b2b] p-2 rounded-xl">
-                                            <p className="text-xs text-primary">Platform</p>
-                                            <p className="text-white text-sm font-medium capitalize">
-                                                {targetInfo.platform}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {targetInfo?.industry && (
-                                        <div className="bg-[#2b2b2b] p-2 rounded-xl">
-                                            <p className="text-xs text-primary">Industry</p>
-                                            <p className="text-white text-sm font-medium capitalize">
-                                                {targetInfo.industry}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Demographics */}
-                        {(targetInfo?.age || targetInfo?.gender) && (
-                            <div>
-                                <p className="text-sm font-semibold text-gray-200 mb-1">Demographics</p>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {targetInfo?.age && (
-                                        <div className="bg-[#2b2b2b] p-2 rounded-xl">
-                                            <p className="text-xs text-primary">Age</p>
-                                            <p className="text-white text-sm font-medium">{targetInfo.age}</p>
-                                        </div>
-                                    )}
-                                    {targetInfo?.gender && (
-                                        <div className="bg-[#2b2b2b] p-2 rounded-xl">
-                                            <p className="text-xs text-primary">Gender</p>
-                                            <p className="text-white text-sm font-medium capitalize">
-                                                {targetInfo.gender}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Location */}
-                        {(targetInfo?.countryName || targetInfo?.stateName) && (
-                            <div>
-                                <p className="text-sm font-semibold text-gray-200 mb-1">Location</p>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {targetInfo?.countryName && (
-                                        <div className="bg-[#2b2b2b] p-2 rounded-xl">
-                                            <p className="text-xs text-primary">Country</p>
-                                            <p className="text-white text-sm font-medium">{targetInfo.countryName}</p>
-                                        </div>
-                                    )}
-                                    {targetInfo?.stateName && (
-                                        <div className="bg-[#2b2b2b] p-2 rounded-xl">
-                                            <p className="text-xs text-primary">State</p>
-                                            <p className="text-white text-sm font-medium">{targetInfo.stateName}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Bottom Buttons - Only show Set Target button, remove Analyze button */}
-                <div className="mt-4">
-                    {targetInfo ? (
-                        <Button
-                            onClick={handleSetTarget}
-                            variant="outline"
-                            className="w-full"
-                        >
-                            <Edit2 className="w-4 h-4 mr-1" />
-                            Edit Target
-                        </Button>
-                    ) : (
-                        <></>
-                    )}
-                </div>
-
-            </div>
-        </div>
-    )
 
     return (
         <UserLayout userDetails={userDetails}>
             <div className="min-h-screen text-white relative">
                 {isAnalyzing && <AnalyzingOverlay />}
 
-                {/* Side Panel Overlay */}
+                {/* Modal Overlay */}
                 {sidePanelOpen && (
-                    <div className="fixed inset-0 bg-black/40 bg-opacity-50 z-50" onClick={() => setSidePanelOpen(false)} />
-                )}
-
-                {/* Target Info Required Popup */}
-                {showTargetPopup && (
-                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-                        <div className="bg-[#1a1a1a] border border-[#2b2b2b] rounded-2xl shadow-2xl max-w-md w-full mx-4 animate-in fade-in-0 zoom-in-95 duration-200">
+                    <div
+                        onClick={() => setSidePanelOpen(false)}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    >
+                        {/* Center Modal */}
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-[#171717] rounded-xl shadow-xl shadow-white/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                        >
                             <div className="p-6">
-                                {/* Icon and Title */}
-                                <div className="flex flex-col items-center text-center mb-6">
-                                    <div className="w-16 h-16 bg-[#db4900]/20 rounded-full flex items-center justify-center mb-4">
-                                        <Settings className="w-8 h-8 text-[#db4900]" />
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-white/80">Set Target</h2>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSidePanelOpen(false)}
+                                        className="text-gray-400 hover:text-white"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {/* Ad Name (full width) */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="modal-ad-name" className="text-white/70 font-semibold">Ad Name *</Label>
+                                        <Input
+                                            id="modal-ad-name"
+                                            placeholder="Enter ad name"
+                                            value={activeTab === "single" ? singleAdName :
+                                                activeTab === "carousel" ? carouselAdName :
+                                                    videoAdName}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (activeTab === "single") setSingleAdName(value);
+                                                else if (activeTab === "carousel") setCarouselAdName(value);
+                                                else setVideoAdName(value);
+                                            }}
+                                            className="bg-black border-[#3d3d3d] text-white"
+                                            autoComplete="off"
+                                            spellCheck="false"
+                                        />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Want Better Insights?</h3>
-                                    <p className="text-gray-300 text-sm leading-relaxed">
-                                        Adding your target audience helps us personalize the analysis.
-                                        You can also skip this step and continue right away.
-                                    </p>
-                                </div>
 
-                                {/* Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setShowTargetPopup(false);
-                                            handleAnalyze(true); // Pass true to skip target check
-                                        }}
-                                        className="flex-1 border-[#2b2b2b] text-gray-300 hover:bg-[#2b2b2b] hover:text-white"
-                                    >
-                                        Continue Without
-                                    </Button>
-
-                                    <Button
-                                        onClick={() => {
-                                            setShowTargetPopup(false);
-                                            handleSetTarget();
-                                        }}
-                                        className="flex-1 bg-[#db4900] hover:bg-[#c44000] text-white"
-                                    >
-                                        Set Target
-                                    </Button>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-
-                {/* Side Panel */}
-                <div
-                    className={`fixed right-0 top-16 h-full w-100 bg-[#0a0a0a] rounded-l-xl 
-              shadow-xl shadow-white/40 transform transition-transform duration-300 ease-in-out z-50 
-              ${sidePanelOpen ? 'translate-x-0' : 'translate-x-full'} overflow-y-auto`}
-                >
-
-                    <div className="p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-bold text-white">Set Target</h2>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSidePanelOpen(false)}
-                                className="text-gray-400 hover:text-white"
-                            >
-                                <X className="w-5 h-5" />
-                            </Button>
-                        </div>
-
-                        <div className="space-y-4 ">
-                            {/* Ad Name */}
-                            <div className="space-y-2">
-                                <Label className="text-gray-300 font-semibold">Ad Name *</Label>
-                                <Input
-                                    placeholder="Enter ad name"
-                                    value={adName}
-                                    onChange={(e) => setAdName(e.target.value)}
-                                    className="bg-[#121212] border-[#2b2b2b] text-white"
-                                />
-                            </div>
-
-                            {/* Platform */}
-                            <div className="space-y-2">
-                                <Label className="text-gray-300 font-semibold">Platform Target</Label>
-                                <Select value={platform} onValueChange={setPlatform}>
-                                    <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-white">
-                                        <SelectValue placeholder="Select platform" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
-                                        <SelectItem value="instagram">Instagram</SelectItem>
-                                        <SelectItem value="facebook">Facebook</SelectItem>
-                                        <SelectItem value="twitter">Twitter</SelectItem>
-                                        <SelectItem value="linkedin">LinkedIn</SelectItem>
-                                        <SelectItem value="tiktok">TikTok</SelectItem>
-                                        <SelectItem value="pinterest">Pinterest</SelectItem>
-                                        <SelectItem value="youtube">YouTube</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Industry */}
-                            <div className="space-y-2">
-                                <Label className="text-gray-300 font-semibold">Industry Category</Label>
-                                <Select value={industry} onValueChange={setIndustry}>
-                                    <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-white ">
-                                        <SelectValue placeholder="Select industry" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
-                                        <SelectItem value="retail">Retail & E-commerce</SelectItem>
-                                        <SelectItem value="technology">Technology</SelectItem>
-                                        <SelectItem value="finance">Finance & Banking</SelectItem>
-                                        <SelectItem value="healthcare">Healthcare</SelectItem>
-                                        <SelectItem value="education">Education</SelectItem>
-                                        <SelectItem value="travel">Travel & Hospitality</SelectItem>
-                                        <SelectItem value="food">Food & Beverage</SelectItem>
-                                        <SelectItem value="entertainment">Entertainment & Media</SelectItem>
-                                        <SelectItem value="automotive">Automotive</SelectItem>
-                                        <SelectItem value="real-estate">Real Estate</SelectItem>
-                                        <SelectItem value="service">Service & Cleaning</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Age Group */}
-                            <div className="space-y-2">
-                                <Label className="text-gray-300 font-semibold">Age Group</Label>
-                                <Select value={age} onValueChange={setAge}>
-                                    <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-white">
-                                        <SelectValue placeholder="Select age group" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
-                                        <SelectItem value="13-17">13-17 years</SelectItem>
-                                        <SelectItem value="18-24">18-24 years</SelectItem>
-                                        <SelectItem value="25-34">25-34 years</SelectItem>
-                                        <SelectItem value="35-44">35-44 years</SelectItem>
-                                        <SelectItem value="45-54">45-54 years</SelectItem>
-                                        <SelectItem value="55-64">55-64 years</SelectItem>
-                                        <SelectItem value="65+">65+ years</SelectItem>
-                                        <SelectItem value="all">All Ages</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Gender */}
-                            <div className="space-y-2">
-                                <Label className="text-gray-300 font-semibold">Gender</Label>
-                                <Select value={gender} onValueChange={setGender}>
-                                    <SelectTrigger className=" w-full bg-[#121212] border-[#2b2b2b] text-white">
-                                        <SelectValue placeholder="Select gender" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
-                                        <SelectItem value="male">Male</SelectItem>
-                                        <SelectItem value="female">Female</SelectItem>
-                                        <SelectItem value="non-binary">Non-binary</SelectItem>
-                                        <SelectItem value="all">All Genders</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Country */}
-                            <div className="space-y-2">
-                                <Label className="text-gray-300 font-semibold">Country</Label>
-                                <Select value={country} onValueChange={setCountry} disabled={loadingCountries}>
-                                    <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-white">
-                                        <SelectValue placeholder={loadingCountries ? "Loading..." : "Select country"} />
-                                    </SelectTrigger>
-                                    <SelectContent className=" w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                        <div className="p-2">
-                                            <Input
-                                                placeholder="Search countries..."
-                                                value={countrySearch}
-                                                onChange={(e) => setCountrySearch(e.target.value)}
-                                                className="bg-[#121212] border-[#2b2b2b] text-white placeholder-gray-500 h-8"
-                                            />
+                                    {/* Two-column layout starts here */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {/* Platform */}
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Platform Target</Label>
+                                            <Select value={platform} onValueChange={setPlatform}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder="Select platform" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-black border-[#3d3d3d]">
+                                                    <SelectItem value="instagram">Instagram</SelectItem>
+                                                    <SelectItem value="facebook">Facebook</SelectItem>
+                                                    <SelectItem value="twitter">Twitter</SelectItem>
+                                                    <SelectItem value="linkedin">LinkedIn</SelectItem>
+                                                    <SelectItem value="tiktok">TikTok</SelectItem>
+                                                    <SelectItem value="pinterest">Pinterest</SelectItem>
+                                                    <SelectItem value="youtube">YouTube</SelectItem>
+                                                    <SelectItem value="other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
-                                        <div className="max-h-48 overflow-y-auto">
-                                            {filteredCountries.map((countryItem) => (
-                                                <SelectItem key={countryItem.id} value={countryItem.id}>
-                                                    {countryItem.name}
-                                                </SelectItem>
-                                            ))}
-                                        </div>
-                                    </SelectContent>
-                                </Select>
-                            </div>
 
-                            {/* State */}
-                            <div className="space-y-2">
-                                <Label className="text-gray-300 font-semibold">State/Province</Label>
-                                <Select value={state} onValueChange={setState} disabled={!country || loadingStates}>
-                                    <SelectTrigger className="w-full bg-[#121212] border-[#2b2b2b] text-white">
-                                        <SelectValue placeholder={
-                                            !country ? "Select country first" :
-                                                loadingStates ? "Loading..." : "Select state"
-                                        } />
-                                    </SelectTrigger>
-                                    <SelectContent className=" w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                        {states.length > 0 && (
-                                            <div className="p-2">
+                                        {/* Industry */}
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Industry Category</Label>
+                                            <Select value={industry} onValueChange={setIndustry}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder="Select industry" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
+                                                    <SelectItem value="retail">Retail & E-commerce</SelectItem>
+                                                    <SelectItem value="technology">Technology</SelectItem>
+                                                    <SelectItem value="finance">Finance & Banking</SelectItem>
+                                                    <SelectItem value="healthcare">Healthcare</SelectItem>
+                                                    <SelectItem value="education">Education</SelectItem>
+                                                    <SelectItem value="travel">Travel & Hospitality</SelectItem>
+                                                    <SelectItem value="food">Food & Beverage</SelectItem>
+                                                    <SelectItem value="entertainment">Entertainment & Media</SelectItem>
+                                                    <SelectItem value="automotive">Automotive</SelectItem>
+                                                    <SelectItem value="real-estate">Real Estate</SelectItem>
+                                                    <SelectItem value="service">Service & Cleaning</SelectItem>
+                                                    <SelectItem value="other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Age Group */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-white/70 font-semibold" htmlFor="min-age">
+                                                    Min Age
+                                                </Label>
                                                 <Input
-                                                    placeholder="Search states..."
-                                                    value={stateSearch}
-                                                    onChange={(e) => setStateSearch(e.target.value)}
-                                                    className="bg-[#121212] border-[#2b2b2b] text-white placeholder-gray-500 h-8"
+                                                    id="min-age"
+                                                    type="number"
+                                                    placeholder="Min Age"
+                                                    value={minAge}
+                                                    onChange={(e) => setMinAge(e.target.value)}
+                                                    className="bg-black border-[#3d3d3d] text-white"
                                                 />
                                             </div>
-                                        )}
-                                        <div className="max-h-48 overflow-y-auto">
-                                            {filteredStates.map((stateItem) => (
-                                                <SelectItem key={stateItem.id} value={stateItem.id}>
-                                                    {stateItem.name}
-                                                </SelectItem>
-                                            ))}
-                                        </div>
-                                    </SelectContent>
-                                </Select>
-                            </div>
 
-                            {/* Save Button */}
-                            <div className="pt-4">
-                                <Button
-                                    onClick={handleSaveTarget}
-                                    className="w-full bg-[#db4900] hover:bg-[#c44000] text-white"
-                                >
-                                    Save
-                                </Button>
+                                            <div className="space-y-2">
+                                                <Label className="text-white/70 font-semibold" htmlFor="max-age">
+                                                    Max Age
+                                                </Label>
+                                                <Input
+                                                    id="max-age"
+                                                    type="number"
+                                                    placeholder="Max Age"
+                                                    value={maxAge}
+                                                    onChange={(e) => setMaxAge(e.target.value)}
+                                                    className="bg-black border-[#3d3d3d] text-white"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Gender */}
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Gender</Label>
+                                            <Select value={gender} onValueChange={setGender}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder="Select gender" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
+                                                    <SelectItem value="male">Male</SelectItem>
+                                                    <SelectItem value="female">Female</SelectItem>
+                                                    <SelectItem value="non-binary">Non-binary</SelectItem>
+                                                    <SelectItem value="all">All Genders</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Country */}
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Country</Label>
+                                            <Select value={country} onValueChange={setCountry} disabled={loadingCountries}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder={loadingCountries ? "Loading..." : "Select country"} />
+                                                </SelectTrigger>
+                                                <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
+                                                    <div className="p-2" onClick={(e) => e.stopPropagation()}>
+                                                        <Input
+                                                            placeholder="Search countries..."
+                                                            value={countrySearch}
+                                                            onChange={(e) => setCountrySearch(e.target.value)}
+                                                            className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
+                                                        />
+                                                    </div>
+                                                    <div className="max-h-48 overflow-y-auto">
+                                                        {filteredCountries.map((countryItem) => (
+                                                            <SelectItem key={countryItem.id} value={countryItem.id}>
+                                                                {countryItem.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </div>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* State */}
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">State/Province</Label>
+                                            <Select value={state} onValueChange={setState} disabled={!country || loadingStates}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue
+                                                        placeholder={
+                                                            !country
+                                                                ? "Select country first"
+                                                                : loadingStates
+                                                                    ? "Loading..."
+                                                                    : "Select state"
+                                                        }
+                                                    />
+                                                </SelectTrigger>
+                                                <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
+                                                    {states.length > 0 && (
+                                                        <div className="p-2" onClick={(e) => e.stopPropagation()}>
+                                                            <Input
+                                                                placeholder="Search states..."
+                                                                value={stateSearch}
+                                                                onChange={(e) => setStateSearch(e.target.value)}
+                                                                className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <div className="max-h-48 overflow-y-auto">
+                                                        {filteredStates.map((stateItem) => (
+                                                            <SelectItem key={stateItem.id} value={stateItem.id}>
+                                                                {stateItem.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </div>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="pt-4 flex flex-col sm:flex-row gap-3">
+                                        <Button
+                                            onClick={() => setSidePanelOpen(false)}
+                                            variant="outline"
+                                            className="flex-1 border-[#2b2b2b] text-gray-300 hover:bg-[#2b2b2b] hover:text-white"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleSaveTarget}
+                                            className="flex-1 bg-[#db4900] hover:bg-[#c44000] text-white"
+                                        >
+                                            Save & Analyze
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-6 pb-20">
                     {/* Main Content */}
                     <div className="max-w-6xl mx-auto">
                         <div className="bg-[#000000] border-none rounded-2xl sm:rounded-3xl shadow-2xl">
-                            <div className="px-4 sm:px-6 lg:px-8 sm:pb-2 pt-2 sm:pt-4">
-                                <div className="text-xl font-bold text-white">Upload Your Ads</div>
-                                <div className="text-gray-300">Please select the type of ad you want to analyze.</div>
-                            </div>
-                            <div className="p-2 lg:p-4">
+                            <div className="py-2 lg:py-8 px-4 sm:px-6 lg:px-8">
                                 {/* Radio Button Selection */}
-                                <div className="w-full mb-2 sm:mb-">
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        {/* Single Image Ad */}
-                                        <label
-                                            className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-xl border-2 transition-all 
-                                                        ${activeTab === "single"
-                                                    ? "border-[#db4900] bg-[#db4900]/10"
-                                                    : "border-[#2b2b2b] hover:border-[#db4900]/50"}`}
+                                <div className="max-w-4xl mx-auto mb-2 sm:mb-4">
+                                    {/* Mobile: Dropdown */}
+                                    <div className="block sm:hidden mt-6 mb-4">
+                                        <Select value={activeTab} onValueChange={setActiveTab}>
+                                            <SelectTrigger className="w-full bg-[#171717] border-[#3d3d3d] py-6 text-gray-200 focus:border-[#db4900] focus:ring-0">
+                                                <SelectValue placeholder="Select Ad Type" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#171717] border-[#3d3d3d] text-gray-200">
+                                                <SelectItem value="single">
+                                                    <div className="flex items-center gap-2 text-base">
+                                                        <Image className="w-4 h-4 text-[#db4900]" />
+                                                        <span>Single Image (1 credit)</span>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="carousel">
+                                                    <div className="flex items-center gap-2 text-base">
+                                                        <LayoutList className="w-4 h-4 text-[#db4900]" />
+                                                        <span>Carousel (3 credits)</span>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="video">
+                                                    <div className="flex items-center gap-2 text-base">
+                                                        <PlaySquare className="w-4 h-4 text-[#db4900]" />
+                                                        <span>Video Ad (3 credits)</span>
+                                                    </div>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Desktop: Button Grid */}
+                                    <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:flex lg:items-center lg:justify-center lg:gap-6">
+                                        {/* Single Image */}
+                                        <button
+                                            onClick={() => setActiveTab("single")}
+                                            className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
+            ${activeTab === "single"
+                                                    ? "bg-[#db4900]/10 border-[#db4900] text-[#db4900]"
+                                                    : "border-[#2b2b2b] text-gray-300 hover:text-white hover:border-[#db4900]/50"
+                                                }`}
                                         >
-                                            <input
-                                                type="radio"
-                                                name="adType"
-                                                value="single"
-                                                checked={activeTab === "single"}
-                                                onChange={() => setActiveTab("single")}
-                                                className="appearance-none w-4 h-4 rounded-full border-2 border-gray-500 bg-[#2b2b2b] 
-                                                            checked:bg-[#db4900] checked:border-[#db4900] transition-colors"
-                                            />
-                                            <span className="text-white font-medium">Single Image Ad</span>
-                                        </label>
+                                            <Image className="w-6 h-6 flex-shrink-0" />
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-md">Single Image (1 credit)</span>
+                                                <span className="text-sm text-white/80">Best for simple promos</span>
+                                            </div>
+                                        </button>
 
                                         {/* Carousel */}
-                                        <label
-                                            className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-xl border-2 transition-all 
-                                                        ${activeTab === "carousel"
-                                                    ? "border-[#db4900] bg-[#db4900]/10"
-                                                    : "border-[#2b2b2b] hover:border-[#db4900]/50"}`}
+                                        <button
+                                            onClick={() => setActiveTab("carousel")}
+                                            className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
+            ${activeTab === "carousel"
+                                                    ? "bg-[#db4900]/10 border-[#db4900] text-[#db4900]"
+                                                    : "border-[#2b2b2b] text-gray-300 hover:text-white hover:border-[#db4900]/50"
+                                                }`}
                                         >
-                                            <input
-                                                type="radio"
-                                                name="adType"
-                                                value="carousel"
-                                                checked={activeTab === "carousel"}
-                                                onChange={() => setActiveTab("carousel")}
-                                                className="appearance-none w-4 h-4 rounded-full border-2 border-gray-500 bg-[#2b2b2b] 
-                                                                checked:bg-[#db4900] checked:border-[#db4900] transition-colors"
-                                            />
-                                            <span className="text-white font-medium">Carousel</span>
-                                        </label>
+                                            <LayoutList className="w-6 h-6 flex-shrink-0" />
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-md">Carousel (3 credits)</span>
+                                                <span className="text-sm text-white/80">Swipe multiple images</span>
+                                            </div>
+                                        </button>
 
-                                        {/* Video Ad */}
-                                        <label
-                                            className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-xl border-2 transition-all 
-                                                                ${activeTab === "video"
-                                                    ? "border-[#db4900] bg-[#db4900]/10"
-                                                    : "border-[#2b2b2b] hover:border-[#db4900]/50"}`}
+                                        {/* Video */}
+                                        <button
+                                            onClick={() => setActiveTab("video")}
+                                            className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
+            ${activeTab === "video"
+                                                    ? "bg-[#db4900]/10 border-[#db4900] text-[#db4900]"
+                                                    : "border-[#2b2b2b] text-gray-300 hover:text-white hover:border-[#db4900]/50"
+                                                }`}
                                         >
-                                            <input
-                                                type="radio"
-                                                name="adType"
-                                                value="video"
-                                                checked={activeTab === "video"}
-                                                onChange={() => setActiveTab("video")}
-                                                className="appearance-none w-4 h-4 rounded-full border-2 border-gray-500 bg-[#2b2b2b] 
-                                                            checked:bg-[#db4900] checked:border-[#db4900] transition-colors"
-                                            />
-                                            <span className="text-white font-medium">Video Ad</span>
-                                        </label>
+                                            <PlaySquare className="w-6 h-6 flex-shrink-0" />
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-md">Video Ad (3 credits)</span>
+                                                <span className="text-sm text-white/80">Engage with motion</span>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
 
+                                {/* Ad Name Input - Shared across all tabs */}
+                                <div className="w-full max-w-4xl mx-auto mb-6">
+                                    <div className="space-y-2">
+                                        <Label className="text-white/70 font-semibold text-base">Ad Name</Label>
+                                        <Input
+                                            placeholder="Enter ad name"
+                                            value={
+                                                activeTab === "single" ? singleAdName :
+                                                    activeTab === "carousel" ? carouselAdName :
+                                                        videoAdName
+                                            }
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (activeTab === "single") setSingleAdName(value);
+                                                else if (activeTab === "carousel") setCarouselAdName(value);
+                                                else setVideoAdName(value);
+                                            }}
+                                            className="bg-[#171717] border-[#3d3d3d] text-white placeholder-gray-400 text-base py-3"
+                                            autoComplete="off"
+                                            spellCheck="false"
+                                        />
                                     </div>
                                 </div>
 
                                 {/* Conditional Content Rendering */}
-                                {activeTab === "single" && (
-                                    <div className="mt-6 sm:mt-8">
-                                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                                            {/* File Uploader - 60% width (3/5) */}
-                                            <div className="lg:col-span-3">
+                                <div className="mt-6 sm:mt-8">
+                                    <div className="w-full max-w-4xl mx-auto">
+                                        {/* Single Image */}
+                                        <div className={activeTab === "single" ? "block" : "hidden"}>
+                                            <FreeTrailOverlay
+                                                showOverlay={userDetails?.ads_limit === 0}
+                                                message=" You don’t have sufficient credits. Upgrade to Pro to analyze more ads."
+                                            >
                                                 <SingleFileUploader
                                                     file={singleFile}
                                                     onFileChange={handleSingleFileChange}
@@ -1000,30 +905,19 @@ export default function UploadPage() {
                                                     isUploading={isSingleUploading}
                                                     uploadProgress={singleUploadProgress}
                                                 />
-                                                {/* Analyze Button below file uploader */}
-                                                <div className="mt-4">
-                                                    <Button
-                                                        onClick={() => handleAnalyze()}
-                                                        disabled={isAnalyzing || !hasUploadedFiles()}
-                                                        className="w-full text-lg bg-[#db4900] hover:bg-[#c44000] text-white py-6"
-                                                    >
-                                                        {isAnalyzing ? "Analyzing..." : "Analyze"}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            {/* Information Card - 40% width (2/5) */}
-                                            <div className="lg:col-span-2">
-                                                <InformationCard />
-                                            </div>
+                                            </FreeTrailOverlay>
                                         </div>
-                                    </div>
-                                )}
 
-                                {activeTab === "carousel" && (
-                                    <div className="mt-6 sm:mt-8">
-                                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                                            {/* File Uploader - 60% width (3/5) */}
-                                            <div className="lg:col-span-3">
+                                        {/* Carousel */}
+                                        <div className={activeTab === "carousel" ? "block" : "hidden"}>
+                                            <FreeTrailOverlay
+                                                showOverlay={isFreeTrailUser || userDetails?.ads_limit! < 3}
+                                                message={
+                                                    isFreeTrailUser
+                                                        ? " Upgrade to Pro to unlock Carousel Ads."
+                                                        : " You don’t have sufficient credits. Upgrade to Pro to analyze more ads."
+                                                }
+                                            >
                                                 <CarouselFileUploader
                                                     files={carouselFiles}
                                                     onFilesChange={handleCarouselFilesChange}
@@ -1031,30 +925,19 @@ export default function UploadPage() {
                                                     isUploading={isCarouselUploading}
                                                     uploadProgress={carouselUploadProgress}
                                                 />
-                                                {/* Analyze Button below file uploader */}
-                                                <div className="mt-4">
-                                                    <Button
-                                                        onClick={() => handleAnalyze()}
-                                                        disabled={isAnalyzing || !hasUploadedFiles()}
-                                                        className="w-full text-lg bg-[#db4900] hover:bg-[#c44000] text-white py-6"
-                                                    >
-                                                        {isAnalyzing ? "Analyzing..." : "Analyze"}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            {/* Information Card - 40% width (2/5) */}
-                                            <div className="lg:col-span-2">
-                                                <InformationCard />
-                                            </div>
+                                            </FreeTrailOverlay>
                                         </div>
-                                    </div>
-                                )}
 
-                                {activeTab === "video" && (
-                                    <div className="mt-6 sm:mt-8">
-                                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                                            {/* File Uploader - 60% width (3/5) */}
-                                            <div className="lg:col-span-3">
+                                        {/* Video */}
+                                        <div className={activeTab === "video" ? "block" : "hidden"}>
+                                            <FreeTrailOverlay
+                                                showOverlay={isFreeTrailUser || userDetails?.ads_limit! < 3}
+                                                message={
+                                                    isFreeTrailUser
+                                                        ? " Upgrade to Pro to unlock Video Ads."
+                                                        : "You don’t have sufficient credits. Upgrade to Pro to analyze more ads."
+                                                }
+                                            >
                                                 <VideoUploader
                                                     file={videoFile}
                                                     onFileChange={handleVideoFileChange}
@@ -1063,29 +946,35 @@ export default function UploadPage() {
                                                     isUploading={isVideoUploading}
                                                     uploadProgress={videoUploadProgress}
                                                 />
-                                                {/* Analyze Button below file uploader */}
-                                                <div className="mt-4">
-                                                    <Button
-                                                        onClick={() => handleAnalyze()}
-                                                        disabled={isAnalyzing || !hasUploadedFiles()}
-                                                        className="w-full text-lg bg-[#db4900] hover:bg-[#c44000] text-white py-6"
-                                                    >
-                                                        {isAnalyzing ? "Analyzing..." : "Analyze"}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            {/* Information Card - 40% width (2/5) */}
-                                            <div className="lg:col-span-2">
-                                                <InformationCard />
-                                            </div>
+                                            </FreeTrailOverlay>
+                                        </div>
+
+
+                                        {/* Two Button Layout - Always visible */}
+                                        <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                                            <Button
+                                                onClick={() => handleAnalyze()}
+                                                disabled={isAnalyzing || !hasUploadedFiles()}
+                                                variant="outline"
+                                                className="flex-1 text-lg py-6 border-[#2b2b2b] text-gray-300 hover:bg-[#2b2b2b] hover:text-white"
+                                            >
+                                                {isAnalyzing ? "Analyzing..." : "Continue Without Target"}
+                                            </Button>
+                                            <Button
+                                                onClick={handleContinueWithTarget}
+                                                disabled={!hasUploadedFiles()}
+                                                className="flex-1 text-lg bg-[#db4900] hover:bg-[#c44000] text-white py-6"
+                                            >
+                                                Continue With Target
+                                            </Button>
                                         </div>
                                     </div>
-                                )}
-
+                                </div>
                             </div>
                         </div>
                     </div>
                 </main>
+
             </div>
         </UserLayout>
     )

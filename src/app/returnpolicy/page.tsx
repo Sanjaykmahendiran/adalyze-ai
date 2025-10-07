@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import loginlogo from "@/assets/ad-logo.png";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import LandingPageFooter from "@/components/landing-page/landing-page-footer";
+import Header from "@/components/landing-page/header";
 
 // Simple HTML sanitizer function (you might want to use a library like DOMPurify)
 const sanitizeHTML = (html: string): string => {
@@ -27,7 +24,6 @@ export default function RetrunPolicy() {
   const [Retrun, setRetrun] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     const fetchRetrunPolicy = async () => {
@@ -66,23 +62,8 @@ if (loading) {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            <header className="w-full sticky top-0 z-30 bg-[#121214] border-b border-[#2b2b2b] px-4 py-3 overflow-hidden">
-                <div className="container mx-auto flex items-center justify-between">
-                    <Link href="/" className="flex items-center flex-shrink-0 min-w-0">
-                        <Image
-                            src={loginlogo}
-                            alt="Adalyze Logo"
-                            className="object-contain h-12 w-auto max-w-full"
-                            priority
-                            draggable={false}
-                        />
-                    </Link>
-                    <div className="flex items-center gap-2">
-                        <Button onClick={() => router.push("/login")} className="px-4 py-2 text-sm rounded-lg">Login</Button>
-                        <Button onClick={() => router.push("/register")} variant="outline" className="px-4 py-2 text-sm rounded-lg">Register</Button>
-                    </div>
-                </div>
-            </header>
+            <Header />
+
 
             {/* Skeleton Content */}
             <div className="container mx-auto px-4 py-8">
@@ -108,40 +89,8 @@ if (loading) {
   if (error) {
     return (
       <div className="min-h-screen">
-        <header className="w-full sticky top-0 z-30 bg-[#121214] border-b border-[#2b2b2b] px-4 py-3 overflow-hidden">
-          <div className="container mx-auto flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center flex-shrink-0 min-w-0">
-              <Image
-                src={loginlogo}
-                alt="Adalyze Logo"
-                className="object-contain h-12 w-auto max-w-full"
-                priority
-                draggable={false}
-              />
-            </Link>
+            <Header />
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => router.push("/login")}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-              >
-                <span className="hidden xs:inline sm:inline">Login</span>
-                <span className="xs:hidden sm:hidden">Sign In</span>
-              </Button>
-
-              <Button
-                onClick={() => router.push("/register")}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-                variant="outline"
-              >
-                <span className="hidden xs:inline sm:inline">Register</span>
-                <span className="xs:hidden sm:hidden">Sign Up</span>
-              </Button>
-            </div>
-          </div>
-        </header>
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
@@ -165,40 +114,8 @@ if (loading) {
   if (!Retrun) {
     return (
       <div className="min-h-screen">
-        <header className="w-full sticky top-0 z-30 bg-[#121214] border-b border-[#2b2b2b] px-4 py-3 overflow-hidden">
-          <div className="container mx-auto flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center flex-shrink-0 min-w-0">
-              <Image
-                src={loginlogo}
-                alt="Adalyze Logo"
-                className="object-contain h-12 w-auto max-w-full"
-                priority
-                draggable={false}
-              />
-            </Link>
+            <Header />
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => router.push("/login")}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-              >
-                <span className="hidden xs:inline sm:inline">Login</span>
-                <span className="xs:hidden sm:hidden">Sign In</span>
-              </Button>
-
-              <Button
-                onClick={() => router.push("/register")}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-                variant="outline"
-              >
-                <span className="hidden xs:inline sm:inline">Register</span>
-                <span className="xs:hidden sm:hidden">Sign Up</span>
-              </Button>
-            </div>
-          </div>
-        </header>
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">Retrun Policy Not Available</h2>
@@ -213,47 +130,14 @@ if (loading) {
   // Success state
   return (
     <div className="min-h-screen">
-      <header className="w-full sticky top-0 z-30 bg-[#121214] border-b border-[#2b2b2b] px-4 py-3 overflow-hidden">
-        <div className="container mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center flex-shrink-0 min-w-0">
-            <Image
-              src={loginlogo}
-              alt="Adalyze Logo"
-              className="object-contain h-12 w-auto max-w-full"
-              priority
-              draggable={false}
-            />
-          </Link>
+            <Header />
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => router.push("/login")}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-            >
-              <span className="hidden xs:inline sm:inline">Login</span>
-              <span className="xs:hidden sm:hidden">Sign In</span>
-            </Button>
-
-            <Button
-              onClick={() => router.push("/register")}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-              variant="outline"
-            >
-              <span className="hidden xs:inline sm:inline">Register</span>
-              <span className="xs:hidden sm:hidden">Sign Up</span>
-            </Button>
-          </div>
-        </div>
-      </header>
-      <div className="container mx-auto px-4 py-8">
-        <main className="prose prose-gray max-w-none dark:prose-invert">
-          <h1 className="text-4xl font-bold text-center tracking-tight">Retrun Policy</h1>
+      <div className="container mx-auto px-4 py-8 pt-24">
+        <main className="prose prose-gray max-w-none ">
 
           <div className="mt-6 flex justify-center">
             <div
-              className="max-w-[800px] w-full font-thin Retrun-content"
+              className="max-w-[800px] w-full font-thin Retrun-content mt-10"
               dangerouslySetInnerHTML={{ __html: Retrun }}
             />
           </div>

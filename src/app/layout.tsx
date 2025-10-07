@@ -4,7 +4,7 @@ import "./globals.css";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
-import { Providers } from "./providers"; // ✅ import Providers
+import { Providers } from "./providers"; 
 import { GTM_ID } from "@/lib/gtm";
 import { Suspense } from "react";
 
@@ -62,15 +62,15 @@ export default function RootLayout({
             reverseOrder={false}
             toastOptions={{
               style: {
-                background: "#121212",
+                background: "#000000",
                 color: "#f9fafb",
                 fontFamily: "var(--font-poppins)",
               },
               success: {
-                style: { background: "#121212", color: "#16a34a" },
+                style: { background: "#000000", color: "#16a34a" },
               },
               error: {
-                style: { background: "#121212", color: "#dc2626" },
+                style: { background: "#000000", color: "#dc2626" },
               },
             }}
           />

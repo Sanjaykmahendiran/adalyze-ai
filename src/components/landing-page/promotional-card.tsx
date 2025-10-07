@@ -5,7 +5,7 @@ import Image from "next/image"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import popupImage from "@/assets/Popup.jpg"
+import popupImage from "@/assets/Landing-page/Popup.jpg"
 import { motion, AnimatePresence } from "framer-motion"
 
 export default function PromotionalPopup() {
@@ -32,8 +32,14 @@ export default function PromotionalPopup() {
                         ref={modalRef}
                         initial={{
                             opacity: 0,
-                            y: typeof window !== "undefined" && window.innerWidth < 640 ? 100 : -20,
-                            scale: typeof window !== "undefined" && window.innerWidth >= 640 ? 0.95 : 1,
+                            y:
+                                typeof window !== "undefined" && window.innerWidth < 640
+                                    ? 100
+                                    : -20,
+                            scale:
+                                typeof window !== "undefined" && window.innerWidth >= 640
+                                    ? 0.95
+                                    : 1,
                         }}
                         animate={{
                             opacity: 1,
@@ -43,65 +49,63 @@ export default function PromotionalPopup() {
                         }}
                         exit={{
                             opacity: 0,
-                            y: typeof window !== "undefined" && window.innerWidth < 640 ? 100 : -20,
-                            scale: typeof window !== "undefined" && window.innerWidth >= 640 ? 0.95 : 1,
+                            y:
+                                typeof window !== "undefined" && window.innerWidth < 640
+                                    ? 100
+                                    : -20,
+                            scale:
+                                typeof window !== "undefined" && window.innerWidth >= 640
+                                    ? 0.95
+                                    : 1,
                             transition: { duration: 0.3, ease: "easeIn" },
                         }}
-                        className="bg-white w-full max-w-lg sm:max-w-xl 
-               rounded-2xl overflow-hidden relative shadow-xl "
+                        className="bg-white w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden relative shadow-xl flex flex-col"
                     >
                         {/* Close button */}
                         <button
                             onClick={() => setIsOpen(false)}
-                            className="absolute top-3 right-3 text-black hover:text-white z-10"
+                            className="absolute top-3 right-3 text-black hover:text-gray-600 z-10"
                         >
                             <X className="h-6 w-6" />
                         </button>
 
-                        {/* Image (smaller height now) */}
-                        <div className="relative w-full h-50 sm:h-58">
+                        {/* Image */}
+                        <div className="relative w-full h-48 sm:h-56">
                             <Image
                                 src={popupImage}
                                 alt="Offer Image"
                                 fill
-                                className="object-cover object-center w-full h-full"
+                                className="object-cover object-center"
                                 priority
                             />
                         </div>
 
                         {/* Content */}
-                        <div className="px-2 sm:px-4 py-2 sm:py-4 text-center">
-                            <h2 className="text-xl sm:text-2xl font-semibold mb-2 text-black">
+                        <div className="px-4 sm:px-6 py-6 flex flex-col items-center text-center space-y-4">
+                            <h2 className="text-2xl font-semibold text-black">
                                 How to Avail Your 50% Discount
                             </h2>
 
-                            <div className="mb-4 flex items-center justify-center">
-                                <ul className="text-gray-800 text-sm grid grid-cols-2 gap-x-1 gap-y-3 text-left">
-                                    <li>✅ Get your free trial today</li>
-                                    <li>✅ Get started within minutes</li>
-                                    <li>✅ No credit card required</li>
-                                    <li>✅ Cancel anytime</li>
-                                </ul>
-                            </div>
+                            <p className="text-gray-800 text-sm">
+                                Get your free trial today and start within minutes. No credit card required. Completely risk-free.
+                            </p>
 
                             <Button
-                                className="w-full bg-[#ff4d4d] hover:bg-[#e63b3b] text-white font-semibold text-base py-2.5"
+                                className="w-full bg-[#ff4d4d] hover:bg-[#e63b3b] text-white font-semibold text-base py-3 rounded-lg"
                                 onClick={() => {
                                     router.push("/register")
                                     setIsOpen(false)
                                 }}
                             >
-                                🔥 Claim My 50% OFF Now
+                                Claim My 50% OFF Now
                             </Button>
 
-                            <p className="text-xs text-gray-600 mt-3 flex items-center justify-center gap-3">
-                                <span>⚡ Only for the first 100 users.</span>
-                                <span>🔒 No risk – cancel anytime</span>
+                            <p className="text-xs text-gray-600">
+                                Only for the first 100 users. Completely risk-free trial.
                             </p>
-
                         </div>
-                    </motion.div>
 
+                    </motion.div>
                 </div>
             )}
         </AnimatePresence>

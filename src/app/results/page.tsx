@@ -67,7 +67,10 @@ export default function ResultsPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isPdfGenerating, setIsPdfGenerating] = useState(false)
   const [showIntro, setShowIntro] = useState(false);
-  const isProUser = userDetails?.payment_status === 1
+
+  // Check if ad_id came from token (shared link)
+  const isFromToken = !!searchParams.get('token')
+  const isProUser = isFromToken || userDetails?.payment_status === 1
 
   const handleDownloadPDF = async () => {
     const selector = "body";
@@ -343,11 +346,11 @@ export default function ResultsPage() {
       {!isProUser && (
         <div className="absolute inset-0 bg-[#121212]/70 flex flex-col items-center justify-center rounded-2xl">
           <div className="text-center p-4">
-            <Lock className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-blue-400" />
+            <Lock className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-primary" />
             <p className="text-white font-semibold mb-4 text-sm sm:text-base px-2">{message}</p>
             <Button
               onClick={() => router.push("/pro")}
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm sm:text-base px-4 py-2"
+              className=" text-white rounded-lg text-sm sm:text-base px-4 py-2"
             >
               Upgrade
             </Button>
@@ -408,13 +411,15 @@ export default function ResultsPage() {
           <div className="flex items-center justify-between mb-6 sm:mb-8 gap-4">
             {/* Left: Back + Title + Subtitle */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-              {/* Back Button */}
-              <button
-                onClick={() => router.back()}
-                className="flex items-center bg-[#121212] text-gray-300 hover:text-white hover:bg-[#2b2b2b] rounded-full p-2 transition-all cursor-pointer no-print skip-block flex-shrink-0"
-              >
-                <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
+              {/* Back Button - Hidden when viewing via shared token */}
+              {!isFromToken && (
+                <button
+                  onClick={() => router.back()}
+                  className="flex items-center bg-[#121212] text-gray-300 hover:text-white hover:bg-[#2b2b2b] rounded-full p-2 transition-all cursor-pointer no-print skip-block flex-shrink-0"
+                >
+                  <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              )}
 
               {/* Title + Subtitle */}
               <div className="text-left min-w-0 flex-1">
@@ -1332,7 +1337,7 @@ export default function ResultsPage() {
                   <div className="flex items-center justify-between mb-3 sm:mb-4">
                     <h3 className="flex items-center text-lg sm:text-xl font-semibold text-purple-400">
                       <Palette className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                      Designer Feedback
+                      For Designers
                     </h3>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1374,7 +1379,7 @@ export default function ResultsPage() {
                   <div className="flex items-center justify-between mb-3 sm:mb-4">
                     <h3 className="flex items-center text-lg sm:text-xl font-semibold text-green-400">
                       <TrendingUp className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                      Marketing Expert Feedback
+                      For Marketing Experts
                     </h3>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1418,21 +1423,26 @@ export default function ResultsPage() {
                       </TooltipTrigger>
                       <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
                         <div>
-                          <strong>User Interaction Scores:</strong>
-                          <p className="text-gray-300 text-xs">Measures how actively users engage with your content.</p>
+                          <strong>Engagement Score:</strong>
+                          <p className="text-gray-300 text-xs">Measures how actively users interact with your content, such as likes, comments, and shares.</p>
                         </div>
                         <div>
                           <strong>Viral Potential:</strong>
-                          <p className="text-gray-300 text-xs">Assesses the likelihood of your content being widely shared.</p>
+                          <p className="text-gray-300 text-xs">Assesses the likelihood of your content being widely shared across platforms.</p>
                         </div>
                         <div>
-                          <strong>Trust Signals:</strong>
-                          <p className="text-gray-300 text-xs">Indicates the credibility and reliability perceived by users.</p>
+                          <strong>Trust Signal Score:</strong>
+                          <p className="text-gray-300 text-xs">Indicates how credible and reliable your content appears to users.</p>
                         </div>
                         <div>
-                          <strong>FOMO Triggers:</strong>
-                          <p className="text-gray-300 text-xs">Highlights urgency or scarcity cues that drive immediate action.</p>
+                          <strong>FOMO Score:</strong>
+                          <p className="text-gray-300 text-xs">Measures the extent to which your content creates fear of missing out or prompts immediate attention.</p>
                         </div>
+                        <div>
+                          <strong>Urgency Trigger:</strong>
+                          <p className="text-gray-300 text-xs">Highlights time-sensitive or limited-availability cues that drive users to act quickly.</p>
+                        </div>
+
                       </TooltipContent>
 
                     </Tooltip>
@@ -1571,15 +1581,23 @@ export default function ResultsPage() {
                     <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
                       <div>
                         <strong>Budget Utilization:</strong>
-                        <p className="text-gray-300 text-xs">Tracks how effectively the allocated budget is being spent.</p>
+                        <p className="text-gray-300 text-xs">Tracks how efficiently your allocated budget is being spent on campaigns or content.</p>
                       </div>
                       <div>
-                        <strong>Visual Composition:</strong>
-                        <p className="text-gray-300 text-xs">Evaluates layout, symmetry, and design aesthetics of your content.</p>
+                        <strong>Faces Detected:</strong>
+                        <p className="text-gray-300 text-xs">Counts and identifies faces in images or videos to ensure people are clearly visible.</p>
                       </div>
                       <div>
-                        <strong>Structural Optimization:</strong>
-                        <p className="text-gray-300 text-xs">Checks alignment, spacing, and organization for maximum clarity and impact.</p>
+                        <strong>Logo Visibility:</strong>
+                        <p className="text-gray-300 text-xs">Assesses whether logos are clearly visible and prominent in your content.</p>
+                      </div>
+                      <div>
+                        <strong>Text Percentage:</strong>
+                        <p className="text-gray-300 text-xs">Measures the proportion of text relative to images to maintain visual balance and readability.</p>
+                      </div>
+                      <div>
+                        <strong>Layout Symmetry:</strong>
+                        <p className="text-gray-300 text-xs">Evaluates the visual balance and alignment of elements for a harmonious design.</p>
                       </div>
                     </TooltipContent>
 
@@ -1904,34 +1922,38 @@ export default function ResultsPage() {
                         <TooltipTrigger asChild>
                           <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                         </TooltipTrigger>
-                        <TooltipContent className="w-60 bg-[#2b2b2b] text-sm space-y-2">
+                        <TooltipContent className="w-60 h-80 overflow-y-auto bg-[#2b2b2b] text-sm space-y-2">
                           <div>
                             <strong>Visual Clarity:</strong>
                             <p className="text-gray-300 text-xs">Evaluates how clear and easily interpretable the visual elements are.</p>
                           </div>
                           <div>
                             <strong>Emotional Appeal:</strong>
-                            <p className="text-gray-300 text-xs">Measures the ability of visuals to evoke the intended emotional response.</p>
+                            <p className="text-gray-300 text-xs">Measures how effectively visuals evoke the intended emotional response from viewers.</p>
                           </div>
                           <div>
-                            <strong>Design Balance:</strong>
-                            <p className="text-gray-300 text-xs">Assesses symmetry, alignment, and proportionality for aesthetic harmony.</p>
-                          </div>
-                          <div>
-                            <strong>Text-Visual Balance:</strong>
-                            <p className="text-gray-300 text-xs">Checks the readability and integration of text with visuals.</p>
+                            <strong>Text-Visual:</strong>
+                            <p className="text-gray-300 text-xs">Assesses how well text and visuals are integrated, including alignment, spacing, and proportionality.</p>
                           </div>
                           <div>
                             <strong>CTA Visibility:</strong>
-                            <p className="text-gray-300 text-xs">Analyzes how prominent and actionable call-to-action elements are.</p>
+                            <p className="text-gray-300 text-xs">Analyzes how prominent and noticeable call-to-action elements are within the content.</p>
                           </div>
                           <div>
-                            <strong>Color & Brand Alignment:</strong>
-                            <p className="text-gray-300 text-xs">Ensures colors and design elements align with the brand identity.</p>
+                            <strong>Color Harmony:</strong>
+                            <p className="text-gray-300 text-xs">Checks if colors are balanced and aesthetically pleasing, enhancing overall visual appeal.</p>
                           </div>
                           <div>
-                            <strong>Image & Text Quality:</strong>
-                            <p className="text-gray-300 text-xs">Evaluates image resolution, typography readability, and overall visual polish.</p>
+                            <strong>Brand Alignment:</strong>
+                            <p className="text-gray-300 text-xs">Ensures design elements, colors, and visuals are consistent with the brand identity.</p>
+                          </div>
+                          <div>
+                            <strong>Text Readability:</strong>
+                            <p className="text-gray-300 text-xs">Evaluates font size, contrast, and clarity to ensure text is easy to read.</p>
+                          </div>
+                          <div>
+                            <strong>Image Quality:</strong>
+                            <p className="text-gray-300 text-xs">Assesses resolution, sharpness, and overall visual polish of images used.</p>
                           </div>
                         </TooltipContent>
 
@@ -2198,13 +2220,19 @@ export default function ResultsPage() {
                     <div className="mt-4 sm:mt-6">
                       <Button
                         className="w-full text-white font-semibold rounded-xl py-2 sm:py-3 transition duration-200 text-sm sm:text-base"
-                        disabled={!isProUser}
-                        onClick={() => router.push("/ab-test")}
+                        disabled={isFromToken ? false : !isProUser}
+                        onClick={() => {
+                          if (isFromToken) {
+                            window.open("/register", "_blank");
+                          } else {
+                            router.push("/ab-test");
+                          }
+                        }}
                       >
                         <GitCompareArrows className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                        Compare Now
+                        {isFromToken ? "Register Now" : "Compare Now"}
                       </Button>
-                      {!isProUser && (
+                      {!isProUser && !isFromToken && (
                         <p className="mt-2 text-xs text-gray-300 text-center">
                           Unlock with Pro to access ad comparison.
                         </p>
@@ -2215,42 +2243,48 @@ export default function ResultsPage() {
               </div>
             </div>
 
+            {isFromToken && (
+              <div className="my-10" />
+            )}
+
             {/* Action Buttons - Mobile Optimized */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center skip-block">
-              <Button
-                onClick={() =>
-                  isProUser ? router.push("/upload") : router.push("/pro")
-                }
-                className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto"
-              >
-                {isProUser ? "Re-analyze" : "Upgrade"}
-              </Button>
+            {!isFromToken && (
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center skip-block">
+                <Button
+                  onClick={() =>
+                    isProUser ? router.push("/upload") : router.push("/pro")
+                  }
+                  className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto"
+                >
+                  {isProUser ? "Re-analyze" : "Upgrade"}
+                </Button>
 
-              {/* Share & Download Buttons only for Pro Users */}
-              {isProUser && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={handleShare}
-                    className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto hidden sm:flex"
-                  >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share Results
-                  </Button>
+                {/* Share & Download Buttons only for Pro Users */}
+                {isProUser && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleShare}
+                      className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto hidden sm:flex"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share Results
+                    </Button>
 
 
-                  <Button
-                    variant="outline"
-                    onClick={handleDownloadPDF}
-                    disabled={isPdfGenerating || !apiData}
-                    className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    {isPdfGenerating ? "Generating..." : "Download Report"}
-                  </Button>
-                </>
-              )}
-            </div>
+                    <Button
+                      variant="outline"
+                      onClick={handleDownloadPDF}
+                      disabled={isPdfGenerating || !apiData}
+                      className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      {isPdfGenerating ? "Generating..." : "Download Report"}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
 
           </div>
         </main>
@@ -2282,7 +2316,7 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {isProUser && (
+        {isProUser && !isFromToken && (
           <motion.button
             className="fixed bottom-4 right-4 w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg sm:hidden"
             whileHover={{ scale: 1.05 }}
@@ -2292,7 +2326,24 @@ export default function ResultsPage() {
           >
             <Share2 className="h-6 w-6 text-white" />
           </motion.button>
+        )}
 
+        {/* Fixed button for shared token views */}
+        {isFromToken && (
+          <motion.div
+            className="fixed bottom-4 right-4 z-50 skip-block"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Button
+              onClick={() => window.open("/register", "_blank")}
+              className="rounded-lg px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+              size="lg"
+            >
+              Analyze your ad. Join now
+            </Button>
+          </motion.div>
         )}
       </div>
     </TooltipProvider>

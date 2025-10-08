@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import Image from "next/image"
 import { Upload, X, Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,18 @@ export function CarouselFileUploader({
   const [isDragging, setIsDragging] = useState(false)
   const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Memoize preview URLs for all files to prevent recreation on every render
+  const previewUrls = useMemo(() => {
+    return files.map(file => URL.createObjectURL(file))
+  }, [files])
+
+  // Cleanup object URLs when files change or component unmounts
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [previewUrls])
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -121,12 +133,12 @@ export function CarouselFileUploader({
     return isUploading && index >= imageUrls.length
   }, [isUploading, imageUrls.length])
 
-  const getImageSource = useCallback((file: File, index: number) => {
+  const getImageSource = useCallback((index: number) => { 
     if (imageUrls[index]) {
       return imageUrls[index]
     }
-    return URL.createObjectURL(file)
-  }, [imageUrls])
+    return previewUrls[index]
+  }, [imageUrls, previewUrls])
 
   return (
 <div className="flex flex-col space-y-4 sm:space-y-6 rounded-2xl bg-[#171717] border border-primary p-4 sm:p-6 lg:p-8 text-white">
@@ -134,7 +146,7 @@ export function CarouselFileUploader({
     <div className="flex flex-col items-center space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 w-full">
         {files.map((file, index) => {
-          const imageSource = getImageSource(file, index)
+          const imageSource = getImageSource(index)
           const showLoading = shouldShowImageLoading(index)
 
           return (

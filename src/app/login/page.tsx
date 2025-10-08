@@ -84,7 +84,7 @@ const LoginPage = () => {
             <div className="w-full max-w-md">
               {/* Logo */}
               <div className="flex justify-center mb-6">
-                <div className="w-[120px] sm:w-[150px] h-[50px] sm:h-[60px] relative overflow-hidden">
+                <div className="w-[180px]  h-[50px] sm:h-[60px] relative overflow-hidden">
                   <Image
                     src={loginlogo || "/placeholder.svg"}
                     layout="fill"
@@ -97,7 +97,7 @@ const LoginPage = () => {
               {/* Header */}
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-bold text-white mb-2">Login to Your Account</h1>
-                <p className="text-gray-300 text-sm">Change Your Own Digital Campaign to Turn every ad into an opportunity</p>
+                <p className="text-gray-300 text-sm">Turn every ad into an opportunity</p>
               </div>
               <div className="mt-8">
                 {/* Auth form with API integration */}

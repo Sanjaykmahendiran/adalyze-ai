@@ -1121,21 +1121,26 @@ export default function ABTestResults() {
                                                 </TooltipTrigger>
                                                 <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
                                                     <div>
-                                                        <strong>User Interaction Scores:</strong>
-                                                        <p className="text-gray-300 text-xs">Measures how actively users engage with your content.</p>
+                                                        <strong>Engagement Score:</strong>
+                                                        <p className="text-gray-300 text-xs">Measures how actively users interact with your content, such as likes, comments, and shares.</p>
                                                     </div>
                                                     <div>
                                                         <strong>Viral Potential:</strong>
-                                                        <p className="text-gray-300 text-xs">Assesses the likelihood of your content being widely shared.</p>
+                                                        <p className="text-gray-300 text-xs">Assesses the likelihood of your content being widely shared across platforms.</p>
                                                     </div>
                                                     <div>
-                                                        <strong>Trust Signals:</strong>
-                                                        <p className="text-gray-300 text-xs">Indicates the credibility and reliability perceived by users.</p>
+                                                        <strong>Trust Signal Score:</strong>
+                                                        <p className="text-gray-300 text-xs">Indicates how credible and reliable your content appears to users.</p>
                                                     </div>
                                                     <div>
-                                                        <strong>FOMO Triggers:</strong>
-                                                        <p className="text-gray-300 text-xs">Highlights urgency or scarcity cues that drive immediate action.</p>
+                                                        <strong>FOMO Score:</strong>
+                                                        <p className="text-gray-300 text-xs">Measures the extent to which your content creates fear of missing out or prompts immediate attention.</p>
                                                     </div>
+                                                    <div>
+                                                        <strong>Urgency Trigger:</strong>
+                                                        <p className="text-gray-300 text-xs">Highlights time-sensitive or limited-availability cues that drive users to act quickly.</p>
+                                                    </div>
+
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>
@@ -1273,15 +1278,23 @@ export default function ABTestResults() {
                                                 <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
                                                     <div>
                                                         <strong>Budget Utilization:</strong>
-                                                        <p className="text-gray-300 text-xs">Tracks how effectively the allocated budget is being spent.</p>
+                                                        <p className="text-gray-300 text-xs">Tracks how efficiently your allocated budget is being spent on campaigns or content.</p>
                                                     </div>
                                                     <div>
-                                                        <strong>Visual Composition:</strong>
-                                                        <p className="text-gray-300 text-xs">Evaluates layout, symmetry, and design aesthetics of your content.</p>
+                                                        <strong>Faces Detected:</strong>
+                                                        <p className="text-gray-300 text-xs">Counts and identifies faces in images or videos to ensure people are clearly visible.</p>
                                                     </div>
                                                     <div>
-                                                        <strong>Structural Optimization:</strong>
-                                                        <p className="text-gray-300 text-xs">Checks alignment, spacing, and organization for maximum clarity and impact.</p>
+                                                        <strong>Logo Visibility:</strong>
+                                                        <p className="text-gray-300 text-xs">Assesses whether logos are clearly visible and prominent in your content.</p>
+                                                    </div>
+                                                    <div>
+                                                        <strong>Text Percentage:</strong>
+                                                        <p className="text-gray-300 text-xs">Measures the proportion of text relative to images to maintain visual balance and readability.</p>
+                                                    </div>
+                                                    <div>
+                                                        <strong>Layout Symmetry:</strong>
+                                                        <p className="text-gray-300 text-xs">Evaluates the visual balance and alignment of elements for a harmonious design.</p>
                                                     </div>
                                                 </TooltipContent>
                                             </Tooltip>
@@ -1613,34 +1626,38 @@ export default function ABTestResults() {
                                                 <TooltipTrigger asChild>
                                                     <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                                                 </TooltipTrigger>
-                                                <TooltipContent className="w-60 bg-[#2b2b2b] text-sm space-y-2">
+                                                <TooltipContent className="w-60 h-80 overflow-y-auto bg-[#2b2b2b] text-sm space-y-2">
                                                     <div>
                                                         <strong>Visual Clarity:</strong>
                                                         <p className="text-gray-300 text-xs">Evaluates how clear and easily interpretable the visual elements are.</p>
                                                     </div>
                                                     <div>
                                                         <strong>Emotional Appeal:</strong>
-                                                        <p className="text-gray-300 text-xs">Measures the ability of visuals to evoke the intended emotional response.</p>
+                                                        <p className="text-gray-300 text-xs">Measures how effectively visuals evoke the intended emotional response from viewers.</p>
                                                     </div>
                                                     <div>
-                                                        <strong>Design Balance:</strong>
-                                                        <p className="text-gray-300 text-xs">Assesses symmetry, alignment, and proportionality for aesthetic harmony.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Text-Visual Balance:</strong>
-                                                        <p className="text-gray-300 text-xs">Checks the readability and integration of text with visuals.</p>
+                                                        <strong>Text-Visual:</strong>
+                                                        <p className="text-gray-300 text-xs">Assesses how well text and visuals are integrated, including alignment, spacing, and proportionality.</p>
                                                     </div>
                                                     <div>
                                                         <strong>CTA Visibility:</strong>
-                                                        <p className="text-gray-300 text-xs">Analyzes how prominent and actionable call-to-action elements are.</p>
+                                                        <p className="text-gray-300 text-xs">Analyzes how prominent and noticeable call-to-action elements are within the content.</p>
                                                     </div>
                                                     <div>
-                                                        <strong>Color & Brand Alignment:</strong>
-                                                        <p className="text-gray-300 text-xs">Ensures colors and design elements align with the brand identity.</p>
+                                                        <strong>Color Harmony:</strong>
+                                                        <p className="text-gray-300 text-xs">Checks if colors are balanced and aesthetically pleasing, enhancing overall visual appeal.</p>
                                                     </div>
                                                     <div>
-                                                        <strong>Image & Text Quality:</strong>
-                                                        <p className="text-gray-300 text-xs">Evaluates image resolution, typography readability, and overall visual polish.</p>
+                                                        <strong>Brand Alignment:</strong>
+                                                        <p className="text-gray-300 text-xs">Ensures design elements, colors, and visuals are consistent with the brand identity.</p>
+                                                    </div>
+                                                    <div>
+                                                        <strong>Text Readability:</strong>
+                                                        <p className="text-gray-300 text-xs">Evaluates font size, contrast, and clarity to ensure text is easy to read.</p>
+                                                    </div>
+                                                    <div>
+                                                        <strong>Image Quality:</strong>
+                                                        <p className="text-gray-300 text-xs">Assesses resolution, sharpness, and overall visual polish of images used.</p>
                                                     </div>
                                                 </TooltipContent>
                                             </Tooltip>

@@ -94,7 +94,7 @@ const MainStatCard = ({ title, value, subtitle, imageSrc }: {
   subtitle: string;
   imageSrc: string;
 }) => (
-  <div className="bg-black rounded-2xl px-4 sm:px-6 py-4 sm:py-6 h-full flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#db4900]/20 cursor-pointer group">
+  <div className="bg-black rounded-2xl px-4 sm:px-6 py-4 sm:py-6 h-full flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#db4900]/20  group">
     <div className="flex items-center justify-between mb-2 flex-1">
       {/* Text Section */}
       <div className="flex flex-col justify-center min-w-0 flex-1 mr-2">
@@ -391,7 +391,7 @@ export default function Dashboard() {
           {/* Close button */}
           <button
             onClick={() => setShowLimitPopup(false)}
-            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -445,7 +445,7 @@ export default function Dashboard() {
                 className="bg-[#db4900] hover:bg-[#ff5722] text-white font-semibold flex-1 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30"
               >
                 <Crown className="w-4 h-4 mr-2" />
-                {isAdsLimitZero ? "Renew Now" : "Renew Subscription"}
+                {isAdsLimitZero ? "Add Credits" : "Renew Subscription"}
               </Button>
             </div>
           </div>
@@ -486,7 +486,7 @@ export default function Dashboard() {
                 </div>
                 {(accountType || userDetails?.fretra_status === 1) && (
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                    <div className="border-2 border-[#db4900] px-3 py-1 items-center gap-2 rounded-full hover:bg-[#db4900]/10 transition-all duration-300 cursor-pointer group">
+                    <div className="border-2 border-[#db4900] px-3 py-1 items-center gap-2 rounded-full hover:bg-[#db4900]/10 transition-all duration-300  group">
                       <Crown className="w-4 h-4 text-[#db4900] inline mr-1 group-hover:text-[#ff5722] transition-colors duration-300" />
                       <span className="text-[#db4900] text-sm font-medium group-hover:text-[#ff5722] transition-colors duration-300">
                         {accountType === "Pro"
@@ -501,9 +501,11 @@ export default function Dashboard() {
                       (userDetails?.fretra_status === 1 && accountType !== "Pro") ||
                       userDetails?.ads_limit === 0
                     ) && (
-                        <span className="text-[#db4900] text-sm font-medium underline cursor-pointer hover:text-[#ff5722] transition-colors duration-300">
+                        <span
+                          onClick={handleUpgradeToPro}
+                          className="text-[#db4900] text-sm font-medium underline cursor-pointer hover:text-[#ff5722] transition-colors duration-300">
                           {userDetails?.ads_limit === 0
-                            ? "Add Ads Credits"
+                            ? "Add Credits"
                             : "Upgrade to Pro"}
                         </span>
                       )}
@@ -563,7 +565,7 @@ export default function Dashboard() {
                 {/* Sidebar Cards (Mobile: Grid 3, Desktop: Single Column) */}
                 <div className="order-1 lg:order-2 grid sm:grid-cols-3 grid-cols-1 gap-2 sm:gap-4 lg:block lg:space-y-6">
                   {/* Best Platform */}
-                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20 cursor-pointer group">
+                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
                     <div className="flex items-center gap-3 h-full">
                       <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                         <img src={BestPlatform.src} alt={dashboardData?.TopPlatform || "Platform"} className="w-full h-full object-contain" />
@@ -576,7 +578,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Total A/B Tests */}
-                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20 cursor-pointer group">
+                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
                     <div className="flex items-center gap-3 h-full">
                       <div className="w-16 h-16 lg:w-20 lg:h-20 flex items-center justify-center rounded-full group-hover:scale-110 transition-transform duration-300">
                         <img src={TotalAb.src} alt="A/B Tests" className="w-full h-full object-contain" />
@@ -589,7 +591,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Last Analyzed On */}
-                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20 cursor-pointer group">
+                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
                     <div className="flex items-center gap-3 h-full">
                       <div className="w-16 h-16 lg:w-20 lg:h-20 flex items-center justify-center rounded-full group-hover:scale-110 transition-transform duration-300">
                         <img src={LastAnalyzed.src} alt="Calendar" className="w-full h-full object-contain" />
@@ -677,13 +679,6 @@ export default function Dashboard() {
                       <h3 className="text-white font-semibold text-lg sm:text-xl transition-colors duration-300">
                         AI Feedbacks
                       </h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-[#db4900] text-sm hover:bg-[#db4900]/20 hover:text-[#ff5722] transition-all duration-300"
-                      >
-                        View All
-                      </Button>
                     </div>
 
                     <p className="text-white/50 text-sm mb-4 transition-colors duration-300">
@@ -698,7 +693,7 @@ export default function Dashboard() {
                           return (
                             <div
                               key={index}
-                              className="border-l-4 border-[#db4900] bg-[#171717] pl-3 py-2 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.02] cursor-pointer"
+                              className="border-l-4 border-[#db4900] bg-[#171717] pl-3 py-2 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.02] "
                             >
                               <p className="text-white text-sm">{feedbackArray.join(" ")}</p>
                               <p className="text-white/50 text-xs">
@@ -729,7 +724,7 @@ export default function Dashboard() {
                 <div className="lg:col-span-2 h-full">
                   <div className="space-y-4 sm:space-y-6 h-full flex flex-col">
                     {/* CTR Average */}
-                    <div className="bg-black px-3 py-3 sm:px-4 sm:py-4 rounded-2xl flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20 cursor-pointer group">
+                    <div className="bg-black px-3 py-3 sm:px-4 sm:py-4 rounded-2xl flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
                       <h3 className="text-white font-semibold text-lg sm:text-xl mb-1 transition-colors duration-300">
                         CTR Average
                       </h3>
@@ -752,7 +747,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Impression */}
-                    <div className="bg-black px-3 py-3 sm:px-4 sm:py-4 rounded-2xl flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20 cursor-pointer group">
+                    <div className="bg-black px-3 py-3 sm:px-4 sm:py-4 rounded-2xl flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
                       <h3 className="text-white font-semibold text-lg sm:text-xl mb-1 sm:mb-2 transition-colors duration-300 group-hover:text-primary">
                         Impression
                       </h3>
@@ -780,7 +775,7 @@ export default function Dashboard() {
 
                 {/* /* Conversion Rate - takes 2 columns */}
                 <div className="lg:col-span-2 h-full">
-                  <div className="bg-gradient-to-br from-orange-500/80 to-orange-600 rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/30 cursor-pointer group">
+                  <div className="bg-gradient-to-br from-orange-500/80 to-orange-600 rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/30  group">
                     {/* Header */}
                     <h3 className="text-white font-semibold text-lg sm:text-xl mb-2 transition-colors duration-300">
                       Conversion Rate
@@ -893,7 +888,7 @@ export default function Dashboard() {
                 <div className="lg:col-span-1 h-full flex-1">
                   <div className="space-y-4 sm:space-y-6 h-full flex flex-col">
                     {/* Increase ROI */}
-                    <div className="bg-black rounded-2xl p-3 sm:p-4 text-left flex-1 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20 cursor-pointer group">
+                    <div className="bg-black rounded-2xl p-3 sm:p-4 text-left flex-1 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
                       <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-30 lg:h-30 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                         <img
                           src={IncreaseROI.src}
@@ -914,7 +909,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Talk to Expert */}
-                    <div className="bg-[#ffe7d9] rounded-2xl p-3 sm:p-4 text-left flex-1 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-orange-400/30 cursor-pointer group">
+                    <div className="bg-[#ffe7d9] rounded-2xl p-3 sm:p-4 text-left flex-1 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-orange-400/30  group">
                       <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-30 lg:h-30 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                         <img
                           src={TalkToExpert.src}

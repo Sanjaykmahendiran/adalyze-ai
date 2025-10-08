@@ -32,7 +32,7 @@ interface Ad {
   industry: string
   score: number
   platforms: string
-  uploaded_on: string
+  uploaded_on: string 
 }
 
 export default function SupportPage() {

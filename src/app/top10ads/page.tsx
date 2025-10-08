@@ -313,9 +313,6 @@ export default function Top10AdsWall() {
                       })}
                     />
                   </div>
-                  <span className="text-[10px] sm:text-xs lg:text-sm text-[#db4900] mt-0.5 sm:mt-1">
-                    Rank: {ad.weighted_rank}
-                  </span>
                 </div>
               </motion.div>
             )

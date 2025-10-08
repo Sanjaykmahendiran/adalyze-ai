@@ -181,11 +181,11 @@ export default function Header() {
       >
         <div className="container mx-auto flex items-center justify-between max-w-7xl">
           {/* Logo - Enhanced responsive sizing */}
-          <Link href="/" className="flex items-center flex-shrink-0 min-w-0 z-50">
+          <Link href="/" className="flex items-center flex-shrink-0 min-w-0 z-50 h-12 sm:h-10 md:h-12 lg:h-12 w-auto max-w-[200px] sm:max-w-[220px] md:max-w-[240px] lg:max-w-full">
             <Image
               src={loginlogo || "/placeholder.svg"}
               alt="Adalyze Logo"
-              className="object-contain h-6 sm:h-8 md:h-10 lg:h-12 w-auto max-w-[100px] sm:max-w-[120px] md:max-w-[140px] lg:max-w-full"
+              className="object-contain w-full h-full"
               priority
               draggable={false}
             />

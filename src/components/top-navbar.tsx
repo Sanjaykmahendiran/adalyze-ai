@@ -59,19 +59,33 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
           {/* Right section - visible on both mobile & desktop */}
           <div className="flex items-center space-x-2 sm:space-x-4 ml-auto">
             {/* Ads Credits */}
-            <div className="border border-[#db4900] px-2 py-1 flex items-center gap-1 rounded-full hover:bg-[#db4900]/10 transition-all duration-300 cursor-pointer group max-w-[160px] sm:max-w-none">
+            <div
+              onClick={() => {
+                if (userDetails?.ads_limit === 0) {
+                  router.push("/pro")
+                }
+              }}
+              className={`border border-[#db4900] px-2 py-1 flex items-center gap-1 rounded-full transition-all duration-300 group max-w-[160px] sm:max-w-none 
+                       ${userDetails?.ads_limit === 0 ? "hover:bg-[#db4900]/10 cursor-pointer" : ""}
+                        `}
+            >
               <FileImage className="w-4 h-4 text-[#db4900] group-hover:text-[#ff5722] transition-colors" />
               <span className="truncate text-xs sm:text-sm text-[#db4900] font-medium group-hover:text-[#ff5722]">
-                Ads Credits:{" "}
-                <span className="text-white font-semibold">
-                  {String(
-                    userDetails?.fretra_status === 1
-                      ? 1
-                      : userDetails?.ads_limit ?? "No Limit"
-                  ).padStart(2, "0")}
-                </span>
+                {userDetails?.ads_limit === 0 ? (
+                  <span className="text-white font-semibold">Add Credits</span>
+                ) : (
+                  <>
+                    Ads Credits:{" "}
+                    <span className="text-white font-semibold">
+                      {userDetails?.fretra_status === 1
+                        ? "01"
+                        : String(userDetails?.ads_limit ?? "No Limit").padStart(2, "0")}
+                    </span>
+                  </>
+                )}
               </span>
             </div>
+
 
             {/* User Profile */}
             <DropdownMenu>
@@ -91,10 +105,10 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
                 <DropdownMenuItem onClick={() => router.push("/myaccount")}>Account</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="md:hidden">
-                <DropdownMenuItem onClick={() => router.push("/guide")}>Guide</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/support")}>Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push("/guide")}>Guide</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push("/support")}>Support</DropdownMenuItem>
+                  <DropdownMenuSeparator />
                 </div>
                 <DropdownMenuItem onClick={() => setReferralOpen(true)}>Refer a friend</DropdownMenuItem>
                 <DropdownMenuSeparator />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,13 +15,44 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Card } from "@/components/ui/card";
 
+interface Ad {
+  ads_type: string
+  ad_id: number
+  ads_name: string
+  image_path: string
+  industry: string
+  score: number
+  platforms: string
+  uploaded_on: string
+}
+
 const FeedbackForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [ads, setAds] = useState<Ad[]>([])
   const [feedbackData, setFeedbackData] = useState({
     ad_upload_id: "",
     rating: "",
     comments: "",
   });
+
+  useEffect(() => {
+    fetchAds()
+  }, [])
+
+  const fetchAds = async () => {
+    try {
+      const userId = Cookies.get('userId')
+      if (!userId) return
+
+      const url = `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}`;
+      const response = await fetch(url)
+      const data = await response.json()
+      setAds(data || [])
+    } catch (error) {
+      console.error("Error fetching ads:", error)
+      setAds([])
+    }
+  }
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,15 +96,22 @@ const FeedbackForm: React.FC = () => {
           <label htmlFor="ad_upload_id" className="block text-sm font-medium mb-2 text-white">
             Ad Upload ID (Optional)
           </label>
-          <Input
-            id="ad_upload_id"
+          <Select
             value={feedbackData.ad_upload_id}
-            onChange={(e) =>
-              setFeedbackData({ ...feedbackData, ad_upload_id: e.target.value })
-            }
-            className="bg-[#171717] border-[#2b2b2b] text-sm sm:text-base text-white"
-            placeholder="Enter ad upload ID if applicable"
-          />
+            onValueChange={(value) => setFeedbackData({ ...feedbackData, ad_upload_id: value })}
+          >
+            <SelectTrigger className="w-full bg-[#171717] border-[#2b2b2b] text-sm sm:text-base">
+              <SelectValue placeholder="Select an ad (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">No specific ad</SelectItem>
+              {ads.map((ad) => (
+                <SelectItem key={ad.ad_id} value={String(ad.ad_id)}>
+                  {ad.ads_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div>

@@ -72,7 +72,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
       const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=forgot_otp&email=${encodeURIComponent(email)}`);
       const result = await response.json();
 
-      if (result.status === 'success') {
+      if (result.user_id) {
         toast.success("Verification code sent to your email!");
         setCodeSent(true);
       } else {
@@ -101,7 +101,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
       const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=forgot_verify_otp&email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
       const result = await response.json();
 
-      if (result.status === 'success') {
+      if (result.message === "OTP is success") {
         toast.success("OTP verified successfully!");
         setVerifiedEmail(email);
         setStep("resetPassword");
@@ -128,7 +128,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
       const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=updatepassword&email=${encodeURIComponent(verifiedEmail)}&password=${encodeURIComponent(data.newPassword)}&confirmpassword=${encodeURIComponent(data.confirmPassword)}`);
       const result = await response.json();
 
-      if (result.status === 'success') {
+      if (result.message === 'Password Updated') {
         toast.success("Password updated successfully!");
         setStep("success");
         // Redirect to login after 2 seconds
@@ -159,8 +159,8 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
             <form onSubmit={(e) => e.preventDefault()}>
               {/* Email Field */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-200">Enter email</label>
-                <div className="relative flex items-center  rounded-md shadow-sm bg-black">
+                <label className="text-sm font-medium text-gray-200 ">Enter Email</label>
+                <div className="relative flex items-center  rounded-md shadow-sm bg-black mt-1 ">
                   <input
                     type="email"
                     className="w-full  px-3 py-2 text-sm focus:outline-none rounded-md text-white placeholder-white/50"
@@ -189,10 +189,10 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
 
               {/* Verification Code Field */}
               <div className="space-y-2 mt-3">
-                <label className="text-sm font-medium text-gray-200">Verification code</label>
+                <label className="text-sm font-medium text-gray-200 ">Verification Code</label>
                 <input
                   type="text"
-                  className="w-full px-3 bg-black py-2 text-sm  rounded-md text-white placeholder-white/50"
+                  className="w-full px-3 bg-black py-2 text-sm  rounded-md text-white placeholder-white/50 mt-1"
                   {...resetRegister("verificationCode", {
                     required: "Verification code is required",
                   })}
@@ -241,7 +241,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                   type="email"
                   value={verifiedEmail}
                   readOnly
-                  className="w-full px-3 bg-black py-2 text-sm  rounded-md text-gray-300 cursor-not-allowed"
+                  className="w-full px-3 bg-black py-2 text-sm  rounded-md text-gray-300 cursor-not-allowed mt-1"
                 />
               </div>
 
@@ -250,7 +250,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                 <label className="text-sm font-medium text-gray-200">New Password</label>
                 <input
                   type="password"
-                  className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50"
+                  className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50 mt-1"
                   {...resetRegister("newPassword", {
                     required: "Please enter your new password",
                     minLength: {
@@ -269,7 +269,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
                 <label className="text-sm font-medium text-gray-200">Confirm Password</label>
                 <input
                   type="password"
-                  className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50"
+                  className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50 mt-1"
                   {...resetRegister("confirmPassword", {
                     required: "Please confirm your password",
                     validate: (value) => {
@@ -286,7 +286,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
               <Button
                 type="submit"
                 disabled={resetLoading}
-                className="w-full text-white mt-6 bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700"
+                className="w-full text-white mt-6 "
               >
                 {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {resetLoading ? "Updating..." : "Update Password"}

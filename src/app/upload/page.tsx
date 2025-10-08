@@ -17,46 +17,54 @@ import toast from "react-hot-toast"
 import UserLayout from "@/components/layouts/user-layout"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import { event } from "@/lib/gtm"
+import { Country, State, TargetInfo } from "./type"
 
-interface Country {
-    id: string
-    name: string
-    iso3: string
-    numeric_code: string
-    iso2: string
-    phonecode: string
-    region_id: string
-    subregion_id: string
-    created_at: string
-    updated_at: string
-    flag: string
-}
+// Move FreeTrailOverlay outside to prevent re-creation on every render
+const FreeTrailOverlay = ({
+    children,
+    message,
+    showOverlay,
+    activeTab,
+    adsLimit,
+    isFreeTrailUser,
+    onUpgradeClick
+}: {
+    children: React.ReactNode
+    message: string
+    showOverlay: boolean
+    activeTab: string
+    adsLimit: number
+    isFreeTrailUser: boolean
+    onUpgradeClick: () => void
+}) => {
+    // Determine button text based on ad_limit / active tab
+    let buttonText = "Upgrade to Pro";
 
-interface State {
-    id: string
-    name: string
-    country_id: string
-    country_code: string
-    fips_code: string
-    iso2: string
-    type: string
-    latitude: string
-    longitude: string
-    created_at: string
-    updated_at: string
-    flag: string
-    wikiDataId: string
-}
+    if (activeTab === "single" && adsLimit === 0) {
+        buttonText = "Add Credits";
+    } else if ((activeTab === "carousel" || activeTab === "video") && (isFreeTrailUser || adsLimit < 3)) {
+        buttonText = "Add Credits";
+    }
 
-interface TargetInfo {
-    platform: string
-    industry: string
-    age: string
-    gender: string
-    country: string
-    state: string
-    countryName?: string
-    stateName?: string
+    return (
+        <div className="relative">
+            <div className={showOverlay ? "blur-xs pointer-events-none select-none" : ""}>{children}</div>
+            {showOverlay && (
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-2xl z-10">
+                    <div className="text-center p-4">
+                        <Lock className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-[#db4900]" />
+                        <p className="text-white font-semibold mb-4 text-sm sm:text-base px-2">{message}</p>
+                        <Button
+                            onClick={onUpgradeClick}
+                            className="bg-[#db4900] hover:bg-[#c44000] text-white rounded-lg text-sm sm:text-base px-4 py-2"
+                        >
+                            {buttonText}
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
 }
 
 export default function UploadPage() {
@@ -75,10 +83,11 @@ export default function UploadPage() {
     // Form states for side panel
     const [platform, setPlatform] = useState("")
     const [industry, setIndustry] = useState("")
-    const [age, setAge] = useState("")
     const [gender, setGender] = useState("")
     const [country, setCountry] = useState("")
     const [state, setState] = useState("")
+    const [minAge, setMinAge] = useState("")
+    const [maxAge, setMaxAge] = useState("")
 
     // Single ad states
     const [singleFile, setSingleFile] = useState<File | null>(null)
@@ -109,40 +118,12 @@ export default function UploadPage() {
     const [loadingStates, setLoadingStates] = useState(false)
     const [countrySearch, setCountrySearch] = useState("")
     const [stateSearch, setStateSearch] = useState("")
-    const [minAge, setMinAge] = useState("")
-    const [maxAge, setMaxAge] = useState("")
+
 
 
     const userId = cookies.get("userId") || ""
     const isFreeTrailUser = userDetails?.fretra_status === 1
 
-    const FreeTrailOverlay = ({
-        children,
-        message,
-        showOverlay
-    }: {
-        children: React.ReactNode
-        message: string
-        showOverlay: boolean
-    }) => (
-        <div className="relative">
-            <div className={showOverlay ? "blur-lg pointer-events-none select-none" : ""}>{children}</div>
-            {showOverlay && (
-                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-2xl z-10">
-                    <div className="text-center p-4">
-                        <Lock className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-[#db4900]" />
-                        <p className="text-white font-semibold mb-4 text-sm sm:text-base px-2">{message}</p>
-                        <Button
-                            onClick={() => router.push("/pro")}
-                            className="bg-[#db4900] hover:bg-[#c44000] text-white rounded-lg text-sm sm:text-base px-4 py-2"
-                        >
-                            Upgrade to Pro
-                        </Button>
-                    </div>
-                </div>
-            )}
-        </div>
-    )
 
 
     useEffect(() => {
@@ -319,7 +300,9 @@ export default function UploadPage() {
                 })
             }, 300)
 
-            const uploadPromises = filesToUpload.map(async (file) => {
+            // Upload files sequentially to maintain order
+            const uploadedUrls: string[] = []
+            for (const file of filesToUpload) {
                 const formData = new FormData()
                 formData.append('file', file)
                 formData.append('user_id', userId)
@@ -335,17 +318,18 @@ export default function UploadPage() {
 
                 const result = await response.json()
                 if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
-                    toast.success('File uploaded successfully!')
-                    return result.fileUrl
+                    uploadedUrls.push(result.fileUrl)
                 } else {
                     throw new Error(result.message || 'Upload failed')
                 }
-            })
+            }
 
-            const uploadedUrls = await Promise.all(uploadPromises)
             clearInterval(progressInterval)
             setCarouselUploadProgress(100)
             setCarouselImageUrls(uploadedUrls)
+            
+            // Show single success toast with total count
+            toast.success(`${uploadedUrls.length} image${uploadedUrls.length > 1 ? 's' : ''} uploaded successfully!`)
         } catch (err) {
             console.error('Carousel upload error:', err)
             setCarouselFiles([])
@@ -819,7 +803,7 @@ export default function UploadPage() {
                                         <button
                                             onClick={() => setActiveTab("single")}
                                             className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
-            ${activeTab === "single"
+                                                                ${activeTab === "single"
                                                     ? "bg-[#db4900]/10 border-[#db4900] text-[#db4900]"
                                                     : "border-[#2b2b2b] text-gray-300 hover:text-white hover:border-[#db4900]/50"
                                                 }`}
@@ -835,7 +819,7 @@ export default function UploadPage() {
                                         <button
                                             onClick={() => setActiveTab("carousel")}
                                             className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
-            ${activeTab === "carousel"
+                                                            ${activeTab === "carousel"
                                                     ? "bg-[#db4900]/10 border-[#db4900] text-[#db4900]"
                                                     : "border-[#2b2b2b] text-gray-300 hover:text-white hover:border-[#db4900]/50"
                                                 }`}
@@ -851,7 +835,7 @@ export default function UploadPage() {
                                         <button
                                             onClick={() => setActiveTab("video")}
                                             className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
-            ${activeTab === "video"
+                                                        ${activeTab === "video"
                                                     ? "bg-[#db4900]/10 border-[#db4900] text-[#db4900]"
                                                     : "border-[#2b2b2b] text-gray-300 hover:text-white hover:border-[#db4900]/50"
                                                 }`}
@@ -865,39 +849,51 @@ export default function UploadPage() {
                                     </div>
                                 </div>
 
-                                {/* Ad Name Input - Shared across all tabs */}
-                                <div className="w-full max-w-4xl mx-auto mb-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-white/70 font-semibold text-base">Ad Name</Label>
-                                        <Input
-                                            placeholder="Enter ad name"
-                                            value={
-                                                activeTab === "single" ? singleAdName :
-                                                    activeTab === "carousel" ? carouselAdName :
-                                                        videoAdName
-                                            }
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                if (activeTab === "single") setSingleAdName(value);
-                                                else if (activeTab === "carousel") setCarouselAdName(value);
-                                                else setVideoAdName(value);
-                                            }}
-                                            className="bg-[#171717] border-[#3d3d3d] text-white placeholder-gray-400 text-base py-3"
-                                            autoComplete="off"
-                                            spellCheck="false"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Conditional Content Rendering */}
-                                <div className="mt-6 sm:mt-8">
+                                {/* Entire Ad Creation Section wrapped inside overlay */}
+                                <FreeTrailOverlay
+                                    showOverlay={
+                                        activeTab === "single"
+                                            ? userDetails?.ads_limit === 0
+                                            : isFreeTrailUser || userDetails?.ads_limit! < 3
+                                    }
+                                    message={
+                                        activeTab === "single"
+                                            ? "You don't have sufficient credits. Upgrade to Pro to analyze more ads."
+                                            : isFreeTrailUser
+                                                ? "Upgrade to Pro to unlock this ad type."
+                                                : "You don't have sufficient credits. Upgrade to Pro to analyze more ads."
+                                    }
+                                    activeTab={activeTab}
+                                    adsLimit={userDetails?.ads_limit || 0}
+                                    isFreeTrailUser={isFreeTrailUser}
+                                    onUpgradeClick={() => router.push("/pro")}
+                                >
                                     <div className="w-full max-w-4xl mx-auto">
-                                        {/* Single Image */}
-                                        <div className={activeTab === "single" ? "block" : "hidden"}>
-                                            <FreeTrailOverlay
-                                                showOverlay={userDetails?.ads_limit === 0}
-                                                message=" You don’t have sufficient credits. Upgrade to Pro to analyze more ads."
-                                            >
+                                        {/* Ad Name Input */}
+                                        <div className="space-y-2 mb-6">
+                                            <Label className="text-white/70 font-semibold text-base">Ad Name</Label>
+                                            <Input
+                                                placeholder="Enter ad name"
+                                                value={
+                                                    activeTab === "single" ? singleAdName :
+                                                        activeTab === "carousel" ? carouselAdName :
+                                                            videoAdName
+                                                }
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    if (activeTab === "single") setSingleAdName(value);
+                                                    else if (activeTab === "carousel") setCarouselAdName(value);
+                                                    else setVideoAdName(value);
+                                                }}
+                                                className="bg-[#171717] border-[#3d3d3d] text-white placeholder-gray-400 text-base py-3"
+                                                autoComplete="off"
+                                                spellCheck="false"
+                                            />
+                                        </div>
+
+                                        {/* Conditional Uploaders */}
+                                        <div className="mt-6 sm:mt-8">
+                                            {activeTab === "single" && (
                                                 <SingleFileUploader
                                                     file={singleFile}
                                                     onFileChange={handleSingleFileChange}
@@ -905,19 +901,9 @@ export default function UploadPage() {
                                                     isUploading={isSingleUploading}
                                                     uploadProgress={singleUploadProgress}
                                                 />
-                                            </FreeTrailOverlay>
-                                        </div>
+                                            )}
 
-                                        {/* Carousel */}
-                                        <div className={activeTab === "carousel" ? "block" : "hidden"}>
-                                            <FreeTrailOverlay
-                                                showOverlay={isFreeTrailUser || userDetails?.ads_limit! < 3}
-                                                message={
-                                                    isFreeTrailUser
-                                                        ? " Upgrade to Pro to unlock Carousel Ads."
-                                                        : " You don’t have sufficient credits. Upgrade to Pro to analyze more ads."
-                                                }
-                                            >
+                                            {activeTab === "carousel" && (
                                                 <CarouselFileUploader
                                                     files={carouselFiles}
                                                     onFilesChange={handleCarouselFilesChange}
@@ -925,19 +911,9 @@ export default function UploadPage() {
                                                     isUploading={isCarouselUploading}
                                                     uploadProgress={carouselUploadProgress}
                                                 />
-                                            </FreeTrailOverlay>
-                                        </div>
+                                            )}
 
-                                        {/* Video */}
-                                        <div className={activeTab === "video" ? "block" : "hidden"}>
-                                            <FreeTrailOverlay
-                                                showOverlay={isFreeTrailUser || userDetails?.ads_limit! < 3}
-                                                message={
-                                                    isFreeTrailUser
-                                                        ? " Upgrade to Pro to unlock Video Ads."
-                                                        : "You don’t have sufficient credits. Upgrade to Pro to analyze more ads."
-                                                }
-                                            >
+                                            {activeTab === "video" && (
                                                 <VideoUploader
                                                     file={videoFile}
                                                     onFileChange={handleVideoFileChange}
@@ -946,11 +922,10 @@ export default function UploadPage() {
                                                     isUploading={isVideoUploading}
                                                     uploadProgress={videoUploadProgress}
                                                 />
-                                            </FreeTrailOverlay>
+                                            )}
                                         </div>
 
-
-                                        {/* Two Button Layout - Always visible */}
+                                        {/* Buttons - included inside overlay */}
                                         <div className="mt-8 flex flex-col sm:flex-row gap-3">
                                             <Button
                                                 onClick={() => handleAnalyze()}
@@ -969,7 +944,7 @@ export default function UploadPage() {
                                             </Button>
                                         </div>
                                     </div>
-                                </div>
+                                </FreeTrailOverlay>
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { Upload, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -28,6 +28,23 @@ export function VideoUploader({
 }: VideoUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Memoize video URL to prevent recreation on every render
+  const videoUrl = useMemo(() => {
+    if (file) {
+      return URL.createObjectURL(file)
+    }
+    return null
+  }, [file])
+
+  // Cleanup object URL when file changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl)
+      }
+    }
+  }, [videoUrl])
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -83,11 +100,11 @@ export function VideoUploader({
   }, [onCancelUpload, onFileChange])
 
   return (
-    <div className="flex flex-col space-y-6 rounded-2xl bg-[#171717] border border-primary px-4 sm:px-6 md:px-8 py-4 text-white">
+    <div className="flex flex-col space-y-4 sm:space-y-6 rounded-2xl bg-[#171717] border border-primary p-4 sm:p-6 lg:p-8 text-white">
       {file && isUploaded && screenshots.length > 0 && !isUploading ? (
         <div className="flex flex-col items-center space-y-4">
           <video
-            src={URL.createObjectURL(file)}
+            src={videoUrl || undefined}
             controls
             className="w-full max-w-sm h-48 sm:h-56 rounded-lg object-cover"
           />
@@ -111,7 +128,7 @@ export function VideoUploader({
         <div className="flex flex-col items-center space-y-4">
           <div className="relative w-full max-w-sm h-48 sm:h-56 rounded-lg overflow-hidden">
             <video
-              src={URL.createObjectURL(file)}
+              src={videoUrl || undefined}
               className="w-full h-full object-cover rounded-lg"
               muted
             />
@@ -137,7 +154,7 @@ export function VideoUploader({
         </div>
       ) : (
         <div
-          className={`flex min-h-[160px] sm:min-h-[200px] lg:min-h-[240px] w-full cursor-pointer flex-col items-center justify-center rounded-xl bg-[#2b2b2b] p-4 text-center transition-all duration-300 ${isUploading
+          className={`flex min-h-[160px] sm:min-h-[200px] lg:min-h-[240px] w-full cursor-pointer flex-col items-center justify-center rounded-xl bg-[#2b2b2b] p-4 sm:p-6 text-center transition-all duration-300 ${isUploading
               ? "cursor-not-allowed opacity-50"
               : isDragging
                 ? "border-4 border-dashed border-gray-400 bg-[#2b2b2b] scale-105"

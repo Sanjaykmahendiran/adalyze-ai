@@ -553,11 +553,7 @@ const ProPage: React.FC = () => {
                                                 )}
                                             </Button>
 
-                                            {!razorpayLoaded && (
-                                                <p className="text-xs text-gray-500 text-center mt-2">
-                                                    Loading payment gateway...
-                                                </p>
-                                            )}
+
                                         </div>
                                     </div>
                                 )}
@@ -643,11 +639,7 @@ const ProPage: React.FC = () => {
                                                 )}
                                             </Button>
 
-                                            {!razorpayLoaded && (
-                                                <p className="text-xs text-gray-500 text-center mt-2">
-                                                    Loading payment gateway...
-                                                </p>
-                                            )}
+
                                         </div>
                                     </div>
                                 )}
@@ -733,11 +725,7 @@ const ProPage: React.FC = () => {
                                                 )}
                                             </Button>
 
-                                            {!razorpayLoaded && (
-                                                <p className="text-xs text-gray-500 text-center mt-2">
-                                                    Loading payment gateway...
-                                                </p>
-                                            )}
+
                                         </div>
                                     </div>
                                 )}

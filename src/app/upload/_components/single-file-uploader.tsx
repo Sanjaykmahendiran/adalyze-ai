@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import Image from "next/image"
 import { Upload, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,23 @@ export function SingleFileUploader({
 }: SingleFileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Memoize preview URL to prevent recreation on every render
+  const previewUrl = useMemo(() => {
+    if (file && !imageUrl) {
+      return URL.createObjectURL(file)
+    }
+    return null
+  }, [file, imageUrl])
+
+  // Cleanup object URL when file changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -82,7 +99,7 @@ export function SingleFileUploader({
 
 
   return (
-    <div className="flex flex-col space-y-4 sm:space-y-6 rounded-2xl sm:rounded-3xl bg-[#171717] border border-primary p-4 sm:p-6 lg:p-8 text-white">
+    <div className="flex flex-col space-y-4 sm:space-y-6 rounded-2xl  bg-[#171717] border border-primary p-4 sm:p-6 lg:p-8 text-white">
       {file && imageUrl && !isUploading ? (
         <div className="flex flex-col items-center space-y-4">
           {/* Preview */}
@@ -104,7 +121,7 @@ export function SingleFileUploader({
         <div className="flex flex-col items-center space-y-4">
           {/* Preview + Loader */}
           <div className="relative w-40 h-40 rounded-lg overflow-hidden">
-            <Image src={URL.createObjectURL(file)} alt="Upload preview" fill className="object-cover" />
+            <Image src={previewUrl || URL.createObjectURL(file)} alt="Upload preview" fill className="object-cover" />
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-white" />
             </div>
@@ -126,10 +143,10 @@ export function SingleFileUploader({
       ) : (
         <div
           className={`flex min-h-[160px] sm:min-h-[200px] lg:min-h-[240px] w-full cursor-pointer bg-[#2b2b2b] flex-col items-center justify-center rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center transition-all duration-300 ${isUploading
-              ? "cursor-not-allowed opacity-50"
-              : isDragging
-                ? "border-4 border-dashed border-gray-400 bg-[#2b2b2b] scale-105"
-                : " hover:bg-[#2a2a2a] text-white"
+            ? "cursor-not-allowed opacity-50"
+            : isDragging
+              ? "border-4 border-dashed border-gray-400 bg-[#2b2b2b] scale-105"
+              : " hover:bg-[#2a2a2a] text-white"
             }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

@@ -360,10 +360,12 @@ export default function AdComparisonUpload() {
     const isFreeTrailUser = userDetails?.fretra_status === 1 || (userDetails?.ads_limit ?? 0) < 3;
 
     let overlayText = "Upgrade to Pro to unlock A/B testing.";
+    let buttonText = "Upgrade";
 
     // If not a free trial user, but ads_limit is less than 3
     if ((userDetails?.ads_limit ?? 0) < 3 && userDetails?.fretra_status !== 1) {
-        overlayText = "You don’t have sufficient credits. Upgrade to Pro to analyze more ads.";
+        overlayText = "You don't have sufficient credits. Upgrade to Pro to analyze more ads.";
+        buttonText = "Add Credits";
     }
 
 
@@ -655,7 +657,7 @@ export default function AdComparisonUpload() {
                                 onClick={() => router.push("/pro")}
                                 className="text-white rounded-lg text-sm sm:text-base px-4 py-2"
                             >
-                                Upgrade
+                                {buttonText}
                             </Button>
                         </div>
                     </div>

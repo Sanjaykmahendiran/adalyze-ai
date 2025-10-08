@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { toast } from "react-hot-toast"
 
 type ChangePasswordFormProps = {
   email: string;
@@ -32,44 +33,44 @@ export default function ChangePasswordForm({ email }: ChangePasswordFormProps) {
     }
   }, [showSuccess])
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  if (formData.newPassword !== formData.confirmPassword) {
-    alert("New passwords don't match");
-    setIsLoading(false);
-    return;
-  }
-
-  try {
-    const url = `https://adalyzeai.xyz/App/api.php?gofor=loggedupdatepassword&email=${encodeURIComponent(email)}&oldpassword=${encodeURIComponent(formData.oldPassword)}&password=${encodeURIComponent(formData.newPassword)}&confirmpassword=${encodeURIComponent(formData.confirmPassword)}`;
-
-    const response = await fetch(url, {
-      method: "GET",
-    });
-
-    const data = await response.json();
-
-    if (data?.message === "Password Updated") {
-      setShowSuccess(true);
-      setFormData({
-        oldPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-    } else {
-      alert(data?.message || "Failed to change password. Please try again.");
+    if (formData.newPassword !== formData.confirmPassword) {
+      alert("New passwords don't match");
+      setIsLoading(false);
+      return;
     }
-  } catch (error) {
-    console.error("Error changing password:", error);
-    alert("An error occurred while updating the password.");
-  } finally {
-    setIsLoading(false);
-  }
-};
 
-  
+    try {
+      const url = `https://adalyzeai.xyz/App/api.php?gofor=loggedupdatepassword&email=${encodeURIComponent(email)}&oldpassword=${encodeURIComponent(formData.oldPassword)}&password=${encodeURIComponent(formData.newPassword)}&confirmpassword=${encodeURIComponent(formData.confirmPassword)}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+      });
+
+      const data = await response.json();
+
+      if (data?.message === "Password Updated") {
+        setShowSuccess(true);
+        setFormData({
+          oldPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        toast.error(data?.message || "Failed to change password. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
+      toast.error("An error occurred while updating the password.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
 
   const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
     setShowPasswords((prev) => ({

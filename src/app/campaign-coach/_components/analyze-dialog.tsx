@@ -27,7 +27,7 @@ export function AnalyzeDialog({ open, onOpenChange }: Props) {
       aria-labelledby="analyze-title"
       className="fixed inset-0 z-50 grid place-items-center p-4"
     >
-      <div className="absolute inset-0 bg-foreground/60" onClick={() => onOpenChange(false)} />
+      <div className="absolute inset-0 bg-black/60" onClick={() => onOpenChange(false)} />
       <div className="relative z-10 w-full max-w-lg rounded-xl bg-card text-card-foreground shadow-lg">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 id="analyze-title" className="text-base font-semibold">
@@ -55,7 +55,7 @@ export function AnalyzeDialog({ open, onOpenChange }: Props) {
               {"Contact Email"}
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2">
+              <div className="flex-1 inline-flex items-center gap-2 rounded-md border border-input bg-black px-3 py-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <input
                   id="email"
@@ -75,7 +75,7 @@ export function AnalyzeDialog({ open, onOpenChange }: Props) {
             </label>
             <label
               htmlFor="file"
-              className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-background px-4 py-6 text-sm text-muted-foreground hover:bg-accent"
+              className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-black px-4 py-6 text-sm text-muted-foreground hover:bg-accent"
             >
               <Upload className="h-4 w-4" />
               {"Drag & drop or click to upload"}

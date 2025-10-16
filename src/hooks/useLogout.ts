@@ -7,6 +7,7 @@ const useLogout = () => {
 
   const logout = () => {
     Cookies.remove("userId", { path: basePath });
+    Cookies.remove("email", { path: basePath });
     router.push("/");
   };
 

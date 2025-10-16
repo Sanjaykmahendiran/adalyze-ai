@@ -20,7 +20,9 @@ import Link from "next/link";
 import GoogleSignInButton from "@/app/login/_components/GoogleSign-In";
 import Cookies from "js-cookie";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { event } from "@/lib/gtm";
+import { event, trackSignup } from "@/lib/gtm";
+import { login } from "@/services/authService";
+import { trackEvent } from "@/lib/eventTracker";
 
 const sourceOptions = [
   "Google",
@@ -32,6 +34,13 @@ const sourceOptions = [
   "Referral",
   "Other",
 ];
+
+interface LoginFormData {
+  token?: string;
+  nouptoken?: string;
+  email?: string;
+  password?: string;
+}
 
 // Step 1 schema - only email
 const emailSchema = z.object({
@@ -62,9 +71,66 @@ export default function RegistrationForm() {
   const [referralUserId, setReferralUserId] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(false);
 
+  const onSubmit = async (data: LoginFormData) => {
+    setLoading(true);
+
+    try {
+      let loginData;
+
+      if (data.token) {
+        loginData = await login({ google_token: data.token });
+      } else if (data.nouptoken) {
+        loginData = await login({ nouptoken: data.nouptoken });
+      } else {
+        loginData = await login(data);
+      }
+
+      if (loginData.status === "success" && loginData.user) {
+        const user = loginData.user;
+        Cookies.set("userId", user.user_id.toString(), { expires: 7 });
+        trackEvent("Google_Register_completed", window.location.href, user.email);
+        toast.success("Login successful!");
+
+        if (user.payment_status === 0) {
+          if (user.fretra_status === 1) {
+            router.push("/dashboard"); // Allowed even if unpaid
+          } else {
+            router.push("/pricing"); // Unpaid and fretra_status not 1
+          }
+        } else {
+          router.push("/dashboard"); // Paid users
+        }
+      } else {
+        toast.error(loginData.message || "Login failed. Please check your credentials.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    if (searchParams) {
+      const getToken = searchParams.get("token");
+      if (getToken) {
+        onSubmit({ nouptoken: getToken });
+      }
+    }
+  }, [searchParams]);
+
+  
   // Get referral code from search params
   const referralCode = searchParams.get('referral_code') || '';
+  
+  // Get UTM parameters from search params
+  const utmSource = searchParams.get('utm_source') || '';
+  const utmMedium = searchParams.get('utm_medium') || '';
+  const utmCampaign = searchParams.get('utm_campaign') || '';
 
   // Effect to persist the step and user data in localStorage
   useEffect(() => {
@@ -196,6 +262,9 @@ export default function RegistrationForm() {
       if (data.user_id) {
         setEmailValue(values.email);
         setUserId(data.user_id.toString());
+
+        trackEvent("1St_level_email_register", window.location.href, values.email);
+
         setStep(2);
       } else if (data.status === "error" && data.message) {
         toast.error(data.message);
@@ -226,6 +295,9 @@ export default function RegistrationForm() {
         city: string;
         source: string;
         referred_by?: number;
+        utm_source?: string;
+        utm_medium?: string;
+        utm_campaign?: string;
       } = {
         gofor: "register",
         user_id: userId,
@@ -243,6 +315,17 @@ export default function RegistrationForm() {
         payload.referred_by = parseInt(referralUserId);
       }
 
+      // Add UTM parameters if they exist
+      if (utmSource) {
+        payload.utm_source = utmSource;
+      }
+      if (utmMedium) {
+        payload.utm_medium = utmMedium;
+      }
+      if (utmCampaign) {
+        payload.utm_campaign = utmCampaign;
+      }
+
       const response = await fetch("https://adalyzeai.xyz/App/api.php", {
         method: "POST",
         headers: {
@@ -258,12 +341,10 @@ export default function RegistrationForm() {
         Cookies.set("userId", userId, { expires: 30 });
         // Save email in cookies
         Cookies.set("email", emailValue, { expires: 30 });
-
+        trackEvent("Register_completed", window.location.href, emailValue);
         // ✅ GA4 / GTM custom event
-        event("signup", {
-          method: values.source === "Referral" ? "Referral" : values.source || "Email",
-        });
 
+        trackSignup(values.source === "Referral" ? "Referral" : values.source || "Email", userId);
 
         toast.success(data.message || "Registration successful!");
         registrationForm.reset();
@@ -324,7 +405,7 @@ export default function RegistrationForm() {
                   {isLoading ? "Verifying..." : "Continue"}
                 </Button>
 
-                <GoogleSignInButton onSubmit={onSubmitRegistration} />
+                <GoogleSignInButton onSubmit={onSubmit} />
 
                 <Link href="/login" className="text-sm mt-4 flex justify-center">
                   Already have an account?{" "}

@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { trackEvent } from "@/lib/eventTracker"
 
 export default function CaseStudySection() {
     const router = useRouter()
@@ -78,7 +79,9 @@ export default function CaseStudySection() {
                         }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                         whileHover={{ y: -8, scale: 1.02 }}
-                        onClick={() => router.push(`/case-study-detail?cs_id=${caseStudy.cs_id}`)}
+                        onClick={() => {router.push(`/case-study-detail?cs_id=${caseStudy.cs_id}`);
+                            trackEvent("LP_Case_Study_button_clicked", window.location.href);
+                        }}
                     >
                         {/* Banner */}
                         <div className="h-40 bg-[#2b2b2b] relative flex items-center justify-center shine-effect">
@@ -151,6 +154,9 @@ export default function CaseStudySection() {
                 <Link
                     href="/case-study"
                     className="px-6 py-3 rounded-lg bg-primary/90 hover:bg-primary text-white font-medium transition-all flex items-center gap-2 shadow-md"
+                    onClick={() => {router.push("/case-study");
+                        trackEvent("LP_Case_Study_button_clicked", window.location.href);
+                    }}
                 >
                     View All
                     <ArrowRightIcon size={18} />

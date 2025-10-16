@@ -15,6 +15,7 @@ import Features5Mobile from "@/assets/landing-page/features/Features5-mobile.web
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { trackEvent } from "@/lib/eventTracker"
 
 const features = [
   {
@@ -158,7 +159,9 @@ export default function FeaturesSection() {
                       className="inline-block"
                     >
                       <Button
-                        onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                        onClick={() => {window.open("/register", "_blank", "noopener,noreferrer");
+                          trackEvent("LP_Features_button_clicked", window.location.href);
+                        } }
                         variant="outline"
                         className="text-white cursor-pointer hover:bg-primary hover:text-white border-primary text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
                       >

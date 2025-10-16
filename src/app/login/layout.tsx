@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import { Suspense } from "react";
 import { Toaster } from "react-hot-toast";
 
 
@@ -23,7 +24,9 @@ export default function Layout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} antialiased`}>
+        <Suspense fallback={null}>
         {children}
+        </Suspense>
       </body>
     </html>
   );

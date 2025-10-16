@@ -8,9 +8,29 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import LoginChatCard from "@/components/landing-page/login-chat-card";
 import ChatIcon from "@/assets/Chat-icon-suggesto.png";
 import Counter from "@/components/landing-page/counter";
+import { useSearchParams } from "next/navigation";
+
+// Shared type for banner data (same shape as before)
+interface BannerData {
+  tagline: string;
+  heading: string;
+  subheading: string;
+  brief: string;
+  pcta: string;
+  scta: string;
+  trust_line: string;
+  typeword1: string;
+  typeword2: string;
+  typeword3: string;
+  typeword4: string;
+}
 
 // Dynamic sections
-const LandingPageHeader = dynamic(() => import("@/components/landing-page/landing-header-section"), { ssr: true });
+// Header continues to SSR; it now accepts props but UI/behavior remain unchanged
+const LandingPageHeader = dynamic(
+  () => import("@/components/landing-page/landing-header-section"),
+  { ssr: true }
+);
 const ClientSection = dynamic(() => import("@/components/landing-page/client-section"), { ssr: false });
 const OldWayNewWay = dynamic(() => import("@/components/landing-page/oldway-newway"), { ssr: false });
 const FeaturesSection = dynamic(() => import("@/components/landing-page/features"), { ssr: false });
@@ -21,12 +41,37 @@ const WorkflowSection = dynamic(() => import("@/components/landing-page/workflow
 const LandingPageFooter = dynamic(() => import("@/components/landing-page/landing-page-footer"), { ssr: false });
 const PromotionalPopup = dynamic(() => import("@/components/landing-page/promotional-card"), { ssr: false });
 const CaseStudySection = dynamic(() => import("@/components/landing-page/case-study-section"), { ssr: false });
-const BlogSection = dynamic(() => import("@/components/landing-page/blog-section"), { ssr: false });
-const CounterSection = dynamic(() => import("@/components/landing-page/CounterSection"), { ssr: false });
 const ForWhom = dynamic(() => import("@/components/landing-page/for-whom"), { ssr: false });
+const AiAdMistakes = dynamic(() => import("@/components/landing-page/ai-ad-mistakes"), { ssr: false });
 
 const LandingPage = () => {
   const prefersReducedMotion = useReducedMotion();
+
+  // Banner data lifted here
+  const searchParams = useSearchParams();
+  const variant = searchParams.get("variant") || "default";
+
+  const [bannerData, setBannerData] = useState<BannerData | null>(null);
+  const [isLoadingBanner, setIsLoadingBanner] = useState(true);
+  const [buttonText, setButtonText] = useState("");
+
+  useEffect(() => {
+    const fetchBannerData = async () => {
+      try {
+        const baseUrl = "https://adalyzeai.xyz/App/api.php?gofor=livebanner";
+        const url = variant && variant !== "default" ? `${baseUrl}&variant=${variant}` : baseUrl;
+        const response = await fetch(url);
+        const data = await response.json();
+        setBannerData(data);
+        setIsLoadingBanner(false);
+        setButtonText(data.pcta);
+      } catch (error) {
+        console.error("Error fetching banner data:", error);
+        setIsLoadingBanner(false);
+      }
+    };
+    fetchBannerData();
+  }, [variant]);
 
   // UI state
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -101,22 +146,23 @@ const LandingPage = () => {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden lg:overflow-x-visible">
-      {/* Header */}
-      <LandingPageHeader />
-      {/* Sections */}
+      {/* Header receives lifted data */}
+      <LandingPageHeader bannerData={bannerData} isLoading={isLoadingBanner} />
+
+      {/* Sections (unchanged) */}
       <ClientSection />
-      <OldWayNewWay />
-      {/* <SocialProofSection /> */}
-      < ForWhom />
+      <OldWayNewWay ButtonText={bannerData?.pcta || ""} />
+      <ForWhom />
       <FeaturesSection />
-      <Counter />
+      <Counter ButtonText={buttonText} />
       {/* <CounterSection /> */}
       <WorkflowSection />
+      <AiAdMistakes ButtonText={buttonText} />
       <Testimonials />
       <CaseStudySection />
-      <FAQSection />
+      <FAQSection ButtonText={buttonText} />
       {/* <BlogSection /> */}
-      <CTASection />
+      <CTASection ButtonText={buttonText} />
       <LandingPageFooter />
 
       {/* Floating controls */}

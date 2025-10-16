@@ -52,7 +52,7 @@ export default function ChangePasswordForm({ email }: ChangePasswordFormProps) {
 
       const data = await response.json();
 
-      if (data?.message === "Password Updated") {
+      if (data?.message === "Password Updated Successfully") {
         setShowSuccess(true);
         setFormData({
           oldPassword: "",

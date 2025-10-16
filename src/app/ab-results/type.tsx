@@ -12,6 +12,11 @@ export interface ApiResponse {
     video: string;
     uploaded_on: string;
     industry: string;
+    platform?: string;
+    gender?: string;
+    age?: string;
+    country?: string;
+    state?: string;
     score_out_of_100: number;
     platform_suits: string[] | string;
     platform_notsuits: string[] | string;
@@ -61,6 +66,12 @@ export interface ApiResponse {
     quick_win_tip?: string;
     shareability_comment?: string;
     ad_copies: AdCopy[];
+    go_no_go?: string[] | string;
+    readability_clarity_meter?: number | string;
+    competitor_uniqueness_meter?: number | string;
+    best_day_time_to_post?: string[] | string;
+    ad_fatigue_score?: string[] | string | number;
+    "10_trending_tags_relatedto_ad"?: string[];
 }
 
 export interface ABTestResult {

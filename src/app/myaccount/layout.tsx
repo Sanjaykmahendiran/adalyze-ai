@@ -1,7 +1,6 @@
 import { Poppins } from "next/font/google";
-import { RootLayoutProps } from "@/app/types";
 import { Suspense } from "react";
-import Spinner from "@/components/overlay";
+import MyAccountLoadingSkeleton from "@/components/Skeleton-loading/myaccount-loading";
 
 export const poppins = Poppins({ subsets: ["latin"], weight: ["400", "600"] });
 
@@ -10,9 +9,9 @@ export const metadata = {
   description: "Adalyze AI- Nextgen AI Tool for your Career Journey",
 };
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<Spinner />}>
+    <Suspense fallback={<MyAccountLoadingSkeleton />}>
       <div className=" md:pt-0">{children}</div>
     </Suspense>
   );

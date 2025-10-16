@@ -3,7 +3,30 @@
 import HtmlRenderer from "@/components/html-renderer";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Spinner from "@/components/overlay";
+
+const PoliciesSkeleton = () => (
+  <div className="mt-6 space-y-4 animate-pulse">
+    {/* Content lines skeleton */}
+    <div className="space-y-3">
+      <div className="h-6 w-3/4 bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-full bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-full bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-5/6 bg-[#2b2b2b] rounded" />
+    </div>
+    <div className="space-y-3 pt-4">
+      <div className="h-5 w-2/3 bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-full bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-full bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-4/5 bg-[#2b2b2b] rounded" />
+    </div>
+    <div className="space-y-3 pt-4">
+      <div className="h-5 w-1/2 bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-full bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-full bg-[#2b2b2b] rounded" />
+      <div className="h-4 w-3/4 bg-[#2b2b2b] rounded" />
+    </div>
+  </div>
+);
 
 export default function PolicyComponent() {
   const [privacy, setPrivacy] = useState<string>("");
@@ -57,9 +80,7 @@ export default function PolicyComponent() {
           </TabsList>
 
           {loading ? (
-            <div className="flex justify-center items-center py-6">
-              <Spinner />
-            </div>
+            <PoliciesSkeleton />
           ) : (
             <>
               <TabsContent value="privacy">

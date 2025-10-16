@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
-
+import { trackEvent } from "@/lib/eventTracker"
 interface FAQItem {
   faq_id: number;
   question: string;
@@ -10,7 +10,7 @@ interface FAQItem {
   created_date: string;
 }
 
-const FAQSection: React.FC = () => {
+const FAQSection: React.FC<{ ButtonText: string }> = ({ ButtonText }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [visibleItems, setVisibleItems] = useState<number[]>([]);
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
@@ -136,8 +136,12 @@ const FAQSection: React.FC = () => {
               </h2>
 
               {/* CTA Button */}
-              <button className="inline-flex items-center gap-2 text-lg text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 bg-[#db4900] hover:bg-orange-700">
-                Start Free Trail
+              <button className="inline-flex items-center gap-2 text-lg text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 bg-[#db4900] hover:bg-orange-700"
+                onClick={() => {
+                  trackEvent("LP_FAQ_button_clicked", window.location.href);
+                }}
+              >
+                {ButtonText}
               </button>
             </div>
           </div>
@@ -161,12 +165,15 @@ const FAQSection: React.FC = () => {
               faqs.map((faq, index) => (
                 <div
                   key={faq.faq_id}
-                  ref={(el) => (accordionRefs.current[index] = el)}
+                  ref={(el) => { accordionRefs.current[index] = el; }}
                   style={getAnimationStyle(index)}
                   className="rounded-lg bg-black transition-all duration-300 hover:bg-[#db4900]/20 origin-top"
                 >
                   <button
-                    onClick={() => toggleAccordion(index)}
+                    onClick={() => {
+                      toggleAccordion(index);
+                      trackEvent("LP_FAQ_button_clicked", window.location.href);
+                    }}
                     className="w-full flex items-start justify-between p-6 text-left"
                   >
                     <h5
@@ -177,16 +184,16 @@ const FAQSection: React.FC = () => {
                     </h5>
                     <ChevronDown
                       className={`w-6 h-6 flex-shrink-0 transition-transform duration-300 ${openIndex === index
-                          ? "rotate-180 text-[#db4900]"
-                          : "text-white/80"
+                        ? "rotate-180 text-[#db4900]"
+                        : "text-white/80"
                         }`}
                     />
                   </button>
 
                   <div
                     className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === index
-                        ? "max-h-96 opacity-100"
-                        : "max-h-0 opacity-0"
+                      ? "max-h-96 opacity-100"
+                      : "max-h-0 opacity-0"
                       }`}
                   >
                     <p className="px-6 pb-6 text-white/80 leading-relaxed">

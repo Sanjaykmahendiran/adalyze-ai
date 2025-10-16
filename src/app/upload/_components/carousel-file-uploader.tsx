@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import Image from "next/image"
-import { Upload, X, Plus, Loader2 } from "lucide-react"
+import { Upload, X, Plus, Loader2, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import toast from "react-hot-toast"
@@ -27,19 +27,45 @@ export function CarouselFileUploader({
 }: CarouselFileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false)
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Use a Map to cache preview URLs by file object to avoid recreating on reorder
+  const previewUrlsMapRef = useRef<Map<File, string>>(new Map())
 
-  // Memoize preview URLs for all files to prevent recreation on every render
+  // Memoize preview URLs maintaining cache across reorders
   const previewUrls = useMemo(() => {
-    return files.map(file => URL.createObjectURL(file))
+    const urlsMap = previewUrlsMapRef.current
+    const currentFiles = new Set(files)
+    
+    // Remove URLs for files that are no longer in the list
+    for (const [file, url] of urlsMap.entries()) {
+      if (!currentFiles.has(file)) {
+        URL.revokeObjectURL(url)
+        urlsMap.delete(file)
+      }
+    }
+    
+    // Create URLs only for new files
+    return files.map(file => {
+      if (!urlsMap.has(file)) {
+        urlsMap.set(file, URL.createObjectURL(file))
+      }
+      return urlsMap.get(file)!
+    })
   }, [files])
 
-  // Cleanup object URLs when files change or component unmounts
+  // Cleanup all object URLs on unmount
   useEffect(() => {
     return () => {
-      previewUrls.forEach(url => URL.revokeObjectURL(url))
+      const urlsMap = previewUrlsMapRef.current
+      for (const url of urlsMap.values()) {
+        URL.revokeObjectURL(url)
+      }
+      urlsMap.clear()
     }
-  }, [previewUrls])
+  }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -68,15 +94,15 @@ export function CarouselFileUploader({
   const validateAndSetFiles = useCallback((newFiles: File[]) => {
     const validTypes = ["image/jpeg", "image/png", "image/jpg"]
     const invalidFiles = newFiles.filter(file =>
-      !validTypes.includes(file.type) || file.size > 10 * 1024 * 1024
+      !validTypes.includes(file.type) || file.size > 3 * 1024 * 1024
     )
 
     if (invalidFiles.length > 0) {
-      toast.error(`${invalidFiles.length} file(s) skipped. Please upload valid JPG/PNG under 10MB`)
+      toast.error(`${invalidFiles.length} file(s) skipped. Please upload valid JPG/PNG under 3MB`)
     }
 
     const validFiles = newFiles.filter(file =>
-      validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024
+      validTypes.includes(file.type) && file.size <= 3 * 1024 * 1024
     )
 
     const totalFiles = files.length + validFiles.length
@@ -140,6 +166,62 @@ export function CarouselFileUploader({
     return previewUrls[index]
   }, [imageUrls, previewUrls])
 
+  // Drag and drop reordering functions
+  const handleDragStart = useCallback((index: number) => (e: React.DragEvent) => {
+    if (isUploading) {
+      e.preventDefault()
+      return
+    }
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("text/plain", index.toString())
+    setDraggedIndex(index)
+  }, [isUploading])
+
+  const handleDragOverItem = useCallback((index: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (draggedIndex === null || isUploading || draggedIndex === index) return
+    
+    e.dataTransfer.dropEffect = "move"
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index)
+    }
+  }, [draggedIndex, isUploading, dragOverIndex])
+
+  const handleDragLeaveItem = useCallback(() => {
+    setDragOverIndex(null)
+  }, [])
+
+  const handleDropItem = useCallback((dropIndex: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (draggedIndex === null || draggedIndex === dropIndex || isUploading) {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+
+    // Reorder the files array efficiently
+    const newFiles = [...files]
+    const [draggedFile] = newFiles.splice(draggedIndex, 1)
+    newFiles.splice(dropIndex, 0, draggedFile)
+    
+    // Reset states immediately for better responsiveness
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+    
+    // Update files after state reset
+    requestAnimationFrame(() => {
+      onFilesChange(newFiles)
+    })
+  }, [draggedIndex, files, onFilesChange, isUploading])
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }, [])
+
   return (
 <div className="flex flex-col space-y-4 sm:space-y-6 rounded-2xl bg-[#171717] border border-primary p-4 sm:p-6 lg:p-8 text-white">
   {files.length > 0 ? (
@@ -148,9 +230,26 @@ export function CarouselFileUploader({
         {files.map((file, index) => {
           const imageSource = getImageSource(index)
           const showLoading = shouldShowImageLoading(index)
+          const isDraggingThis = draggedIndex === index
+          const isDraggedOver = dragOverIndex === index && draggedIndex !== index
 
           return (
-            <div key={`${file.name}-${index}-${file.lastModified}`} className="relative group flex flex-col items-center transition-all duration-200">
+            <div 
+              key={`${file.name}-${index}-${file.lastModified}`} 
+              className={`relative group flex flex-col items-center transition-all duration-200 ${
+                !isUploading ? 'cursor-move' : 'cursor-not-allowed'
+              } ${
+                isDraggingThis ? 'opacity-50 scale-95' : ''
+              } ${
+                isDraggedOver ? 'scale-105 ring-2 ring-primary' : ''
+              }`}
+              draggable={!isUploading}
+              onDragStart={handleDragStart(index)}
+              onDragOver={handleDragOverItem(index)}
+              onDragLeave={handleDragLeaveItem}
+              onDrop={handleDropItem(index)}
+              onDragEnd={handleDragEnd}
+            >
               <div className="relative w-full h-24 sm:h-28 xl:h-32 rounded-lg overflow-hidden">
                 <Image src={imageSource} alt={`Upload preview ${index + 1}`} fill className="object-cover" />
                 {showLoading && (
@@ -170,9 +269,12 @@ export function CarouselFileUploader({
               <div className="text-xs text-gray-300 mt-1 truncate w-full text-center px-1">{file.name}</div>
 
               <button
-                onClick={() => removeFile(index)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  removeFile(index)
+                }}
                 disabled={isUploading}
-                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 disabled:opacity-30"
+                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-all duration-200 disabled:opacity-30 shadow-lg z-10"
                 type="button"
               >
                 <X className="w-3 h-3" />
@@ -215,6 +317,16 @@ export function CarouselFileUploader({
           </Button>
         )}
       </div>
+
+      {/* Drag and drop hint */}
+      {!isUploading && imageUrls.length > 0 && (
+        <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-400 bg-[#2a2a2a] px-3 py-2 rounded-lg border border-gray-700">
+          <Info className="w-4 h-4 text-primary flex-shrink-0" />
+          <p className="text-center">
+              Drag and drop images to reorder them for your carousel
+          </p>
+        </div>
+      )}
     </div>
   ) : (
     <div
@@ -234,7 +346,7 @@ export function CarouselFileUploader({
       <p className="text-gray-200 font-medium text-sm sm:text-base">
         Click to upload <span className="text-gray-300">or drag and drop</span>
       </p>
-      <p className="mt-1 text-xs sm:text-sm text-gray-300">PNG, JPG, JPEG (max. 10 MB each)</p>
+      <p className="mt-1 text-xs sm:text-sm text-gray-300">PNG, JPG, JPEG (max. 3 MB each)</p>
       <p className="mt-1 text-xs sm:text-sm text-gray-500">Upload 3-7 images</p>
     </div>
   )}

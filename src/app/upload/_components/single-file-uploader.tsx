@@ -76,8 +76,8 @@ export function SingleFileUploader({
       toast.error("Please upload a valid image file (JPG, JPEG, PNG)")
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size must be under 10MB")
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("File size must be under 3MB")
       return
     }
     onFileChange(file)
@@ -164,7 +164,7 @@ export function SingleFileUploader({
             {isUploading ? "Uploading..." : <>Click to upload <span className="text-gray-300">or drag and drop</span></>}
           </p>
           {!isUploading && (
-            <p className="mt-2 text-xs sm:text-sm text-gray-300">PNG, JPG, JPEG (max. 10 MB)</p>
+            <p className="mt-2 text-xs sm:text-sm text-gray-300">PNG, JPG, JPEG (max. 3 MB)</p>
           )}
         </div>
       )}

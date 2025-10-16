@@ -1,5 +1,6 @@
 "use client"
-import { useState, useEffect } from "react"
+
+import { useState, useEffect, useMemo } from "react"
 import type React from "react"
 
 import { useRouter } from "next/navigation"
@@ -9,6 +10,78 @@ import { Menu, X, ChevronDown, CircleArrowRight, TicketPercent } from "lucide-re
 import { Button } from "../ui/button"
 import { AnimatePresence, motion } from "framer-motion"
 import loginlogo from "@/assets/ad-logo.webp"
+import { trackEvent } from "@/lib/eventTracker"
+
+// API type definitions
+type ApiMenuItem = {
+  menu_id: number
+  parent_id: number
+  name: string
+  link: string
+  badge_text: string | null
+  menu_type: string
+  target: "_self" | "_blank" | string
+  sort_order: number
+  visibility: "both" | "public" | "private" | string
+  status: number
+  created_date?: string
+  modified_date?: string
+  children?: ApiMenuItem[]
+}
+
+// UI menu shape used by the component
+type UIMenuItem = {
+  name: string
+  href: string
+  hasDropdown?: boolean
+  dropdownItems?: { name: string; href: string }[]
+}
+
+// Static route map: keep routes as in the existing UI, do NOT take from API
+const STATIC_ROUTES: Record<string, string> = {
+  "Use Cases": "#use-cases",
+  "Features": "#features",
+  "Why Us?": "#why-us",
+  "Why us?": "#why-us",
+  "ROI Calculator": "/roi-calculator",
+  "Pricing": "/pricing?page=dashboard",
+  "Resources": "#",
+  "Blog": "/blog",
+  "Case Studies": "/case-study",
+  "FAQ": "#faq",
+}
+
+// Transform API payload into UI-friendly items, using only names/structure;
+// routes are taken from STATIC_ROUTES, not from API
+const toNavigationItems = (items: ApiMenuItem[]): UIMenuItem[] => {
+  return items
+    .filter(
+      (i) =>
+        i &&
+        typeof i === "object" &&
+        i.menu_type === "header" &&
+        i.status === 1 &&
+        (i.visibility === "both" || i.visibility === "public" || !i.visibility)
+    )
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((i) => {
+      const hasDropdown = Array.isArray(i.children) && i.children.length > 0
+      return {
+        name: i.name,
+        href: STATIC_ROUTES[i.name] ?? "#",
+        hasDropdown,
+        dropdownItems: hasDropdown
+          ? [...(i.children ?? [])]
+            .filter((c) => c && typeof c === "object" && c.status === 1)
+            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+            .map((c) => ({
+              name: c.name,
+              href: STATIC_ROUTES[c.name] ?? "#",
+            }))
+          : undefined,
+      }
+    })
+}
 
 // Enhanced custom hook for detecting scroll direction and top position
 const useScrollDirection = () => {
@@ -19,11 +92,7 @@ const useScrollDirection = () => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY
-
-      // Check if at top (small threshold for smooth behavior)
       setIsAtTop(currentScrollY <= 10)
-
-      // Only update direction if scroll difference is greater than threshold
       if (Math.abs(currentScrollY - lastScrollY) > 5) {
         if (currentScrollY > lastScrollY && currentScrollY > 100) {
           setScrollDirection("down")
@@ -33,7 +102,6 @@ const useScrollDirection = () => {
         setLastScrollY(currentScrollY)
       }
     }
-
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [lastScrollY])
@@ -53,41 +121,56 @@ export default function Header() {
   // Banner is visible only when user is at the top and not manually dismissed
   const isBannerVisible = showBanner && !bannerManuallyDismissed && isAtTop
 
-  const navigationItems = [
-    { name: "Use Cases", href: "#use-cases" },
-    { name: "Features", href: "#features" },
-    { name: "Why us?", href: "#why-us" },
-    { name: "ROI Calculator", href: "/roi-calculator" },
-    { name: "Pricing", href: "/pricing?page=dashboard" },
-    {
-      name: "Resources",
-      href: "#",
-      hasDropdown: true,
-      dropdownItems: [
-        { name: "Blog", href: "/blog" },
-        { name: "Case Studies", href: "/case-study" },
-        { name: "FAQ", href: "#faq" },
-      ],
-    },
-  ]
+  // No fallback: start empty and render only what the API returns
+  const [navigationItems, setNavigationItems] = useState<UIMenuItem[]>([])
 
+  // Smooth-scroll only for anchor links on the homepage
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (!href.startsWith("#")) return; // only scroll for anchor links
-
-    e.preventDefault();
-    const sectionId = href.replace("#", "");
-
+    if (!href?.startsWith("#")) return
+    e.preventDefault()
+    const sectionId = href.replace("#", "")
     if (window.location.pathname === "/") {
-      const target = document.getElementById(sectionId);
+      const target = document.getElementById(sectionId)
       if (target) {
-        const offset = 80; // adjust this value for your header height
-        const top = target.getBoundingClientRect().top + window.scrollY - offset;
-        window.scrollTo({ top, behavior: "smooth" });
+        const offset = 80 // header height offset
+        const top = target.getBoundingClientRect().top + window.scrollY - offset
+        window.scrollTo({ top, behavior: "smooth" })
       }
     } else {
-      router.push(`/#${sectionId}`);
+      router.push(`/#${sectionId}`)
     }
-  };
+  }
+
+  // Fetch menu list from API and map to UI items (no local fallback)
+  useEffect(() => {
+    let cancelled = false
+    const controller = new AbortController()
+    const loadMenu = async () => {
+      try {
+        const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=menulist", {
+          signal: controller.signal,
+          cache: "no-store",
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data: unknown = await res.json()
+        if (!Array.isArray(data)) return
+        // Filter out any non-object entries like stray strings
+        const rawItems: ApiMenuItem[] = (data as unknown[]).filter(
+          (it): it is ApiMenuItem => typeof it === "object" && it !== null
+        )
+        const uiItems = toNavigationItems(rawItems)
+        if (!cancelled) setNavigationItems(uiItems)
+      } catch {
+        // No fallback: keep empty if API fails
+        if (!cancelled) setNavigationItems([])
+      }
+    }
+    loadMenu()
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [])
 
   // Close menu on resize and outside click
   useEffect(() => {
@@ -97,7 +180,6 @@ export default function Header() {
         setIsResourcesOpen(false)
       }
     }
-
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element
       if (isMobileMenuOpen && !target.closest(".mobile-menu-container")) {
@@ -105,10 +187,8 @@ export default function Header() {
         setIsResourcesOpen(false)
       }
     }
-
     window.addEventListener("resize", handleResize)
     document.addEventListener("mousedown", handleClickOutside)
-
     return () => {
       window.removeEventListener("resize", handleResize)
       document.removeEventListener("mousedown", handleClickOutside)
@@ -135,10 +215,8 @@ export default function Header() {
             <div className="absolute inset-0 z-0">
               <div
                 className="absolute inset-0 bg-white/10 blur-md animate-slide skew-x-12"
-                style={{
-                  animation: "slide 6s linear infinite",
-                }}
-              ></div>
+                style={{ animation: "slide 6s linear infinite" }}
+              />
             </div>
 
             <div className="container relative z-10 mx-auto flex flex-row gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base lg:text-base justify-center items-center w-full max-w-7xl">
@@ -176,12 +254,15 @@ export default function Header() {
 
       {/* Header - Enhanced responsive positioning and spacing */}
       <header
-        className={`w-full fixed left-0 right-0 z-40 px-2 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4 bg-black/20 backdrop-blur-md border-b border-white/10 transition-all duration-300
+        className={`w-full fixed left-0 right-0 z-999 px-2 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4 bg-black/20 backdrop-blur-md border-b border-white/10 transition-all duration-300
           ${isBannerVisible ? "top-[32px] sm:top-[40px] md:top-[48px]" : "top-0"}`}
       >
         <div className="container mx-auto flex items-center justify-between max-w-7xl">
           {/* Logo - Enhanced responsive sizing */}
-          <Link href="/" className="flex items-center flex-shrink-0 min-w-0 z-50 h-12 sm:h-10 md:h-12 lg:h-12 w-auto max-w-[200px] sm:max-w-[220px] md:max-w-[240px] lg:max-w-full">
+          <Link
+            href="/"
+            className="flex items-center flex-shrink-0 min-w-0 z-50 h-12 sm:h-10 md:h-12 lg:h-12 w-auto max-w-[200px] sm:max-w-[220px] md:max-w-[240px] lg:max-w-full"
+          >
             <Image
               src={loginlogo || "/placeholder.svg"}
               alt="Adalyze Logo"
@@ -235,6 +316,9 @@ export default function Header() {
               asChild
               variant="ghost"
               className="text-white hover:text-[#db4900] hover:bg-white/10 px-3 xl:px-4 2xl:px-5 py-2 rounded-lg text-sm xl:text-base font-medium transition-all duration-200 whitespace-nowrap"
+              onClick={() => {
+                trackEvent("LP_Direct_Login_button_clicked", window.location.href)
+              }}
             >
               <a href="/login" target="_blank" rel="noopener noreferrer">
                 Login
@@ -243,6 +327,9 @@ export default function Header() {
 
             <Button
               asChild
+              onClick={() => {
+                trackEvent("LP_Direct_Register_button_clicked", window.location.href)
+              }}
               className="bg-[#db4900] hover:bg-[#b8400a] text-white px-4 xl:px-6 2xl:px-7 py-2 rounded-lg text-sm xl:text-base font-medium transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap"
             >
               <a href="/register" target="_blank" rel="noopener noreferrer">
@@ -250,7 +337,6 @@ export default function Header() {
               </a>
             </Button>
           </div>
-
 
           {/* Mobile Menu Button - Enhanced responsive design */}
           <div className="lg:hidden mobile-menu-container relative">
@@ -262,7 +348,11 @@ export default function Header() {
               className="p-1.5 sm:p-2 text-white hover:text-[#db4900] transition-colors duration-200 z-50 relative"
               aria-label="Toggle mobile menu"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
+              {isMobileMenuOpen ? (
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              ) : (
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+              )}
             </button>
 
             {/* Mobile Menu Items - Enhanced responsive design */}
@@ -297,7 +387,8 @@ export default function Header() {
                               >
                                 {item.name}
                                 <ChevronDown
-                                  className={`w-4 h-4 transition-transform ${isResourcesOpen ? "rotate-180" : ""}`}
+                                  className={`w-4 h-4 transition-transform ${isResourcesOpen ? "rotate-180" : ""
+                                    }`}
                                 />
                               </button>
                               {/* Mobile Dropdown */}
@@ -349,7 +440,10 @@ export default function Header() {
                           asChild
                           variant="ghost"
                           className="w-full text-white hover:text-[#db4900] hover:bg-white/10 px-4 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all duration-200"
-                          onClick={() => setIsMobileMenuOpen(false)}
+                          onClick={() => {
+                            setIsMobileMenuOpen(false)
+                            trackEvent("LP_Direct_Login_button_clicked", window.location.href)
+                          }}
                         >
                           <a href="/login" target="_blank" rel="noopener noreferrer">
                             Login
@@ -359,14 +453,16 @@ export default function Header() {
                         <Button
                           asChild
                           className="w-full bg-[#db4900] hover:bg-[#b8400a] text-white px-4 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 shadow-lg"
-                          onClick={() => setIsMobileMenuOpen(false)}
+                          onClick={() => {
+                            setIsMobileMenuOpen(false)
+                            trackEvent("LP_Direct_Register_button_clicked", window.location.href)
+                          }}
                         >
                           <a href="/register" target="_blank" rel="noopener noreferrer">
                             Register
                           </a>
                         </Button>
                       </div>
-
                     </div>
                   </motion.div>
                 </>

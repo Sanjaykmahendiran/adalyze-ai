@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { trackEvent } from "@/lib/eventTracker"
 
 interface CounterItem {
     number: number;

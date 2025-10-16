@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import cookies from 'js-cookie'
 import toast from "react-hot-toast"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
+import { trackEvent } from "@/lib/eventTracker"
 
 interface Country {
     id: string
@@ -38,7 +39,7 @@ interface TargetInfo {
 }
 
 export default function AdComparisonUpload() {
-    const { userDetails } = useFetchUserDetails()
+    const { userDetails, loading } = useFetchUserDetails()
     const router = useRouter()
 
     // Core states
@@ -77,6 +78,10 @@ export default function AdComparisonUpload() {
     const [loadingStates, setLoadingStates] = useState(false)
     const [countrySearch, setCountrySearch] = useState("")
     const [stateSearch, setStateSearch] = useState("")
+    const [countryDropdownOpen, setCountryDropdownOpen] = useState(false)
+    const [stateDropdownOpen, setStateDropdownOpen] = useState(false)
+    const countrySearchInputRef = useRef<HTMLInputElement>(null)
+    const stateSearchInputRef = useRef<HTMLInputElement>(null)
 
     const userId = cookies.get("userId") || ""
 
@@ -91,6 +96,24 @@ export default function AdComparisonUpload() {
             document.body.style.overflow = ""
         }
     }, [sidePanelOpen])
+
+    // Auto-focus country search when dropdown opens
+    useEffect(() => {
+        if (countryDropdownOpen) {
+            setTimeout(() => {
+                countrySearchInputRef.current?.focus()
+            }, 100)
+        }
+    }, [countryDropdownOpen])
+
+    // Auto-focus state search when dropdown opens
+    useEffect(() => {
+        if (stateDropdownOpen) {
+            setTimeout(() => {
+                stateSearchInputRef.current?.focus()
+            }, 100)
+        }
+    }, [stateDropdownOpen])
 
     // Check if files are uploaded
     const hasUploadedFiles = useCallback(() => {
@@ -324,12 +347,14 @@ export default function AdComparisonUpload() {
                 }
                 toast.success("A/B analysis completed successfully!", { id: "analyze" })
                 router.push(`/ab-results?ad_id_a=${result.ad_upload_id_a}&ad_id_b=${result.ad_upload_id_b}`)
+                trackEvent("A/B_Ad_Analyzed_Completed", window.location.href, userDetails?.email?.toString())
             } else {
                 throw new Error(result.message || 'A/B analysis failed')
             }
         } catch (err) {
             console.error('A/B Analysis error:', err)
             toast.error(err instanceof Error ? err.message : 'Failed to analyze ads', { id: "analyze" })
+            trackEvent("A/B_Ad_Analyzed_Failed", window.location.href, userDetails?.email?.toString())
         } finally {
             setIsAnalyzing(false)
         }
@@ -374,10 +399,57 @@ export default function AdComparisonUpload() {
         setAdName(value)
     }, [])
 
+    // Show skeleton loading while fetching user details
+    if (loading) {
+        return (
+            <UserLayout userDetails={userDetails}>
+                <div className="min-h-screen text-white">
+                    <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-6 pb-20">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="bg-[#000000] border-none rounded-2xl sm:rounded-3xl shadow-2xl">
+                                <div className="py-2 lg:py-8 px-4 sm:px-6 lg:px-8">
+                                    {/* Ad Name Skeleton */}
+                                    <div className="mb-6">
+                                        <div className="h-4 w-24 bg-[#2b2b2b] rounded animate-pulse mb-2" />
+                                        <div className="h-12 w-full bg-[#1a1a1a] border border-[#2b2b2b] rounded-lg animate-pulse" />
+                                    </div>
+
+                                    {/* Upload Cards Skeleton */}
+                                    <div className="mt-6 sm:mt-8">
+                                        <div className="w-full max-w-4xl mx-auto">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* Card A Skeleton */}
+                                                <div className="bg-[#0a0a0a] border border-[#2b2b2b] rounded-xl p-6 animate-pulse">
+                                                    <div className="h-6 w-32 bg-[#2b2b2b] rounded mb-4" />
+                                                    <div className="aspect-square bg-[#1a1a1a] rounded-lg mb-4" />
+                                                </div>
+                                                {/* Card B Skeleton */}
+                                                <div className="bg-[#0a0a0a] border border-[#2b2b2b] rounded-xl p-6 animate-pulse">
+                                                    <div className="h-6 w-32 bg-[#2b2b2b] rounded mb-4" />
+                                                    <div className="aspect-square bg-[#1a1a1a] rounded-lg mb-4" />
+                                                </div>
+                                            </div>
+
+                                            {/* Buttons Skeleton */}
+                                            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                                                <div className="flex-1 h-14 bg-[#2b2b2b] rounded-lg animate-pulse" />
+                                                <div className="flex-1 h-14 bg-[#db4900]/50 rounded-lg animate-pulse" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </UserLayout>
+        )
+    }
+
     return (
         <UserLayout userDetails={userDetails}>
             <div className="relative">
-                <div className={isFreeTrailUser ? "blur-sm" : ""}>
+                <div className={isFreeTrailUser ? "blur-sm pointer-events-none" : ""}>
                     <div className="min-h-screen text-white relative">
                         {isAnalyzing && <AnalyzingOverlay />}
 
@@ -505,17 +577,20 @@ export default function AdComparisonUpload() {
 
                                                 <div className="space-y-2">
                                                     <Label className="text-white/70 font-semibold">Country</Label>
-                                                    <Select value={country} onValueChange={setCountry} disabled={loadingCountries}>
+                                                    <Select value={country} onValueChange={setCountry} disabled={loadingCountries} onOpenChange={setCountryDropdownOpen}>
                                                         <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                             <SelectValue placeholder={loadingCountries ? "Loading..." : "Select country"} />
                                                         </SelectTrigger>
                                                         <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                                            <div className="p-2" onClick={(e) => e.stopPropagation()}>
+                                                            <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                                                                 <Input
+                                                                    ref={countrySearchInputRef}
                                                                     placeholder="Search countries..."
                                                                     value={countrySearch}
                                                                     onChange={(e) => setCountrySearch(e.target.value)}
+                                                                    onKeyDown={(e) => e.stopPropagation()}
                                                                     className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
+                                                                    autoComplete="off"
                                                                 />
                                                             </div>
                                                             <div className="max-h-48 overflow-y-auto">
@@ -531,7 +606,7 @@ export default function AdComparisonUpload() {
 
                                                 <div className="space-y-2">
                                                     <Label className="text-white/70 font-semibold">State/Province</Label>
-                                                    <Select value={state} onValueChange={setState} disabled={!country || loadingStates}>
+                                                    <Select value={state} onValueChange={setState} disabled={!country || loadingStates} onOpenChange={setStateDropdownOpen}>
                                                         <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                             <SelectValue
                                                                 placeholder={
@@ -545,12 +620,15 @@ export default function AdComparisonUpload() {
                                                         </SelectTrigger>
                                                         <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
                                                             {states.length > 0 && (
-                                                                <div className="p-2" onClick={(e) => e.stopPropagation()}>
+                                                                <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                                                                     <Input
+                                                                        ref={stateSearchInputRef}
                                                                         placeholder="Search states..."
                                                                         value={stateSearch}
                                                                         onChange={(e) => setStateSearch(e.target.value)}
+                                                                        onKeyDown={(e) => e.stopPropagation()}
                                                                         className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
+                                                                        autoComplete="off"
                                                                     />
                                                                 </div>
                                                             )}
@@ -649,7 +727,7 @@ export default function AdComparisonUpload() {
                     </div>
                 </div>
                 {isFreeTrailUser && (
-                    <div className="absolute inset-0 bg-black/70  flex flex-col items-center justify-center rounded-2xl z-50">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl z-50">
                         <div className="text-center p-4">
                             <Lock className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-primary" />
                             <p className="text-white font-semibold mb-4 text-sm sm:text-base px-2">{overlayText}</p>

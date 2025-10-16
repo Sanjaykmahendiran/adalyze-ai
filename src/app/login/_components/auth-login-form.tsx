@@ -30,6 +30,8 @@ interface AuthLoginFormProps {
 const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
   const router = useRouter();
   const [passwordType, setPasswordType] = useState("password");
+  const [newPasswordType, setNewPasswordType] = useState("password");
+  const [confirmPasswordType, setConfirmPasswordType] = useState("password");
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [step, setStep] = useState<"initial" | "resetPassword" | "success">("initial");
   const [resetLoading, setResetLoading] = useState(false);
@@ -52,6 +54,14 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
 
   const togglePasswordType = () => {
     setPasswordType((prevType) => (prevType === "password" ? "text" : "password"));
+  };
+
+  const toggleNewPasswordType = () => {
+    setNewPasswordType((prevType) => (prevType === "password" ? "text" : "password"));
+  };
+
+  const toggleConfirmPasswordType = () => {
+    setConfirmPasswordType((prevType) => (prevType === "password" ? "text" : "password"));
   };
 
   // Handle the actual form submission
@@ -128,7 +138,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
       const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=updatepassword&email=${encodeURIComponent(verifiedEmail)}&password=${encodeURIComponent(data.newPassword)}&confirmpassword=${encodeURIComponent(data.confirmPassword)}`);
       const result = await response.json();
 
-      if (result.message === 'Password Updated') {
+      if (result.message === 'Password Updated Successfully') {
         toast.success("Password updated successfully!");
         setStep("success");
         // Redirect to login after 2 seconds
@@ -248,17 +258,29 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
               {/* New Password Field */}
               <div className="space-y-2 mt-2">
                 <label className="text-sm font-medium text-gray-200">New Password</label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50 mt-1"
-                  {...resetRegister("newPassword", {
-                    required: "Please enter your new password",
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters"
-                    }
-                  })}
-                />
+                <div className="relative">
+                  <input
+                    type={newPasswordType}
+                    className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50 mt-1"
+                    {...resetRegister("newPassword", {
+                      required: "Please enter your new password",
+                      minLength: {
+                        value: 6,
+                        message: "Password must be at least 6 characters"
+                      }
+                    })}
+                  />
+                  <div
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer"
+                    onClick={toggleNewPasswordType}
+                  >
+                    {newPasswordType === "password" ? (
+                      <Eye className="h-4 w-4 text-gray-300 hover:text-gray-300" />
+                    ) : (
+                      <EyeOff className="h-4 w-4 text-gray-300 hover:text-gray-300" />
+                    )}
+                  </div>
+                </div>
                 {resetErrors.newPassword && (
                   <p className="text-xs text-red-400">{resetErrors.newPassword.message}</p>
                 )}
@@ -267,17 +289,29 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
               {/* Confirm Password Field */}
               <div className="space-y-2 mt-2">
                 <label className="text-sm font-medium text-gray-200">Confirm Password</label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50 mt-1"
-                  {...resetRegister("confirmPassword", {
-                    required: "Please confirm your password",
-                    validate: (value) => {
-                      const newPassword = watchReset("newPassword");
-                      return value === newPassword || "Passwords do not match";
-                    }
-                  })}
-                />
+                <div className="relative">
+                  <input
+                    type={confirmPasswordType}
+                    className="w-full px-3 py-2 bg-black text-sm  rounded-md text-white placeholder-white/50 mt-1"
+                    {...resetRegister("confirmPassword", {
+                      required: "Please confirm your password",
+                      validate: (value) => {
+                        const newPassword = watchReset("newPassword");
+                        return value === newPassword || "Passwords do not match";
+                      }
+                    })}
+                  />
+                  <div
+                    className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer"
+                    onClick={toggleConfirmPasswordType}
+                  >
+                    {confirmPasswordType === "password" ? (
+                      <Eye className="h-4 w-4 text-gray-300 hover:text-gray-300" />
+                    ) : (
+                      <EyeOff className="h-4 w-4 text-gray-300 hover:text-gray-300" />
+                    )}
+                  </div>
+                </div>
                 {resetErrors.confirmPassword && (
                   <p className="text-xs text-red-400">{resetErrors.confirmPassword.message}</p>
                 )}

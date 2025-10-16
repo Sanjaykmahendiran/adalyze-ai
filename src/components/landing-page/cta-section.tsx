@@ -6,8 +6,9 @@ import { motion } from "framer-motion"
 import PromoImg from "@/assets/Landing-page/above-cta.webp"
 import { useRouter } from "next/navigation"
 import { Button } from "../ui/button"
+import { trackEvent } from "@/lib/eventTracker"
 
-export default function CTASection() {
+export default function CTASection({ ButtonText }: { ButtonText: string }) {
   const router = useRouter()
 
   return (
@@ -65,10 +66,12 @@ export default function CTASection() {
               className="space-y-2 w-full max-w-md"
             >
               <Button
-                onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                onClick={() => {window.open("/register", "_blank", "noopener,noreferrer");
+                  trackEvent("LP_CTA_button_clicked", window.location.href);
+                }}
                 className="py-4 sm:py-6 cursor-pointer w-full sm:w-auto min-w-[200px] text-sm sm:text-base"
               >
-                Start Free Trail <ArrowRight className="ml-2" />
+                {ButtonText} <ArrowRight className="ml-2" />
               </Button>
             </motion.div>
 

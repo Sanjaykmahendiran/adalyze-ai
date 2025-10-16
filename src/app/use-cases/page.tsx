@@ -22,6 +22,7 @@ import CaseStudySection from "@/components/landing-page/case-study-section"
 import PromoImg from "@/assets/Landing-page/use-cases/use-case-cta.webp"
 import Image from "next/image"
 import BlogSection from "@/components/landing-page/blog-section"
+import { trackEvent } from "@/lib/eventTracker"
 
 const features = [
     {
@@ -54,7 +55,7 @@ const features = [
         metrics: [
             { value: 40, suffix: "%", label: "more conversions", prefix: "20-" },
             { value: 25, suffix: "%", label: "spend reduced" },
-            { value: 1, suffix: "", label: "min per ad", prefix: "Results in under " },
+            { value: 60, suffix: "s", label: "instant score", prefix: "< " },
         ],
         buttonText: "Start Optimizing Your E-commerce Ads",
         desktopImage: Ecommerce,
@@ -211,43 +212,12 @@ export default function UseCases() {
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
                         <Button
-                            onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                            onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_Start_Free_Trial_button_clicked", window.location.href); }}
                             className="bg-primary hover:bg-primary/90 text-lg px-3 py-6 text-primary-foreground">
                             Start Free Trial
                             <ArrowRight className="w-5 h-5 ml-2" />
                         </Button>
                     </div>
-
-                    {/* Business personas - Clean and Simple */}
-                    {/* <div className="max-w-5xl mx-auto px-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-                            {[
-                                { img: IconAgencies.src, label: "Agencies" },
-                                { img: IconEcommerce.src, label: "E-commerce" },
-                                { img: IconFreelancers.src, label: "Freelancers" },
-                                { img: IconSocialMedia.src, label: "Social Media" },
-                                { img: IconEnterprise.src, label: "Enterprise" },
-                            ].map(({ img, label }, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex flex-col items-center justify-center p-6 bg-card border border-border rounded-2xl shadow-sm 
-                   hover:shadow-lg hover:scale-105 transition-all duration-300 group"
-                                >
-                                    <div className="w-16 h-16 bg-muted rounded-xl flex items-center justify-center mb-4 
-                        group-hover:bg-primary/10 transition-colors">
-                                        <img
-                                            src={img}
-                                            alt={label}
-                                            className="w-10 h-10 object-contain group-hover:opacity-90 transition-opacity"
-                                        />
-                                    </div>
-                                    <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
-                                        {label}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div> */}
 
 
                 </div>
@@ -327,7 +297,7 @@ export default function UseCases() {
                                         </div>
 
                                         <Button
-                                            onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                                            onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_See_How_button_clicked", window.location.href); }}
                                             variant="outline"
                                             className="text-white border-primary hover:bg-primary hover:text-white"
                                         >
@@ -338,11 +308,11 @@ export default function UseCases() {
 
                                     {/* Image Side - Clean without backgrounds */}
                                     <div className={`flex justify-center ${!isEven ? "lg:order-1" : ""}`}>
-                                        <div className="w-full max-w-lg">
+                                        <div className="w-full max-w-lg bounce-slow">
                                             <img
                                                 src={feature.desktopImage.src}
                                                 alt={feature.title}
-                                                className="w-full h-auto rounded-lg shadow-lg"
+                                                className="w-full h-auto rounded-lg shadow-lg bounce-slow"
                                             />
                                         </div>
                                     </div>
@@ -412,13 +382,13 @@ export default function UseCases() {
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                                 <Button
-                                    onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                                    onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_Start_Free_Trial_button_clicked", window.location.href); }}
                                     className="px-6 py-3"
                                 >
                                     Start Free Trial <ArrowRight className="ml-2" />
                                 </Button>
                                 <Button
-                                    onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                                    onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_Schedule_Demo_button_clicked", window.location.href); }}
                                     variant="outline"
                                     className="px-6 py-3 border-white/30 text-white hover:bg-white/10"
                                 >

@@ -1,17 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import Image from "next/image"
 import {
     Check,
-    Crown,
     Upload,
     Brain,
-    Wrench,
-    TestTube,
     Download,
-    Zap,
-    Star,
     Target,
     FileText,
     TrendingUp,
@@ -22,6 +16,13 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog"
 import toast from "react-hot-toast"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
@@ -29,6 +30,8 @@ import StaticProSkeleton from "@/components/Skeleton-loading/pro-skeleton"
 import { useRouter } from "next/navigation"
 import ProTestimonials from "./_components/protestimonials"
 import { event } from "@/lib/gtm"
+import confetti from "canvas-confetti"
+import { trackEvent } from "@/lib/eventTracker"
 
 // Extend Window interface for Razorpay
 declare global {
@@ -132,7 +135,7 @@ const parseFeatures = (featuresStr: string): Feature[] => {
 const ProPage: React.FC = () => {
     const router = useRouter()
     const { userDetails } = useFetchUserDetails()
-
+    const isFreeTrailUser = userDetails?.fretra_status === 1
     const [pricingData, setPricingData] = useState<PricingPlan[]>([])
     const [faqData, setFaqData] = useState<FAQ[]>([])
     const [testimonialData, setTestimonialData] = useState<Testimonial[]>([])
@@ -142,6 +145,8 @@ const ProPage: React.FC = () => {
     const [razorpayLoaded, setRazorpayLoaded] = useState<boolean>(false)
     const [userCurrency, setUserCurrency] = useState<'INR' | 'USD'>('INR')
     const [currencyDetecting, setCurrencyDetecting] = useState<boolean>(true)
+    const [showSuccessPopup, setShowSuccessPopup] = useState<boolean>(false)
+    const [countdown, setCountdown] = useState<number>(5)
     const scrollRef = useRef<HTMLDivElement>(null)
 
     const scrollAmount = 300
@@ -211,6 +216,24 @@ const ProPage: React.FC = () => {
     useEffect(() => {
         detectUserCurrency()
     }, [])
+
+    // Countdown timer and redirect to dashboard
+    useEffect(() => {
+        if (!showSuccessPopup) return
+
+        const interval = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval)
+                    router.push("/dashboard")
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+
+        return () => clearInterval(interval)
+    }, [showSuccessPopup, router])
 
     const next = () => {
         scrollRef.current?.scrollBy({ left: scrollAmount, behavior: "smooth" })
@@ -323,13 +346,28 @@ const ProPage: React.FC = () => {
                     plan: selectedPlan?.plan_name,
                 })
 
-                window.location.reload()
+                // Trigger confetti animation
+                confetti({
+                    particleCount: 600,
+                    spread: 90,
+                    angle: 90,
+                    origin: { x: 0.5, y: 0.5 },
+                    colors: ["#ff6347", "#ffd700", "#32cd32"],
+                })
+
+                // Show success popup
+                setShowSuccessPopup(true)
+                setCountdown(5)
+                const eventName = isFreeTrailUser ? `free_trail_user_upgrade_Payment_Successful_${selectedPlan.plan_name}` : `upgrade_Payment_Successful_${selectedPlan.plan_name}`
+                trackEvent(`upgrade_Payment_Successful_${selectedPlan.plan_name}`, window.location.href, userDetails?.email?.toString())
             } else {
                 throw new Error(result.message || 'Payment verification failed')
             }
         } catch (error) {
             console.error('Payment verification error:', error)
             toast.error("Payment verification failed. Please contact support if amount was deducted.")
+            const eventName = isFreeTrailUser ? `free_trail_user_upgrade_Payment_Failed_${selectedPlan.plan_name}` : `upgrade_Payment_Failed_${selectedPlan.plan_name}`
+            trackEvent(eventName, window.location.href, userDetails?.email?.toString())
         } finally {
             setProcessingPackageId(null)
         }
@@ -406,6 +444,8 @@ const ProPage: React.FC = () => {
         } catch (error) {
             console.error('Payment initiation error:', error);
             toast.error(error instanceof Error ? error.message : "Unable to process payment");
+            const eventName = isFreeTrailUser ? `free_trail_user_upgrade_Payment_Failed_${selectedPlan.plan_name}` : `upgrade_Payment_Failed_${selectedPlan.plan_name}`
+            trackEvent(eventName, window.location.href, userDetails?.email?.toString())
         } finally {
             // Only clear if payment didn't initiate successfully
             if (!window.Razorpay) {
@@ -515,12 +555,12 @@ const ProPage: React.FC = () => {
                                             </div>
 
                                             <div className="text-green-600 text-lg py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                                {basicPlan.ads_limit} ad analysis included
+                                                {basicPlan.ads_limit} ad analysis Credits
                                             </div>
                                             <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8 text-white/80">
                                                 {basicFeatures.map((feature, index) => (
                                                     <li key={`${feature.text}-${index}`} className="flex items-start gap-3 text-sm sm:text-base">
-                                                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
                                                         <span className="leading-relaxed">{feature.text}</span>
                                                     </li>
                                                 ))}
@@ -599,7 +639,7 @@ const ProPage: React.FC = () => {
                                             </div>
 
                                             <div className="text-green-600 text-lg py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                                {starterPlan.ads_limit} ad analyses included
+                                                {starterPlan.ads_limit} ad analyses Credits
                                             </div>
                                             <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8 text-white/80">
                                                 {starterFeatures.map((feature, index) => (
@@ -607,7 +647,7 @@ const ProPage: React.FC = () => {
                                                         key={`${feature.text}-${index}`}
                                                         className="flex items-start gap-3 text-sm sm:text-base"
                                                     >
-                                                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
                                                         <span className="leading-relaxed">{feature.text}</span>
                                                     </li>
                                                 ))}
@@ -685,7 +725,7 @@ const ProPage: React.FC = () => {
                                             </div>
 
                                             <div className="text-green-600 text-lg py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                                {growthPlan.ads_limit} ad analyses included
+                                                {growthPlan.ads_limit} ad analyses Credits
                                             </div>
                                             <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8 text-white/80">
                                                 {growthFeatures.map((feature, index) => (
@@ -693,7 +733,7 @@ const ProPage: React.FC = () => {
                                                         key={`${feature.text}-${index}`}
                                                         className="flex items-start gap-3 text-sm sm:text-base"
                                                     >
-                                                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
                                                         <span className="leading-relaxed">{feature.text}</span>
                                                     </li>
                                                 ))}
@@ -802,6 +842,38 @@ const ProPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Success Popup */}
+            <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
+                <DialogContent className="sm:max-w-md bg-[#121212] border-green-600" showCloseButton={false}>
+                    <DialogHeader>
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                                <Check className="w-12 h-12" />
+                            </div>
+                            <DialogTitle className="text-2xl font-bold text-white">
+                                Payment Successful!
+                            </DialogTitle>
+                            <DialogDescription className="text-gray-300 text-base">
+                                Thank you for your payment! Your subscription has been activated successfully.
+                            </DialogDescription>
+                        </div>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center gap-4 mt-4">
+                        <p className="text-gray-300 text-center">
+                            Redirecting to dashboard in{" "}
+                            <span className="font-bold text-white text-lg">{countdown}</span>{" "}
+                            seconds...
+                        </p>
+                        <Button
+                            onClick={() => router.push("/dashboard")}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            Go to Dashboard Now
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </UserLayout>
     )
 }

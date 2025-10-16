@@ -62,8 +62,8 @@ export default function ABFileUploadCard({
       toast.error("Please upload a valid image (JPG, JPEG, PNG)")
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size must be under 10MB")
+    if (file.size > 3  * 1024 * 1024) {
+      toast.error("File size must be under 3MB")
       return
     }
     onFileChange(file)
@@ -178,7 +178,7 @@ export default function ABFileUploadCard({
           </p>
           {!isUploading && (
             <p className="mt-2 text-xs text-gray-400">
-              PNG, JPG, JPEG (max. 10 MB)
+              PNG, JPG, JPEG (max. 3 MB)
             </p>
           )}
         </div>

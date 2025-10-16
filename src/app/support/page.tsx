@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import Cookies from 'js-cookie'
 import toast from "react-hot-toast"
-import Spinner from "@/components/overlay"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import SupportPageSkeleton from "@/components/Skeleton-loading/SupportPageSkeleton"
@@ -45,6 +44,7 @@ export default function SupportPage() {
   const [loading, setLoading] = useState(false)
   const [showExpertDialog, setShowExpertDialog] = useState(false)
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false)
+  const [categories, setCategories] = useState<string[]>([])
   // Check if user is pro
   const isProUser = userDetails?.payment_status === 1
 
@@ -68,11 +68,16 @@ export default function SupportPage() {
     comments: ""
   })
 
-  const categories = ["General", "Pricing", "Technical", "Uploads", "Scoring", "Subscription"]
+  // Fetch categories on mount
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
   // Fetch FAQs
   useEffect(() => {
-    fetchFAQs()
+    if (selectedCategory) {
+      fetchFAQs()
+    }
   }, [selectedCategory])
 
   // Fetch ads when feedback dialog opens
@@ -81,6 +86,30 @@ export default function SupportPage() {
       fetchAds()
     }
   }, [showFeedbackDialog])
+
+  const fetchCategories = async () => {
+    try {
+      const url = 'https://adalyzeai.xyz/App/api.php?gofor=faqlist'
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      if (data && Array.isArray(data)) {
+        // Extract unique categories from the FAQ list
+        const uniqueCategories = Array.from(
+          new Set(data.map((faq: FAQ) => faq.category))
+        ) as string[]
+        setCategories(uniqueCategories)
+        
+        // Set the first category as default if not already set
+        if (uniqueCategories.length > 0 && !selectedCategory) {
+          setSelectedCategory(uniqueCategories[0])
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+      setCategories([])
+    }
+  }
 
   const fetchFAQs = async () => {
     try {
@@ -223,41 +252,42 @@ export default function SupportPage() {
       {loading ? <SupportPageSkeleton /> : (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <div className="mb-6 sm:mb-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold mb-2">Support Center</h1>
                 <p className="text-sm sm:text-base text-gray-300">Get help and find answers to common questions</p>
               </div>
 
-              <div className="flex items-start sm:items-center gap-2">
+              <div className="flex items-center gap-2 lg:gap-3">
                 {/* AI Chatbot / Expert Call Button */}
                 <Button
                   size="sm"
                   variant={isProUser ? "default" : "outline"}
-                  className="flex-1 text-sm sm:text-base py-5"
+                  className="flex-1 lg:flex-initial text-xs sm:text-sm lg:text-base py-4 sm:py-5 whitespace-nowrap"
                   disabled={!isProUser}
                   onClick={() => isProUser && setShowExpertDialog(true)}
                 >
                   {isProUser ? (
-                    <Phone className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                    <Phone className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   ) : (
-                    <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                    <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   )}
-                  <span className="hidden sm:inline">
+                  <span className="hidden lg:inline">
                     {isProUser ? "Schedule Call" : "Start Chat (Upgrade to Pro)"}
                   </span>
-                  <span className="sm:hidden">{isProUser ? "Schedule Expert Call" : "Upgrade  to Pro"}</span>
+                  <span className="lg:hidden">{isProUser ? "Call Expert" : "Upgrade Pro"}</span>
                 </Button>
 
                 {/* Feedback Button */}
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 border-[#2b2b2b] text-sm sm:text-base py-5"
+                  className="flex-1 lg:flex-initial border-[#2b2b2b] text-xs sm:text-sm lg:text-base py-4 sm:py-5 whitespace-nowrap"
                   onClick={() => setShowFeedbackDialog(true)}
                 >
-                  <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                  Give Feedback
+                  <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Give Feedback</span>
+                  <span className="sm:hidden">Feedback</span>
                 </Button>
               </div>
 
@@ -294,7 +324,7 @@ export default function SupportPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
             {/* FAQ Section */}
-            <div className="xl:col-span-2 order-2 xl:order-1">
+            <div className="xl:col-span-2 order-1 xl:order-1">
               <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Frequently Asked Questions</h2>
 
               {loading ? (
@@ -322,13 +352,13 @@ export default function SupportPage() {
                         onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                          <span className="font-medium text-sm sm:text-base break-words text-gray-300">{faq.question}</span>
+                          <span className={`font-medium text-sm sm:text-base break-words transition-colors ${expandedFaq === index ? 'text-primary font-bold' : 'text-gray-200'}`}>{faq.question}</span>
                         </div>
                         <div className="shrink-0 mt-1 sm:mt-0">
                           {expandedFaq === index ? (
-                            <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
+                            <ChevronUp className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${expandedFaq === index ? 'text-primary font-bold' : 'text-gray-200'}`} />
                           ) : (
-                            <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
+                            <ChevronDown className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${expandedFaq === index ? 'text-primary font-bold' : 'text-gray-200'}`} />
                           )}
                         </div>
                       </button>
@@ -345,7 +375,7 @@ export default function SupportPage() {
             </div>
 
             {/* Right Sidebar */}
-            <div className="order-1 xl:order-2 space-y-4 sm:space-y-6">
+            <div className="order-2 xl:order-2 space-y-4 sm:space-y-6 mb-18 sm:mb-0 ">
               {/* Contact Form */}
               <div className="bg-black rounded-lg p-4 sm:p-6">
                 <h3 className="text-base sm:text-lg font-semibold  text-white/80 mb-4">Contact Support</h3>
@@ -384,11 +414,11 @@ export default function SupportPage() {
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Technical">Technical Issue</SelectItem>
-                        <SelectItem value="Pricing">Pricing Question</SelectItem>
-                        <SelectItem value="General">General Question</SelectItem>
-                        <SelectItem value="Uploads">Upload Problem</SelectItem>
-                        <SelectItem value="Scoring">Scoring Question</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

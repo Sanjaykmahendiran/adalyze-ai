@@ -10,6 +10,7 @@ import image2 from "@/assets/Landing-page/b-2.webp";
 import image3 from "@/assets/Landing-page/b-3.webp";
 import image4 from "@/assets/Landing-page/b-4.webp";
 import Header from "./header";
+import { trackEvent } from "@/lib/eventTracker";
 
 interface BannerData {
   tagline: string;
@@ -25,9 +26,12 @@ interface BannerData {
   typeword4: string;
 }
 
-export default function LandingPageHeader() {
-  const [bannerData, setBannerData] = useState<BannerData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface LandingPageHeaderProps {
+  bannerData: BannerData | null;
+  isLoading: boolean;
+}
+
+export default function LandingPageHeader({ bannerData, isLoading }: LandingPageHeaderProps) {
   const [text, setText] = useState("");
   const [wordIndex, setWordIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
@@ -49,42 +53,19 @@ export default function LandingPageHeader() {
   const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mouseMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch banner data from API
-  useEffect(() => {
-    const fetchBannerData = async () => {
-      try {
-        const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=getbanner&banner_id=1');
-        const data = await response.json();
-        setBannerData(data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching banner data:', error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchBannerData();
-  }, []);
-
-  // Get typewriter words from API data
-  const words = bannerData ? [
-    bannerData.typeword3,
-    bannerData.typeword1,
-    bannerData.typeword4,
-    bannerData.typeword2,
-  ] : ["Loading..."];
+  // Get typewriter words from bannerData prop
+  const words = bannerData
+    ? [bannerData.typeword3, bannerData.typeword1, bannerData.typeword4, bannerData.typeword2]
+    : ["Loading..."];
 
   // Set up viewport height tracking for mobile with proper calculations
   useEffect(() => {
     const updateViewportHeight = () => {
-      // Use the larger of window.innerHeight or window.visualViewport.height for better mobile support
       const height = window.visualViewport?.height || window.innerHeight;
       setViewportHeight(height);
     };
 
     updateViewportHeight();
-
-    // Listen to both resize and visualViewport changes for better mobile support
     window.addEventListener("resize", updateViewportHeight);
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", updateViewportHeight);
@@ -115,12 +96,12 @@ export default function LandingPageHeader() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Typewriter effect
+  // Typewriter effect (unchanged)
   useEffect(() => {
     if (!bannerData) return;
 
     const currentWord = words[wordIndex];
-    let timeout;
+    let timeout: NodeJS.Timeout;
     if (charIndex < currentWord.length) {
       setIsTyping(true);
       timeout = setTimeout(() => {
@@ -137,7 +118,7 @@ export default function LandingPageHeader() {
       }, 1000);
     }
     return () => clearTimeout(timeout);
-  }, [charIndex, wordIndex, bannerData]);
+  }, [charIndex, wordIndex, bannerData]); // words derives from bannerData
 
   useEffect(() => {
     const handleResize = () => {
@@ -167,14 +148,11 @@ export default function LandingPageHeader() {
     };
   }, [isMobileMenuOpen]);
 
-  // Auto-hide controls functionality
+  // Auto-hide controls functionality (unchanged)
   const startHideControlsTimer = () => {
-    // Clear existing timer
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current);
     }
-
-    // Set new timer to hide controls after 2 seconds if video is playing
     if (isPlaying) {
       hideControlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
@@ -182,22 +160,11 @@ export default function LandingPageHeader() {
     }
   };
 
-  const showControlsTemporarily = () => {
-    setShowControls(true);
-    startHideControlsTimer();
-  };
-
-  // Handle mouse movement over video
   const handleMouseMove = () => {
-    // Clear existing mouse move timer
     if (mouseMoveTimeoutRef.current) {
       clearTimeout(mouseMoveTimeoutRef.current);
     }
-
-    // Show controls immediately on mouse move
     setShowControls(true);
-
-    // Start timer to hide controls after mouse stops moving
     if (isPlaying) {
       mouseMoveTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
@@ -211,14 +178,11 @@ export default function LandingPageHeader() {
         if (videoRef.current.paused) {
           await videoRef.current.play();
           setIsPlaying(true);
-          // Start auto-hide timer when video starts playing
           startHideControlsTimer();
         } else {
           videoRef.current.pause();
           setIsPlaying(false);
-          // Show controls when paused
           setShowControls(true);
-          // Clear hide timer when paused
           if (hideControlsTimeoutRef.current) {
             clearTimeout(hideControlsTimeoutRef.current);
           }
@@ -241,7 +205,6 @@ export default function LandingPageHeader() {
     const handlePause = () => {
       setIsPlaying(false);
       setShowControls(true);
-      // Clear hide timer when paused
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
       }
@@ -266,7 +229,6 @@ export default function LandingPageHeader() {
   const handleMouseEnter = () => {
     setIsMouseOverVideo(true);
     setShowControls(true);
-    // Clear any existing hide timer when mouse enters
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current);
     }
@@ -274,13 +236,11 @@ export default function LandingPageHeader() {
 
   const handleMouseLeave = () => {
     setIsMouseOverVideo(false);
-    // Start hide timer when mouse leaves if video is playing
     if (isPlaying) {
       startHideControlsTimer();
     }
   };
 
-  // Clean up timers on component unmount
   useEffect(() => {
     return () => {
       if (hideControlsTimeoutRef.current) {
@@ -313,7 +273,7 @@ export default function LandingPageHeader() {
     };
   }, [lastScrollY]);
 
-  // Show loading state
+  // Loading state (unchanged logic, now driven by props)
   if (isLoading || !bannerData) {
     return (
       <main className="flex flex-col min-h-screen items-center overflow-x-hidden">
@@ -437,8 +397,10 @@ export default function LandingPageHeader() {
                 poster="https://adalyze.app/uploads/thumbnail-mobile.webp"
                 playsInline
                 preload="metadata"
-                src="https://adalyze.app/uploads/video.mp4"
-              />
+                {...({ fetchpriority: "high" } as React.VideoHTMLAttributes<HTMLVideoElement>)}
+              >
+                <source src="https://adalyze.app/uploads/video.mp4" type="video/mp4" />
+              </video>
 
               {/* Play/Pause button */}
               <motion.div
@@ -527,7 +489,7 @@ export default function LandingPageHeader() {
               >
                 <div className="flex flex-col items-center space-y-2 sm:space-y-3 mt-2 sm:mt-4">
                   <Button
-                    onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+                    onClick={() => {window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("LP_Banner_RB", window.location.href);}}
                     className="flex items-center cursor-pointer gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 lg:py-6 text-white text-sm sm:text-base md:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[180px] sm:min-w-[200px]"
                   >
                     {bannerData.pcta}
@@ -670,11 +632,13 @@ export default function LandingPageHeader() {
                   <video
                     ref={videoRef}
                     className="w-full h-full object-cover rounded-xl sm:rounded-2xl md:rounded-3xl"
-                    poster="https://adalyze.app/uploads/thumbnail.jpg"
+                    poster="https://adalyze.app/uploads/thumbnail.webp"
                     playsInline
                     preload="metadata"
-                    src="https://adalyze.app/uploads/video.mp4"
-                  />
+                    {...({ fetchpriority: "high" } as React.VideoHTMLAttributes<HTMLVideoElement>)}
+                  >
+                    <source src="https://adalyze.app/uploads/video.mp4" type="video/mp4" />
+                  </video>
                   <motion.div
                     initial={{ opacity: 1 }}
                     animate={{

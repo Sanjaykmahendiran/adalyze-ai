@@ -11,8 +11,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { trackEvent } from "@/lib/eventTracker"
+import { useRouter } from "next/navigation";
 
 export default function BlogSection() {
+  const router = useRouter();
+
   interface BlogPost {
     blogs_id: number;
     title: string;
@@ -105,6 +109,9 @@ export default function BlogSection() {
                   <Link
                     href={`/blogdetail?blogs_id=${post.blogs_id}`}
                     className="block group"
+                    onClick={() => {router.push(`/blogdetail?blogs_id=${post.blogs_id}`);
+                        trackEvent("LP_Blog_button_clicked", window.location.href);
+                    }}
                   >
                     {/* Image Section */}
                     <div className="h-48 relative m-4 rounded-lg overflow-hidden shine-effect">
@@ -186,6 +193,9 @@ export default function BlogSection() {
               <Link
                 href="/blog"
                 className="px-6 py-3 rounded-lg bg-primary/90 hover:bg-primary text-white font-medium transition-all flex items-center gap-2 shadow-md"
+                onClick={() => {router.push("/blog");
+                    trackEvent("LP_Blog_button_clicked", window.location.href);
+                }}
               >
                 View All
                 <ArrowRightIcon size={18} />

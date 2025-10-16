@@ -8,7 +8,7 @@ import FeedbackForm from "./_components/feedback-form"
 import PolicyComponent from "./_components/policies"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
-import Spinner from "@/components/overlay"
+import MyAccountLoadingSkeleton from "@/components/Skeleton-loading/myaccount-loading"
 import TransactionTable from "./_components/paymentHistoryTable"
 
 export default function MyAccount() {
@@ -22,6 +22,7 @@ export default function MyAccount() {
     mobileno: "",
     city: "",
     email: "",
+    profileImage: "",
   })
 
   const [activeCard, setActiveCard] = useState(0)
@@ -37,6 +38,7 @@ export default function MyAccount() {
         mobileno: userDetails.mobileno || "",
         city: userDetails.city || "",
         email: userDetails.email || "",
+        profileImage: userDetails.imgname || "",
       })
     }
   }, [userDetails])
@@ -59,6 +61,7 @@ export default function MyAccount() {
       role: updatedData.role,
       mobileno: updatedData.mobileno,
       city: updatedData.city,
+      profileImage: updatedData.profileImage || updatedData.profile_image || prevUser.profileImage,
     }))
   }
 
@@ -71,7 +74,7 @@ export default function MyAccount() {
       component: (
         <ProfileTabs
           {...user}
-          userDetails={userDetails}
+          profileImage={userDetails?.imgname || ""}
           onProfileUpdate={handleProfileUpdate}
         />
       ),
@@ -103,7 +106,7 @@ export default function MyAccount() {
 
   // Handle loading and validation states
   if (loading || !userDetails) {
-    return <Spinner />
+    return <MyAccountLoadingSkeleton />
   }
 
   return (
@@ -151,8 +154,8 @@ export default function MyAccount() {
               <Card
                 key={card.id}
                 className={`p-3 rounded-lg cursor-pointer transition-all duration-300 h-auto w-full border border-transparent ${activeCard === index && isOverlayOpen
-                    ? "bg-primary text-white"
-                    : "bg-black text-white/80"
+                  ? "bg-primary text-white"
+                  : "bg-black text-white/80"
                   }`}
                 onClick={() => handleCardClick(index)}
               >
@@ -164,8 +167,8 @@ export default function MyAccount() {
                     <h2 className="font-bold">{card.title}</h2>
                     <p
                       className={`text-xs ${activeCard === index && isOverlayOpen
-                          ? "text-white"
-                          : "text-white/70"
+                        ? "text-white"
+                        : "text-white/70"
                         }`}
                     >
                       {card.description}

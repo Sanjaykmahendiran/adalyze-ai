@@ -8,7 +8,7 @@ import {
   MessageSquare,
   LayoutPanelLeft,
   Eye,
-  Plus,
+  Linkedin,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import UserLayout from "@/components/layouts/user-layout"
@@ -26,10 +26,9 @@ import Impression from "@/assets/dashboard/impression.png"
 import ConvertionRate from "@/assets/dashboard/conversion-rate.png"
 import IncreaseROI from "@/assets/dashboard/increase-roi.png"
 import TalkToExpert from "@/assets/dashboard/talk-to-expert.png"
-import Link from "next/link"
 import Image from "next/image"
 import toast from "react-hot-toast"
-import { BlogPost, CaseStudy, Dashboard2Data, DashboardData, Top10Ad } from "./types"
+import { CaseStudy, Dashboard2Data, DashboardData, Top10Ad, TrendingAd, TrendingAdsResponse } from "./types"
 import AdCard from "./_components/ad-card"
 import LimitReached from "@/assets/limit-reached.webp"
 import ExpertConsultationPopup from "@/components/expert-form"
@@ -40,6 +39,7 @@ const platformIcons = {
   instagram: Instagram,
   whatsapp: MessageCircle,
   flyer: FileImage,
+  linkedin: Linkedin,
 } as const;
 
 // Helper function to parse platforms
@@ -126,12 +126,17 @@ export default function Dashboard() {
   const [dashboard2Data, setDashboard2Data] = useState<Dashboard2Data | null>(null)
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([])
   const [top10Ads, setTop10Ads] = useState<Top10Ad[]>([])
+  const [trendingAds, setTrendingAds] = useState<TrendingAd[]>([])
+  const [trendingTimeFrame, setTrendingTimeFrame] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const [showLimitPopup, setShowLimitPopup] = useState(false)
   const [showExpertPopup, setShowExpertPopup] = useState(false)
   const [showMobileActions, setShowMobileActions] = useState(false)
+  const [showAllFeedbacksPopup, setShowAllFeedbacksPopup] = useState(false)
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false)
+  const [upgradedFeatures, setUpgradedFeatures] = useState<string[]>([])
 
   // Memoized navigation handlers
   const handleUploadClick = useCallback(() => router.push('/upload'), [router])
@@ -223,6 +228,17 @@ export default function Dashboard() {
       return await response.json()
     } catch (error) {
       console.error('Error fetching top 10 ads:', error)
+      throw error
+    }
+  }
+
+  const fetchTrendingAds = async () => {
+    try {
+      const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=trendingads')
+      if (!response.ok) throw new Error('Failed to fetch trending ads')
+      return await response.json()
+    } catch (error) {
+      console.error('Error fetching trending ads:', error)
       throw error
     }
   }
@@ -327,18 +343,21 @@ export default function Dashboard() {
       try {
         setLoading(true)
 
-        const [dashboard1, dashboard2, cases, blogs, topAds] = await Promise.all([
+        const [dashboard1, dashboard2, cases, blogs, topAds, trendingAdsData] = await Promise.all([
           fetchDashboardData(userId),
           fetchDashboard2Data(userId),
           fetchCaseStudies(),
           fetchBlogPosts(),
-          fetchTop10Ads()
+          fetchTop10Ads(),
+          fetchTrendingAds()
         ])
 
         setDashboardData(dashboard1)
         setDashboard2Data(dashboard2)
         setCaseStudies(cases.slice(0, 2))
         setTop10Ads(topAds.slice(0, 4))
+        setTrendingAds(trendingAdsData.trending_ads?.slice(0, 4) || [])
+        setTrendingTimeFrame(trendingAdsData.time_frame || "")
 
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Failed to fetch data')
@@ -370,11 +389,76 @@ export default function Dashboard() {
     }
   }
 
+  const isPlanExpired = (dateString: string): boolean => {
+    try {
+      const inputDate = new Date(dateString)
+      const today = new Date()
+      
+      // Set time to midnight for accurate date comparison
+      inputDate.setHours(0, 0, 0, 0)
+      today.setHours(0, 0, 0, 0)
+
+      // Returns true if plan expired (valid_till is today or in the past)
+      return inputDate <= today
+    } catch {
+      return false
+    }
+  }
+
   useEffect(() => {
-    if (userDetails && (userDetails.ads_limit === 0 || (userDetails.valid_till && isToday(userDetails.valid_till)))) {
+    if (userDetails && (userDetails.ads_limit === 0 || (userDetails.valid_till && isPlanExpired(userDetails.valid_till)))) {
       setShowLimitPopup(true)
     }
   }, [userDetails])
+
+  // Check for package upgrade and show congratulations popup
+  useEffect(() => {
+    if (userDetails && userId && userDetails.package_id) {
+      const previousPackageKey = `previous_package_${userId}`
+      const previousPackage = localStorage.getItem(previousPackageKey)
+
+      const currentPackage = userDetails.package_id
+
+      // Store current package for future comparison
+      if (previousPackage === null) {
+        localStorage.setItem(previousPackageKey, String(currentPackage))
+        return
+      }
+
+      const prevPkg = parseInt(previousPackage)
+
+      // Check if user has upgraded (previous package was lower than current)
+      if (prevPkg < currentPackage) {
+        // Use a specific key for this upgrade path
+        const storageKey = `package_upgrade_${prevPkg}_to_${currentPackage}_shown_${userId}`
+        const upgradeShown = localStorage.getItem(storageKey)
+
+        if (!upgradeShown) {
+          const features: string[] = []
+
+          // Determine which features were unlocked
+          if (prevPkg === 1 && currentPackage >= 2) {
+            features.push('top10ads')
+          }
+          if (prevPkg <= 2 && currentPackage === 3) {
+            features.push('top10trendingads')
+          }
+
+          if (features.length > 0) {
+            setUpgradedFeatures(features)
+            setShowUpgradePopup(true)
+            localStorage.setItem(storageKey, 'true')
+          }
+        }
+
+        // Update stored package
+        localStorage.setItem(previousPackageKey, String(currentPackage))
+      } else if (prevPkg !== currentPackage) {
+        // Update if package changed but not an upgrade
+        localStorage.setItem(previousPackageKey, String(currentPackage))
+      }
+    }
+  }, [userDetails, userId])
 
   const handleUpgradeToPro = useCallback(() => {
     setShowLimitPopup(false)
@@ -383,7 +467,11 @@ export default function Dashboard() {
 
   const LimitExceededPopup = () => {
     const isAdsLimitZero = userDetails?.ads_limit === 0
-    const isPlanExpired = userDetails?.valid_till && isToday(userDetails.valid_till)
+    const isPlanExpiredStatus = userDetails?.valid_till && isPlanExpired(userDetails.valid_till)
+    
+    // Prioritize plan expiry message if plan is expired
+    const showExpiredMessage = isPlanExpiredStatus
+    const showLimitMessage = isAdsLimitZero && !isPlanExpiredStatus
 
     return (
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -410,18 +498,18 @@ export default function Dashboard() {
             <div className="flex items-start space-x-3">
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-[#db4900]">
-                  {isAdsLimitZero ? "Ads Limit Reached" : "Plan Expired"}
+                  {showExpiredMessage ? "Plan Expired" : "Ads Limit Reached"}
                 </h3>
                 <p className="text-sm text-gray-300">
-                  {isAdsLimitZero ? "No more ads remaining" : "Your subscription has ended"}
+                  {showExpiredMessage ? "Your subscription has ended" : "No more ads remaining"}
                 </p>
               </div>
             </div>
 
             <p className="text-gray-200 leading-relaxed text-sm sm:text-base">
-              {isAdsLimitZero
-                ? "You've reached your ads limit for the current plan. Upgrade to Pro to continue analyzing your ads and unlock premium features."
-                : "Your current plan has expired today. Renew your subscription to continue using premium features and analyzing your ads."
+              {showExpiredMessage
+                ? "Your current plan has expired. Renew your subscription to continue using premium features and analyzing your ads."
+                : "You've reached your ads limit for the current plan. Upgrade to Pro to continue analyzing your ads and unlock premium features."
               }
             </p>
 
@@ -445,9 +533,214 @@ export default function Dashboard() {
                 className="bg-[#db4900] hover:bg-[#ff5722] text-white font-semibold flex-1 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30"
               >
                 <Crown className="w-4 h-4 mr-2" />
-                {isAdsLimitZero ? "Add Credits" : "Renew Subscription"}
+                {showExpiredMessage ? "Renew Subscription" : "Add Credits"}
               </Button>
             </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const AllFeedbacksPopup = () => {
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-[#171717] rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden p-4 sm:p-6 relative mx-4">
+          {/* Close button */}
+          <button
+            onClick={() => setShowAllFeedbacksPopup(false)}
+            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors cursor-pointer z-10"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Header */}
+          <div className="mb-6">
+            <h3 className="text-xl sm:text-2xl font-bold text-[#db4900] mb-2">
+              All AI Feedbacks
+            </h3>
+            <p className="text-sm text-gray-300">
+              Complete AI feedback for all your analyzed ads
+            </p>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="overflow-y-auto max-h-[calc(80vh-150px)] space-y-3 sm:space-y-4 pr-2">
+            {dashboard2Data?.latest_feedbacks && dashboard2Data.latest_feedbacks.length > 0 ? (
+              dashboard2Data.latest_feedbacks.map((feedback, index) => {
+                const feedbackArray = JSON.parse(feedback);
+                const correspondingAd = dashboardData?.recentads?.[index];
+                const adId = correspondingAd?.ad_id || "N/A";
+                const timeAgo = correspondingAd?.uploaded_on
+                  ? getTimeAgo(correspondingAd.uploaded_on)
+                  : "Recently";
+
+                return (
+                  <div
+                    key={index}
+                    className="border-l-4 border-[#db4900] bg-black pl-4 pr-3 py-3 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.01]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-white text-sm flex-1">{feedbackArray.join(" ")}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-white/50 text-xs">
+                        Ad #{adId}
+                      </p>
+                      <p className="text-white/50 text-xs">
+                        {timeAgo}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-white/80">
+                <MessageSquare className="w-16 h-16 text-primary mb-4" />
+                <p className="text-lg mb-4 text-center">No AI feedbacks available</p>
+                <p className="text-sm text-white/60 text-center mb-4">
+                  Upload your first ad to get AI-powered recommendations
+                </p>
+                <Button
+                  onClick={() => {
+                    setShowAllFeedbacksPopup(false)
+                    handleUploadClick()
+                  }}
+                  className="bg-[#db4900] hover:bg-[#ff5722] text-white px-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Ad
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const UpgradeCongratulationsPopup = () => {
+    const packageName = userDetails?.package_id === 1 ? "Basic" : userDetails?.package_id === 2 ? "Starter" : "Growth"
+    const hasTop10Ads = upgradedFeatures.includes('top10ads')
+    const hasTrendingAds = upgradedFeatures.includes('top10trendingads')
+
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+        <div className="bg-black rounded-3xl max-w-2xl w-full p-6 sm:p-8 relative border-2 border-[#db4900]/40 shadow-2xl shadow-[#db4900]/30 mx-4">
+          {/* Confetti/Celebration Background Effect */}
+          <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+            <div className="absolute -top-12 -left-12 w-24 h-24 bg-[#db4900]/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-[#ff5722]/20 rounded-full blur-3xl animate-pulse delay-150"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#db4900]/10 rounded-full blur-3xl"></div>
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={() => setShowUpgradePopup(false)}
+            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors z-10"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          <div className="relative z-10">
+
+            {/* Title */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2 bg-gradient-to-r from-[#db4900] via-[#ff5722] to-[#db4900] bg-clip-text text-transparent animate-gradient">
+                Congratulations!
+              </h2>
+              <p className="text-lg sm:text-xl text-white/90 font-semibold">
+                You've upgraded to {packageName} Plan
+              </p>
+            </div>
+
+            {/* Features Unlocked Section */}
+            <div className="bg-black/40 rounded-2xl p-4 sm:p-6 mb-6 border border-[#db4900]/30">
+              <h3 className="text-lg sm:text-xl font-bold text-[#db4900] mb-4 text-center">
+                🔓 New Features Unlocked
+              </h3>
+
+              <div className="space-y-4">
+                {hasTop10Ads && (
+                  <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] rounded-xl p-4 border-l-4 border-[#db4900] transform hover:scale-105 transition-all duration-300">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-10 h-10 bg-[#db4900]/20 rounded-full flex items-center justify-center mt-1">
+                        <Eye className="w-5 h-5 text-[#db4900]" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-semibold text-base sm:text-lg mb-1">
+                          Top 10 Ads Access
+                        </h4>
+                        <p className="text-gray-300 text-sm">
+                          View the highest performing ads on adalyze AI. Learn from the best and get inspired for your campaigns.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {hasTrendingAds && (
+                  <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] rounded-xl p-4 border-l-4 border-[#ff5722] transform hover:scale-105 transition-all duration-300">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-10 h-10 bg-[#ff5722]/20 rounded-full flex items-center justify-center mt-1">
+                        <MessageSquare className="w-5 h-5 text-[#ff5722]" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-semibold text-base sm:text-lg mb-1">
+                          Top 10 Trending Ads Access
+                        </h4>
+                        <p className="text-gray-300 text-sm">
+                          Stay ahead with real-time trending advertisements. Track viral campaigns and market trends.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* CTA Section */}
+            <div className="text-center space-y-3">
+              <p className="text-gray-300 text-sm">
+                Start exploring your new features now!
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                {hasTop10Ads && (
+                  <Button
+                    onClick={() => {
+                      setShowUpgradePopup(false);
+                      router.push('/top10ads');
+                    }}
+                    className="bg-[#db4900] hover:bg-[#ff5722] text-white font-semibold px-6 py-4 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
+                  >
+                    <Eye className="w-5 h-5 mr-2" />
+                    View Top 10 Ads
+                  </Button>
+                )}
+
+                {hasTrendingAds && (
+                  <Button
+                    onClick={() => {
+                      setShowUpgradePopup(false);
+                      router.push('/top10trendingads');
+                    }}
+                    className="bg-[#ff5722] hover:bg-[#db4900] text-white font-semibold px-6 py-4 transition-all duration-300 hover:shadow-lg hover:shadow-[#ff5722]/30 hover:scale-105"
+                  >
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    View Trending Ads
+                  </Button>
+                )}
+
+                <Button
+                  onClick={() => setShowUpgradePopup(false)}
+                  variant="outline"
+                >
+                  I'll explore later
+                </Button>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -552,8 +845,8 @@ export default function Dashboard() {
                 />
 
                 <MainStatCard
-                  title="Total Suggestions"
-                  value={String(dashboardData?.TotalSuggestions || 0).toString().padStart(2, "0")}
+                  title="Total Gos"
+                  value={String(dashboardData?.TotalGos || 0).toString().padStart(2, "0")}
                   subtitle={`Analyzed ${dashboardData?.AdAnalysed || 0} Ads`}
                   imageSrc={TotalSuggestions.src}
                 />
@@ -679,6 +972,15 @@ export default function Dashboard() {
                       <h3 className="text-white font-semibold text-lg sm:text-xl transition-colors duration-300">
                         AI Feedbacks
                       </h3>
+                      {dashboard2Data?.latest_feedbacks && dashboard2Data.latest_feedbacks.length > 0 && (
+                        <Button
+                          onClick={() => setShowAllFeedbacksPopup(true)}
+                          variant="ghost"
+                          className="self-start sm:self-auto text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] transition-all duration-300 text-sm"
+                        >
+                          View All
+                        </Button>
+                      )}
                     </div>
 
                     <p className="text-white/50 text-sm mb-4 transition-colors duration-300">
@@ -693,13 +995,9 @@ export default function Dashboard() {
                           return (
                             <div
                               key={index}
-                              className="border-l-4 border-[#db4900] bg-[#171717] pl-3 py-2 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.02] "
+                              className="border-l-4 border-[#db4900] bg-[#171717] px-2 py-2 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.02] "
                             >
                               <p className="text-white text-sm">{feedbackArray.join(" ")}</p>
-                              <p className="text-white/50 text-xs">
-                                Ad #{dashboardData?.recentads?.[0]?.ad_id || "N/A"} •{" "}
-                                {getTimeAgo(dashboardData?.LastAnalysedOn || "-")}
-                              </p>
                             </div>
                           );
                         })
@@ -933,39 +1231,85 @@ export default function Dashboard() {
               </div>
 
               {/* Row 5 - Top 10 Ads */}
-              <div className="col-span-full pb-12 sm:pb-18">
-                <div className="bg-black rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10">
-                  <div className="mb-4 sm:mb-6">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-lg sm:text-xl font-semibold text-white transition-colors duration-300">
-                        Top 10 Ads
-                      </h2>
-                      <Button
-                        variant="ghost"
-                        onClick={() => router.push("/top10ads")}
-                        className="text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] text-sm transition-all duration-300"
-                      >
-                        View All Ads
-                      </Button>
-                    </div>
-                    <p className="text-white/50 text-sm mt-1 transition-colors duration-300">
-                      Discover the highest performing ads on adalyze AI
-                    </p>
-                  </div>
-
-
-                  {/* Top 10 Ads Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    {top10Ads.length > 0 ? (
-                      top10Ads.map((ad, index) => renderAdCard(ad, index))
-                    ) : (
-                      <div className="col-span-full text-center py-8 text-gray-400">
-                        <p>No top ads available</p>
+              {(userDetails?.package_id === 2 || userDetails?.package_id === 3) && (
+                <div className="col-span-full">
+                  <div className="bg-black rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10">
+                    <div className="mb-4 sm:mb-6">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-lg sm:text-xl font-semibold text-white transition-colors duration-300">
+                          Top 10 Ads
+                        </h2>
+                        <Button
+                          variant="ghost"
+                          onClick={() => router.push("/top10ads")}
+                          className="text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] text-sm transition-all duration-300"
+                        >
+                          View All Ads
+                        </Button>
                       </div>
-                    )}
+                      <p className="text-white/50 text-sm mt-1 transition-colors duration-300">
+                        Discover the highest performing ads on adalyze AI
+                      </p>
+                    </div>
+
+
+                    {/* Top 10 Ads Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                      {top10Ads.length > 0 ? (
+                        top10Ads.map((ad, index) => renderAdCard(ad, index))
+                      ) : (
+                        <div className="col-span-full text-center py-8 text-gray-400">
+                          <p>No top ads available</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Row 6 - Top 10 Trending Ads */}
+              {userDetails?.package_id === 3 && (
+                <div className="col-span-full pb-12 sm:pb-18">
+                  <div className="bg-black rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10">
+                    <div className="mb-4 sm:mb-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-lg sm:text-xl font-semibold text-white transition-colors duration-300">
+                            Top 10 Trending Ads
+                          </h2>
+                          {trendingTimeFrame && (
+                            <p className="text-white/40 text-xs mt-0.5">
+                              {trendingTimeFrame}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          onClick={() => router.push("/top10trendingads")}
+                          className="text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] text-sm transition-all duration-300"
+                        >
+                          View All Ads
+                        </Button>
+                      </div>
+                      <p className="text-white/50 text-sm mt-1 transition-colors duration-300">
+                        Discover the most trending ads on adalyze AI
+                      </p>
+                    </div>
+
+
+                    {/* Top 10 Trending Ads Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                      {trendingAds.length > 0 ? (
+                        trendingAds.map((ad, index) => renderAdCard(ad, index))
+                      ) : (
+                        <div className="col-span-full text-center py-8 text-gray-400">
+                          <p>No trending ads available</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -990,6 +1334,10 @@ export default function Dashboard() {
           onSubmit={submitExpertRequest}
         />
       )}
+
+      {showAllFeedbacksPopup && <AllFeedbacksPopup />}
+
+      {showUpgradePopup && <UpgradeCongratulationsPopup />}
     </UserLayout>
   )
 }

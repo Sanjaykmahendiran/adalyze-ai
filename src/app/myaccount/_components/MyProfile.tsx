@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -12,6 +12,8 @@ import toast from "react-hot-toast"
 import Cookies from "js-cookie"
 import ChangePasswordForm from "./changePassword"
 import TransactionTable from "./paymentHistoryTable"
+import { Camera } from "lucide-react"
+import Image from "next/image"
 
 // Base URL configuration
 export const BASE_URL = "https://adalyzeai.xyz/App/api.php"
@@ -22,8 +24,8 @@ interface ProfileProps {
   city?: string
   role?: string
   email?: string
-  userDetails?: any
   onProfileUpdate?: (updatedData: any) => void
+  profileImage: string
 }
 
 export default function MyProfile({
@@ -32,8 +34,8 @@ export default function MyProfile({
   city = "",
   role = "",
   email = "",
-  userDetails,
   onProfileUpdate,
+  profileImage = "",
 }: ProfileProps) {
   const userId = Cookies.get("userId")
   const [activeTab, setActiveTab] = useState("edit-profile")
@@ -42,6 +44,10 @@ export default function MyProfile({
   const [userMobileno, setUserMobileno] = useState(mobileno || "")
   const [userCity, setUserCity] = useState(city || "")
   const [userRole, setUserRole] = useState(role || "")
+  const [imagePreview, setImagePreview] = useState<string>(profileImage || "")
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("")
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setUserName(name || "")
@@ -49,6 +55,84 @@ export default function MyProfile({
     setUserCity(city || "")
     setUserRole(role || "")
   }, [name, mobileno, city, role])
+
+  useEffect(() => {
+    setImagePreview(profileImage || "")
+  }, [profileImage])
+
+  // Handle image upload to server
+  const uploadImageToServer = async (base64Data: string) => {
+    setIsUploadingImage(true)
+    const payload = {
+      gofor: "image_upload",
+      imgname: base64Data,
+      type: "profile",
+    }
+
+    try {
+      const response = await fetch(BASE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (data.success === true) {
+        toast.success("Profile image uploaded successfully")
+        setUploadedImageUrl(data.url)
+        setImagePreview(data.url)
+        return data.url
+      } else {
+        toast.error(data.message || "Failed to upload image")
+        return null
+      }
+    } catch (error) {
+      console.error("Image upload error:", error)
+      toast.error("Network error while uploading image.")
+      return null
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  // Handle image selection and conversion to base64
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB")
+      return
+    }
+
+    // Convert to base64 and upload immediately
+    const reader = new FileReader()
+    reader.onloadend = async () => {
+      const base64String = reader.result as string
+      // Remove the data:image/xxx;base64, prefix
+      const base64Data = base64String.split(",")[1]
+
+      // Show local preview first
+      setImagePreview(base64String)
+
+      // Upload to server immediately
+      await uploadImageToServer(base64Data)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Trigger file input click
+  const handleEditImageClick = () => {
+    fileInputRef.current?.click()
+  }
 
   const handleSubmit = async () => {
     const payload = {
@@ -58,6 +142,7 @@ export default function MyProfile({
       name: userName,
       city: userCity,
       role: userRole,
+      imgname: uploadedImageUrl || "", // Send the uploaded image URL
     }
 
     try {
@@ -125,6 +210,49 @@ export default function MyProfile({
             <div className="space-y-6">
               <h1 className="text-2xl font-semibold hidden sm:block text-white">Edit Profile</h1>
               <div className="space-y-8 sm:grid sm:grid-cols-1">
+                {/* Profile Image Upload */}
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="relative">
+                    <div
+                      onClick={handleEditImageClick}
+                      className="w-32 h-32 rounded-full overflow-hidden bg-[#171717] border-2 border-[#3d3d3d] flex items-center justify-center">
+                      {imagePreview ? (
+                        <Image
+                          src={imagePreview}
+                          alt="Profile"
+                          width={128}
+                          height={128}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-gray-400 text-4xl">
+                          {userName ? userName.charAt(0).toUpperCase() : "U"}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleEditImageClick}
+                      className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 shadow-lg transition-colors"
+                      aria-label="Edit profile image"
+                    >
+                      <Camera className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  {isUploadingImage && (
+                    <p className="text-sm text-blue-400">
+                      Uploading image...
+                    </p>
+                  )}
+                </div>
+
                 {/* Form Fields */}
                 <div className="space-y-4">
                   {/* Name */}
@@ -189,7 +317,10 @@ export default function MyProfile({
 
                 {/* Update Button */}
                 <div className="flex justify-center sm:justify-end mt-4">
-                  <Button className="w-full sm:w-auto text-white" onClick={handleSubmit}>
+                  <Button
+                    className="w-full sm:w-auto text-white"
+                    onClick={handleSubmit}
+                  >
                     Update
                   </Button>
                 </div>

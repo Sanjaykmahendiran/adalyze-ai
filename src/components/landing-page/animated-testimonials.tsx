@@ -68,7 +68,7 @@ export const AnimatedTestimonials = ({
                     z: isActive(index) ? 0 : -100,
                     rotate: isActive(index) ? 0 : randomRotateY(),
                     zIndex: isActive(index)
-                      ? 10 // active card stays on top
+                      ? 90 // active card stays on top
                       : testimonials.length - index, // others stack below
                     y: isActive(index) ? [0, -80, 0] : 0,
                   }}

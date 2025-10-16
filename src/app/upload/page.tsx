@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,8 +16,9 @@ import cookies from 'js-cookie'
 import toast from "react-hot-toast"
 import UserLayout from "@/components/layouts/user-layout"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
-import { event } from "@/lib/gtm"
-import { Country, State, TargetInfo } from "./type"
+import { event, trackAdUpload } from "@/lib/gtm"
+import { Country, State, TargetInfo, Industry } from "./type"
+import { trackEvent } from "@/lib/eventTracker"
 
 // Move FreeTrailOverlay outside to prevent re-creation on every render
 const FreeTrailOverlay = ({
@@ -100,6 +101,8 @@ export default function UploadPage() {
     const [carouselImageUrls, setCarouselImageUrls] = useState<string[]>([])
     const [isCarouselUploading, setIsCarouselUploading] = useState(false)
     const [carouselUploadProgress, setCarouselUploadProgress] = useState(0)
+    // Track mapping between files and their uploaded URLs
+    const carouselFileUrlMapRef = useRef<Map<File, string>>(new Map())
 
     // Video ad states
     const [videoFile, setVideoFile] = useState<File | null>(null)
@@ -114,17 +117,21 @@ export default function UploadPage() {
     // Location states
     const [countries, setCountries] = useState<Country[]>([])
     const [states, setStates] = useState<State[]>([])
+    const [industries, setIndustries] = useState<Industry[]>([])
     const [loadingCountries, setLoadingCountries] = useState(false)
     const [loadingStates, setLoadingStates] = useState(false)
     const [countrySearch, setCountrySearch] = useState("")
     const [stateSearch, setStateSearch] = useState("")
-
-
+    const [industrySearch, setIndustrySearch] = useState("")
+    const [countryDropdownOpen, setCountryDropdownOpen] = useState(false)
+    const [stateDropdownOpen, setStateDropdownOpen] = useState(false)
+    const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false)
+    const countrySearchInputRef = useRef<HTMLInputElement>(null)
+    const stateSearchInputRef = useRef<HTMLInputElement>(null)
+    const industrySearchInputRef = useRef<HTMLInputElement>(null)
 
     const userId = cookies.get("userId") || ""
     const isFreeTrailUser = userDetails?.fretra_status === 1
-
-
 
     useEffect(() => {
         if (sidePanelOpen) {
@@ -138,6 +145,33 @@ export default function UploadPage() {
         };
     }, [sidePanelOpen]);
 
+    // Auto-focus country search when dropdown opens
+    useEffect(() => {
+        if (countryDropdownOpen) {
+            setTimeout(() => {
+                countrySearchInputRef.current?.focus()
+            }, 100)
+        }
+    }, [countryDropdownOpen])
+
+    // Auto-focus state search when dropdown opens
+    useEffect(() => {
+        if (stateDropdownOpen) {
+            setTimeout(() => {
+                stateSearchInputRef.current?.focus()
+            }, 100)
+        }
+    }, [stateDropdownOpen])
+
+    // Auto-focus industry search when dropdown opens
+    useEffect(() => {
+        if (industryDropdownOpen) {
+            setTimeout(() => {
+                industrySearchInputRef.current?.focus()
+            }, 100)
+        }
+    }, [industryDropdownOpen])
+
     // Check if files are uploaded
     const hasUploadedFiles = () => {
         if (activeTab === "single") return singleFile && singleImageUrl
@@ -149,6 +183,7 @@ export default function UploadPage() {
     // Fetch countries on component mount
     useEffect(() => {
         fetchCountries()
+        fetchIndustries()
     }, [])
 
     // Fetch states when country changes
@@ -172,6 +207,11 @@ export default function UploadPage() {
     // Filter states based on search
     const filteredStates = states.filter(stateItem =>
         stateItem.name.toLowerCase().includes(stateSearch.toLowerCase())
+    )
+
+    // Filter industries based on search
+    const filteredIndustries = industries.filter(industryItem =>
+        industryItem.name.toLowerCase().includes(industrySearch.toLowerCase())
     )
 
     const fetchCountries = async () => {
@@ -205,6 +245,21 @@ export default function UploadPage() {
             toast.error('Failed to load states')
         } finally {
             setLoadingStates(false)
+        }
+    }
+
+    const fetchIndustries = async () => {
+        try {
+            const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=industrylist')
+            if (!response.ok) {
+                throw new Error('Failed to fetch industries')
+            }
+            const data: Industry[] = await response.json()
+            setIndustries(data)
+        } catch (error) {
+            console.error('Error fetching industries:', error)
+            toast.error('Failed to load industries')
+        } finally {
         }
     }
 
@@ -257,6 +312,7 @@ export default function UploadPage() {
             if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
                 toast.success('File uploaded successfully!')
                 setSingleImageUrl(result.fileUrl)
+                trackEvent("Single_File_Uploaded", window.location.href, userDetails?.email?.toString())
             } else {
                 throw new Error(result.message || 'Upload failed')
             }
@@ -264,6 +320,7 @@ export default function UploadPage() {
             console.error('File upload error:', err)
             setSingleFile(null)
             setSingleImageUrl(null)
+            trackEvent("Single_File_Upload_Failed", window.location.href, userDetails?.email?.toString())
             throw err
         } finally {
             setIsSingleUploading(false)
@@ -273,21 +330,51 @@ export default function UploadPage() {
 
     // Carousel file handlers
     const handleCarouselFilesChange = async (uploadedFiles: File[]) => {
+        const fileUrlMap = carouselFileUrlMapRef.current
+        
+        // Check if this is a reorder (same files, different order) or new files
+        const isReorder = 
+            uploadedFiles.length === carouselFiles.length &&
+            uploadedFiles.every(file => carouselFiles.includes(file)) &&
+            uploadedFiles.length > 0 &&
+            fileUrlMap.size === uploadedFiles.length
+        
         setCarouselFiles(uploadedFiles)
-        if (uploadedFiles.length > 0) {
+        
+        if (uploadedFiles.length === 0) {
+            // Clear everything
+            setCarouselImageUrls([])
+            fileUrlMap.clear()
+            return
+        }
+        
+        if (isReorder) {
+            // Just reorder the URLs to match the new file order - instant, no re-upload
+            const reorderedUrls = uploadedFiles.map(file => fileUrlMap.get(file)!).filter(Boolean)
+            setCarouselImageUrls(reorderedUrls)
+        } else {
+            // Remove files that are no longer in the list from the map
+            const currentFileSet = new Set(uploadedFiles)
+            for (const file of fileUrlMap.keys()) {
+                if (!currentFileSet.has(file)) {
+                    fileUrlMap.delete(file)
+                }
+            }
+            
+            // New files or removed files - need to upload new ones
             try {
                 await uploadCarouselFiles(uploadedFiles)
             } catch (error) {
                 // Error already handled in uploadCarouselFiles and component
             }
-        } else {
-            setCarouselImageUrls([])
         }
     }
 
     const uploadCarouselFiles = async (filesToUpload: File[]) => {
         setIsCarouselUploading(true)
         setCarouselUploadProgress(0)
+
+        const fileUrlMap = carouselFileUrlMapRef.current
 
         try {
             const progressInterval = setInterval(() => {
@@ -300,9 +387,22 @@ export default function UploadPage() {
                 })
             }, 300)
 
-            // Upload files sequentially to maintain order
-            const uploadedUrls: string[] = []
-            for (const file of filesToUpload) {
+            // Check which files need uploading
+            const filesToActuallyUpload = filesToUpload.filter(file => !fileUrlMap.has(file))
+            
+            // If all files are already uploaded, just reorder
+            if (filesToActuallyUpload.length === 0) {
+                const existingUrls = filesToUpload.map(file => fileUrlMap.get(file)!).filter(Boolean)
+                clearInterval(progressInterval)
+                setCarouselUploadProgress(100)
+                setCarouselImageUrls(existingUrls)
+                setIsCarouselUploading(false)
+                setCarouselUploadProgress(0)
+                return
+            }
+
+            // Upload only new files sequentially to maintain order
+            for (const file of filesToActuallyUpload) {
                 const formData = new FormData()
                 formData.append('file', file)
                 formData.append('user_id', userId)
@@ -318,22 +418,29 @@ export default function UploadPage() {
 
                 const result = await response.json()
                 if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
-                    uploadedUrls.push(result.fileUrl)
+                    // Store the mapping
+                    fileUrlMap.set(file, result.fileUrl)
                 } else {
                     throw new Error(result.message || 'Upload failed')
                 }
             }
+
+            // Build the complete URL array in the order of filesToUpload
+            const uploadedUrls = filesToUpload.map(file => fileUrlMap.get(file)!).filter(Boolean)
 
             clearInterval(progressInterval)
             setCarouselUploadProgress(100)
             setCarouselImageUrls(uploadedUrls)
             
             // Show single success toast with total count
-            toast.success(`${uploadedUrls.length} image${uploadedUrls.length > 1 ? 's' : ''} uploaded successfully!`)
+            toast.success(`${filesToActuallyUpload.length} image${filesToActuallyUpload.length > 1 ? 's' : ''} uploaded successfully!`)
+            trackEvent("Carousel_Files_Uploaded", window.location.href, userDetails?.email?.toString())
         } catch (err) {
             console.error('Carousel upload error:', err)
             setCarouselFiles([])
             setCarouselImageUrls([])
+            fileUrlMap.clear()
+            trackEvent("Carousel_Files_Upload_Failed", window.location.href, userDetails?.email?.toString())
             throw err
         } finally {
             setIsCarouselUploading(false)
@@ -405,6 +512,7 @@ export default function UploadPage() {
                 setVideoTranscript(result.transcript)
                 setVideoDuration(result.meta.duration)
                 setIsVideoUploaded(true)
+                trackEvent("Video_File_Uploaded", window.location.href, userDetails?.email?.toString())
             } else {
                 throw new Error(result.message || 'Upload failed')
             }
@@ -414,6 +522,7 @@ export default function UploadPage() {
             setVideoScreenshots([])
             setVideoFilePath(null)
             setIsVideoUploaded(false)
+            trackEvent("Video_File_Upload_Failed", window.location.href, userDetails?.email?.toString())
             throw err
         } finally {
             setIsVideoUploading(false)
@@ -425,7 +534,7 @@ export default function UploadPage() {
         const selectedCountry = countries.find(c => c.id === country)
         const selectedState = states.find(s => s.id === state)
 
-        setTargetInfo({
+        const newTargetInfo = {
             platform,
             industry,
             age: `${minAge}-${maxAge}`,
@@ -434,14 +543,16 @@ export default function UploadPage() {
             state,
             countryName: selectedCountry?.name || "",
             stateName: selectedState?.name || ""
-        })
+        }
+
+        setTargetInfo(newTargetInfo)
         setSidePanelOpen(false)
 
-        // Proceed with analysis after setting target
-        await handleAnalyze()
+        // Proceed with analysis after setting target, pass the target info directly
+        await handleAnalyze(newTargetInfo)
     }
 
-    const handleAnalyze = async () => {
+    const handleAnalyze = async (passedTargetInfo?: TargetInfo) => {
         // Get current ad name based on active tab
         const currentAdName = activeTab === "single" ? singleAdName :
             activeTab === "carousel" ? carouselAdName :
@@ -461,16 +572,19 @@ export default function UploadPage() {
 
         setIsAnalyzing(true);
 
+        // Use passed target info if available, otherwise use state
+        const targetData = passedTargetInfo || targetInfo;
+
         try {
             let analyzeData: any = {
                 user_id: userId,
                 ads_name: currentAdName,
-                industry: targetInfo?.industry || "",
-                platform: targetInfo?.platform || "",
-                age: targetInfo?.age || "",
-                gender: targetInfo?.gender || "",
-                country: targetInfo?.countryName || "",
-                state: targetInfo?.stateName || "",
+                industry: targetData?.industry || "",
+                platform: targetData?.platform || "",
+                age: targetData?.age || "",
+                gender: targetData?.gender || "",
+                country: targetData?.countryName || "",
+                state: targetData?.stateName || "",
                 ad_type: activeTab === "single" ? "Single" : activeTab === "carousel" ? "Carousel" : "Video"
             }
 
@@ -494,6 +608,9 @@ export default function UploadPage() {
             if (result.success) {
                 localStorage.setItem('analysisResults', JSON.stringify(result))
                 event("analyze");
+                trackAdUpload(result.data.ad_upload_id.toString());
+                const eventName = isFreeTrailUser ? `free_trail_user_${activeTab}_Ad_Analyzed` : `${activeTab}_Ad_Analyzed`
+                trackEvent(eventName, window.location.href, userDetails?.email?.toString())
                 router.push(`/results?ad_id=${result.data.ad_upload_id}`)
             } else {
                 throw new Error(result.error || 'Analysis failed')
@@ -501,6 +618,7 @@ export default function UploadPage() {
         } catch (err) {
             console.error('Analysis error:', err)
             toast.error(err instanceof Error ? err.message : 'Failed to analyze ad')
+            trackEvent(`${activeTab}_Ad_Analyze_Failed`, window.location.href, userDetails?.email?.toString())
         } finally {
             setIsAnalyzing(false)
         }
@@ -591,14 +709,14 @@ export default function UploadPage() {
                                                     <SelectValue placeholder="Select platform" />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-black border-[#3d3d3d]">
-                                                    <SelectItem value="instagram">Instagram</SelectItem>
-                                                    <SelectItem value="facebook">Facebook</SelectItem>
-                                                    <SelectItem value="twitter">Twitter</SelectItem>
-                                                    <SelectItem value="linkedin">LinkedIn</SelectItem>
-                                                    <SelectItem value="tiktok">TikTok</SelectItem>
-                                                    <SelectItem value="pinterest">Pinterest</SelectItem>
-                                                    <SelectItem value="youtube">YouTube</SelectItem>
-                                                    <SelectItem value="other">Other</SelectItem>
+                                                    <SelectItem value="Instagram">Instagram</SelectItem>
+                                                    <SelectItem value="Facebook">Facebook</SelectItem>
+                                                    <SelectItem value="Twitter">Twitter</SelectItem>
+                                                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                                                    <SelectItem value="TikTok">TikTok</SelectItem>
+                                                    <SelectItem value="Pinterest">Pinterest</SelectItem>
+                                                    <SelectItem value="YouTube">YouTube</SelectItem>
+                                                    <SelectItem value="Other">Other</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -606,23 +724,29 @@ export default function UploadPage() {
                                         {/* Industry */}
                                         <div className="space-y-2">
                                             <Label className="text-white/70 font-semibold">Industry Category</Label>
-                                            <Select value={industry} onValueChange={setIndustry}>
+                                            <Select value={industry} onValueChange={setIndustry} onOpenChange={setIndustryDropdownOpen}>
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder="Select industry" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
-                                                    <SelectItem value="retail">Retail & E-commerce</SelectItem>
-                                                    <SelectItem value="technology">Technology</SelectItem>
-                                                    <SelectItem value="finance">Finance & Banking</SelectItem>
-                                                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                                                    <SelectItem value="education">Education</SelectItem>
-                                                    <SelectItem value="travel">Travel & Hospitality</SelectItem>
-                                                    <SelectItem value="food">Food & Beverage</SelectItem>
-                                                    <SelectItem value="entertainment">Entertainment & Media</SelectItem>
-                                                    <SelectItem value="automotive">Automotive</SelectItem>
-                                                    <SelectItem value="real-estate">Real Estate</SelectItem>
-                                                    <SelectItem value="service">Service & Cleaning</SelectItem>
-                                                    <SelectItem value="other">Other</SelectItem>
+                                                <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
+                                                    <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                                                        <Input
+                                                            ref={industrySearchInputRef}
+                                                            placeholder="Search industries..."
+                                                            value={industrySearch}
+                                                            onChange={(e) => setIndustrySearch(e.target.value)}
+                                                            onKeyDown={(e) => e.stopPropagation()}
+                                                            className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
+                                                            autoComplete="off"
+                                                        />
+                                                    </div>
+                                                    <div className="max-h-48 overflow-y-auto">
+                                                        {filteredIndustries.map((industryItem: Industry) => (
+                                                            <SelectItem key={industryItem.industry_id} value={industryItem.name}>
+                                                                {industryItem.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </div>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -666,10 +790,10 @@ export default function UploadPage() {
                                                     <SelectValue placeholder="Select gender" />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
-                                                    <SelectItem value="male">Male</SelectItem>
-                                                    <SelectItem value="female">Female</SelectItem>
-                                                    <SelectItem value="non-binary">Non-binary</SelectItem>
-                                                    <SelectItem value="all">All Genders</SelectItem>
+                                                    <SelectItem value="Male">Male</SelectItem>
+                                                    <SelectItem value="Female">Female</SelectItem>
+                                                    <SelectItem value="Non-binary">Non-binary</SelectItem>
+                                                    <SelectItem value="All Genders">All Genders</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -677,17 +801,20 @@ export default function UploadPage() {
                                         {/* Country */}
                                         <div className="space-y-2">
                                             <Label className="text-white/70 font-semibold">Country</Label>
-                                            <Select value={country} onValueChange={setCountry} disabled={loadingCountries}>
+                                            <Select value={country} onValueChange={setCountry} disabled={loadingCountries} onOpenChange={setCountryDropdownOpen}>
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder={loadingCountries ? "Loading..." : "Select country"} />
                                                 </SelectTrigger>
                                                 <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                                    <div className="p-2" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                                                         <Input
+                                                            ref={countrySearchInputRef}
                                                             placeholder="Search countries..."
                                                             value={countrySearch}
                                                             onChange={(e) => setCountrySearch(e.target.value)}
+                                                            onKeyDown={(e) => e.stopPropagation()}
                                                             className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
+                                                            autoComplete="off"
                                                         />
                                                     </div>
                                                     <div className="max-h-48 overflow-y-auto">
@@ -704,7 +831,7 @@ export default function UploadPage() {
                                         {/* State */}
                                         <div className="space-y-2">
                                             <Label className="text-white/70 font-semibold">State/Province</Label>
-                                            <Select value={state} onValueChange={setState} disabled={!country || loadingStates}>
+                                            <Select value={state} onValueChange={setState} disabled={!country || loadingStates} onOpenChange={setStateDropdownOpen}>
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue
                                                         placeholder={
@@ -718,12 +845,15 @@ export default function UploadPage() {
                                                 </SelectTrigger>
                                                 <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
                                                     {states.length > 0 && (
-                                                        <div className="p-2" onClick={(e) => e.stopPropagation()}>
+                                                        <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                                                             <Input
+                                                                ref={stateSearchInputRef}
                                                                 placeholder="Search states..."
                                                                 value={stateSearch}
                                                                 onChange={(e) => setStateSearch(e.target.value)}
+                                                                onKeyDown={(e) => e.stopPropagation()}
                                                                 className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
+                                                                autoComplete="off"
                                                             />
                                                         </div>
                                                     )}

@@ -31,7 +31,7 @@ export default function Testimonials() {
             quote: item.content,
             name: item.name,
             designation: item.company ? `${item.role} at ${item.company}` : item.role,
-            src: item.imgname ,
+            src: item.imgname,
             category: item.category
           }))
 
@@ -72,7 +72,7 @@ export default function Testimonials() {
           Why Marketers Trust Adalyze
         </h2>
         <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Real Stories, Real Results</p>
-        <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1">
+        <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1 mt-2">
           Marketers and business owners rely on Adalyze AI to make smarter ad decisions, boost engagement, and improve ROI.
         </p>
       </motion.div>
@@ -82,7 +82,7 @@ export default function Testimonials() {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-wrap justify-center gap-2 sm:gap-3 "
+        className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-4"
       >
         {categories.map((category) => (
           <button

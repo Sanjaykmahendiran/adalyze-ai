@@ -14,6 +14,9 @@ import {
     ArrowLeft,
     Info,
     TrendingDown,
+    Copy,
+    Trash2,
+    Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -21,6 +24,9 @@ import useFetchUserDetails from "@/hooks/useFetchUserDetails";
 import AbResultsLoadingSkeleton from "@/components/Skeleton-loading/ab-results-loading";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import toast from "react-hot-toast";
 import logo from "@/assets/ad-icon-logo.png"
 import { ABTestResult, ApiResponse } from "./type";
 
@@ -42,6 +48,15 @@ export default function ABTestResults() {
     const [currentImageIndexB, setCurrentImageIndexB] = useState(0);
     const [abTestResult, setAbTestResult] = useState<ABTestResult | null>(null);
     const [fetchingWinner, setFetchingWinner] = useState(false);
+    const [tagsCopied, setTagsCopied] = useState(false);
+    
+    // Delete functionality states
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    
+    // View Target dialog states
+    const [viewTargetOpenA, setViewTargetOpenA] = useState(false);
+    const [viewTargetOpenB, setViewTargetOpenB] = useState(false);
 
     const isProUser = userDetails?.payment_status === 1;
 
@@ -119,6 +134,43 @@ export default function ABTestResults() {
             console.error("A/B test fetch error:", err);
         } finally {
             setFetchingWinner(false);
+        }
+    };
+
+    // Delete AB ad function
+    const handleDeleteAbAd = async () => {
+        const adIdA = searchParams.get("ad_id_a") || "";
+        const adIdB = searchParams.get("ad_id_b") || "";
+        
+        if (!adIdA || !adIdB) {
+            toast.error('No ad IDs found');
+            return;
+        }
+
+        setDeleteLoading(true);
+
+        try {
+            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=deleteabad&ad_upload_id_a=${adIdA}&ad_upload_id_b=${adIdB}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to delete A/B ad');
+            }
+
+            const result = await response.json();
+
+            if (result.response === "AB Ad Deleted") {
+                toast.success("A/B ad deleted successfully");
+                // Redirect to my-ads page after successful deletion
+                router.push('/my-ads');
+            } else {
+                throw new Error('Unexpected response from server');
+            }
+        } catch (error) {
+            console.error('Error deleting A/B ad:', error);
+            toast.error('Failed to delete A/B ad. Please try again.');
+        } finally {
+            setDeleteLoading(false);
+            setDeleteDialogOpen(false);
         }
     };
 
@@ -373,9 +425,9 @@ export default function ABTestResults() {
                                 }}
                             >
                                 <h4 className="text-base font-medium text-gray-300 mb-2">Match Score</h4>
-                                <div className={`text-3xl font-bold ${adData.match_score < 50
+                                <div className={`text-3xl font-bold ${Number(adData.match_score) < 50
                                     ? "text-red-400"
-                                    : adData.match_score < 75
+                                    : Number(adData.match_score) < 75
                                         ? "text-yellow-400"
                                         : "text-[#22C55E]"
                                     }`}>
@@ -396,12 +448,14 @@ export default function ABTestResults() {
                                 }}
                             >
                                 <h4 className="text-base font-medium text-gray-300 mb-2">Issues Detected</h4>
-                                <div className={`text-3xl font-bold ${adData.issues.length < 8 ? "text-[#22C55E]" : "text-red-400"
+                                <div className={`text-3xl font-bold ${adData.issues.length === 0 ? "text-[#22C55E]" : "text-red-400"
                                     }`}>
                                     {String(adData.issues.length).padStart(2, "0")}
                                 </div>
                             </div>
                         </div>
+
+
 
                     </div>
                 </div>
@@ -491,28 +545,173 @@ export default function ABTestResults() {
                             </div>
 
 
-                            {/* Tab Navigation */}
-                            <div className="bg-black rounded-2xl p-2 mb-8 border border-[#2b2b2b] inline-flex">
-                                <button
-                                    onClick={() => setActiveTab("A")}
-                                    className={`px-6 py-3 rounded-xl font-semibold transition-all ${activeTab === "A"
-                                        ? "bg-primary text-white shadow-lg"
-                                        : "text-gray-300 hover:text-white"
-                                        }`}
-                                >
-                                    Ad A Details
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("B")}
-                                    className={`px-6 py-3 rounded-xl font-semibold transition-all ${activeTab === "B"
-                                        ? "bg-primary text-white shadow-lg"
-                                        : "text-gray-300 hover:text-white"
-                                        }`}
-                                >
-                                    Ad B Details
-                                </button>
-                            </div>
+                            {/* Tab Navigation with Action Buttons */}
+                            <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+                                <div className="bg-black rounded-2xl p-2 border border-[#2b2b2b] inline-flex">
+                                    <button
+                                        onClick={() => setActiveTab("A")}
+                                        className={`px-6 py-3 rounded-xl font-semibold transition-all ${activeTab === "A"
+                                            ? "bg-primary text-white shadow-lg"
+                                            : "text-gray-300 hover:text-white"
+                                            }`}
+                                    >
+                                        Ad A Details
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab("B")}
+                                        className={`px-6 py-3 rounded-xl font-semibold transition-all ${activeTab === "B"
+                                            ? "bg-primary text-white shadow-lg"
+                                            : "text-gray-300 hover:text-white"
+                                            }`}
+                                    >
+                                        Ad B Details
+                                    </button>
+                                </div>
 
+                                {/* Action Buttons - View Target and Delete */}
+                                <div className="flex gap-2">
+                                    {/* View Target Button */}
+                                    <Dialog open={activeTab === "A" ? viewTargetOpenA : viewTargetOpenB} onOpenChange={activeTab === "A" ? setViewTargetOpenA : setViewTargetOpenB}>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                size="sm"
+                                                className="bg-[#db4900] hover:bg-[#db4900]/90"
+                                                aria-label="View target details"
+                                            >
+                                                <Target className="w-3 h-3 mr-2" />
+                                                View Target
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="bg-black max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle className="text-white text-xl flex items-center gap-2">
+                                                    <Target className="w-5 h-5 text-[#db4900]" />
+                                                    Target Details (Ad {activeTab})
+                                                </DialogTitle>
+                                            </DialogHeader>
+                                            
+                                            <div className="space-y-4 mt-6">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <p className="text-white/80 text-xs mb-1">Title</p>
+                                                        <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.title || 'N/A'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-white/80 text-xs mb-1">Ad Type</p>
+                                                        <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.ad_type || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-t border-[#3d3d3d] pt-4">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-white/80 text-xs mb-1">Industry</p>
+                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.industry || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-white/80 text-xs mb-1">Platform</p>
+                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.platform || 'N/A'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-t border-[#3d3d3d] pt-4">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-white/80 text-xs mb-1">Gender</p>
+                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.gender || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-white/80 text-xs mb-1">Age Range</p>
+                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.age || 'N/A'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-t border-[#3d3d3d] pt-4">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-white/80 text-xs mb-1">Country</p>
+                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.country || 'N/A'}</p>
+                                                        </div>
+                                                        {(() => {
+                                                            const currentData = activeTab === "A" ? adDataA : adDataB;
+                                                            return currentData?.state && currentData.state.trim() !== '' ? (
+                                                                <div>
+                                                                    <p className="text-white/80 text-xs mb-1">State</p>
+                                                                    <p className="text-white text-sm font-medium">{currentData.state}</p>
+                                                                </div>
+                                                            ) : null;
+                                                        })()}
+                                                    </div>
+                                                </div>
+
+                                                {(() => {
+                                                    const currentData = activeTab === "A" ? adDataA : adDataB;
+                                                    return currentData?.video && currentData.video.trim() !== '' ? (
+                                                        <div className="border-t border-[#3d3d3d] pt-4">
+                                                            <p className="text-white/80 text-xs mb-1">Video</p>
+                                                            <p className="text-white text-sm font-medium break-all">{currentData.video}</p>
+                                                        </div>
+                                                    ) : null;
+                                                })()}
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+
+                                    {/* Delete Button */}
+                                    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                aria-label="Delete A/B test"
+                                                className="border-red-600 bg-red-600/20 text-red-400 hover:text-white hover:bg-red-600 hover:border-red-600 transition-colors"
+                                                disabled={deleteLoading}
+                                            >
+                                                {deleteLoading ? (
+                                                    <>
+                                                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                                                        Deleting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Trash2 className="w-3 h-3 mr-2" />
+                                                        Delete A/B Test
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="bg-[#1a1a1a] border-[#3d3d3d]">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle className="text-white">Delete A/B Test</AlertDialogTitle>
+                                                <AlertDialogDescription className="text-gray-300">
+                                                    Are you sure you want to delete this A/B test? This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel className="bg-transparent border-[#3d3d3d] text-gray-300 hover:bg-[#3d3d3d] hover:text-white">
+                                                    Cancel
+                                                </AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={handleDeleteAbAd}
+                                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                                    disabled={deleteLoading}
+                                                >
+                                                    {deleteLoading ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                            Deleting...
+                                                        </>
+                                                    ) : (
+                                                        'Delete'
+                                                    )}
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </div>
                             {/* Key Metrics Overview - Ad Specific */}
                             {/* Key Metrics Overview - Ad Specific */}
                             <div className="col-span-4 grid grid-cols-1 lg:grid-cols-6 gap-6 auto-rows-fr">
@@ -593,9 +792,9 @@ export default function ABTestResults() {
                                             <p className="text-white/50 text-sm mb-4">Clarity of your ad content.</p>
                                             <div className="flex items-center justify-between">
                                                 <div
-                                                    className={`text-6xl font-bold ${(currentAd?.readability_clarity_meter || 0) >= 70
+                                                    className={`text-6xl font-bold ${Number(currentAd?.readability_clarity_meter || 0) >= 70
                                                         ? "text-green-400"
-                                                        : (currentAd?.readability_clarity_meter || 0) >= 50
+                                                        : Number(currentAd?.readability_clarity_meter || 0) >= 50
                                                             ? "text-yellow-400"
                                                             : "text-red-400"
                                                         }`}
@@ -633,9 +832,9 @@ export default function ABTestResults() {
                                             <p className="text-white/50 text-sm mb-4">How different your ad is.</p>
                                             <div className="flex items-center justify-between">
                                                 <div
-                                                    className={`text-6xl font-bold ${(currentAd?.competitor_uniqueness_meter || 0) >= 70
+                                                    className={`text-6xl font-bold ${Number(currentAd?.competitor_uniqueness_meter || 0) >= 70
                                                         ? "text-green-400"
-                                                        : (currentAd?.competitor_uniqueness_meter || 0) >= 50
+                                                        : Number(currentAd?.competitor_uniqueness_meter || 0) >= 50
                                                             ? "text-yellow-400"
                                                             : "text-red-400"
                                                         }`}
@@ -1151,9 +1350,9 @@ export default function ABTestResults() {
                                                 className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
                                                 onMouseEnter={(e) => {
                                                     e.currentTarget.style.boxShadow =
-                                                        currentAd?.engagement_score <= 50
+                                                        (currentAd?.engagement_score || 0) <= 50
                                                             ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                                            : currentAd?.engagement_score <= 75
+                                                            : (currentAd?.engagement_score || 0) <= 75
                                                                 ? "0 0 14px 4px rgba(250,204,21,0.7)"
                                                                 : "0 0 14px 4px rgba(34,197,94,0.7)";
                                                 }}
@@ -1165,9 +1364,9 @@ export default function ABTestResults() {
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="flex items-center">
                                                         <Users
-                                                            className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0 ${currentAd?.engagement_score <= 50
+                                                            className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0 ${(currentAd?.engagement_score || 0) <= 50
                                                                 ? "text-red-500"
-                                                                : currentAd?.engagement_score <= 75
+                                                                : (currentAd?.engagement_score || 0) <= 75
                                                                     ? "text-yellow-500"
                                                                     : "text-green-500"
                                                                 }`}
@@ -1177,9 +1376,9 @@ export default function ABTestResults() {
                                                         </span>
                                                     </div>
                                                     <span
-                                                        className={`font-semibold text-lg sm:text-xl ${currentAd?.engagement_score <= 50
+                                                        className={`font-semibold text-lg sm:text-xl ${(currentAd?.engagement_score || 0) <= 50
                                                             ? "text-red-500"
-                                                            : currentAd?.engagement_score <= 75
+                                                            : (currentAd?.engagement_score || 0) <= 75
                                                                 ? "text-yellow-500"
                                                                 : "text-green-500"
                                                             }`}
@@ -1306,9 +1505,9 @@ export default function ABTestResults() {
                                                 className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
                                                 onMouseEnter={(e) => {
                                                     e.currentTarget.style.boxShadow =
-                                                        currentAd?.budget_utilization_score <= 50
+                                                        (currentAd?.budget_utilization_score || 0) <= 50
                                                             ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                                            : currentAd?.budget_utilization_score <= 75
+                                                            : (currentAd?.budget_utilization_score || 0) <= 75
                                                                 ? "0 0 14px 4px rgba(250,204,21,0.7)"
                                                                 : "0 0 14px 4px rgba(34,197,94,0.7)";
                                                 }}
@@ -1320,9 +1519,9 @@ export default function ABTestResults() {
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="flex items-center">
                                                         <DollarSign
-                                                            className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0 ${currentAd?.budget_utilization_score <= 50
+                                                            className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0 ${(currentAd?.budget_utilization_score || 0) <= 50
                                                                 ? "text-red-500"
-                                                                : currentAd?.budget_utilization_score <= 75
+                                                                : (currentAd?.budget_utilization_score || 0) <= 75
                                                                     ? "text-yellow-500"
                                                                     : "text-green-500"
                                                                 }`}
@@ -1332,9 +1531,9 @@ export default function ABTestResults() {
                                                         </span>
                                                     </div>
                                                     <span
-                                                        className={`font-semibold text-lg sm:text-xl ${currentAd?.budget_utilization_score <= 50
+                                                        className={`font-semibold text-lg sm:text-xl ${(currentAd?.budget_utilization_score || 0) <= 50
                                                             ? "text-red-500"
-                                                            : currentAd?.budget_utilization_score <= 75
+                                                            : (currentAd?.budget_utilization_score || 0) <= 75
                                                                 ? "text-yellow-500"
                                                                 : "text-green-500"
                                                             }`}
@@ -1854,52 +2053,54 @@ export default function ABTestResults() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div
-                                            className="md:w-[30%] mt-10 w-full bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[#222] rounded-2xl p-6 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between"
+                                        <div className="lg:w-[30%] w-full bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[#222] rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between"
                                             style={{ transition: "all 0.3s" }}
                                             onMouseEnter={e => {
                                                 e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
                                             }}
                                             onMouseLeave={e => {
                                                 e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                            }}
-                                        >
-                                            <div className="space-y-4">
-                                                <div className="flex items-center text-white mb-1">
-                                                    <GitCompareArrows className="w-5 h-5 mr-2 text-primary" />
-                                                    <h4 className="text-lg font-semibold">Platform Analysis</h4>
+                                            }}>
+                                            <div className="space-y-3 sm:space-y-4">
+                                                <div className="flex items-center justify-between text-white mb-1">
+                                                    <div className="flex items-center">
+                                                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-primary flex-shrink-0" />
+                                                        <h4 className="text-base sm:text-lg font-semibold">Trending Tags</h4>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (currentAd?.["10_trending_tags_relatedto_ad"]) {
+                                                                const tagsText = currentAd["10_trending_tags_relatedto_ad"].join(" ");
+                                                                navigator.clipboard.writeText(tagsText);
+                                                                setTagsCopied(true);
+                                                                setTimeout(() => setTagsCopied(false), 2000);
+                                                            }
+                                                        }}
+                                                        className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-all duration-200"
+                                                        title={tagsCopied ? "Copied!" : "Copy all tags"}
+                                                    >
+                                                        {tagsCopied ? (
+                                                            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+                                                        ) : (
+                                                            <Copy className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                                                        )}
+                                                    </button>
                                                 </div>
-                                                <p className="text-sm text-gray-300">
-                                                    See which platforms work best for Ad {activeTab} and get platform-specific recommendations for optimal performance.
+                                                <p className="text-xs sm:text-sm text-gray-300 leading-relaxed mb-3">
+                                                    Boost your ad's reach with these trending hashtags.
                                                 </p>
-                                                <div className="space-y-2">
-                                                    {currentAd &&
-                                                        getPlatformSuitability(currentAd).slice(0, 3).map((platform) => (
-                                                            <div key={platform.platform} className="flex items-center justify-between text-xs">
-                                                                <span className="text-gray-300">{platform.platform}</span>
-                                                                {platform.suitable ? (
-                                                                    <CheckCircle className="w-4 h-4 text-green-400" />
-                                                                ) : (
-                                                                    <XCircle className="w-4 h-4 text-red-400" />
-                                                                )}
-                                                            </div>
-                                                        ))}
+
+                                                {/* Tags Display */}
+                                                <div className="flex flex-wrap gap-2">
+                                                    {currentAd?.["10_trending_tags_relatedto_ad"]?.map((tag, index) => (
+                                                        <Badge
+                                                            key={index}
+                                                            className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30 hover:bg-primary/30 transition-all duration-200 text-xs sm:text-sm px-2 sm:px-3 py-1 cursor-pointer"
+                                                        >
+                                                            {tag}
+                                                        </Badge>
+                                                    ))}
                                                 </div>
-                                            </div>
-                                            <div className="mt-6">
-                                                <Button
-                                                    className="w-full text-white font-semibold rounded-xl py-2 transition duration-200"
-                                                    disabled={!isProUser}
-                                                    onClick={() => router.push("/upload")}
-                                                >
-                                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                                    Test Another Ad
-                                                </Button>
-                                                {!isProUser && (
-                                                    <p className="mt-2 text-xs text-gray-300 text-center">
-                                                        Unlock with Pro for detailed platform insights.
-                                                    </p>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -1909,6 +2110,13 @@ export default function ABTestResults() {
 
                             {/* Action Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <Button
+                                    onClick={handleReanalyze}
+                                    className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
+                                >
+                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    Reanalyze
+                                </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() => handleReplace("A")}
@@ -1925,13 +2133,7 @@ export default function ABTestResults() {
                                     <RefreshCw className="w-4 h-4 mr-2" />
                                     Replace Ad B
                                 </Button>
-                                <Button
-                                    onClick={handleReanalyze}
-                                    className="rounded-xl px-8 py-3 text-lg font-semibold transition-all duration-200"
-                                >
-                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                    Reanalyze
-                                </Button>
+
                             </div>
                         </div>
                     </main>

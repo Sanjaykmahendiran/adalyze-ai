@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { X, Loader } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import toast, { Toaster } from "react-hot-toast";
+import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from "../ui/select";
 
 interface LoginChatCardProps {
     onClose: () => void;
@@ -116,18 +117,43 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="category" className="block text-sm font-medium mb-1 text-white">
+                        <label
+                            htmlFor="category"
+                            className="block text-sm font-medium mb-1 text-white"
+                        >
                             Category
                         </label>
-                        <Input
-                            id="category"
-                            name="category"
+                        <Select
                             value={formState.category}
-                            onChange={handleChange}
-                            placeholder="App Issue, Feedback, etc."
-                            required
-                            className="bg-[#2b2b2b] border-[#2b2b2b] text-white"
-                        />
+                            onValueChange={(value) =>
+                                setFormState((prev) => ({ ...prev, category: value }))
+                            }
+                        >
+                            <SelectTrigger
+                                id="category"
+                                className="w-full bg-[#2b2b2b] border-[#2b2b2b] text-white"
+                            >
+                                <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#2b2b2b] text-white border-[#3a3a3a]">
+                                <SelectItem value="Ad Upload Issue">Ad Upload Issue</SelectItem>
+                                <SelectItem value="AI Analysis Problem">AI Analysis Problem</SelectItem>
+                                <SelectItem value="A/B Testing Help">A/B Testing Help</SelectItem>
+                                <SelectItem value="Report or Insights Clarification">
+                                    Report or Insights Clarification
+                                </SelectItem>
+                                <SelectItem value="Billing or Subscription">
+                                    Billing or Subscription
+                                </SelectItem>
+                                <SelectItem value="Account or Login Issue">
+                                    Account or Login Issue
+                                </SelectItem>
+                                <SelectItem value="Feature Request">Feature Request</SelectItem>
+                                <SelectItem value="Other / General Query">
+                                    Other / General Query
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div>
                         <label htmlFor="description" className="block text-sm font-medium mb-1 text-white">

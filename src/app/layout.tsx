@@ -4,7 +4,7 @@ import "./globals.css";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
-import { Providers } from "./providers"; 
+import { Providers } from "./providers";
 import { GTM_ID } from "@/lib/gtm";
 import { Suspense } from "react";
 
@@ -27,6 +27,27 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Preload LCP resources for better performance */}
+        <link
+          rel="preload"
+          as="image"
+          href="https://adalyze.app/uploads/thumbnail.webp"
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="https://adalyze.app/uploads/thumbnail-mobile.webp"
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="video"
+          href="https://adalyze.app/uploads/video.mp4"
+          type="video/mp4"
+        />
+      </head>
+      <body className={`${poppins.variable} antialiased`}>
         {/* ✅ Google Tag Manager */}
         <Script
           id="gtm-script"
@@ -41,9 +62,25 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className={`${poppins.variable} antialiased`}>
-        <Suspense>
+        {/* ✅ Google Analytics 4 */}
+        <Script
+          id="ga4-script"
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-NP47DV1XRN"
+        />
+        <Script
+          id="ga4-config"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-NP47DV1XRN', { send_page_view: true });
+    `,
+          }}
+        />
+
         {/* ✅ Google Tag Manager (noscript) */}
         <noscript>
           <iframe
@@ -55,31 +92,32 @@ export default function RootLayout({
         </noscript>
 
         {/* ✅ Pageview Tracker */}
-        <Providers>
-          {/* ✅ Toast Notifications */}
-          <Toaster
-            position="top-center"
-            reverseOrder={false}
-            toastOptions={{
-              style: {
-                background: "#000000",
-                color: "#f9fafb",
-                fontFamily: "var(--font-poppins)",
-              },
-              success: {
-                style: { background: "#000000", color: "#16a34a" },
-              },
-              error: {
-                style: { background: "#000000", color: "#dc2626" },
-              },
-            }}
-          />
+        <Suspense fallback={null}>
+          <Providers />
 
-          {/* ✅ Google OAuth Provider */}
-          <GoogleOAuthProvider clientId="543832771103-mjordts3br5jlop5dj8q9m16nijjupuu.apps.googleusercontent.com">
-            {children}
-          </GoogleOAuthProvider>
-        </Providers>
+        {/* ✅ Toast Notifications */}
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          toastOptions={{
+            style: {
+              background: "#000000",
+              color: "#f9fafb",
+              fontFamily: "var(--font-poppins)",
+            },
+            success: {
+              style: { background: "#000000", color: "#16a34a" },
+            },
+            error: {
+              style: { background: "#000000", color: "#dc2626" },
+            },
+          }}
+        />
+
+        {/* ✅ Google OAuth Provider */}
+        <GoogleOAuthProvider clientId="543832771103-mjordts3br5jlop5dj8q9m16nijjupuu.apps.googleusercontent.com">
+          {children}
+        </GoogleOAuthProvider>
         </Suspense>
       </body>
     </html>

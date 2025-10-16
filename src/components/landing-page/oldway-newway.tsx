@@ -9,8 +9,9 @@ import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { CheckCircle } from "lucide-react"
 import { useEffect, useState } from "react"
+import { trackEvent } from "@/lib/eventTracker"
 
-const WorkflowSection = () => {
+const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
   const router = useRouter()
   const [isMobile, setIsMobile] = useState(false)
 
@@ -141,10 +142,12 @@ const WorkflowSection = () => {
             transition={{ type: "spring", stiffness: 300 }}
           >
             <Button
-              onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
+              onClick={() => {window.open("/register", "_blank", "noopener,noreferrer");
+                trackEvent("LP_Old_Way_New_Way_RB", window.location.href);
+              }}
               className="flex items-center cursor-pointer gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 lg:py-6 text-white text-sm sm:text-base md:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[180px] sm:min-w-[200px]"
             >
-              Start Free Trial
+              {ButtonText}
             </Button>
           </motion.div>
         </motion.div>

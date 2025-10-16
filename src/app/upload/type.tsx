@@ -38,3 +38,8 @@ export interface TargetInfo {
     countryName?: string
     stateName?: string
 }
+
+export interface Industry {
+    industry_id: string
+    name: string
+}

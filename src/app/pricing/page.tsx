@@ -28,14 +28,16 @@ import { Badge } from "@/components/ui/badge"
 import toast from "react-hot-toast"
 import logo from "@/assets/ad-logo.webp"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
-import UserLayout from "@/components/layouts/user-layout"
 import StaticProSkeleton from "@/components/Skeleton-loading/pro-skeleton"
 import { useRouter } from "next/navigation"
 import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import CompetitorTable from "@/app/pricing/_components/competitor-table"
-import ProTestimonials from "../pro/_components/protestimonials"
-import { event } from "@/lib/gtm"
+import VersionCard from "./_components/version-card"
+import { trackFreeTrial, trackPurchase } from "@/lib/gtm"
+import { trackEvent } from "@/lib/eventTracker"
+import Cookies from "js-cookie"
+import PricingHelp from "./_components/pricing-help"
 
 // Extend Window interface for Razorpay
 declare global {
@@ -89,44 +91,6 @@ interface RazorpayResponse {
 
 type Currency = "INR" | "USD"
 
-const staticFeatures = [
-    {
-        icon: Upload,
-        title: "Multiple Uploads",
-        description:
-            "Upload multiple creatives each month based on your selected plan.",
-    },
-    {
-        icon: TrendingUp,
-        title: "Predictive Engagement Score",
-        description:
-            "Instantly get a smart score that predicts how engaging your ad is likely to be.",
-    },
-    {
-        icon: Target,
-        title: "Target Audience Alignment",
-        description:
-            "Find out how well your ad matches your selected target audience demographics.",
-    },
-    {
-        icon: Brain,
-        title: "AI-Written Ad Copy Generator",
-        description:
-            "Generate compelling, platform-optimized ad copies tailored to your creative.",
-    },
-    {
-        icon: Download,
-        title: "Downloadable Reports",
-        description:
-            "Export your ad analysis and insights as downloadable PDF reports for sharing.",
-    },
-    {
-        icon: FileText,
-        title: "In-Depth Creative Insights",
-        description:
-            "Unlock detailed analysis of scroll-stopping power, CTR, conversion chances, and more.",
-    },
-]
 
 const parseFeatures = (featuresStr: string): Feature[] => {
     return featuresStr
@@ -157,9 +121,7 @@ const ProPage: React.FC = () => {
     const [razorpayLoaded, setRazorpayLoaded] = useState<boolean>(false)
     const [userCurrency, setUserCurrency] = useState<Currency>("INR")
     const [currencyLoading, setCurrencyLoading] = useState<boolean>(true)
-    const scrollRef = useRef<HTMLDivElement>(null)
-
-    const scrollAmount = 300
+    const userId = Cookies.get("userId");
 
     // Currency detection function
     const detectUserCurrency = async (): Promise<Currency> => {
@@ -311,7 +273,7 @@ const ProPage: React.FC = () => {
             const oriPriceUsd = typeof plan.ori_price_usd === 'string' ? parseFloat(plan.ori_price_usd) : plan.ori_price_usd
             const priceUsd = typeof plan.price_usd === 'string' ? parseFloat(plan.price_usd) : plan.price_usd
             const hasDiscount = oriPriceUsd > priceUsd
-            
+
             return {
                 discountedPrice: `$${plan.price_usd}`,
                 originalPrice: `$${plan.ori_price_usd}`,
@@ -328,7 +290,10 @@ const ProPage: React.FC = () => {
     // Free trial activation function
     const activateFreeTrial = async () => {
         if (!userDetails?.user_id) {
-            toast.error("Unable to activate free trial. Please try again.")
+            toast.error("Register to activate free trial and try again.")
+            setTimeout(() => {
+                router.push("/register");
+            }, 2000);
             return
         }
 
@@ -346,7 +311,9 @@ const ProPage: React.FC = () => {
             // Check if the response indicates success
             if (result.response === "Free Trial Activated") {
                 toast.success("Free trial activated successfully! Enjoy 2 days of premium features.")
-                router.push("/dashboard")
+                trackFreeTrial("Free Trial", userDetails?.user_id?.toString());
+                trackEvent("Free_Trial_Activated", window.location.href, userDetails?.email?.toString());
+                router.push("/upload")
             } else {
                 throw new Error(result.response || 'Failed to activate free trial')
             }
@@ -377,27 +344,31 @@ const ProPage: React.FC = () => {
 
             if (result.response === 'Payment Successful & User Upgraded') {
                 toast.success("Payment Successful! Your subscription has been activated.")
-                event("purchase", {
-                    value: userCurrency === "INR"
-                        ? selectedPlan?.price_inr || 0
-                        : parseFloat(selectedPlan?.price_usd || "0"),
-                    currency: userCurrency,
-                    plan: selectedPlan?.plan_name,
-                })
+                trackPurchase(
+                    userCurrency === "INR" ? selectedPlan?.price_inr || 0 : parseFloat(selectedPlan?.price_usd || "0"),
+                    userCurrency,
+                    paymentData.razorpay_order_id,
+                    [{ name: selectedPlan.plan_name, price: userCurrency === "INR" ? selectedPlan?.price_inr || 0 : parseFloat(selectedPlan?.price_usd || "0"), quantity: 1 }]
+                );
                 router.push(`/thanks?order_id=${paymentData.razorpay_order_id}`)
+                trackEvent(`Payment_Successful_completed_${selectedPlan.plan_name}`, window.location.href, userDetails?.email?.toString());
             } else {
                 throw new Error(result.message || 'Payment verification failed')
             }
         } catch (error) {
             console.error('Payment verification error:', error)
             toast.error("Payment verification failed. Please contact support if amount was deducted.")
+            trackEvent("Payment_Failed", window.location.href, userDetails?.email?.toString());
         }
     }
 
     // Initiate payment function
     const initiatePayment = async (currency: Currency, selectedPlan: PricingPlan) => {
         if (!userDetails?.user_id || !selectedPlan || !razorpayLoaded) {
-            toast.error("Unable to initiate payment. Please try again.");
+            toast.error("Register to initiate payment and try again.");
+            setTimeout(() => {
+                router.push("/register");
+            }, 2000);
             return;
         }
 
@@ -462,6 +433,7 @@ const ProPage: React.FC = () => {
             console.error('Payment initiation error:', error);
             toast.error(error instanceof Error ? error.message : "Unable to process payment");
             setPaymentLoading(prev => ({ ...prev, [selectedPlan.package_id]: false }));
+            trackEvent("Payment_Failed", window.location.href, userDetails?.email?.toString());
         }
     }
 
@@ -557,7 +529,7 @@ const ProPage: React.FC = () => {
                                             className="bg-green-600 hover:bg-green-700 text-base px-8 py-4 h-auto min-w-[200px]"
                                             type="button"
                                             onClick={() => {
-                                                if (isDashboardPage) {
+                                                if (isDashboardPage && !userId) {
                                                     router.push("/register");
                                                 } else {
                                                     activateFreeTrial();
@@ -591,7 +563,7 @@ const ProPage: React.FC = () => {
                                         <h3 className="text-lg sm:text-xl font-semibold mb-3">
                                             {basicPlan.plan_name}
                                         </h3>
-                                        
+
                                         {/* Price Display with Strikethrough */}
                                         {currencyLoading ? (
                                             <div className="mb-4">
@@ -624,7 +596,7 @@ const ProPage: React.FC = () => {
                                         )}
 
                                         <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                            {basicPlan.ads_limit} ad analysis included
+                                            {basicPlan.ads_limit} ad analysis Credits
                                         </div>
 
                                         <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
@@ -646,7 +618,7 @@ const ProPage: React.FC = () => {
                                             className="w-full bg-primary hover:bg-primary/90 text-sm sm:text-base"
                                             type="button"
                                             onClick={() => {
-                                                if (isDashboardPage) {
+                                                if (isDashboardPage && !userId) {
                                                     router.push("/register");
                                                 } else {
                                                     initiatePayment(userCurrency, basicPlan);
@@ -722,7 +694,7 @@ const ProPage: React.FC = () => {
                                         )}
 
                                         <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                            {starterPlan.ads_limit} ad analyses included
+                                            {starterPlan.ads_limit} ad analyses Credits
                                         </div>
 
                                         <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
@@ -743,14 +715,13 @@ const ProPage: React.FC = () => {
                                             className="w-full bg-primary hover:bg-primary/90 text-sm sm:text-base"
                                             type="button"
                                             onClick={() => {
-                                                if (isDashboardPage) {
+                                                if (isDashboardPage && !userId) {
                                                     router.push("/register");
                                                 } else {
                                                     initiatePayment(userCurrency, starterPlan);
                                                 }
                                             }}
                                             disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[starterPlan.package_id]))}
-
                                         >
                                             {paymentLoading[starterPlan.package_id] && !isDashboardPage ? (
                                                 <>
@@ -814,7 +785,7 @@ const ProPage: React.FC = () => {
                                         )}
 
                                         <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                            {growthPlan.ads_limit} ad analyses included
+                                            {growthPlan.ads_limit} ad analyses Credits
                                         </div>
 
                                         <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
@@ -834,7 +805,7 @@ const ProPage: React.FC = () => {
                                             className="w-full bg-primary hover:bg-primary/90 text-sm sm:text-base"
                                             type="button"
                                             onClick={() => {
-                                                if (isDashboardPage) {
+                                                if (isDashboardPage && !userId) {
                                                     router.push("/register");
                                                 } else {
                                                     initiatePayment(userCurrency, growthPlan);
@@ -872,38 +843,8 @@ const ProPage: React.FC = () => {
                         <CompetitorTable basicPrice={getPriceDisplay(basicPlan).primary} />
                     )}
 
+                    <VersionCard />
 
-                    {/* Features Grid */}
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
-                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-center mb-8 sm:mb-12">
-                            Features We Offer
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-                            {staticFeatures.map((feature) => {
-                                const Icon = feature.icon
-                                return (
-                                    <div
-                                        key={feature.title}
-                                        className="bg-[#121212] rounded-lg p-4 sm:p-6 shadow-lg shadow-white/5 border border-[#2a2a2a] hover:scale-[1.02] transition-all duration-300 flex flex-col h-full"
-                                    >
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-b from-[#db4900] via-[#db4900] to-[#a63a00] rounded-lg flex items-center justify-center mb-3 sm:mb-4 flex-shrink-0">
-                                            <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3">
-                                                {feature.title}
-                                            </h3>
-                                            <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
-                                                {feature.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-
-                    <ProTestimonials testimonialData={testimonialData} />
 
                     {/* FAQs - Always render */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -938,6 +879,7 @@ const ProPage: React.FC = () => {
 
             {/* Conditionally render Footer only when dashboard page */}
             {isDashboardPage && <LandingPageFooter />}
+                <PricingHelp  />
         </div>
     )
 }

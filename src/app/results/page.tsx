@@ -4,6 +4,9 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import toast from "react-hot-toast"
 import {
   Download,
   Search,
@@ -43,6 +46,8 @@ import {
   Share,
   Copy,
   Share2,
+  Trash2,
+  Loader2,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -55,6 +60,7 @@ import { ApiResponse } from "./type"
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 import { motion } from "framer-motion"
+import { trackEvent } from "@/lib/eventTracker"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -67,6 +73,15 @@ export default function ResultsPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isPdfGenerating, setIsPdfGenerating] = useState(false)
   const [showIntro, setShowIntro] = useState(false);
+  const [tagsCopied, setTagsCopied] = useState(false);
+  const [copiedAdCopyIndex, setCopiedAdCopyIndex] = useState<number | null>(null);
+
+  // Delete functionality states
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
+  // View Target dialog state
+  const [viewTargetOpen, setViewTargetOpen] = useState(false)
 
   // Check if ad_id came from token (shared link)
   const isFromToken = !!searchParams.get('token')
@@ -89,7 +104,10 @@ export default function ResultsPage() {
       if (!node) {
         throw new Error(`Selector not found: ${selector}`);
       }
-      const dataUrl = await htmlToImage.toPng(node);
+      const dataUrl = await htmlToImage.toPng(node, {
+        quality: 0.5,
+        pixelRatio: 0.8
+      });
 
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -112,6 +130,7 @@ export default function ResultsPage() {
       pdf.addImage(dataUrl, "PNG", x, y, scaledWidth, scaledHeight);
 
       pdf.save(`ad-analysis-report-${apiData?.title || 'untitled'}-${new Date().toISOString().split('T')[0]}.pdf`);
+      trackEvent("Ad_Analysis_Report_Downloaded", window.location.href, userDetails?.email?.toString())
     } catch (err) {
       console.error("Error generating PDF:", err);
     } finally {
@@ -184,6 +203,41 @@ export default function ResultsPage() {
       });
     }
   };
+
+  // Delete ad function
+  const handleDeleteAd = async () => {
+    const adId = getAdIdFromUrl();
+    if (!adId) {
+      toast.error('No ad ID found')
+      return
+    }
+
+    setDeleteLoading(true)
+
+    try {
+      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=deletead&ad_upload_id=${adId}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to delete ad')
+      }
+
+      const result = await response.json()
+
+      if (result.response === "Ad Deleted") {
+        toast.success("Ad deleted successfully")
+        // Redirect to my-ads page after successful deletion
+        router.push('/my-ads')
+      } else {
+        throw new Error('Unexpected response from server')
+      }
+    } catch (error) {
+      console.error('Error deleting ad:', error)
+      toast.error('Failed to delete ad. Please try again.')
+    } finally {
+      setDeleteLoading(false)
+      setDeleteDialogOpen(false)
+    }
+  }
 
   useEffect(() => {
     const fetchAdDetails = async () => {
@@ -436,302 +490,940 @@ export default function ResultsPage() {
 
           <div className="w-full mx-auto space-y-6 sm:space-y-8">
             {/* Ad Overview Card - Mobile First */}
-            <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border-none">
-              <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
-                {/* Row 1: Ad Preview + Basic Info */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-                  {/* Ad Preview Section - Mobile Optimized */}
-                  <div className="lg:col-span-1 order-2 lg:order-1">
-                    <div className="relative aspect-square overflow-hidden rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300 max-w-sm mx-auto lg:max-w-none">
-                      {apiData.ad_type === "video" && apiData.video ? (
-                        <video
-                          src={apiData.video}
-                          controls
-                          className="w-full h-full object-contain"
-                          poster={images.length > 0 ? images[0] : undefined}
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      ) : (
-                        images.length > 0 && (
-                          <>
-                            <Image
-                              src={images[currentImageIndex]}
-                              alt={apiData.title || "Ad Image"}
-                              fill
-                              className="object-contain"
-                            />
 
-                            {/* Navigation - Touch Optimized */}
-                            {images.length > 1 && (
-                              <>
-                                <button
-                                  onClick={prevImage}
-                                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer"
-                                >
-                                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                                </button>
-                                <button
-                                  onClick={nextImage}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer"
-                                >
-                                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                                </button>
-
-                                {/* Indicators - Mobile Optimized */}
-                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-                                  {images.map((_, index) => (
-                                    <button
-                                      key={index}
-                                      onClick={() => setCurrentImageIndex(index)}
-                                      className={cn(
-                                        "w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all touch-manipulation",
-                                        index === currentImageIndex
-                                          ? "bg-white"
-                                          : "bg-white/50 hover:bg-white/75"
-                                      )}
-                                    />
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </>
-                        )
-                      )}
-                    </div>
-
-                    {/* Counter / Label */}
-                    {apiData.ad_type === "video" && apiData.video ? (
-                      <div className="text-center mt-2 text-sm text-gray-400">Video Ad</div>
-                    ) : (
-                      images.length > 1 && (
-                        <div className="text-center mt-2 text-sm text-gray-400">
-                          {currentImageIndex + 1} of {images.length}
-                        </div>
-                      )
-                    )}
-                  </div>
-
-                  {/* Basic Info + Scores - Mobile First */}
-                  <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-1 lg:order-2">
-                    {/* Title + Meta - Mobile Optimized */}
-                    <div>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
-                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-0 break-words">
-                          {apiData.title
-                            ? apiData.title.length > 20
-                              ? apiData.title.slice(0, 20) + "..."
-                              : apiData.title
-                            : "Untitled Ad"}
-                        </h2>
-                        <div className="text-gray-300 flex items-end text-xs sm:text-sm gap-2 flex-shrink-0">
-                          <Upload className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">{apiData.uploaded_on ? formatDate(apiData.uploaded_on) : "Unknown"}</span>
-                        </div>
-                      </div>
-
-                      {/* Badges - Mobile Stacked */}
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300">
-                          <span className="text-sm">Industry:</span>
-                          <Badge className="bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600/30 text-xs sm:text-sm">
-                            {apiData.industry || "N/A"}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300">
-                          <span className="text-sm flex-shrink-0">Best Suit for:</span>
-                          <div className="flex flex-wrap gap-1 sm:gap-2">
-                            {platformSuitability.map((platform) => (
-                              <Badge
-                                key={platform.platform}
-                                className={cn(
-                                  "flex items-center gap-1 transition-all duration-300 text-xs",
-                                  platform.suitable
-                                    ? "bg-green-600/20 text-green-400 border border-green-600/30"
-                                    : platform.warning
-                                      ? "bg-amber-600/20 text-amber-400 border border-amber-600/30"
-                                      : "bg-red-600/20 text-red-400 border border-red-600/30"
-                                )}
-                              >
-                                {platform.suitable ? (
-                                  <CheckCircle className="w-3 h-3" />
-                                ) : platform.warning ? (
-                                  <AlertTriangle className="w-3 h-3" />
-                                ) : (
-                                  <XCircle className="w-3 h-3" />
-                                )}
-                                {platform.platform}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
-
-                    {/* Score Section - Mobile Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                      {/* Performance Score */}
-                      <div
-                        className="p-3 sm:p-3 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
-                        onMouseEnter={e => {
-                          e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                        }}
-                      >
-                        <div className="flex flex-col items-center text-center">
-                          <ChartNoAxesCombined
-                            className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.score_out_of_100 < 50
-                              ? "text-red-400"
-                              : apiData.score_out_of_100 < 75
-                                ? "text-yellow-400"
-                                : "text-[#22C55E]"
-                              }`}
-                          />
-                          <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Performance Score</h3>
-                          <div
-                            className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.score_out_of_100 < 50
-                              ? "text-red-400"
-                              : apiData.score_out_of_100 < 75
-                                ? "text-yellow-400"
-                                : "text-[#22C55E]"
-                              }`}
-                          >
-                            {apiData.score_out_of_100}/100
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Confidence Score */}
-                      <div
-                        className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
-                        onMouseEnter={e => {
-                          e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                        }}
-                      >
-                        <div className="flex flex-col items-center text-center">
-                          <ShieldCheck
-                            className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.confidence_score < 50
-                              ? "text-red-400"
-                              : apiData.confidence_score < 75
-                                ? "text-yellow-400"
-                                : "text-[#22C55E]"
-                              }`}
-                          />
-                          <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Confidence Score</h3>
-                          <div
-                            className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.confidence_score < 50
-                              ? "text-red-400"
-                              : apiData.confidence_score < 75
-                                ? "text-yellow-400"
-                                : "text-[#22C55E]"
-                              }`}
-                          >
-                            {apiData.confidence_score || 0}/100
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Match Score */}
-                      <div
-                        className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
-                        onMouseEnter={e => {
-                          e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                        }}
-                      >
-                        <div className="flex flex-col items-center text-center">
-                          <Target
-                            className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.match_score < 50
-                              ? "text-red-400"
-                              : apiData.match_score < 75
-                                ? "text-yellow-400"
-                                : "text-[#22C55E]"
-                              }`}
-                          />
-                          <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Match Score</h3>
-                          <div
-                            className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.match_score < 50
-                              ? "text-red-400"
-                              : apiData.match_score < 75
-                                ? "text-yellow-400"
-                                : "text-[#22C55E]"
-                              }`}
-                          >
-                            {apiData.match_score || 0}/100
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Issues Detected */}
-                      <div
-                        className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
-                        onMouseEnter={e => {
-                          e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                        }}
-                      >
-                        <div className="flex flex-col items-center text-center">
-                          <AlertTriangle
-                            className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${issues.length < 8 ? "text-[#22C55E]" : "text-red-400"}`}
-                          />
-                          <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Issues Detected</h3>
-                          <div
-                            className={`text-lg sm:text-xl lg:text-3xl font-bold ${issues.length < 8 ? "text-[#22C55E]" : "text-red-400"}`}
-                          >
-                            {String(issues.length).padStart(2, "0")}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Mismatch Warnings - Mobile Optimized */}
-                    {mismatchWarnings.length > 0 && (
-                      <div className="mt-4 sm:mt-6">
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                          <h4 className="text-base sm:text-lg font-semibold text-gray-300">Mismatch Warnings</h4>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                            </TooltipTrigger>
-                            <TooltipContent className="w-50 bg-[#2b2b2b]">
-                              <p>
-                                Potential inconsistencies between your ad elements that might affect performance or brand alignment.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <div className="space-y-2 sm:space-y-3">
-                          {mismatchWarnings.map((warning, index) => (
-                            <div
-                              key={index}
-                              className="flex items-start p-3 bg-amber-600/10 border border-amber-600/30 rounded-lg hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                            >
-                              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
-                              <span className="text-amber-200 text-xs sm:text-sm leading-relaxed">{warning}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+            {/* Mobile Layout: Title + Meta first, then Image + Go/No Go, then Badges + Scores */}
+            <div className="lg:hidden bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border-none space-y-4 sm:space-y-6 p-4">
+              {/* Title + Meta - Always first on mobile */}
+              <div className="lg:hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
+                  <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-0 break-words">
+                    {apiData.title
+                      ? apiData.title.length > 20
+                        ? apiData.title.slice(0, 20) + "..."
+                        : apiData.title
+                      : "Untitled Ad"}
+                  </h2>
+                  <div className="text-gray-300 flex items-end text-xs sm:text-sm gap-2 flex-shrink-0">
+                    <Upload className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{apiData.uploaded_on ? formatDate(apiData.uploaded_on) : "Unknown"}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Mobile: Image + Go/No Go side by side */}
+              <div className="lg:hidden grid grid-cols-2 gap-4">
+                {/* Ad Preview - Left side, small square */}
+                <div className="relative aspect-square overflow-hidden rounded-xl bg-[#121212] border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+                  {apiData.ad_type === "Video" && apiData.video ? (
+                    <video
+                      src={apiData.video}
+                      controls
+                      className="w-full h-full object-contain"
+                      poster={images.length > 0 ? images[0] : undefined}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    images.length > 0 && (
+                      <>
+                        <Image
+                          src={images[currentImageIndex]}
+                          alt={apiData.title || "Ad Image"}
+                          fill
+                          className="object-contain"
+                        />
+
+                        {/* Navigation - Touch Optimized */}
+                        {images.length > 1 && (
+                          <>
+                            <button
+                              onClick={prevImage}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-all touch-manipulation cursor-pointer"
+                            >
+                              <ChevronLeft className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={nextImage}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-all touch-manipulation cursor-pointer"
+                            >
+                              <ChevronRight className="w-3 h-3" />
+                            </button>
+
+                            {/* Indicators - Mobile Optimized */}
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
+                              {images.map((_, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => setCurrentImageIndex(index)}
+                                  className={cn(
+                                    "w-1.5 h-1.5 rounded-full transition-all touch-manipulation",
+                                    index === currentImageIndex
+                                      ? "bg-white"
+                                      : "bg-white/50 hover:bg-white/75"
+                                  )}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )
+                  )}
+                </div>
+
+                {/* Go/No Go - Right side, small */}
+                <div className="bg-[#171717] rounded-xl p-3 flex flex-col justify-center items-center hover:scale-[1.01] transition-all duration-300">
+                  <h3 className="text-white font-semibold text-sm mb-2">Go / No Go</h3>
+                  <p
+                    className={`text-3xl font-bold ${safeArray(apiData?.go_no_go)[0] === "Go"
+                      ? "text-green-400"
+                      : "text-red-400"
+                      }`}
+                  >
+                    {safeArray(apiData?.go_no_go)[0] || ""}
+                  </p>
+                  <p className="text-white/50 text-xs text-center mt-1">Ready to run?</p>
+                </div>
+              </div>
+
+              {/* Mobile: Badges and Scores below */}
+              <div className="lg:hidden space-y-4">
+                {/* Badges - Mobile Stacked */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300">
+                    <span className="text-sm">Industry:</span>
+                    <Badge className="bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600/30 text-xs">
+                      {apiData.industry || "N/A"}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300">
+                    <span className="text-sm flex-shrink-0">Best Suit for:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {platformSuitability.map((platform) => (
+                        <Badge
+                          key={platform.platform}
+                          className={cn(
+                            "flex items-center gap-1 transition-all duration-300 text-xs",
+                            platform.suitable
+                              ? "bg-green-600/20 text-green-400 border border-green-600/30"
+                              : platform.warning
+                                ? "bg-amber-600/20 text-amber-400 border border-amber-600/30"
+                                : "bg-red-600/20 text-red-400 border border-red-600/30"
+                          )}
+                        >
+                          {platform.suitable ? (
+                            <CheckCircle className="w-3 h-3" />
+                          ) : platform.warning ? (
+                            <AlertTriangle className="w-3 h-3" />
+                          ) : (
+                            <XCircle className="w-3 h-3" />
+                          )}
+                          {platform.platform}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Score Section - Mobile Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Performance Score */}
+                  <div
+                    className="p-3 rounded-xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <ChartNoAxesCombined
+                        className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.score_out_of_100 < 50
+                          ? "text-red-400"
+                          : apiData.score_out_of_100 < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      />
+                      <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Performance Score</h3>
+                      <div
+                        className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.score_out_of_100 < 50
+                          ? "text-red-400"
+                          : apiData.score_out_of_100 < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      >
+                        {apiData.score_out_of_100}/100
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Confidence Score */}
+                  <div
+                    className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <ShieldCheck
+                        className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.confidence_score < 50
+                          ? "text-red-400"
+                          : apiData.confidence_score < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      />
+                      <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Confidence Score</h3>
+                      <div
+                        className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.confidence_score < 50
+                          ? "text-red-400"
+                          : apiData.confidence_score < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      >
+                        {apiData.confidence_score || 0}/100
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Match Score */}
+                  <div
+                    className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <Target
+                        className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.match_score < 50
+                          ? "text-red-400"
+                          : apiData.match_score < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      />
+                      <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Match Score</h3>
+                      <div
+                        className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.match_score < 50
+                          ? "text-red-400"
+                          : apiData.match_score < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      >
+                        {apiData.match_score || 0}/100
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Issues Detected */}
+                  <div
+                    className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <AlertTriangle
+                        className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${issues.length === 0 ? "text-[#22C55E]" : "text-red-400"
+                          }`}
+                      />
+                      <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">
+                        Issues Detected
+                      </h3>
+                      <div
+                        className={`text-lg sm:text-xl lg:text-3xl font-bold ${issues.length === 0 ? "text-[#22C55E]" : "text-red-400"
+                          }`}
+                      >
+                        {String(issues.length).padStart(2, "0")}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Action Buttons - View Target and Delete */}
+                <div className="mt-4 sm:mt-6 flex justify-end gap-2 skip-block">
+                  {/* View Target Button */}
+                  <Dialog open={viewTargetOpen} onOpenChange={setViewTargetOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        aria-label="View target details"
+                      >
+                        <Target className="w-3 h-3 mr-2" />
+                        View Target
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-black  max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-white text-xl flex items-center gap-2">
+                          <Target className="w-5 h-5 text-[#db4900]" />
+                          Target Details
+                        </DialogTitle>
+                      </DialogHeader>
+
+                      <div className="space-y-4 mt-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-white/80 text-xs mb-1">Title</p>
+                            <p className="text-white text-sm font-medium">{apiData?.title || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-white/80 text-xs mb-1">Ad Type</p>
+                            <p className="text-white text-sm font-medium">{apiData?.ad_type || 'N/A'}</p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#3d3d3d] pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Industry</p>
+                              <p className="text-white text-sm font-medium">{apiData?.industry || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Platform</p>
+                              <p className="text-white text-sm font-medium">{apiData?.platform || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#3d3d3d] pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Gender</p>
+                              <p className="text-white text-sm font-medium">{apiData?.gender || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Age Range</p>
+                              <p className="text-white text-sm font-medium">{apiData?.age || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#3d3d3d] pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Country</p>
+                              <p className="text-white text-sm font-medium">{apiData?.country || 'N/A'}</p>
+                            </div>
+                            {apiData?.state && apiData.state.trim() !== '' && (
+                              <div>
+                                <p className="text-white/80 text-xs mb-1">State</p>
+                                <p className="text-white text-sm font-medium">{apiData.state}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {apiData?.video && apiData.video.trim() !== '' && (
+                          <div className="border-t border-[#3d3d3d] pt-4">
+                            <p className="text-gray-400 text-xs mb-1">Video</p>
+                            <p className="text-white text-sm font-medium break-all">{apiData.video}</p>
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Delete Button - Only for non-token users */}
+                  {!isFromToken && (
+                    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label="Delete ad"
+                          className="border-red-600 bg-red-600/20 text-red-400 hover:text-white hover:bg-red-600 hover:border-red-600 transition-colors"
+                          disabled={deleteLoading}
+                        >
+                          {deleteLoading ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                              Deleting...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="w-3 h-3 mr-2" />
+                              Delete Ad
+                            </>
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-[#1a1a1a] border-[#3d3d3d]">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-white">Delete Ad</AlertDialogTitle>
+                          <AlertDialogDescription className="text-gray-300">
+                            Are you sure you want to delete "{apiData?.title || 'this ad'}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="bg-transparent border-[#3d3d3d] text-gray-300 hover:bg-[#3d3d3d] hover:text-white">
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteAd}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            disabled={deleteLoading}
+                          >
+                            {deleteLoading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              'Delete'
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+
+                {/* Mismatch Warnings - Mobile Optimized */}
+                {mismatchWarnings.length > 0 && (
+                  <div className="mt-4 sm:mt-6">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <h4 className="text-base sm:text-lg font-semibold text-gray-300">Mismatch Warnings</h4>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                          <p>
+                            Potential inconsistencies between your ad elements that might affect performance or brand alignment.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="space-y-2 sm:space-y-3">
+                      {mismatchWarnings.map((warning, index) => (
+                        <div
+                          key={index}
+                          className="flex items-start p-3 bg-amber-600/10 border border-amber-600/30 rounded-lg hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                        >
+                          <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
+                          <span className="text-amber-200 text-xs sm:text-sm leading-relaxed">{warning}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Mobile: Readability & Uniqueness in one row */}
+            <div className="lg:hidden grid grid-cols-2 gap-2 mt-6">
+              {/* Readability - Mobile */}
+              <div className="bg-black px-3 py-3 rounded-xl hover:scale-[1.01] transition-all duration-300">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-white font-semibold text-sm">Readability</h3>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                    </TooltipTrigger>
+                    <TooltipContent className="w-50 bg-[#2b2b2b]">
+                      <p>Measures how easy it is for your target audience to read and understand your ad content.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className="text-white/50 text-xs mb-3">Clarity of your ad content.</p>
+                <div className="flex items-center justify-between">
+                  <div
+                    className={`text-2xl font-bold ${(apiData?.readability_clarity_meter || 0) >= 70
+                      ? "text-green-400"
+                      : (apiData?.readability_clarity_meter || 0) >= 50
+                        ? "text-yellow-400"
+                        : "text-red-400"
+                      }`}
+                  >
+                    {apiData?.readability_clarity_meter || 0}/100
+                  </div>
+                  <div className="w-8 h-8 flex items-center justify-center">
+                    <FileText className="w-full h-full text-primary" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Uniqueness - Mobile */}
+              <div className="bg-black px-3 py-3 rounded-xl hover:scale-[1.01] transition-all duration-300">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-white font-semibold text-sm">Uniqueness</h3>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                    </TooltipTrigger>
+                    <TooltipContent className="w-50 bg-[#2b2b2b]">
+                      <p>Analyzes how distinctive your ad is compared to competitors in your industry.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className="text-white/50 text-xs mb-3">How different your ad is.</p>
+                <div className="flex items-center justify-between">
+                  <div
+                    className={`text-2xl font-bold ${(apiData?.competitor_uniqueness_meter || 0) >= 70
+                      ? "text-green-400"
+                      : (apiData?.competitor_uniqueness_meter || 0) >= 50
+                        ? "text-yellow-400"
+                        : "text-red-400"
+                      }`}
+                  >
+                    {apiData?.competitor_uniqueness_meter || 0}/100
+                  </div>
+                  <div className="w-8 h-8 flex items-center justify-center">
+                    <Sparkles className="w-full h-full text-primary" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Layout - Hidden on mobile */}
+            <div className="hidden bg-black lg:grid grid-cols-1 lg:grid-cols-3 gap-2 lg:gap-4 p-6 rounded-2xl">
+              {/* Ad Preview Section - Desktop */}
+              <div className="lg:col-span-1 order-1 lg:order-1">
+                <div className="relative aspect-square overflow-hidden rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300 max-w-sm mx-auto lg:max-w-none">
+                  {apiData.ad_type === "Video" && apiData.video ? (
+                    <video
+                      src={apiData.video}
+                      controls
+                      className="w-full h-full object-contain"
+                      poster={images.length > 0 ? images[0] : undefined}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    images.length > 0 && (
+                      <>
+                        <Image
+                          src={images[currentImageIndex]}
+                          alt={apiData.title || "Ad Image"}
+                          fill
+                          className="object-contain"
+                        />
+
+                        {/* Navigation - Touch Optimized */}
+                        {images.length > 1 && (
+                          <>
+                            <button
+                              onClick={prevImage}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer"
+                            >
+                              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                            <button
+                              onClick={nextImage}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer"
+                            >
+                              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+
+                            {/* Indicators - Mobile Optimized */}
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                              {images.map((_, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => setCurrentImageIndex(index)}
+                                  className={cn(
+                                    "w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all touch-manipulation",
+                                    index === currentImageIndex
+                                      ? "bg-white"
+                                      : "bg-white/50 hover:bg-white/75"
+                                  )}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )
+                  )}
+                </div>
+
+                {/* Counter / Label */}
+                {apiData.ad_type === "Video" && apiData.video ? (
+                  <div className="text-center mt-2 text-sm text-gray-400">Video Ad</div>
+                ) : (
+                  images.length > 1 && (
+                    <div className="text-center mt-2 text-sm text-gray-400">
+                      {currentImageIndex + 1} of {images.length}
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Basic Info + Scores - Desktop */}
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-2">
+                {/* Title + Meta - Desktop */}
+                <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-0 break-words">
+                      {apiData.title
+                        ? apiData.title.length > 20
+                          ? apiData.title.slice(0, 20) + "..."
+                          : apiData.title
+                        : "Untitled Ad"}
+                    </h2>
+                    <div className="text-gray-300 flex items-end text-xs sm:text-sm gap-2 flex-shrink-0">
+                      <Upload className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{apiData.uploaded_on ? formatDate(apiData.uploaded_on) : "Unknown"}</span>
+                    </div>
+                  </div>
+
+                  {/* Badges - Desktop */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300">
+                      <span className="text-sm">Industry:</span>
+                      <Badge className="bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600/30 text-xs sm:text-sm">
+                        {apiData.industry || "N/A"}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 bg-[#121212] border border-[#2b2b2b] rounded-xl px-3 py-2 transition-all duration-300">
+                      <span className="text-sm flex-shrink-0">Best Suit for:</span>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        {platformSuitability.map((platform) => (
+                          <Badge
+                            key={platform.platform}
+                            className={cn(
+                              "flex items-center gap-1 transition-all duration-300 text-xs",
+                              platform.suitable
+                                ? "bg-green-600/20 text-green-400 border border-green-600/30"
+                                : platform.warning
+                                  ? "bg-amber-600/20 text-amber-400 border border-amber-600/30"
+                                  : "bg-red-600/20 text-red-400 border border-red-600/30"
+                            )}
+                          >
+                            {platform.suitable ? (
+                              <CheckCircle className="w-3 h-3" />
+                            ) : platform.warning ? (
+                              <AlertTriangle className="w-3 h-3" />
+                            ) : (
+                              <XCircle className="w-3 h-3" />
+                            )}
+                            {platform.platform}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Score Section - Desktop Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {/* Performance Score */}
+                  <div
+                    className="p-3 sm:p-3 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <ChartNoAxesCombined
+                        className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.score_out_of_100 < 50
+                          ? "text-red-400"
+                          : apiData.score_out_of_100 < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      />
+                      <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Performance Score</h3>
+                      <div
+                        className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.score_out_of_100 < 50
+                          ? "text-red-400"
+                          : apiData.score_out_of_100 < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      >
+                        {apiData.score_out_of_100}/100
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Confidence Score */}
+                  <div
+                    className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <ShieldCheck
+                        className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.confidence_score < 50
+                          ? "text-red-400"
+                          : apiData.confidence_score < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      />
+                      <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Confidence Score</h3>
+                      <div
+                        className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.confidence_score < 50
+                          ? "text-red-400"
+                          : apiData.confidence_score < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      >
+                        {apiData.confidence_score || 0}/100
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Match Score */}
+                  <div
+                    className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <Target
+                        className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${apiData.match_score < 50
+                          ? "text-red-400"
+                          : apiData.match_score < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      />
+                      <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">Match Score</h3>
+                      <div
+                        className={`text-lg sm:text-xl lg:text-3xl font-bold ${apiData.match_score < 50
+                          ? "text-red-400"
+                          : apiData.match_score < 75
+                            ? "text-yellow-400"
+                            : "text-[#22C55E]"
+                          }`}
+                      >
+                        {apiData.match_score || 0}/100
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Issues Detected */}
+                  <div
+                    className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <AlertTriangle
+                        className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 mb-2 ${issues.length === 0 ? "text-[#22C55E]" : "text-red-400"
+                          }`}
+                      />
+                      <h3 className="text-xs sm:text-sm lg:text-base font-medium text-gray-300 mb-1">
+                        Issues Detected
+                      </h3>
+                      <div
+                        className={`text-lg sm:text-xl lg:text-3xl font-bold ${issues.length === 0 ? "text-[#22C55E]" : "text-red-400"
+                          }`}
+                      >
+                        {String(issues.length).padStart(2, "0")}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons - View Target and Delete */}
+                <div className="mt-4 sm:mt-6 flex justify-end gap-2 skip-block">
+                  {/* View Target Button */}
+                  <Dialog open={viewTargetOpen} onOpenChange={setViewTargetOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        aria-label="View target details"
+                      >
+                        <Target className="w-3 h-3 mr-2" />
+                        View Target
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-black  max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-white text-xl flex items-center gap-2">
+                          <Target className="w-5 h-5 text-[#db4900]" />
+                          Target Details
+                        </DialogTitle>
+                      </DialogHeader>
+
+                      <div className="space-y-4 mt-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-white/80 text-xs mb-1">Title</p>
+                            <p className="text-white text-sm font-medium">{apiData?.title || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-white/80 text-xs mb-1">Ad Type</p>
+                            <p className="text-white text-sm font-medium">{apiData?.ad_type || 'N/A'}</p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#3d3d3d] pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Industry</p>
+                              <p className="text-white text-sm font-medium">{apiData?.industry || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Platform</p>
+                              <p className="text-white text-sm font-medium">{apiData?.platform || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#3d3d3d] pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Gender</p>
+                              <p className="text-white text-sm font-medium">{apiData?.gender || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Age Range</p>
+                              <p className="text-white text-sm font-medium">{apiData?.age || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#3d3d3d] pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-white/80 text-xs mb-1">Country</p>
+                              <p className="text-white text-sm font-medium">{apiData?.country || 'N/A'}</p>
+                            </div>
+                            {apiData?.state && apiData.state.trim() !== '' && (
+                              <div>
+                                <p className="text-white/80 text-xs mb-1">State</p>
+                                <p className="text-white text-sm font-medium">{apiData.state}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {apiData?.video && apiData.video.trim() !== '' && (
+                          <div className="border-t border-[#3d3d3d] pt-4">
+                            <p className="text-gray-400 text-xs mb-1">Video</p>
+                            <p className="text-white text-sm font-medium break-all">{apiData.video}</p>
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Delete Button - Only for non-token users */}
+                  {!isFromToken && (
+                    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label="Delete ad"
+                          className="border-red-600 bg-red-600/20 text-red-400 hover:text-white hover:bg-red-600 hover:border-red-600 transition-colors"
+                          disabled={deleteLoading}
+                        >
+                          {deleteLoading ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                              Deleting...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="w-3 h-3 mr-2" />
+                              Delete Ad
+                            </>
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-[#1a1a1a] border-[#3d3d3d]">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-white">Delete Ad</AlertDialogTitle>
+                          <AlertDialogDescription className="text-gray-300">
+                            Are you sure you want to delete "{apiData?.title || 'this ad'}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="bg-transparent border-[#3d3d3d] text-gray-300 hover:bg-[#3d3d3d] hover:text-white">
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteAd}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            disabled={deleteLoading}
+                          >
+                            {deleteLoading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              'Delete'
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+
+                {/* Mismatch Warnings - Desktop Optimized */}
+                {mismatchWarnings.length > 0 && (
+                  <div className="mt-4 sm:mt-6">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <h4 className="text-base sm:text-lg font-semibold text-gray-300">Mismatch Warnings</h4>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                          <p>
+                            Potential inconsistencies between your ad elements that might affect performance or brand alignment.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="space-y-2 sm:space-y-3">
+                      {mismatchWarnings.map((warning, index) => (
+                        <div
+                          key={index}
+                          className="flex items-start p-3 bg-amber-600/10 border border-amber-600/30 rounded-lg hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                        >
+                          <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" />
+                          <span className="text-amber-200 text-xs sm:text-sm leading-relaxed">{warning}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Row 3 */}
             <div className="col-span-4 grid grid-cols-1 lg:grid-cols-6 gap-6 auto-rows-fr">
               {/* Go/No-Go Only - takes 2 columns */}
-              <div className="lg:col-span-2 h-full">
+              <div className="hidden lg:block lg:col-span-2 h-full">
                 <div
                   className="relative bg-black rounded-2xl p-6 h-full flex flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
                   style={{ transition: "all 0.3s" }}
@@ -783,7 +1475,7 @@ export default function ResultsPage() {
               </div>
 
               {/* Readability & Uniqueness - takes 2 columns */}
-              <div className="lg:col-span-2 h-full">
+              <div className="lg:col-span-2 h-full hidden lg:block">
                 <div className="space-y-6 h-full flex flex-col">
                   {/* Readability */}
                   <div
@@ -810,7 +1502,7 @@ export default function ResultsPage() {
                     <p className="text-white/50 text-sm mb-4">Clarity of your ad content.</p>
                     <div className="flex items-center justify-between">
                       <div
-                        className={`text-6xl font-bold ${(apiData?.readability_clarity_meter || 0) >= 70
+                        className={`text-4xl sm:text-5xl md:text-6xl font-bold ${(apiData?.readability_clarity_meter || 0) >= 70
                           ? "text-green-400"
                           : (apiData?.readability_clarity_meter || 0) >= 50
                             ? "text-yellow-400"
@@ -819,7 +1511,7 @@ export default function ResultsPage() {
                       >
                         {apiData?.readability_clarity_meter || 0}/100
                       </div>
-                      <div className="w-16 h-16 flex items-center justify-center">
+                      <div className="w-10  sm:w-12 md:w-16 h-10 sm:h-12 md:h-16 flex items-center justify-center">
                         <FileText className="w-full h-full text-primary" />
                       </div>
                     </div>
@@ -850,7 +1542,7 @@ export default function ResultsPage() {
                     <p className="text-white/50 text-sm mb-4">How different your ad is.</p>
                     <div className="flex items-center justify-between">
                       <div
-                        className={`text-6xl font-bold ${(apiData?.competitor_uniqueness_meter || 0) >= 70
+                        className={`text-4xl sm:text-5xl md:text-6xl font-bold ${(apiData?.competitor_uniqueness_meter || 0) >= 70
                           ? "text-green-400"
                           : (apiData?.competitor_uniqueness_meter || 0) >= 50
                             ? "text-yellow-400"
@@ -2134,11 +2826,19 @@ export default function ResultsPage() {
 
                               {/* Copy button */}
                               <button
-                                onClick={() => navigator.clipboard.writeText(adCopy.copy_text || "")}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(adCopy.copy_text || "");
+                                  setCopiedAdCopyIndex(index);
+                                  setTimeout(() => setCopiedAdCopyIndex(null), 2000);
+                                }}
                                 className="p-1 rounded-md hover:bg-[#171717] transition"
-                                title="Copy text"
+                                title={copiedAdCopyIndex === index ? "Copied!" : "Copy text"}
                               >
-                                <Copy className="w-4 h-4 text-gray-300 hover:text-primary cursor-pointer" />
+                                {copiedAdCopyIndex === index ? (
+                                  <CheckCircle className="w-4 h-4 text-green-500 cursor-pointer" />
+                                ) : (
+                                  <Copy className="w-4 h-4 text-gray-300 hover:text-primary cursor-pointer" />
+                                )}
                               </button>
                             </div>
 
@@ -2179,11 +2879,19 @@ export default function ResultsPage() {
 
                                   {/* Copy button for locked Pro items */}
                                   <button
-                                    onClick={() => navigator.clipboard.writeText(adCopy.copy_text || "")}
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(adCopy.copy_text || "");
+                                      setCopiedAdCopyIndex(index + 1000); // Using offset to distinguish from main copies
+                                      setTimeout(() => setCopiedAdCopyIndex(null), 2000);
+                                    }}
                                     className="p-1 rounded-md hover:bg-[#171717] transition "
-                                    title="Copy text"
+                                    title={copiedAdCopyIndex === index + 1000 ? "Copied!" : "Copy text"}
                                   >
-                                    <Copy className="w-4 h-4 text-orange-400 hover:text-primary cursor-pointer" />
+                                    {copiedAdCopyIndex === index + 1000 ? (
+                                      <CheckCircle className="w-4 h-4 text-green-500 cursor-pointer" />
+                                    ) : (
+                                      <Copy className="w-4 h-4 text-orange-400 hover:text-primary cursor-pointer" />
+                                    )}
                                   </button>
                                 </div>
 
@@ -2198,7 +2906,7 @@ export default function ResultsPage() {
                     </div>
                   </div>
 
-                  {/* Right: CTA Section - Mobile Optimized */}
+                  {/* Right: Trending Tags Section - Mobile Optimized */}
                   <div className="lg:w-[30%] w-full bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[#222] rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between"
                     style={{ transition: "all 0.3s" }}
                     onMouseEnter={e => {
@@ -2208,35 +2916,45 @@ export default function ResultsPage() {
                       e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
                     }}>
                     <div className="space-y-3 sm:space-y-4">
-                      <div className="flex items-center text-white mb-1">
-                        <GitCompareArrows className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-primary flex-shrink-0" />
-                        <h4 className="text-base sm:text-lg font-semibold">Ad Comparison</h4>
+                      <div className="flex items-center justify-between text-white mb-1">
+                        <div className="flex items-center">
+                          <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-primary flex-shrink-0" />
+                          <h4 className="text-base sm:text-lg font-semibold">Trending Tags</h4>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (apiData?.["10_trending_tags_relatedto_ad"]) {
+                              const tagsText = apiData["10_trending_tags_relatedto_ad"].join(" ");
+                              navigator.clipboard.writeText(tagsText);
+                              setTagsCopied(true);
+                              setTimeout(() => setTagsCopied(false), 2000);
+                            }
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-all duration-200"
+                          title={tagsCopied ? "Copied!" : "Copy all tags"}
+                        >
+                          {tagsCopied ? (
+                            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                          )}
+                        </button>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-                        Want to compare ads side-by-side? Use our Ad Comparison tool to test different versions of your ad copy, evaluate tone and platform variations, and discover what resonates most with your audience — all in one place.
+                      <p className="text-xs sm:text-sm text-gray-300 leading-relaxed mb-3">
+                        Boost your ad’s reach with these trending hashtags.
                       </p>
-                    </div>
 
-                    <div className="mt-4 sm:mt-6">
-                      <Button
-                        className="w-full text-white font-semibold rounded-xl py-2 sm:py-3 transition duration-200 text-sm sm:text-base"
-                        disabled={isFromToken ? false : !isProUser}
-                        onClick={() => {
-                          if (isFromToken) {
-                            window.open("/register", "_blank");
-                          } else {
-                            router.push("/ab-test");
-                          }
-                        }}
-                      >
-                        <GitCompareArrows className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                        {isFromToken ? "Register Now" : "Compare Now"}
-                      </Button>
-                      {!isProUser && !isFromToken && (
-                        <p className="mt-2 text-xs text-gray-300 text-center">
-                          Unlock with Pro to access ad comparison.
-                        </p>
-                      )}
+                      {/* Tags Display */}
+                      <div className="flex flex-wrap gap-2">
+                        {apiData?.["10_trending_tags_relatedto_ad"]?.map((tag, index) => (
+                          <Badge
+                            key={index}
+                            className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30 hover:bg-primary/30 transition-all duration-200 text-xs sm:text-sm px-2 sm:px-3 py-1 cursor-pointer"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2264,23 +2982,42 @@ export default function ResultsPage() {
                   <>
                     <Button
                       variant="outline"
-                      onClick={handleShare}
+                      onClick={() => { handleShare(); trackEvent("Ad_Analysis_Report_Shared", window.location.href, userDetails?.email?.toString()) }}
                       className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto hidden sm:flex"
                     >
                       <Share2 className="w-4 h-4 mr-2" />
                       Share Results
                     </Button>
 
+                    <div className="flex flex-row gap-3 sm:gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleDownloadPDF}
+                        disabled={isPdfGenerating || !apiData}
+                        className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-xs sm:text-lg font-semibold transition-all duration-200 "
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        {isPdfGenerating ? "Generating..." : "Download Report"}
+                      </Button>
 
-                    <Button
-                      variant="outline"
-                      onClick={handleDownloadPDF}
-                      disabled={isPdfGenerating || !apiData}
-                      className="rounded-lg px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-semibold transition-all duration-200 w-full sm:w-auto"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      {isPdfGenerating ? "Generating..." : "Download Report"}
-                    </Button>
+                      <Button
+                        className="text-white font-semibold rounded-lg py-2 sm:py-3 transition duration-200 text-xs sm:text-base"
+                        disabled={isFromToken ? false : !isProUser}
+                        onClick={() => {
+                          if (isFromToken) {
+                            window.open("/register", "_blank");
+                            trackEvent("Register_Clicked_from_Results", window.location.href)
+                          } else {
+                            router.push("/ab-test");
+                            trackEvent("Compare_Ad_Clicked_from_Results", window.location.href, userDetails?.email?.toString())
+                          }
+                        }}
+                      >
+                        <GitCompareArrows className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                        {isFromToken ? "Register Now" : "Compare Now"}
+                      </Button>
+                    </div>
+                    <div className="mb-14 lg:hidden" />
                   </>
                 )}
               </div>
@@ -2321,7 +3058,7 @@ export default function ResultsPage() {
             className="fixed bottom-4 right-4 w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg sm:hidden"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={handleShare}
+            onClick={() => { handleShare(); trackEvent("Ad_Analysis_Report_Shared", window.location.href, userDetails?.email?.toString()) }}
             aria-label="Share Results"
           >
             <Share2 className="h-6 w-6 text-white" />
@@ -2337,7 +3074,7 @@ export default function ResultsPage() {
             transition={{ duration: 0.3 }}
           >
             <Button
-              onClick={() => window.open("/register", "_blank")}
+              onClick={() => { window.open("/register", "_blank"); trackEvent("Register_Clicked_from_Results", window.location.href) }}
               className="rounded-lg px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
               size="lg"
             >

@@ -6,10 +6,11 @@ import Image from 'next/image';
 import image1 from "@/assets/Landing-page/1.agency.webp"
 import image2 from "@/assets/Landing-page/2.ecommerce.webp"
 import image3 from "@/assets/Landing-page/3.freelancers.webp"
-import image4 from "@/assets/Landing-page/4.socila-media-manager.webp"
+import image4 from "@/assets/Landing-page/4.social-media-manager.webp"
 import image5 from "@/assets/Landing-page/5.enterprise.webp"
 import { Button } from '../ui/button';
 import { useRouter } from 'next/navigation';
+import { trackEvent } from '@/lib/eventTracker';
 
 const teamMembers = [
     {
@@ -65,9 +66,9 @@ export default function ForWhomSection() {
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
                 viewport={{ once: false, amount: 0.3 }}
-                className="text-center py-2 sm:py-3 "
+                className="text-center py-4 sm:py-6 md:py-8 px-4"
             >
-                <p className="text-white font-semibold text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-1">Who Benefits from <span className='text-primary'>Adalyze AI</span></p>
+                <p className="text-white font-semibold text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-1">Who Benefits from <span className='text-primary'>Adalyze AI</span></p>
             </motion.div>
             {/* Sticky container (desktop only) */}
             <div className="hidden lg:flex sticky top-0 h-screen items-center justify-start overflow-hidden">
@@ -113,12 +114,9 @@ export default function ForWhomSection() {
 
                                     {/* Content */}
                                     <div className="relative p-6 flex flex-col justify-end h-full">
-                                        <h3 className="text-xl font-semibold text-white mb-2">
+                                        <h3 className="text-3xl font-semibold text-white mb-2">
                                             {member.title}
                                         </h3>
-                                        <p className="text-sm text-gray-300 uppercase tracking-wide">
-                                            {member.description}
-                                        </p>
                                     </div>
                                 </div>
                             </motion.div>
@@ -141,25 +139,24 @@ export default function ForWhomSection() {
             </div>
 
             {/* Mobile fallback */}
-            <div className="lg:hidden container mx-auto px-4 py-20">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="lg:hidden container mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 pb-32">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                     {teamMembers.map((member) => (
-                        <div key={member.id} className="bg-black rounded-2xl shadow-lg overflow-hidden">
-                            <div className="relative h-72">
+                        <div key={member.id} className="bg-black rounded-xl sm:rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                            <div className="relative h-56 sm:h-64 md:h-72">
                                 <Image
                                     src={member.image.src}
                                     alt={member.title}
                                     fill
                                     className="object-cover"
                                 />
+                                {/* Dark overlay for consistency */}
+                                <div className="absolute inset-0 bg-black/50" />
                             </div>
-                            <div className="p-6">
-                                <h3 className="text-xl font-semibold text-white mb-2">
+                            <div className="p-4 sm:p-5 md:p-6">
+                                <h3 className="text-xl sm:text-2xl font-semibold text-white mb-2">
                                     {member.title}
                                 </h3>
-                                <p className="text-sm text-gray-400 uppercase tracking-wide">
-                                    {member.description}
-                                </p>
                             </div>
                         </div>
                     ))}
@@ -167,23 +164,23 @@ export default function ForWhomSection() {
             </div>
 
             {/* Button positioned at bottom of this section only */}
-            <div className="absolute bottom-0 left-0 right-0 z-50">
-                <div className="flex justify-center">
+            <div className="absolute bottom-0 left-0 right-0 z-50 px-4 sm:px-6 md:px-8">
+                <div className="flex justify-center mb-6 sm:mb-8 md:mb-10">
                     <motion.div
                         whileHover={{ scale: 1.08, rotate: 2 }}
                         whileTap={{ scale: 0.95 }}
                         transition={{ type: "spring", stiffness: 300 }}
                     >
                         <Button
-                            onClick={() => router.push("/use-cases")}
-                            className="flex items-center cursor-pointer gap-2 px-6 sm:px-8 py-4 sm:py-6 text-white text-base sm:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[160px] bg-primary hover:bg-primary/90 shadow-lg"
+                            onClick={() => { router.push("/use-cases"); trackEvent("LP_Know_More_button_clicked", window.location.href); }}
+                            className="flex items-center cursor-pointer gap-2 px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 text-white text-sm sm:text-base md:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[140px] sm:min-w-[160px] bg-primary hover:bg-primary/90 shadow-lg"
                         >
                             Know more
                         </Button>
                     </motion.div>
                 </div>
                 <motion.div
-                    className="max-w-screen-xl mx-auto border-t border-[#db4900]/40 mt-12 sm:mt-16"
+                    className="max-w-screen-xl mx-auto border-t border-[#db4900]/40 mt-4 sm:mt-6 md:mt-8"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}

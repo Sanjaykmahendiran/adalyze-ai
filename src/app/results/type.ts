@@ -17,6 +17,11 @@ export interface AdCopy {
     adanaly_id: number;
     ad_upload_id: number;
     industry: string;
+    platform?: string;
+    gender?: string;
+    age?: string;
+    country?: string;
+    state?: string;
     score_out_of_100: number;
     platform_suits: string[];
     platform_notsuits: string[];
@@ -77,4 +82,5 @@ export interface AdCopy {
       copy_text: string;
       created_on: string;
     }>;
+    "10_trending_tags_relatedto_ad": string[];
   }

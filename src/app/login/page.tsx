@@ -9,6 +9,7 @@ import toast from "react-hot-toast"
 import loginlogo from "@/assets/ad-logo.webp"
 import AuthLoginForm from "@/app/login/_components/auth-login-form"
 import { login } from "@/services/authService"
+import { trackEvent } from "@/lib/eventTracker"
 
 interface LoginFormData {
   token?: string;
@@ -41,6 +42,13 @@ const LoginPage = () => {
       if (loginData.status === "success" && loginData.user) {
         const user = loginData.user;
         Cookies.set("userId", user.user_id.toString(), { expires: 7 });
+        Cookies.set("email", user.email, { expires: 7 });
+
+        let eventName = "Login_completed";
+        if (data.token) eventName = "google_login_completed";
+        else if (data.nouptoken) eventName = "email_confirmation_login_completed";
+
+        trackEvent(eventName, window.location.href, user.email);
 
         toast.success("Login successful!");
 

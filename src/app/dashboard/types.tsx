@@ -8,6 +8,7 @@ export interface DashboardData {
   CommonIssue: string;
   CommonFeedback: string;
   LastAnalysedOn: string;
+  TotalGos: number;
   recentads: RecentAd[];
 }
 
@@ -94,4 +95,25 @@ export interface Top10Ad {
   platforms: string
   uploaded_on: string
   weighted_rank: number
+}
+
+export interface TrendingAd {
+  ad_id: number
+  ads_name: string
+  ads_type: string
+  image_path: string
+  industry: string
+  score: number
+  confidence: number
+  match_score: string
+  uniqueness: string
+  platforms: string
+  uploaded_on: string
+  weighted_rank: number
+}
+
+export interface TrendingAdsResponse {
+  time_frame: string
+  total_ads_considered: number
+  trending_ads: TrendingAd[]
 }

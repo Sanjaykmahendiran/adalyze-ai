@@ -12,19 +12,16 @@ const LandingPageFooter = () => {
         <div className="flex flex-col items-center md:items-start gap-4 sm:gap-6 w-full">
           {/* Social Media Icons */}
           <div className="flex flex-wrap justify-center md:justify-start gap-3 sm:gap-4">
-            <Link href="https://www.facebook.com/profile.php?id=61579156799875" aria-label="Facebook">
+            <Link href="https://www.facebook.com/profile.php?id=61579156799875" target="_blank" aria-label="Facebook">
               <Facebook className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
             </Link>
-            <Link href="https://x.com/adalyzeai" aria-label="Twitter">
+            <Link href="https://x.com/adalyzeai" target="_blank" aria-label="Twitter">
               <Twitter className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
             </Link>
-            <Link href="https://www.youtube.com/@adalyzeai" aria-label="YouTube">
-              <Youtube className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
-            </Link>
-            <Link href="https://www.instagram.com/adalyzeai" aria-label="Instagram">
+            <Link href="https://www.instagram.com/adalyzeai" target="_blank" aria-label="Instagram">
               <Instagram className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
             </Link>
-            <Link href="https://www.linkedin.com/company/adalyzeai" aria-label="LinkedIn">
+            <Link href="https://www.linkedin.com/company/adalyze-ai/" target="_blank" aria-label="LinkedIn">
               <Linkedin className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
             </Link>
           </div>
@@ -59,9 +56,9 @@ const LandingPageFooter = () => {
           </a>
         </div>
       </div>
-      <div
-        className=" text-center text-xs sm:text-sm "
-      >© {new Date().getFullYear()} Adalyze AI. All rights reserved.</div>
+      <div className=" text-center text-xs sm:text-sm mt-2">
+        Adalyze AI: © {new Date().getFullYear()} Techades Ebiz Arena. Adalyze AI is a product of Techades.
+      </div>
     </footer>
   )
 }

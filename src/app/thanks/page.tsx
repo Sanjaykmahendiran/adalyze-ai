@@ -4,13 +4,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TopNavbar } from "@/components/top-navbar";
 import Spinner from "@/components/overlay";
 import confetti from "canvas-confetti";
-import useFetchUserDetails from "@/hooks/useFetchUserDetails";
 
 export default function ThanksPage() {
-  const { userDetails } = useFetchUserDetails();
   const [countdown, setCountdown] = useState(5);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -39,7 +36,7 @@ export default function ThanksPage() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          router.push("/dashboard");
+          router.push("/upload");
           return 0;
         }
         return prev - 1;
@@ -72,11 +69,11 @@ export default function ThanksPage() {
               Redirecting in <span className="font-bold">{countdown}</span> seconds...
             </p>
             <Button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/upload")}
               variant="default"
               className="bg-green-600 hover:bg-green-700"
             >
-              Continue to Dashboard
+              Continue to Upload
             </Button>
           </div>
         </div>

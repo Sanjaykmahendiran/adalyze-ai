@@ -70,7 +70,7 @@ export default function ClientSection() {
   }, []);
 
   const animateCount = () => {
-    const end = 12000 // Example: number of campaigns analyzed
+    const end = 120000 // Example: number of campaigns analyzed
     const duration = 2000
     const start = performance.now()
 

@@ -77,8 +77,8 @@ export function VideoUploader({
       toast.error("Please upload a valid video file (MP4, AVI, MOV, WMV, FLV, WEBM)")
       return
     }
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error("File size must be under 100MB")
+    if (file.size > 40 * 1024 * 1024) {
+      toast.error("File size must be under 40MB")
       return
     }
 
@@ -155,10 +155,10 @@ export function VideoUploader({
       ) : (
         <div
           className={`flex min-h-[160px] sm:min-h-[200px] lg:min-h-[240px] w-full cursor-pointer flex-col items-center justify-center rounded-xl bg-[#2b2b2b] p-4 sm:p-6 text-center transition-all duration-300 ${isUploading
-              ? "cursor-not-allowed opacity-50"
-              : isDragging
-                ? "border-4 border-dashed border-gray-400 bg-[#2b2b2b] scale-105"
-                : "hover:bg-[#2a2a2a] text-white"
+            ? "cursor-not-allowed opacity-50"
+            : isDragging
+              ? "border-4 border-dashed border-gray-400 bg-[#2b2b2b] scale-105"
+              : "hover:bg-[#2a2a2a] text-white"
             }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -167,7 +167,7 @@ export function VideoUploader({
         >
           <Upload className="w-12 sm:w-16 h-12 sm:h-16 text-primary mx-auto mb-3 sm:mb-4" />
           <p className="text-gray-200 font-medium text-sm sm:text-base">Click to upload or drag & drop</p>
-          <p className="mt-2 text-xs sm:text-sm text-gray-300">MP4, AVI, MOV, WMV, FLV, WEBM (max. 100 MB)</p>
+          <p className="mt-2 text-xs sm:text-sm text-gray-300">MP4, AVI, MOV, WMV, FLV, WEBM (max. 40 MB)</p>
         </div>
       )}
 

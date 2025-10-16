@@ -253,32 +253,6 @@ export default function CompetitorTable({ basicPrice }: CompetitorTableProps) {
                     </div>
                 </div>
             </div>
-
-            {/* Bottom CTA */}
-            <div className="text-center mt-10">
-                <div className="bg-[#1a1a1a]/80 rounded-lg p-6 sm:p-8 border border-[#ff6a00]/20 shadow-sm">
-                    <h3 className="text-xl sm:text-2xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-[#ff6a00] to-[#ff8533]">
-                        Why Choose Adalyze AI?
-                    </h3>
-                    <p className="text-sm sm:text-base text-gray-300 mb-4 max-w-2xl mx-auto">
-                        Get enterprise-level ad analysis at a fraction of the cost. No complex setup, no lengthy contracts — just instant, actionable insights for your ads.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-4 text-sm text-green-400 mb-4">
-                        <span className="flex items-center gap-2">
-                            <Zap className="w-4 h-4" />
-                            Instant Analysis
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <Target className="w-4 h-4" />
-                            Platform-Specific Scoring
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4" />
-                            99% More Affordable
-                        </span>
-                    </div>
-                </div>
-            </div>
         </div>
     )
 }

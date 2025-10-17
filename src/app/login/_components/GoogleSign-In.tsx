@@ -1,126 +1,75 @@
-import React, { useEffect, useRef } from "react";
-import toast from "react-hot-toast";
+// components/SocialLoginButtons.tsx
+"use client"
+import React, { useEffect, useRef, useState } from "react"
+import toast from "react-hot-toast"
+import FacebookLogin from "@greatsumini/react-facebook-login"
 
-const GoogleSignInButton = ({ onSubmit }) => {
-  const googleButtonRef = useRef(null);
+const SocialLoginButtons = ({ onSubmit }: { onSubmit: (data: any) => void }) => {
+  const googleButtonRef = useRef(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Load Google Identity Services script
-    const loadGoogleScript = () => {
-      return new Promise((resolve, reject) => {
-        if (window.google && window.google.accounts) {
-          resolve(window.google);
-          return;
-        }
-
-        const script = document.createElement("script");
-        script.src = "https://accounts.google.com/gsi/client";
-        script.async = true;
-        script.defer = true;
-
-        script.onload = () => resolve(window.google);
-        script.onerror = (err) => reject(err);
-
-        document.head.appendChild(script);
-      });
-    };
+    const loadGoogleScript = () =>
+      new Promise((resolve, reject) => {
+        if (window.google?.accounts) return resolve(window.google)
+        const script = document.createElement("script")
+        script.src = "https://accounts.google.com/gsi/client"
+        script.async = true
+        script.defer = true
+        script.onload = () => resolve(window.google)
+        script.onerror = reject
+        document.head.appendChild(script)
+      })
 
     const initializeGoogleSignIn = async () => {
       try {
-        const google = await loadGoogleScript();
-
-        if (!google?.accounts?.id) throw new Error("Google API not loaded");
-
-        // Initialize Google One Tap / Button
+        const google = await loadGoogleScript()
         google.accounts.id.initialize({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          context: "signin",
-        });
-
-        // Render the button
-        if (googleButtonRef.current) {
-          google.accounts.id.renderButton(googleButtonRef.current, {
-            type: "standard",
-            theme: "outline",
-            size: "large",
-            text: "signin_with",
-            shape: "rectangular",
-            logo_alignment: "left",
-            width: 300,
-          });
-        }
-      } catch (error) {
-        console.error("Google Sign-In initialization error:", error);
-        toast.error("Failed to initialize Google Sign-In");
+          callback: handleGoogleResponse,
+        })
+        google.accounts.id.renderButton(googleButtonRef.current, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+        })
+      } catch {
+        toast.error("Failed to load Google Sign-In")
       }
-    };
-
-    initializeGoogleSignIn();
-
-    return () => {
-      try {
-        // Cancel One Tap if needed
-        window.google?.accounts?.id?.cancel();
-      } catch {}
-    };
-  }, []);
-
-  // Handle response from Google
-  const handleCredentialResponse = (response) => {
-    if (!response?.credential) {
-      toast.error("Google sign-in failed");
-      return;
     }
+    initializeGoogleSignIn()
+    return () => window.google?.accounts?.id?.cancel?.()
+  }, [])
 
-    try {
-      const decoded = decodeJwt(response.credential);
+  const handleGoogleResponse = (response) => {
+    if (!response?.credential) return toast.error("Google login failed")
+    const payload = JSON.parse(atob(response.credential.split(".")[1]))
+    onSubmit({ token: response.credential, user: { ...payload } })
+  }
 
-      const userData = {
-        token: response.credential,
-        user: {
-          id: decoded.sub || "",
-          email: decoded.email || "",
-          name: decoded.name || "",
-          picture: decoded.picture || "",
-        },
-      };
-
-      onSubmit(userData);
-    } catch (err) {
-      console.error("Token decode error:", err);
-      toast.error("Failed to process Google sign-in");
-    }
-  };
-
-  // Decode JWT token
-  const decodeJwt = (token) => {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  };
+  const handleFacebookLogin = async (response) => {
+    if (!response?.accessToken) return toast.error("Facebook login failed")
+    setLoading(true)
+    onSubmit({ facebook_token: response.accessToken, user: response })
+    setLoading(false)
+  }
 
   return (
-    <>
-      {/* Optional separator */}
-      <div className="flex items-center w-full my-4">
-        <hr className="flex-grow border-white/50" />
-        <span className="mx-2 text-white/70 text-sm">or</span>
-        <hr className="flex-grow border-white/50" />
-      </div>
+    <div className="flex flex-col gap-4 w-full items-center">
+      <div ref={googleButtonRef} />
+      <FacebookLogin
+        appId={process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || ""}
+        onSuccess={handleFacebookLogin}
+        onFail={() => toast.error("Facebook login failed")}
+        useRedirect={false}
+        render={({ onClick }) => (
+          <button onClick={onClick} disabled={loading} className="bg-blue-600 px-6 py-3 text-white rounded-lg">
+            {loading ? "Logging in..." : "Continue with Facebook"}
+          </button>
+        )}
+      />
+    </div>
+  )
+}
 
-      {/* Google Sign-In button */}
-      <div ref={googleButtonRef} className="w-full flex justify-center" />
-    </>
-  );
-};
-
-export default GoogleSignInButton;
+export default SocialLoginButtons

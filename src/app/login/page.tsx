@@ -16,6 +16,7 @@ interface LoginFormData {
   nouptoken?: string;
   email?: string;
   password?: string;
+  facebook_token?: string;
 }
 
 
@@ -35,7 +36,10 @@ const LoginPage = () => {
         loginData = await login({ google_token: data.token });
       } else if (data.nouptoken) {
         loginData = await login({ nouptoken: data.nouptoken });
-      } else {
+      } 
+      else if (data.facebook_token) {
+        loginData = await login({ facebook_token: data.facebook_token });
+      }else {
         loginData = await login(data);
       }
 
@@ -47,7 +51,7 @@ const LoginPage = () => {
         let eventName = "Login_completed";
         if (data.token) eventName = "google_login_completed";
         else if (data.nouptoken) eventName = "email_confirmation_login_completed";
-
+        else if (data.facebook_token) eventName = "facebook_login_completed";
         trackEvent(eventName, window.location.href, user.email);
 
         toast.success("Login successful!");

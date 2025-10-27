@@ -46,27 +46,21 @@ const VersionCard: React.FC = () => {
 
         const visuals: Record<
             string,
-            { image: string; badgeText: string; badgeColor: string; badgeIcon: JSX.Element }
+            { badgeText: string; badgeColor: string; badgeIcon: JSX.Element }
         > = {
             released: {
-                image:
-                    'https://digitx-storage.blr1.cdn.digitaloceanspaces.com/Assets/onebrain-assets/about-page-version-released-image.svg',
                 badgeText: 'Released',
-                badgeColor: 'bg-green-500/30 text-green-600 border border-green-500/30',
+                badgeColor: 'bg-[#171717] text-green-600 border border-green-500/30',
                 badgeIcon: <CheckCircle className="inline-block mr-1 w-4 h-4" />,
             },
             inprogress: {
-                image:
-                    'https://digitx-storage.blr1.cdn.digitaloceanspaces.com/Assets/onebrain-assets/about-page-version-inprogress-image.svg',
                 badgeText: 'In Progress',
-                badgeColor: 'bg-yellow-500/30 text-yellow-600 border border-yellow-500/30',
+                badgeColor: 'bg-[#171717] text-yellow-600 border border-yellow-500/30',
                 badgeIcon: <Loader2 className="inline-block mr-1 w-4 h-4 " />,
             },
             planned: {
-                image:
-                    'https://digitx-storage.blr1.cdn.digitaloceanspaces.com/Assets/onebrain-assets/about-page-version-planned-image.svg',
                 badgeText: 'Planned',
-                badgeColor: 'bg-blue-500/30 text-blue-600 border border-blue-500/30',
+                badgeColor: 'bg-[#171717] text-blue-600 border border-blue-500/30',
                 badgeIcon: <Clock className="inline-block mr-1 w-4 h-4" />,
             },
         };

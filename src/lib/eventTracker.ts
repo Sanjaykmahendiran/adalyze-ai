@@ -10,10 +10,37 @@ interface EventPayload {
     page_url: string;
     session_id: string;
     email_temp: string | null;
+    cookie_id: string | null;
+    currency: string | null;
+    event_value: number | null;
+    metadata?: {
+        utm_source?: string;
+        utm_campaign?: string;
+        ad_id?: string;
+    };
 }
 
 const EVENT_API_URL = "https://adalyzeai.xyz/App/api.php";
 const EVENT_QUEUE_KEY = "adalyze_event_queue_v1"; // versionable
+
+// == Utility function to extract metadata from URL ==
+function extractMetadataFromUrl(): { utm_source?: string; utm_campaign?: string; ad_id?: string } {
+    if (typeof window === "undefined") return {};
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const metadata: { utm_source?: string; utm_campaign?: string; ad_id?: string } = {};
+    
+    // Extract UTM parameters
+    const utmSource = urlParams.get('utm_source');
+    const utmCampaign = urlParams.get('utm_campaign');
+    const adId = urlParams.get('ad_id');
+    
+    if (utmSource) metadata.utm_source = utmSource;
+    if (utmCampaign) metadata.utm_campaign = utmCampaign;
+    if (adId) metadata.ad_id = adId;
+    
+    return metadata;
+}
 
 // == LocalQueue helpers ==
 function getEventQueue(): EventPayload[] {
@@ -100,9 +127,11 @@ if (typeof window !== "undefined") {
  * - pageUrl : full URL or path string
  * - email : optional
  */
-export function trackEvent(eventName: string, pageUrl: string, email?: string | null) {
+export function trackEvent(eventName: string, pageUrl: string, email?: string | null, currency?: string | null, eventValue?: number | null  ) {
     if (typeof window === "undefined") return;
 
+    const metadata = extractMetadataFromUrl();
+    
     const payload: EventPayload = {
         gofor: "addevents",
         user_id: Cookies.get("userId") || null,
@@ -110,6 +139,10 @@ export function trackEvent(eventName: string, pageUrl: string, email?: string | 
         page_url: pageUrl,
         session_id: getSessionId(),
         email_temp: email ?? null,
+        cookie_id: Cookies.get("cookie_id") || null,
+        currency: currency ?? null,
+        event_value: eventValue ?? null,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     };
 
     // Use debounced sender (safe: sendEventNow also queues on failure)

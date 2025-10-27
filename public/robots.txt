@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://adalyze.app
+
+# Sitemaps
+Sitemap: https://adalyze.app/sitemap.xml

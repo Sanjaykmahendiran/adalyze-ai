@@ -35,12 +35,12 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
             role="note"
             aria-label="Exclusive Features"
           >
-            For Modern Businesses 🚀
+            For Modern Businesses
           </div>
 
           <div className="flex flex-col text-center sm:items-center md:items-start md:text-left space-y-4 sm:space-y-6">
             {/* 🔥 Animated Heading */}
-            <motion.h1
+            <motion.h2
               initial={{ x: -100, opacity: 0 }}
               whileInView={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
@@ -49,7 +49,7 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
             >
               Empower your business <br />
               with <span className="text-[#db4900]">Adalyze AI</span>
-            </motion.h1>
+            </motion.h2>
 
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -66,7 +66,8 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
               className="space-y-2 w-full max-w-md"
             >
               <Button
-                onClick={() => {window.open("/register", "_blank", "noopener,noreferrer");
+                onClick={() => {
+                  window.open("/register", "_blank", "noopener,noreferrer");
                   trackEvent("LP_CTA_button_clicked", window.location.href);
                 }}
                 className="py-4 sm:py-6 cursor-pointer w-full sm:w-auto min-w-[200px] text-sm sm:text-base"

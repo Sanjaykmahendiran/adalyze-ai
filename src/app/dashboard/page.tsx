@@ -9,11 +9,14 @@ import {
   LayoutPanelLeft,
   Eye,
   Linkedin,
+  Share,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import UserLayout from "@/components/layouts/user-layout"
 import DashboardLoadingSkeleton from "@/components/Skeleton-loading/dashboard-loading"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
+import TokenModal from "@/components/TokenModal"
+import { useAdNavigation } from "@/hooks/useAdNavigation"
 
 import TotalAdsAnalyzed from "@/assets/dashboard/total-analyze.png"
 import AverageScore from "@/assets/dashboard/average-score.png"
@@ -33,6 +36,7 @@ import AdCard from "./_components/ad-card"
 import LimitReached from "@/assets/limit-reached.webp"
 import ExpertConsultationPopup from "@/components/expert-form"
 import { Badge } from "@/components/ui/badge"
+import AddBrandForm from "../brands/_components/add-brand-form"
 
 const platformIcons = {
   facebook: Facebook,
@@ -48,25 +52,6 @@ const parsePlatforms = (platformsString: string): string[] => {
     return JSON.parse(platformsString) || []
   } catch {
     return []
-  }
-}
-
-const getTimeAgo = (dateString: string): string => {
-  try {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return 'Unknown'
-
-    const now = new Date()
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-
-    if (diffInHours < 1) return 'Just now'
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`
-
-    const diffInDays = Math.floor(diffInHours / 24)
-    if (diffInDays === 1) return '1 day ago'
-    return `${diffInDays} days ago`
-  } catch {
-    return 'Unknown'
   }
 }
 
@@ -133,18 +118,23 @@ export default function Dashboard() {
   const router = useRouter()
   const [showLimitPopup, setShowLimitPopup] = useState(false)
   const [showExpertPopup, setShowExpertPopup] = useState(false)
-  const [showMobileActions, setShowMobileActions] = useState(false)
-  const [showAllFeedbacksPopup, setShowAllFeedbacksPopup] = useState(false)
+  const [showAllGlobalInsightsPopup, setShowAllGlobalInsightsPopup] = useState(false)
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
   const [upgradedFeatures, setUpgradedFeatures] = useState<string[]>([])
+  const [showAddBrandPopup, setShowAddBrandPopup] = useState(false)
+  // Remove userBrands state as brand info comes from userDetails.brand
+  const [brandsLoading, setBrandsLoading] = useState(false)
+
+  // Use the new ad navigation hook
+  const { navigateToAdResults } = useAdNavigation()
 
   // Memoized navigation handlers
   const handleUploadClick = useCallback(() => router.push('/upload'), [router])
   const handleMyAdsClick = useCallback(() => router.push('/my-ads'), [router])
   const handleViewIdea = useCallback(() => router.push('/guide'), [router])
   const handleViewReport = useCallback((adId: string) => {
-    router.push(`/results?ad_id=${adId}`)
-  }, [router])
+    navigateToAdResults(adId)
+  }, [navigateToAdResults])
 
   // API fetch functions (keeping original implementations)
   const fetchDashboardData = async (userId: string) => {
@@ -160,7 +150,8 @@ export default function Dashboard() {
 
   const fetchDashboard2Data = async (userId: string) => {
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard2&user_id=${userId}`)
+      const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }).toUpperCase()
+      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard2&user_id=${userId}&month=${currentMonth}`)
       if (!response.ok) throw new Error('Failed to fetch dashboard2 data')
       return await response.json()
     } catch (error) {
@@ -270,11 +261,11 @@ export default function Dashboard() {
             </Badge>
           </div>
 
-          {/* Score Badge */}
-          {ad.score > 0 && (
+          {/* Weighed Rank Badge */}
+          {ad.weighted_rank > 0 && (
             <div className="absolute top-2 right-2">
               <Badge className="bg-white text-lg font-semibold text-primary shadow-xl shadow-[#db4900]/20">
-                {ad.score}
+                {ad.weighted_rank}
               </Badge>
             </div>
           )}
@@ -316,7 +307,7 @@ export default function Dashboard() {
           <div className="flex gap-2 items-center">
             <div className="flex-1 min-w-0">
               <Button
-                onClick={() => router.push(`/results?ad_id=${ad.ad_id}`)}
+                onClick={() => navigateToAdResults(ad.ad_id.toString())}
                 size="sm"
                 variant="outline"
                 className="w-full text-[#db4900] border-[#db4900] hover:bg-[#db4900] hover:text-white transition-colors text-xs sm:text-sm"
@@ -325,6 +316,15 @@ export default function Dashboard() {
                 View Report
               </Button>
             </div>
+            <TokenModal adId={ad.ad_id.toString()}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-[#db4900] border-[#db4900] hover:bg-[#db4900] hover:text-white transition-colors"
+              >
+                <Share className="w-3 h-3" />
+              </Button>
+            </TokenModal>
           </div>
         </div>
       </div>
@@ -374,26 +374,12 @@ export default function Dashboard() {
     [dashboardData?.AccountType]
   )
 
-  const isToday = (dateString: string): boolean => {
-    try {
-      const inputDate = new Date(dateString)
-      const today = new Date()
-
-      return (
-        inputDate.getFullYear() === today.getFullYear() &&
-        inputDate.getMonth() === today.getMonth() &&
-        inputDate.getDate() === today.getDate()
-      )
-    } catch {
-      return false
-    }
-  }
 
   const isPlanExpired = (dateString: string): boolean => {
     try {
       const inputDate = new Date(dateString)
       const today = new Date()
-      
+
       // Set time to midnight for accurate date comparison
       inputDate.setHours(0, 0, 0, 0)
       today.setHours(0, 0, 0, 0)
@@ -460,6 +446,20 @@ export default function Dashboard() {
     }
   }, [userDetails, userId])
 
+  // Check if brand popup should be shown
+  useEffect(() => {
+    if (userDetails && !brandsLoading) {
+      const shouldShowBrandPopup = 
+        userDetails.type === "1" && 
+        userDetails.payment_status === 1 && 
+        userDetails.brand === false
+
+      if (shouldShowBrandPopup) {
+        setShowAddBrandPopup(true)
+      }
+    }
+  }, [userDetails, brandsLoading])
+
   const handleUpgradeToPro = useCallback(() => {
     setShowLimitPopup(false)
     router.push('/pro')
@@ -468,7 +468,7 @@ export default function Dashboard() {
   const LimitExceededPopup = () => {
     const isAdsLimitZero = userDetails?.ads_limit === 0
     const isPlanExpiredStatus = userDetails?.valid_till && isPlanExpired(userDetails.valid_till)
-    
+
     // Prioritize plan expiry message if plan is expired
     const showExpiredMessage = isPlanExpiredStatus
     const showLimitMessage = isAdsLimitZero && !isPlanExpiredStatus
@@ -542,13 +542,13 @@ export default function Dashboard() {
     )
   }
 
-  const AllFeedbacksPopup = () => {
+  const AllGlobalInsightsPopup = () => {
     return (
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-[#171717] rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden p-4 sm:p-6 relative mx-4">
           {/* Close button */}
           <button
-            onClick={() => setShowAllFeedbacksPopup(false)}
+            onClick={() => setShowAllGlobalInsightsPopup(false)}
             className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors cursor-pointer z-10"
           >
             <X className="w-5 h-5" />
@@ -557,38 +557,31 @@ export default function Dashboard() {
           {/* Header */}
           <div className="mb-6">
             <h3 className="text-xl sm:text-2xl font-bold text-[#db4900] mb-2">
-              All AI Feedbacks
+              All Global Insights
             </h3>
             <p className="text-sm text-gray-300">
-              Complete AI feedback for all your analyzed ads
+              Complete global insights for your ads
             </p>
           </div>
 
           {/* Scrollable Content */}
           <div className="overflow-y-auto max-h-[calc(80vh-150px)] space-y-3 sm:space-y-4 pr-2">
-            {dashboard2Data?.latest_feedbacks && dashboard2Data.latest_feedbacks.length > 0 ? (
-              dashboard2Data.latest_feedbacks.map((feedback, index) => {
-                const feedbackArray = JSON.parse(feedback);
-                const correspondingAd = dashboardData?.recentads?.[index];
-                const adId = correspondingAd?.ad_id || "N/A";
-                const timeAgo = correspondingAd?.uploaded_on
-                  ? getTimeAgo(correspondingAd.uploaded_on)
-                  : "Recently";
-
+            {dashboard2Data?.global_insights && dashboard2Data.global_insights.length > 0 ? (
+              dashboard2Data.global_insights.map((insight, index) => {
                 return (
                   <div
-                    key={index}
+                    key={insight.id}
                     className="border-l-4 border-[#db4900] bg-black pl-4 pr-3 py-3 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.01]"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-white text-sm flex-1">{feedbackArray.join(" ")}</p>
+                      <p className="text-white text-sm flex-1">{insight.content}</p>
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-white/50 text-xs">
-                        Ad #{adId}
+                        {insight.source}
                       </p>
                       <p className="text-white/50 text-xs">
-                        {timeAgo}
+                        Global Insight #{insight.id}
                       </p>
                     </div>
                   </div>
@@ -597,13 +590,13 @@ export default function Dashboard() {
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-white/80">
                 <MessageSquare className="w-16 h-16 text-primary mb-4" />
-                <p className="text-lg mb-4 text-center">No AI feedbacks available</p>
+                <p className="text-lg mb-4 text-center">No global insights available</p>
                 <p className="text-sm text-white/60 text-center mb-4">
-                  Upload your first ad to get AI-powered recommendations
+                  Upload your first ad to get global insights
                 </p>
                 <Button
                   onClick={() => {
-                    setShowAllFeedbacksPopup(false)
+                    setShowAllGlobalInsightsPopup(false)
                     handleUploadClick()
                   }}
                   className="bg-[#db4900] hover:bg-[#ff5722] text-white px-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
@@ -962,19 +955,19 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Row 3 - AI Feedbacks, CTR/Impression, and Conversion Rate */}
+              {/* Row 3 - Global Insights, CTR/Impression, and Conversion Rate */}
               <div className="col-span-full grid grid-cols-1 lg:grid-cols-6 gap-6">
-                {/* AI Feedbacks - takes 2 columns */}
+                {/* Global Insights - takes 2 columns */}
                 <div className="lg:col-span-2 h-full">
                   <div className="bg-black rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-white font-semibold text-lg sm:text-xl transition-colors duration-300">
-                        AI Feedbacks
+                        Global Insights
                       </h3>
-                      {dashboard2Data?.latest_feedbacks && dashboard2Data.latest_feedbacks.length > 0 && (
+                      {dashboard2Data?.global_insights && dashboard2Data.global_insights.length > 0 && (
                         <Button
-                          onClick={() => setShowAllFeedbacksPopup(true)}
+                          onClick={() => setShowAllGlobalInsightsPopup(true)}
                           variant="ghost"
                           className="self-start sm:self-auto text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] transition-all duration-300 text-sm"
                         >
@@ -984,27 +977,27 @@ export default function Dashboard() {
                     </div>
 
                     <p className="text-white/50 text-sm mb-4 transition-colors duration-300">
-                      Latest AI feedback for your ads
+                      Latest global insights for your ads
                     </p>
 
-                    {/* Feedback Items */}
+                    {/* Global Insights Items */}
                     <div className="space-y-3 sm:space-y-4 flex-1">
-                      {dashboard2Data?.latest_feedbacks && dashboard2Data.latest_feedbacks.length > 0 ? (
-                        dashboard2Data.latest_feedbacks.slice(0, 3).map((feedback, index) => {
-                          const feedbackArray = JSON.parse(feedback);
+                      {dashboard2Data?.global_insights && dashboard2Data.global_insights.length > 0 ? (
+                        dashboard2Data.global_insights.slice(0, 3).map((insight, index) => {
                           return (
                             <div
-                              key={index}
+                              key={insight.id}
                               className="border-l-4 border-[#db4900] bg-[#171717] px-2 py-2 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.02] "
                             >
-                              <p className="text-white text-sm">{feedbackArray.join(" ")}</p>
+                              <p className="text-white text-sm">{insight.content}</p>
+                              <p className="text-white/50 text-xs">{insight.source}</p>
                             </div>
                           );
                         })
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8 sm:py-10 text-white/80">
                           <MessageSquare className="w-14 h-14 sm:w-18 sm:h-18 text-primary mb-4" />
-                          <p className="text-base sm:text-lg mb-4 text-center">Upload your 1st AD for Recommendations</p>
+                          <p className="text-base sm:text-lg mb-4 text-center">Upload your 1st AD for Global Insights</p>
                           <Button
                             onClick={handleUploadClick}
                             className="bg-[#db4900] hover:bg-[#ff5722] text-white px-4 sm:px-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
@@ -1335,9 +1328,29 @@ export default function Dashboard() {
         />
       )}
 
-      {showAllFeedbacksPopup && <AllFeedbacksPopup />}
+      {showAllGlobalInsightsPopup && <AllGlobalInsightsPopup />}
 
       {showUpgradePopup && <UpgradeCongratulationsPopup />}
+
+      {showAddBrandPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowAddBrandPopup(false)}
+          />
+          {/* Popup Content */}
+          <div className="relative z-10 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <AddBrandForm
+              onCancel={() => setShowAddBrandPopup(false)}
+              onAdded={async () => {
+                setShowAddBrandPopup(false)
+                router.refresh()
+              }}
+            />
+          </div>
+        </div>
+      )}
     </UserLayout>
   )
 }

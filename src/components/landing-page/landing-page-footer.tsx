@@ -1,13 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { Facebook, Linkedin, Twitter, Youtube, Instagram } from "lucide-react"
+import { Facebook, Linkedin, Twitter, Instagram } from "lucide-react"
 
 const LandingPageFooter = () => {
 
   return (
     <footer className="bg-black text-white py-8 sm:py-10 px-4 sm:px-6 md:px-12 border-t border-[#2b2b2b]">
-      <div className="mx-4 sm:mx-6 lg:mx-2 flex flex-col md:flex-row justify-between gap-4 sm:gap-12">
+      <div className="mx-4 sm:mx-6 lg:mx-2 flex flex-col md:flex-row justify-between ">
         {/* Left Section: Social + Links */}
         <div className="flex flex-col items-center md:items-start gap-4 sm:gap-6 w-full">
           {/* Social Media Icons */}
@@ -38,7 +38,10 @@ const LandingPageFooter = () => {
               Terms of Use
             </Link>
             <Link href="/aboutus" className="hover:underline">
-              AboutUs
+              About
+            </Link>
+            <Link href="/cookie-policy" className="hover:underline">
+              Cookie Policy
             </Link>
             <Link href="/affiliate-program" className="hover:underline">
               Affiliate program

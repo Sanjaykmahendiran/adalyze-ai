@@ -25,9 +25,9 @@ interface BlogPost {
     created_at: string;
 }
 
-async function getBlogPostById(blogId: string): Promise<BlogPost | null> {
+async function getBlogPostById(slug: string): Promise<BlogPost | null> {
     try {
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=getblog&blogs_id=${blogId}`, {
+        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=getblog&slug=${slug}`, {
             cache: 'no-store'
         })
         if (!response.ok) throw new Error("Failed to fetch blog post")
@@ -65,14 +65,14 @@ export default function BlogPost() {
         const fetchBlogData = async () => {
             try {
                 setLoading(true)
-                const blogId = searchParams.get('blogs_id')
+                const slug = searchParams.get('slug')
 
-                if (!blogId) {
+                if (!slug) {
                     setError("Blog ID not provided")
                     return
                 }
 
-                const blogPost = await getBlogPostById(blogId)
+                const blogPost = await getBlogPostById(slug)
 
                 if (!blogPost) {
                     setError("Blog post not found")
@@ -83,7 +83,7 @@ export default function BlogPost() {
 
                 const allPosts = await getAllBlogPosts()
                 const related = allPosts
-                    .filter(post => post.blogs_id !== parseInt(blogId))
+                    .filter(post => post.slug !== slug)
                     .slice(0, 3)
 
                 setRelatedPosts(related)
@@ -243,13 +243,13 @@ export default function BlogPost() {
                                     <div className="flex gap-4 sm:gap-6 pb-4 h-full">
                                         {relatedPosts.map((post) => (
                                             <article
-                                                key={post.blogs_id}
+                                                key={post.slug}
                                                 className="bg-[#171717] border border-[#3d3d3d] rounded-xl overflow-hidden 
                        shadow-lg hover:shadow-xl hover:border-gray-700 
                        transition-all duration-300 hover:transform hover:-translate-y-1
                        w-80 flex-shrink-0 flex flex-col"
                                             >
-                                                <Link href={`/blogdetail?blogs_id=${post.blogs_id}`} className="block h-full">
+                                                <Link href={`/blogdetail?slug=${post.slug}`} className="block h-full">
                                                     {/* Image Container - Fixed Height */}
                                                     <div className="relative h-32 sm:h-40 m-4 sm:m-6 rounded-lg overflow-hidden flex-shrink-0">
                                                         <Image

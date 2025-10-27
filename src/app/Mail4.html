@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trending Ads | Adalyze</title>
+  <link rel='shortcut icon' type='image/x-icon' href='https://adalyze.app/favicon.ico'>
+  <style>
+    @media only screen and (max-width:600px) {
+      .desktop-row { display:none !important; }
+      .mobile-row { display:block !important; }
+      .stack-column { width:100% !important; display:block !important; max-width:100% !important; }
+      .stack-column img { width:100% !important; max-width:100% !important; display:block !important; }
+      .mobile-center { text-align:center !important; padding-left:0 !important; padding-right:0 !important; }
+    }
+    body { margin:0; padding:0; background:#000000; font-family:Poppins, sans-serif; color:#ffffff; }
+    .btn { display:inline-block; padding:12px 28px; background:#db4900; color:#fff; text-decoration:none; border-radius:6px; font-weight:600; }
+    a { color:#db4900; text-decoration:none; }
+    .card { background:#0f0f0f; border-radius:8px; padding:12px; margin-bottom:12px; }
+    .small { color:#b7b5b5; font-size:13px; line-height:20px; }
+  </style>
+</head>
+<body>
+  <table role="presentation" style="width:100%; max-width:600px; margin:0 auto; border-spacing:0;">
+    <tr><td style="padding:20px; text-align:center;">
+      <img src="https://adalyze.app/uploads/adalogo.png" width="156" alt="Adalyze logo">
+    </td></tr>
+
+    <tr><td>
+      <img src="https://adalyze.app/uploads/trending-ads-mailer/banner.jpg" alt="Adalyze banner" style="width:100%; display:block;">
+    </td></tr>
+
+    <!-- Intro -->
+    <tr><td style="padding:22px;">
+      <h3 style="margin:0 0 8px;">Hi $user[name],</h3>
+      <p class="small" style="margin:0 0 16px;">
+        Our AI spotted 10 ad styles trending this week — here’s a quick look at the <strong>top 4</strong> that brands are using to grab attention.  
+        Login to explore all 10 and see which trends fit your next creative.
+      </p>
+      <div style="text-align:center; margin:10px 0 0;">
+        <a class="btn" href="https://adalyze.app/top10trendingads" target="_blank">See All 10 Trending Ads</a>
+      </div>
+    </td></tr>
+
+    <!-- Only show 4 ads: 7–10 -->
+    <tr><td style="padding:16px;">
+      <!-- Card 7 -->
+      <div class="card" style="display:flex; gap:12px; align-items:center;">
+        <img src="https://adalyze.app/uploads/trending-ads-mailer/ad1.jpg" alt="Trending 7" style="width:86px; height:86px; object-fit:cover; border-radius:6px;">
+        <div>
+          <strong style="display:block; color:#fff;">7. Social proof badge</strong>
+          <div class="small">One-liner: A subtle “# of reviews” or star rating adds trust without clutter.</div>
+        </div>
+      </div>
+
+      <!-- Card 8 -->
+      <div class="card" style="display:flex; gap:12px; align-items:center;">
+        <img src="https://adalyze.app/uploads/trending-ads-mailer/ad2.jpg" alt="Trending 8" style="width:86px; height:86px; object-fit:cover; border-radius:6px;">
+        <div>
+          <strong style="display:block; color:#fff;">8. Short demo loop</strong>
+          <div class="small">One-liner: A 3–5s video or motion loop can boost attention more than static ads.</div>
+        </div>
+      </div>
+
+      <!-- Card 9 -->
+      <div class="card" style="display:flex; gap:12px; align-items:center;">
+        <img src="https://adalyze.app/uploads/trending-ads-mailer/ad3.jpg" alt="Trending 9" style="width:86px; height:86px; object-fit:cover; border-radius:6px;">
+        <div>
+          <strong style="display:block; color:#fff;">9. Benefit-first headline</strong>
+          <div class="small">One-liner: Lead with what users get, not what you sell.</div>
+        </div>
+      </div>
+
+      <!-- Card 10 -->
+      <div class="card" style="display:flex; gap:12px; align-items:center;">
+        <img src="https://adalyze.app/uploads/trending-ads-mailer/ad4.jpg" alt="Trending 10" style="width:86px; height:86px; object-fit:cover; border-radius:6px;">
+        <div>
+          <strong style="display:block; color:#fff;">10. Dual CTA test</strong>
+          <div class="small">One-liner: Test “Learn More” vs “Shop Now” to catch different intent types.</div>
+        </div>
+      </div>
+
+      <!-- Hidden prompt -->
+      <div style="text-align:center; margin-top:20px;">
+        <p class="small">Want to see styles 1–6? They’re waiting inside your dashboard.</p>
+        <a href="https://adalyze.app/login?token=$encodedToken" class="btn" target="_blank">Login & Explore All</a>
+      </div>
+    </td></tr>
+
+    <!-- Blog Highlight -->
+    <tr><td style="padding:20px; border-top:1px solid #1a1a1a;">
+      <h4 style="margin:0 0 8px;">Quick Read: One Tweak You Can Try Today</h4>
+      <table role="presentation" style="width:100%; border-spacing:0;">
+        <tr class="desktop-row">
+          <td width="40%" style="padding-right:12px;">
+            <img src="https://adalyze.app/uploads/trending-ads-mailer/cta.jpg" alt="Blog: Improve CTA" style="width:100%; border-radius:8px;">
+          </td>
+          <td width="60%" style="vertical-align:top;">
+            <p class="small" style="margin:0 0 8px;">Blog: “Make Your CTA Visible on Mobile — 3 Quick Fixes”</p>
+            <p class="small" style="margin:0 0 12px;">Keep your call-to-action above the fold, use clear contrast, and avoid visual clutter. These simple layout shifts often improve click-through rates by 10–20%.</p>
+            <a href="https://adalyze.app/blog/cta-mobile-tips" class="btn" target="_blank">Read the Blog</a>
+          </td>
+        </tr>
+
+        <tr class="mobile-row" style="display:none;">
+          <td style="text-align:center;">
+            <img src="https://adalyze.app/uploads/trending-ads-mailer/cta.jpg" alt="Blog" style="width:100%; max-width:300px; border-radius:8px;">
+            <p class="small" style="margin:12px 0 6px;">Blog: “Make Your CTA Visible on Mobile — 3 Quick Fixes”</p>
+            <p class="small" style="margin:0 0 12px;">Keep your CTA above the fold, high contrast, and free of clutter — small tweaks, big CTR changes.</p>
+            <a href="https://adalyze.app/blog/cta-mobile-tips" class="btn" target="_blank">Read the Blog</a>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- Final CTA -->
+    <tr><td style="padding:20px; text-align:center;">
+      <h4 style="margin:0 0 8px;">Try it with your own ad</h4>
+      <p class="small" style="margin:0 0 12px;">Upload one creative and Adalyze will show which trends you already follow — and what to add for stronger engagement.</p>
+      <a href="https://adalyze.app/login?token=$encodedToken" class="btn" target="_blank">Analyze My Ad</a>
+    </td></tr>
+
+    <!-- Footer -->
+    <tr><td style="padding:24px 20px; text-align:center; color:#666666; font-size:12px;">
+      Sent with ♥ from Adalyze AI<br>
+      <a href="https://www.facebook.com/profile.php?id=61579156799875"><img src="https://adalyze.app/uploads/fb.png" width="18" style="margin:8px;"></a>
+      <a href="https://x.com/adalyzeai"><img src="https://adalyze.app/uploads/tw.png" width="24" style="margin:8px;"></a>
+      <a href="https://www.instagram.com/adalyzeai"><img src="https://adalyze.app/uploads/ins.png" width="24" style="margin:8px;"></a>
+      <div style="margin-top:8px;">If you didn’t sign up for Adalyze, ignore this email or reply to this message.</div>
+    </td></tr>
+
+  </table>
+</body>
+</html>

@@ -8,46 +8,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import toast from "react-hot-toast"
 import {
-  Download,
-  Search,
-  Sparkles,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Lock,
-  PenTool,
-  GitCompareArrows,
-  Eye,
-  Heart,
-  Target,
-  TrendingUp,
-  Palette,
-  Image as ImageIcon,
-  FileText,
-  Award,
-  ChevronLeft,
-  ChevronRight,
-  Info,
-  Users,
-  Zap,
-  Shield,
-  BarChart3,
-  Camera,
-  Type,
-  Layout,
-  DollarSign,
-  Upload,
-  ArrowLeft,
-  ShieldCheck,
-  ChartNoAxesCombined,
-  Settings,
-  MousePointerClick,
-  TrendingDown,
-  Share,
-  Copy,
-  Share2,
-  Trash2,
-  Loader2,
+  Download, Search, Sparkles, AlertTriangle, CheckCircle, XCircle, Lock, PenTool, GitCompareArrows, Eye, Heart, Target,
+  TrendingUp, Palette, Image as ImageIcon, FileText, Award, ChevronLeft, ChevronRight, Info, Users, Zap, Shield, BarChart3,
+  Camera, Type, Layout, DollarSign, Upload, ArrowLeft, ShieldCheck, ChartNoAxesCombined, Settings, MousePointerClick, TrendingDown,
+  Share, Copy, Share2, Trash2, Loader2, X, Gift,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -60,10 +24,14 @@ import { ApiResponse } from "./type"
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 import { motion } from "framer-motion"
+import { getAdIdFromUrlParams } from "@/lib/tokenUtils"
 import { trackEvent } from "@/lib/eventTracker"
+import Footer from "@/components/footer"
+import UpgradePopup from "@/components/UpgradePopup"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
+  const isFreeTrailUser = userDetails?.fretra_status === 1
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedTone, setSelectedTone] = useState("friendly")
@@ -83,19 +51,24 @@ export default function ResultsPage() {
   // View Target dialog state
   const [viewTargetOpen, setViewTargetOpen] = useState(false)
 
+  // Upgrade popup state
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false)
+
   // Check if ad_id came from token (shared link)
   const isFromToken = !!searchParams.get('token')
   const isProUser = isFromToken || userDetails?.payment_status === 1
+
 
   const handleDownloadPDF = async () => {
     const selector = "body";
     const toHideSelectors = [".skip-block", "noscript"];
 
-    const hidden = [] as any;
+    const hidden: Array<{ el: Element; display: string | null }> = [];
     toHideSelectors.forEach(sel => {
       document.querySelectorAll(sel).forEach(el => {
-        hidden.push({ el, display: el?.style.display });
-        el.style.display = "none";
+        const htmlEl = el as HTMLElement;
+        hidden.push({ el, display: htmlEl.style.display });
+        htmlEl.style.display = "none";
       });
     });
 
@@ -134,21 +107,15 @@ export default function ResultsPage() {
     } catch (err) {
       console.error("Error generating PDF:", err);
     } finally {
-      hidden.forEach(({ el, display }) => (el.style.display = display));
+      hidden.forEach(({ el, display }) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.display = display || "";
+      });
     }
   };
 
   const getAdIdFromUrl = () => {
-    const token = searchParams.get('token');
-    const directAdId = searchParams.get('ad_id');
-
-    if (token && token.length > 14) {
-      const adIdFromToken = token.substring(8, token.length - 6);
-      return adIdFromToken;
-    }
-
-    // Fallback to direct ad_id from URL
-    return directAdId || '';
+    return getAdIdFromUrlParams(searchParams);
   };
 
 
@@ -468,7 +435,14 @@ export default function ResultsPage() {
               {/* Back Button - Hidden when viewing via shared token */}
               {!isFromToken && (
                 <button
-                  onClick={() => router.back()}
+                  onClick={() => {
+                    // Show upgrade popup if user is free trial user OR has 0 ads limit
+                    if (isFreeTrailUser || userDetails?.ads_limit === 0) {
+                      setShowUpgradePopup(true)
+                    } else {
+                      router.back()
+                    }
+                  }}
                   className="flex items-center bg-[#121212] text-gray-300 hover:text-white hover:bg-[#2b2b2b] rounded-full p-2 transition-all cursor-pointer no-print skip-block flex-shrink-0"
                 >
                   <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -3026,8 +3000,8 @@ export default function ResultsPage() {
           </div>
         </main>
         {showIntro && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-2xl border border-2b2b2b bg-121212 p-6 shadow-xl">
+          <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-2xl border border-[#171717] bg-black p-6 shadow-xl">
               <h3 className="text-xl font-semibold mb-2">Pre-run check</h3>
 
               <div className="text-sm text-gray-400 mb-1">Go / No Go</div>
@@ -3064,6 +3038,17 @@ export default function ResultsPage() {
             <Share2 className="h-6 w-6 text-white" />
           </motion.button>
         )}
+        {!isFromToken && (isFreeTrailUser || userDetails?.ads_limit === 0) && (
+          <div className="fixed bottom-24 right-6 z-50 ">
+            <button
+              onClick={() => router.push("/pro")}
+              className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md bg-[#db4900]/40 text-white  shadow-lg hover:bg-[#db4900]/30 hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-[#db4900]/30"
+            >
+              <Gift className="w-4 h-4 font-bold" />
+              <span className="text-sm font-semibold">Upgrade</span>
+            </button>
+          </div>
+        )}
 
         {/* Fixed button for shared token views */}
         {isFromToken && (
@@ -3082,7 +3067,22 @@ export default function ResultsPage() {
             </Button>
           </motion.div>
         )}
+
+        {/* Upgrade Popup */}
+        {showUpgradePopup &&
+          <UpgradePopup
+            isOpen={showUpgradePopup}
+            onClose={() => setShowUpgradePopup(false)}
+            onUpgrade={() => router.push("/pro")}
+            onMaybeLater={() => { setShowUpgradePopup(false); router.back() }}
+          />
+        }
       </div>
+      {!isFromToken && (
+        <div className="skip-block mt-10">
+          <Footer />
+        </div>
+      )}
     </TooltipProvider>
   )
 }

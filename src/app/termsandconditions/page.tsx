@@ -91,7 +91,7 @@ export default function termsandconditions() {
       <div className="min-h-screen">
         <Header />
 
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 pt-24">
           <div className="text-center py-12">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
               <h2 className="text-xl font-semibold text-red-800 mb-2">Unable to Load Terms & conditions</h2>
@@ -116,7 +116,7 @@ export default function termsandconditions() {
       <div className="min-h-screen">
         <Header />
 
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 pt-24">
           <div className="text-center py-12">
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">Terms & conditions Not Available</h2>
             <p className="text-gray-600">The Terms & conditions content could not be found.</p>
@@ -134,8 +134,6 @@ export default function termsandconditions() {
 
       <div className="container mx-auto px-4 py-8 pt-24">
         <main className="prose prose-gray max-w-none ">
-          <h1 className="text-4xl font-bold text-center tracking-tight">Terms & Conditions</h1>
-
           <div className="mt-6 flex justify-center">
             <div
               className="max-w-[800px] w-full font-thin Retrun-content mt-10"

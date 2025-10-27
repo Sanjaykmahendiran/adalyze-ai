@@ -16,7 +16,7 @@ export default function CompetitorTable({ basicPrice }: CompetitorTableProps) {
                 </p>
             </div>
 
-            <div className="bg-[#121212] rounded-lg border border-[#2a2a2a] overflow-hidden">
+            <div className="bg-black rounded-lg border border-[#2a2a2a] overflow-hidden">
                 {/* Desktop Table */}
                 <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full">
@@ -25,7 +25,6 @@ export default function CompetitorTable({ basicPrice }: CompetitorTableProps) {
                                 <th className="text-left p-4 sm:p-6 font-semibold text-gray-300">Feature / Pricing</th>
                                 <th className="text-center p-4 sm:p-6 font-semibold text-green-400 bg-green-900/10">
                                     <div className="flex items-center justify-center gap-2">
-                                        <Crown className="w-4 h-4" />
                                         Adalyze AI (You)
                                     </div>
                                 </th>
@@ -176,81 +175,124 @@ export default function CompetitorTable({ basicPrice }: CompetitorTableProps) {
                     </table>
                 </div>
 
-                {/* Mobile Cards */}
-                <div className="lg:hidden space-y-6 p-4 sm:p-6">
-                    {/* Adalyze AI Card */}
-                    <div className="bg-green-900/10 border border-green-500/30 rounded-lg p-4 sm:p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Crown className="w-5 h-5 text-green-400" />
-                            <h3 className="font-bold text-green-400 text-lg">Adalyze AI (You)</h3>
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm text-gray-300">Starting Price</span>
-                                <span className="font-bold text-green-400">{basicPrice}</span>
-                            </div>
-                            <div className="text-sm text-green-400 font-medium">
-                                ✓ All premium features ✓ No setup required ✓ Instant results
-                            </div>
-                            <div className="text-sm text-green-400 space-y-1">
-                                <div>✓ Go/No-Go Decision Engine</div>
-                                <div>✓ Ad Fatigue Score (7-14 days prediction)</div>
-                                <div>✓ Best Day/Time to Post Analysis</div>
-                                <div>✓ Readability & Clarity Meter (65% avg)</div>
-                                <div>✓ Competitor Uniqueness Meter (60% avg)</div>
-                            </div>
-                            <div className="text-xs text-gray-300 italic">
-                                USP: Affordable, instant, made for freelancers, startups & agencies
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Competitors Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4">
-                            <h4 className="font-semibold mb-3">Marpipe</h4>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-300">Price</span>
-                                    <span className="text-red-400">$2,000+</span>
-                                </div>
-                                <div className="text-xs text-gray-500">Enterprise-only, no unique analysis features</div>
-                            </div>
-                        </div>
-
-                        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4">
-                            <h4 className="font-semibold mb-3">Pencil AI</h4>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-300">Price</span>
-                                    <span className="text-red-400">$600+</span>
-                                </div>
-                                <div className="text-xs text-gray-500">AI generation focus, missing analysis depth</div>
-                            </div>
-                        </div>
-
-                        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4">
-                            <h4 className="font-semibold mb-3">CreativeX</h4>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-300">Price</span>
-                                    <span className="text-red-400">$3,000+</span>
-                                </div>
-                                <div className="text-xs text-gray-500">Enterprise analytics, no timing insights</div>
-                            </div>
-                        </div>
-
-                        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4">
-                            <h4 className="font-semibold mb-3">Attention Insight</h4>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-300">Price</span>
-                                    <span className="text-gray-300">$19</span>
-                                </div>
-                                <div className="text-xs text-gray-500">Just heatmaps, no decision support</div>
-                            </div>
-                        </div>
-                    </div>
+                {/* Mobile Table */}
+                <div className="lg:hidden overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-[#2a2a2a]">
+                                <th className="text-left p-2 font-semibold text-gray-300 text-xs">Feature / Pricing</th>
+                                <th className="text-center p-2 font-semibold text-green-400 bg-green-900/10 text-xs">
+                                    Adalyze AI (You)
+                                </th>
+                                <th className="text-center p-2 font-semibold text-gray-300 text-xs">Marpipe</th>
+                                <th className="text-center p-2 font-semibold text-gray-300 text-xs">Pencil AI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Starting Price (per month)</td>
+                                <td className="text-center p-2 bg-green-900/10 font-bold text-green-400 text-xs">{basicPrice}</td>
+                                <td className="text-center p-2 text-gray-300 text-xs">$2,000+</td>
+                                <td className="text-center p-2 text-gray-300 text-xs">$600+</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Ad Scoring Dashboard</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Top-line Metrics</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Visual Readability & Emotion</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Go/No-Go Decision Engine</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Ad Fatigue Score & Prediction</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Best Day/Time to Post</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Readability & Clarity Meter</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-sm">No</td>
+                                <td className="text-center p-2 text-yellow-400 text-sm">Basic</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Competitor Uniqueness</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Platform Fit Scoring</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">A/B Testing / Comparison</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Exportable Reports</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Team / Multi-user Support</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Brand Consistency Check</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2 text-red-400 text-sm">No</td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">AI-driven Suggestions</td>
+                                <td className="text-center p-2 bg-green-900/10"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2 text-red-400 text-xs">No</td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                            </tr>
+                            <tr className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">White-label / Enterprise</td>
+                                <td className="text-center p-2 bg-green-900/10 text-green-400 text-xs">Custom</td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                                <td className="text-center p-2"><Check className="w-4 h-4 text-green-500 mx-auto" /></td>
+                            </tr>
+                            <tr className="hover:bg-[#1a1a1a] transition-colors">
+                                <td className="p-2 font-medium text-xs">Ease of Use</td>
+                                <td className="text-center p-2 bg-green-900/10 text-green-400 text-xs">No setup, instant</td>
+                                <td className="text-center p-2 text-red-400 text-xs">Heavy setup</td>
+                                <td className="text-center p-2 text-yellow-400 text-xs">Medium</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

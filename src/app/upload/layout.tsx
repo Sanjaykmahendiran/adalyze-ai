@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
-import UserLayout from "@/components/layouts/user-layout";
-import { Toaster } from "react-hot-toast";
+
 
 // Import Poppins
 const poppins = Poppins({
@@ -11,8 +10,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Adalyze - Nextgen AI Tool for your Creativity",
-  description: "Adalyze - Nextgen AI Tool for your Creativity",
+  title: "Adalyze AI – Smart Ad Analysis for Agencies & Marketers",
+  description: "Adalyze AI helps marketers and agencies analyze, optimize, and improve ad performance with smart AI insights to boost ROI and creative quality.",
 };
 
 export default function Layout({

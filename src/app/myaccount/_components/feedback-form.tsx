@@ -24,6 +24,14 @@ interface Ad {
   score: number
   platforms: string
   uploaded_on: string
+  go_nogo?: string
+}
+
+interface AdsApiResponse {
+  total: number
+  limit: number
+  offset: number
+  ads: Ad[]
 }
 
 const FeedbackForm: React.FC = () => {
@@ -44,10 +52,16 @@ const FeedbackForm: React.FC = () => {
       const userId = Cookies.get('userId')
       if (!userId) return
 
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}`;
-      const response = await fetch(url)
-      const data = await response.json()
-      setAds(data || [])
+      const response = await fetch(
+        `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&offset=0&limit=1000`
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch ads')
+      }
+
+      const data: AdsApiResponse = await response.json()
+      setAds(data.ads || [])
     } catch (error) {
       console.error("Error fetching ads:", error)
       setAds([])
@@ -103,7 +117,7 @@ const FeedbackForm: React.FC = () => {
             <SelectTrigger className="w-full bg-[#171717] border-[#2b2b2b] text-sm sm:text-base">
               <SelectValue placeholder="Select an ad (optional)" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px] overflow-y-auto">
               <SelectItem value="0">No specific ad</SelectItem>
               {ads.map((ad) => (
                 <SelectItem key={ad.ad_id} value={String(ad.ad_id)}>
@@ -130,7 +144,7 @@ const FeedbackForm: React.FC = () => {
             >
               <SelectValue placeholder="Select rating" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px] overflow-y-auto">
               {Array.from({ length: 10 }, (_, i) => (
                 <SelectItem key={i + 1} value={String(i + 1)}>
                   {i + 1} Star{i + 1 > 1 ? "s" : ""}

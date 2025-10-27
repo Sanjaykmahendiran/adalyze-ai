@@ -42,22 +42,6 @@ const features = [
     desktopImage: Features3,
     mobileImage: Features3Mobile,
   },
-  {
-    title: "Automated Creative Optimization",
-    description:
-      "Adalyze doesn't just identify problems — it provides actionable suggestions for improvement. From call-to-action tweaks to visual framing, instantly optimize creatives for maximum impact.",
-    buttonText: "Optimize Creatives",
-    desktopImage: Features4,
-    mobileImage: Features4Mobile,
-  },
-  {
-    title: "Performance & ROI Analytics Dashboard",
-    description:
-      "Track campaign performance with AI-driven analytics. Monitor CTR, conversions, audience engagement, and cost efficiency — all in one intuitive dashboard. Make informed decisions faster than ever.",
-    buttonText: "Explore Dashboard",
-    desktopImage: Features5,
-    mobileImage: Features5Mobile,
-  },
 ];
 
 export default function FeaturesSection() {
@@ -82,11 +66,11 @@ export default function FeaturesSection() {
           viewport={{ once: false, amount: 0.3 }}
           className="text-center py-2 sm:py-3 mb-16 sm:mb-20"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
+          <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
             Our Features
           </h2>
           <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Tools That Make Your Ads More Effective</p>
-          <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1">
+          <p className="text-sm sm:text-base text-white/80 max-w-xl sm:max-w-2xl mx-auto px-1">
             Adalyze AI offers powerful features like ad scoring, trend analysis, and performance predictions which give actionable insights to create ads that convert and maximize ROI.
           </p>
         </motion.div>
@@ -159,9 +143,10 @@ export default function FeaturesSection() {
                       className="inline-block"
                     >
                       <Button
-                        onClick={() => {window.open("/register", "_blank", "noopener,noreferrer");
+                        onClick={() => {
+                          window.open("/register", "_blank", "noopener,noreferrer");
                           trackEvent("LP_Features_button_clicked", window.location.href);
-                        } }
+                        }}
                         variant="outline"
                         className="text-white cursor-pointer hover:bg-primary hover:text-white border-primary text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
                       >
@@ -177,6 +162,18 @@ export default function FeaturesSection() {
               </div>
             );
           })}
+        </div>
+
+        <div className="flex justify-center mt-18">
+          <Button
+            onClick={() => {
+              window.open("/features", "_blank", "noopener,noreferrer");
+              trackEvent("LP_Features_button_clicked", window.location.href);
+            }}
+            className="text-white cursor-pointer  text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
+          >
+            Explore Adalyze Features
+          </Button>
         </div>
       </div>
 

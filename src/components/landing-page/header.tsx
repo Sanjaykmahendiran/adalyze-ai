@@ -39,16 +39,16 @@ type UIMenuItem = {
 
 // Static route map: keep routes as in the existing UI, do NOT take from API
 const STATIC_ROUTES: Record<string, string> = {
-  "Use Cases": "#use-cases",
+  "Use Cases": "/use-cases",
   "Features": "#features",
-  "Why Us?": "#why-us",
-  "Why us?": "#why-us",
   "ROI Calculator": "/roi-calculator",
   "Pricing": "/pricing?page=dashboard",
+  "Multi Brand": "/multi-brand",
+  "Single Brand": "/single-brand",
   "Resources": "#",
   "Blog": "/blog",
   "Case Studies": "/case-study",
-  "FAQ": "#faq",
+  "FAQ": "/faq",
 }
 
 // Transform API payload into UI-friendly items, using only names/structure;

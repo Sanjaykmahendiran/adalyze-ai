@@ -43,7 +43,7 @@ const PromotionalPopup = dynamic(() => import("@/components/landing-page/promoti
 const CaseStudySection = dynamic(() => import("@/components/landing-page/case-study-section"), { ssr: false });
 const ForWhom = dynamic(() => import("@/components/landing-page/for-whom"), { ssr: false });
 const AiAdMistakes = dynamic(() => import("@/components/landing-page/ai-ad-mistakes"), { ssr: false });
-
+const PartnerLogos = dynamic(() => import("@/components/landing-page/PartnerLogos"), { ssr: false });
 const LandingPage = () => {
   const prefersReducedMotion = useReducedMotion();
 
@@ -124,8 +124,23 @@ const LandingPage = () => {
     if (!isChatOpen) return;
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (chatRef.current && !chatRef.current.contains(e.target as Node)) {
-        setIsChatOpen(false);
+      const target = e.target as Element;
+
+      // Check if the click is outside the chat component
+      if (chatRef.current && !chatRef.current.contains(target)) {
+        // Check if the click is on any Radix UI Select dropdown elements
+        const isSelectDropdown = target?.closest('[data-radix-select-content]') ||
+          target?.closest('[data-radix-popper-content-wrapper]') ||
+          target?.closest('[data-radix-portal]') ||
+          target?.closest('[data-slot="select-content"]') ||
+          target?.closest('[role="listbox"]') ||
+          target?.closest('[role="option"]') ||
+          target?.closest('[data-state="open"]');
+
+        // Don't close if clicking on Select dropdown elements
+        if (!isSelectDropdown) {
+          setIsChatOpen(false);
+        }
       }
     };
     const handleEsc = (e: KeyboardEvent) => {
@@ -148,7 +163,7 @@ const LandingPage = () => {
     <div className="relative min-h-screen overflow-x-hidden lg:overflow-x-visible">
       {/* Header receives lifted data */}
       <LandingPageHeader bannerData={bannerData} isLoading={isLoadingBanner} />
-
+      <PartnerLogos />
       {/* Sections (unchanged) */}
       <ClientSection />
       <OldWayNewWay ButtonText={bannerData?.pcta || ""} />

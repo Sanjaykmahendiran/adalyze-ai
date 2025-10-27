@@ -11,8 +11,8 @@ import {
   Zap,
   BookOpen,
   LifeBuoy,
-  ShieldAlert,
   User,
+  Building2 ,
 } from "lucide-react";
 
 type MenuItem = {
@@ -21,7 +21,7 @@ type MenuItem = {
   href: string;
 };
 
-const menuItems: MenuItem[] = [
+const baseMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: UploadCloud, label: "Upload", href: "/upload" },
   { icon: Split, label: "A/B Test", href: "/ab-test" },
@@ -29,15 +29,28 @@ const menuItems: MenuItem[] = [
   { icon: Zap, label: "Pro", href: "/pro" },
   { icon: BookOpen, label: "Guide", href: "/guide" },
   { icon: LifeBuoy, label: "Support", href: "/support" },
+  { icon: Building2 , label: "Brands", href: "/brands" },
   { icon: User, label: "Account", href: "/myaccount" },
-
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  userDetails: any;
+}
+
+export function Sidebar({ userDetails }: SidebarProps) {
   const pathname = usePathname();
   const asideRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (href: string) => pathname === href;
+
+  // Filter menu items based on user type
+  const menuItems = baseMenuItems.filter(item => {
+    // Show Brands menu only if userDetails.type is 2
+    if (item.href === "/brands") {
+      return userDetails?.type === "2";
+    }
+    return true;
+  });
 
   useEffect(() => {
     const activeEl = asideRef.current?.querySelector(".active-link");
@@ -59,7 +72,7 @@ export function Sidebar() {
         <Link
           key={href}
           href={href}
-          className={`w-full flex flex-col items-center justify-center p-2 mb-1 font-medium rounded-md
+          className={`group w-full flex flex-col items-center justify-center p-2 mb-1 font-medium rounded-md
             ${isActive(href)
               ? "active-link text-white bg-[#db4900]/30"
               : "text-gray-300 hover:bg-[#121212] hover:text-[#db4900]"

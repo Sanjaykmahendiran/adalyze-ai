@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import useLogout from "@/hooks/useLogout";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/ad-logo.webp";
+import UpgradePopup from "@/components/UpgradePopup";
 
 interface TopNavbarProps {
   userDetails: any;
@@ -26,6 +27,7 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
   const logout = useLogout();
   const [referralOpen, setReferralOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
 
   const referralLink = `https://adalyzeai.top/register?referral_code=${userDetails?.referral_code || ""}`;
 
@@ -36,6 +38,15 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
+    }
+  };
+
+  const handleLogoutClick = () => {
+    // Check if user should see upgrade popup
+    if (userDetails?.fretra_status === 1 || userDetails?.ads_limit === 0) {
+      setShowUpgradePopup(true);
+    } else {
+      logout();
     }
   };
 
@@ -79,7 +90,7 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
                     <span className="text-white font-semibold">
                       {userDetails?.fretra_status === 1
                         ? "01"
-                        : String(userDetails?.ads_limit ?? "No Limit").padStart(2, "0")}
+                        : String(userDetails?.ads_limit ?? "").padStart(2, "0")}
                     </span>
                   </>
                 )}
@@ -112,9 +123,7 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
                 </div>
                 <DropdownMenuItem onClick={() => setReferralOpen(true)}>Refer a friend</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <Link href="/">
-                  <DropdownMenuItem onClick={logout} className="text-red-600">Logout</DropdownMenuItem>
-                </Link>
+                <DropdownMenuItem onClick={handleLogoutClick} className="text-red-600">Logout</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -158,6 +167,14 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
           </div>
         </div>
       )}
+
+      {/* Upgrade Popup */}
+      <UpgradePopup
+        isOpen={showUpgradePopup}
+        onClose={() => setShowUpgradePopup(false)}
+        onUpgrade={() => router.push("/pro")}
+        onMaybeLater={() => logout()}
+      />
     </>
   );
 };

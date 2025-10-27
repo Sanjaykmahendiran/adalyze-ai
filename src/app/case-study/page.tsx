@@ -108,7 +108,7 @@ export default function CaseStudiesPage() {
         }`}>
         {!isDashboard && (
           <div className="flex items-center text-sm text-gray-200 mb-6">
-            <Link href="/" className="hover:text-gray-300">
+            <Link href="/" className="hover:text-gray-300 cursor-pointer">
               Home
             </Link>
             <span className="mx-2">•</span>
@@ -142,8 +142,9 @@ export default function CaseStudiesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {caseStudies.map((study) => (
             <div
-              key={study.slug || study.cs_id}
-              className="bg-[#121212] rounded-lg overflow-hidden shadow-md border border-[#2b2b2b] flex flex-col"
+              key={study.slug}
+              onClick={() => router.push(`/case-study-detail?slug=${study.slug}`)}
+              className="bg-[#121212] rounded-lg overflow-hidden shadow-md border border-[#2b2b2b] flex flex-col cursor-pointer"
             >
               <div className="h-40 bg-[#2b2b2b] relative flex items-center justify-center shine-effect">
                 {study.banner_image_url ? (
@@ -182,7 +183,7 @@ export default function CaseStudiesPage() {
                   </div>
                 </div>
                 <Link
-                  href={`/case-study-detail?cs_id=${study.cs_id}`}
+                  href={`/case-study-detail?slug=${study.slug}`}
                   className="mt-2 inline-flex items-center text-primary font-medium hover:text-[#db4900]/50"
                 >
                   {study.banner_cta_label || "Read case study"}{" "}

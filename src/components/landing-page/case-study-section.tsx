@@ -45,11 +45,11 @@ export default function CaseStudySection() {
                 viewport={{ once: false, amount: 0.3 }}
                 className="text-center py-2 sm:py-3 mb-20"
             >
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
+                <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
                     Success Stories
                 </h2>
                 <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Real Results from Real Clients</p>
-                <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1">
+                <p className="text-sm sm:text-base text-white/80 max-w-xl sm:max-w-2xl mx-auto px-1">
                     Businesses have transformed their advertising with Adalyze AI, achieving higher engagement and measurable wins.
                 </p>
             </motion.div>
@@ -71,7 +71,7 @@ export default function CaseStudySection() {
             >
                 {caseStudies.map((caseStudy) => (
                     <motion.div
-                        key={caseStudy.cs_id}
+                        key={caseStudy.slug}
                         className="bg-[#121212] rounded-lg overflow-hidden shadow-md border border-[#2b2b2b] flex flex-col cursor-pointer"
                         variants={{
                             hidden: { opacity: 0, y: 40 },
@@ -79,7 +79,7 @@ export default function CaseStudySection() {
                         }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                         whileHover={{ y: -8, scale: 1.02 }}
-                        onClick={() => {router.push(`/case-study-detail?cs_id=${caseStudy.cs_id}`);
+                        onClick={() => {router.push(`/case-study-detail?slug=${caseStudy.slug}`);
                             trackEvent("LP_Case_Study_button_clicked", window.location.href);
                         }}
                     >
@@ -125,7 +125,7 @@ export default function CaseStudySection() {
                                 </div>
                             </div>
                             <Link
-                                href={`/case-study-detail?cs_id=${caseStudy.cs_id}`}
+                                href={`/case-study-detail?slug=${caseStudy.slug}`}
                                 className="mt-2 inline-flex items-center text-primary font-medium hover:text-[#db4900]/50"
                             >
                                 {caseStudy.banner_cta_label || "Read case study"}
@@ -158,7 +158,7 @@ export default function CaseStudySection() {
                         trackEvent("LP_Case_Study_button_clicked", window.location.href);
                     }}
                 >
-                    View All
+                    Read Case Studies & Insights
                     <ArrowRightIcon size={18} />
                 </Link>
             </motion.div>

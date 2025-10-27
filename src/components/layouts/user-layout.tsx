@@ -3,7 +3,6 @@ import Image from "next/image";
 import { Sidebar } from "@/components/sidebar";
 import { BottomMenu } from "@/components/bottom-menu";
 import iconLogo from "@/assets/ad-icon-logo.png";
-import ProLogoIcon from "@/assets/pro-logo-icon.webp"
 import { TopNavbar } from "@/components/top-navbar";
 import { ReactNode } from "react";
 import Link from "next/link";
@@ -31,7 +30,7 @@ export default function UserLayout({ children,  userDetails }: UserLayoutProps) 
           </div>
         </div>
         <div className="flex flex-col flex-1 relative scroll-container thin-scrollbar">
-          <Sidebar  />
+          <Sidebar userDetails={userDetails} />
         </div>
       </div>
 

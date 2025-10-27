@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CountrySelector } from "@/components/ui/country-selector"
 import { X, Image, LayoutList, PlaySquare, Lock } from "lucide-react"
 import { AnalyzingOverlay } from "../../components/analyzing-overlay"
 import { SingleFileUploader } from "./_components/single-file-uploader"
@@ -19,6 +20,8 @@ import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import { event, trackAdUpload } from "@/lib/gtm"
 import { Country, State, TargetInfo, Industry } from "./type"
 import { trackEvent } from "@/lib/eventTracker"
+import { generateAdToken } from "@/lib/tokenUtils"
+import Footer from "@/components/footer"
 
 // Move FreeTrailOverlay outside to prevent re-creation on every render
 const FreeTrailOverlay = ({
@@ -85,10 +88,14 @@ export default function UploadPage() {
     const [platform, setPlatform] = useState("")
     const [industry, setIndustry] = useState("")
     const [gender, setGender] = useState("")
-    const [country, setCountry] = useState("")
-    const [state, setState] = useState("")
+    const [country, setCountry] = useState<string[]>([])
     const [minAge, setMinAge] = useState("")
     const [maxAge, setMaxAge] = useState("")
+
+    // Brand dropdown states
+    const [brands, setBrands] = useState<any[]>([])
+    const [selectedBrand, setSelectedBrand] = useState("")
+    const [loadingBrands, setLoadingBrands] = useState(false)
 
     // Single ad states
     const [singleFile, setSingleFile] = useState<File | null>(null)
@@ -116,18 +123,11 @@ export default function UploadPage() {
 
     // Location states
     const [countries, setCountries] = useState<Country[]>([])
-    const [states, setStates] = useState<State[]>([])
     const [industries, setIndustries] = useState<Industry[]>([])
     const [loadingCountries, setLoadingCountries] = useState(false)
-    const [loadingStates, setLoadingStates] = useState(false)
     const [countrySearch, setCountrySearch] = useState("")
-    const [stateSearch, setStateSearch] = useState("")
     const [industrySearch, setIndustrySearch] = useState("")
-    const [countryDropdownOpen, setCountryDropdownOpen] = useState(false)
-    const [stateDropdownOpen, setStateDropdownOpen] = useState(false)
     const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false)
-    const countrySearchInputRef = useRef<HTMLInputElement>(null)
-    const stateSearchInputRef = useRef<HTMLInputElement>(null)
     const industrySearchInputRef = useRef<HTMLInputElement>(null)
 
     const userId = cookies.get("userId") || ""
@@ -144,24 +144,6 @@ export default function UploadPage() {
             document.body.style.overflow = ""; // cleanup when component unmounts
         };
     }, [sidePanelOpen]);
-
-    // Auto-focus country search when dropdown opens
-    useEffect(() => {
-        if (countryDropdownOpen) {
-            setTimeout(() => {
-                countrySearchInputRef.current?.focus()
-            }, 100)
-        }
-    }, [countryDropdownOpen])
-
-    // Auto-focus state search when dropdown opens
-    useEffect(() => {
-        if (stateDropdownOpen) {
-            setTimeout(() => {
-                stateSearchInputRef.current?.focus()
-            }, 100)
-        }
-    }, [stateDropdownOpen])
 
     // Auto-focus industry search when dropdown opens
     useEffect(() => {
@@ -180,49 +162,72 @@ export default function UploadPage() {
         return false
     }
 
-    // Fetch countries on component mount
+    // Fetch industries on component mount
     useEffect(() => {
-        fetchCountries()
         fetchIndustries()
     }, [])
 
-    // Fetch states when country changes
+    // Fetch brands if user type is 2 (dropdown users)
     useEffect(() => {
-        if (country) {
-            fetchStates(country)
-            setState("")
-            setStateSearch("")
-        } else {
-            setStates([])
-            setState("")
-            setStateSearch("")
+        if (userDetails?.type?.toString() === "2") {
+            fetchBrands()
         }
-    }, [country])
+    }, [userDetails?.type])
 
-    // Filter countries based on search
-    const filteredCountries = countries.filter(countryItem =>
-        countryItem.name.toLowerCase().includes(countrySearch.toLowerCase())
-    )
-
-    // Filter states based on search
-    const filteredStates = states.filter(stateItem =>
-        stateItem.name.toLowerCase().includes(stateSearch.toLowerCase())
-    )
 
     // Filter industries based on search
     const filteredIndustries = industries.filter(industryItem =>
         industryItem.name.toLowerCase().includes(industrySearch.toLowerCase())
     )
 
-    const fetchCountries = async () => {
+    // Helper functions to convert between names and IDs
+    const getCountryIdsFromNames = (names: string[]) => {
+        return Array.isArray(countries) ? names.map(name => countries.find(c => c.name === name)?.id).filter(Boolean) as string[] : []
+    }
+
+    const getCountryNamesFromIds = (ids: string[]) => {
+        return Array.isArray(countries) ? ids.map(id => countries.find(c => c.id === id)?.name).filter(Boolean) as string[] : []
+    }
+
+
+    // Prepare data for CountrySelector components - use unique keys to avoid duplicates
+    const countryOptions = Array.isArray(countries) ? countries.map(country => ({
+        value: country.name,
+        label: country.name,
+        id: country.id,
+        type: country.type || 'default'
+    })) : []
+
+    // Get currently selected country names that are still available in the options
+    const availableSelectedNames = getCountryNamesFromIds(country)
+
+
+    const fetchCountries = async (searchTerm: string = '') => {
+        // Only fetch countries if search term has 2 or more characters
+        if (searchTerm.length < 2) {
+            return  // Don't clear countries, just return
+        }
+
         setLoadingCountries(true)
         try {
-            const response = await fetch('https://techades.com/App/api.php?gofor=countrieslist')
+            const response = await fetch(`https://techades.com/App/api.php?gofor=locationlist&search=${searchTerm}`)
             if (!response.ok) {
                 throw new Error('Failed to fetch countries')
             }
-            const data: Country[] = await response.json()
-            setCountries(data)
+            const data = await response.json()
+
+            // Get currently selected country names to preserve them
+            const selectedCountryNames = getCountryNamesFromIds(country)
+
+            // Merge new data with existing selected countries to ensure they remain available
+            const existingCountries = countries || []
+            const selectedCountries = existingCountries.filter(c => selectedCountryNames.includes(c.name))
+            const newCountries = data.filter((newCountry: any) =>
+                !existingCountries.some(existing => existing.id === newCountry.id)
+            )
+
+            // Combine selected countries with new search results
+            setCountries([...selectedCountries, ...newCountries])
         } catch (error) {
             console.error('Error fetching countries:', error)
             toast.error('Failed to load countries')
@@ -231,22 +236,6 @@ export default function UploadPage() {
         }
     }
 
-    const fetchStates = async (countryId: string) => {
-        setLoadingStates(true)
-        try {
-            const response = await fetch(`https://techades.com/App/api.php?gofor=stateslist&country_id=${countryId}`)
-            if (!response.ok) {
-                throw new Error('Failed to fetch states')
-            }
-            const data: State[] = await response.json()
-            setStates(data)
-        } catch (error) {
-            console.error('Error fetching states:', error)
-            toast.error('Failed to load states')
-        } finally {
-            setLoadingStates(false)
-        }
-    }
 
     const fetchIndustries = async () => {
         try {
@@ -260,6 +249,23 @@ export default function UploadPage() {
             console.error('Error fetching industries:', error)
             toast.error('Failed to load industries')
         } finally {
+        }
+    }
+
+    const fetchBrands = async () => {
+        setLoadingBrands(true)
+        try {
+            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`)
+            if (!response.ok) {
+                throw new Error('Failed to fetch brands')
+            }
+            const data = await response.json()
+            setBrands(data)
+        } catch (error) {
+            console.error('Error fetching brands:', error)
+            toast.error('Failed to load brands')
+        } finally {
+            setLoadingBrands(false)
         }
     }
 
@@ -331,23 +337,23 @@ export default function UploadPage() {
     // Carousel file handlers
     const handleCarouselFilesChange = async (uploadedFiles: File[]) => {
         const fileUrlMap = carouselFileUrlMapRef.current
-        
+
         // Check if this is a reorder (same files, different order) or new files
-        const isReorder = 
+        const isReorder =
             uploadedFiles.length === carouselFiles.length &&
             uploadedFiles.every(file => carouselFiles.includes(file)) &&
             uploadedFiles.length > 0 &&
             fileUrlMap.size === uploadedFiles.length
-        
+
         setCarouselFiles(uploadedFiles)
-        
+
         if (uploadedFiles.length === 0) {
             // Clear everything
             setCarouselImageUrls([])
             fileUrlMap.clear()
             return
         }
-        
+
         if (isReorder) {
             // Just reorder the URLs to match the new file order - instant, no re-upload
             const reorderedUrls = uploadedFiles.map(file => fileUrlMap.get(file)!).filter(Boolean)
@@ -360,7 +366,7 @@ export default function UploadPage() {
                     fileUrlMap.delete(file)
                 }
             }
-            
+
             // New files or removed files - need to upload new ones
             try {
                 await uploadCarouselFiles(uploadedFiles)
@@ -389,7 +395,7 @@ export default function UploadPage() {
 
             // Check which files need uploading
             const filesToActuallyUpload = filesToUpload.filter(file => !fileUrlMap.has(file))
-            
+
             // If all files are already uploaded, just reorder
             if (filesToActuallyUpload.length === 0) {
                 const existingUrls = filesToUpload.map(file => fileUrlMap.get(file)!).filter(Boolean)
@@ -431,7 +437,7 @@ export default function UploadPage() {
             clearInterval(progressInterval)
             setCarouselUploadProgress(100)
             setCarouselImageUrls(uploadedUrls)
-            
+
             // Show single success toast with total count
             toast.success(`${filesToActuallyUpload.length} image${filesToActuallyUpload.length > 1 ? 's' : ''} uploaded successfully!`)
             trackEvent("Carousel_Files_Uploaded", window.location.href, userDetails?.email?.toString())
@@ -531,18 +537,15 @@ export default function UploadPage() {
     }
 
     const handleSaveTarget = async () => {
-        const selectedCountry = countries.find(c => c.id === country)
-        const selectedState = states.find(s => s.id === state)
+        const selectedCountries = Array.isArray(countries) ? countries.filter(c => country.includes(c.id)) : []
 
         const newTargetInfo = {
             platform,
             industry,
             age: `${minAge}-${maxAge}`,
             gender,
-            country,
-            state,
-            countryName: selectedCountry?.name || "",
-            stateName: selectedState?.name || ""
+            country: country,
+            countryName: selectedCountries.map(c => c.name).join(", ")
         }
 
         setTargetInfo(newTargetInfo)
@@ -564,6 +567,12 @@ export default function UploadPage() {
             return;
         }
 
+        // Validate brand selection for user type 1
+        if (userDetails?.type?.toString() === "2" && !selectedBrand) {
+            toast.error('Please select a brand to continue');
+            return;
+        }
+
         // Check if files are uploaded
         if (!hasUploadedFiles()) {
             toast.error('Please upload files first');
@@ -576,6 +585,18 @@ export default function UploadPage() {
         const targetData = passedTargetInfo || targetInfo;
 
         try {
+            // Determine brand_id based on user type
+            let brandId = ""
+            if (userDetails?.type?.toString() === "2") {
+                // User type 2: Use selected brand from dropdown
+                brandId = selectedBrand
+            } else if (userDetails?.type?.toString() === "1") {
+                // User type 1: Use brand_id from userDetails (no dropdown)
+                brandId = (userDetails?.brand && typeof userDetails.brand === 'object') 
+                    ? userDetails.brand.brand_id?.toString() || ""
+                    : ""
+            }
+
             let analyzeData: any = {
                 user_id: userId,
                 ads_name: currentAdName,
@@ -584,8 +605,8 @@ export default function UploadPage() {
                 age: targetData?.age || "",
                 gender: targetData?.gender || "",
                 country: targetData?.countryName || "",
-                state: targetData?.stateName || "",
-                ad_type: activeTab === "single" ? "Single" : activeTab === "carousel" ? "Carousel" : "Video"
+                ad_type: activeTab === "single" ? "Single" : activeTab === "carousel" ? "Carousel" : "Video",
+                brand_id: brandId
             }
 
             // Add media
@@ -611,7 +632,9 @@ export default function UploadPage() {
                 trackAdUpload(result.data.ad_upload_id.toString());
                 const eventName = isFreeTrailUser ? `free_trail_user_${activeTab}_Ad_Analyzed` : `${activeTab}_Ad_Analyzed`
                 trackEvent(eventName, window.location.href, userDetails?.email?.toString())
-                router.push(`/results?ad_id=${result.data.ad_upload_id}`)
+                // Generate token for the ad_id
+                const token = generateAdToken(result.data.ad_upload_id);
+                router.push(`/results?ad-token=${token}`)
             } else {
                 throw new Error(result.error || 'Analysis failed')
             }
@@ -634,6 +657,12 @@ export default function UploadPage() {
         // Validate ad name first
         if (!currentAdName.trim()) {
             toast.error('Please enter an ad name to continue');
+            return;
+        }
+
+        // Validate brand selection for user type 1
+        if (userDetails?.type?.toString() === "2" && !selectedBrand) {
+            toast.error('Please select a brand to continue');
             return;
         }
 
@@ -699,6 +728,25 @@ export default function UploadPage() {
                                         />
                                     </div>
 
+                                    {/* Brand Dropdown in Modal - Only show for user type 2 */}
+                                    {userDetails?.type?.toString() === "2" && (
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Select Brand *</Label>
+                                            <Select value={selectedBrand} onValueChange={setSelectedBrand} disabled={loadingBrands}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder={loadingBrands ? "Loading brands..." : "Select a brand"} />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-black border-[#3d3d3d] text-white">
+                                                    {brands.map((brand) => (
+                                                        <SelectItem key={brand.brand_id} value={brand.brand_id.toString()}>
+                                                            {brand.brand_name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+
                                     {/* Two-column layout starts here */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {/* Platform */}
@@ -711,6 +759,7 @@ export default function UploadPage() {
                                                 <SelectContent className="bg-black border-[#3d3d3d]">
                                                     <SelectItem value="Instagram">Instagram</SelectItem>
                                                     <SelectItem value="Facebook">Facebook</SelectItem>
+                                                    <SelectItem value="Meta(FB & IG)">Meta(FB & IG)</SelectItem>
                                                     <SelectItem value="Twitter">Twitter</SelectItem>
                                                     <SelectItem value="LinkedIn">LinkedIn</SelectItem>
                                                     <SelectItem value="TikTok">TikTok</SelectItem>
@@ -798,75 +847,29 @@ export default function UploadPage() {
                                             </Select>
                                         </div>
 
-                                        {/* Country */}
+                                        {/* Cities and Countries */}
                                         <div className="space-y-2">
-                                            <Label className="text-white/70 font-semibold">Country</Label>
-                                            <Select value={country} onValueChange={setCountry} disabled={loadingCountries} onOpenChange={setCountryDropdownOpen}>
-                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
-                                                    <SelectValue placeholder={loadingCountries ? "Loading..." : "Select country"} />
-                                                </SelectTrigger>
-                                                <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                                    <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                                        <Input
-                                                            ref={countrySearchInputRef}
-                                                            placeholder="Search countries..."
-                                                            value={countrySearch}
-                                                            onChange={(e) => setCountrySearch(e.target.value)}
-                                                            onKeyDown={(e) => e.stopPropagation()}
-                                                            className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
-                                                            autoComplete="off"
-                                                        />
-                                                    </div>
-                                                    <div className="max-h-48 overflow-y-auto">
-                                                        {filteredCountries.map((countryItem) => (
-                                                            <SelectItem key={countryItem.id} value={countryItem.id}>
-                                                                {countryItem.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </div>
-                                                </SelectContent>
-                                            </Select>
+                                            <Label className="text-white/70 font-semibold">Cities and Countries to Advertise</Label>
+                                            <CountrySelector
+                                                options={countryOptions}
+                                                selectedValues={availableSelectedNames}
+                                                onValueChange={(selectedNames) => {
+                                                    const selectedIds = getCountryIdsFromNames(selectedNames)
+                                                    setCountry(selectedIds)
+                                                }}
+                                                placeholder="Select cities and countries..."
+                                                className="bg-black border-[#3d3d3d] text-white"
+                                                onSearchChange={(searchValue) => {
+                                                    setCountrySearch(searchValue)
+                                                    // Only fetch if we have a search term
+                                                    if (searchValue.length >= 2) {
+                                                        fetchCountries(searchValue)
+                                                    }
+                                                }}
+                                                loading={loadingCountries}
+                                            />
                                         </div>
 
-                                        {/* State */}
-                                        <div className="space-y-2">
-                                            <Label className="text-white/70 font-semibold">State/Province</Label>
-                                            <Select value={state} onValueChange={setState} disabled={!country || loadingStates} onOpenChange={setStateDropdownOpen}>
-                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
-                                                    <SelectValue
-                                                        placeholder={
-                                                            !country
-                                                                ? "Select country first"
-                                                                : loadingStates
-                                                                    ? "Loading..."
-                                                                    : "Select state"
-                                                        }
-                                                    />
-                                                </SelectTrigger>
-                                                <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                                    {states.length > 0 && (
-                                                        <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                                            <Input
-                                                                ref={stateSearchInputRef}
-                                                                placeholder="Search states..."
-                                                                value={stateSearch}
-                                                                onChange={(e) => setStateSearch(e.target.value)}
-                                                                onKeyDown={(e) => e.stopPropagation()}
-                                                                className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
-                                                                autoComplete="off"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <div className="max-h-48 overflow-y-auto">
-                                                        {filteredStates.map((stateItem) => (
-                                                            <SelectItem key={stateItem.id} value={stateItem.id}>
-                                                                {stateItem.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </div>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
                                     </div>
 
                                     {/* Action Buttons */}
@@ -999,28 +1002,48 @@ export default function UploadPage() {
                                     onUpgradeClick={() => router.push("/pro")}
                                 >
                                     <div className="w-full max-w-4xl mx-auto">
-                                        {/* Ad Name Input */}
-                                        <div className="space-y-2 mb-6">
-                                            <Label className="text-white/70 font-semibold text-base">Ad Name</Label>
-                                            <Input
-                                                placeholder="Enter ad name"
-                                                value={
-                                                    activeTab === "single" ? singleAdName :
-                                                        activeTab === "carousel" ? carouselAdName :
-                                                            videoAdName
-                                                }
-                                                onChange={(e) => {
-                                                    const value = e.target.value;
-                                                    if (activeTab === "single") setSingleAdName(value);
-                                                    else if (activeTab === "carousel") setCarouselAdName(value);
-                                                    else setVideoAdName(value);
-                                                }}
-                                                className="bg-[#171717] border-[#3d3d3d] text-white placeholder-gray-400 text-base py-3"
-                                                autoComplete="off"
-                                                spellCheck="false"
-                                            />
-                                        </div>
+                                        <div className="flex items-center gap-4 mb-6">
+                                            {/* Ad Name Input */}
+                                            <div className="space-y-2 mb-6 w-full">
+                                                <Label className="text-white/70 font-semibold text-base">Ad Name</Label>
+                                                <Input
+                                                    placeholder="Enter ad name"
+                                                    value={
+                                                        activeTab === "single" ? singleAdName :
+                                                            activeTab === "carousel" ? carouselAdName :
+                                                                videoAdName
+                                                    }
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        if (activeTab === "single") setSingleAdName(value);
+                                                        else if (activeTab === "carousel") setCarouselAdName(value);
+                                                        else setVideoAdName(value);
+                                                    }}
+                                                    className="bg-[#171717] border-[#3d3d3d] text-white placeholder-gray-400 text-base py-3 w-full"
+                                                    autoComplete="off"
+                                                    spellCheck="false"
+                                                />
+                                            </div>
 
+                                             {/* Brand Dropdown - Only show for user type 2 */}
+                                            {userDetails?.type?.toString() === "2" && (
+                                                <div className="space-y-2 mb-6 w-full">
+                                                    <Label className="text-white/70 font-semibold text-base">Select Brand</Label>
+                                                    <Select value={selectedBrand} onValueChange={setSelectedBrand} disabled={loadingBrands}>
+                                                        <SelectTrigger className="bg-[#171717] border-[#3d3d3d] text-white placeholder-gray-400 text-base py-3 w-full">
+                                                            <SelectValue placeholder={loadingBrands ? "Loading brands..." : "Select a brand"} />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-[#171717] border-[#3d3d3d] text-white">
+                                                            {brands.map((brand) => (
+                                                                <SelectItem key={brand.brand_id} value={brand.brand_id.toString()}>
+                                                                    {brand.brand_name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
+                                        </div>
                                         {/* Conditional Uploaders */}
                                         <div className="mt-6 sm:mt-8">
                                             {activeTab === "single" && (
@@ -1081,6 +1104,7 @@ export default function UploadPage() {
                 </main>
 
             </div>
+            <Footer />
         </UserLayout>
     )
 }

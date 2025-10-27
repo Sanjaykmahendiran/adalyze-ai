@@ -114,8 +114,8 @@ const features = [
 ];
 
 // Inline Counter Component
-function InlineCounter({ value, suffix = "", prefix = "", duration = 2.5 }) {
-    const nodeRef = useRef(null);
+function InlineCounter({ value, suffix = "", prefix = "", duration = 2.5 }: { value: number; suffix?: string; prefix?: string; duration?: number }) {
+    const nodeRef = useRef<HTMLSpanElement>(null);
     const [isInView, setIsInView] = useState(false);
 
     useEffect(() => {
@@ -146,7 +146,9 @@ function InlineCounter({ value, suffix = "", prefix = "", duration = 2.5 }) {
         const controls = animate(0, value, {
             duration,
             onUpdate(latest) {
-                node.textContent = `${prefix}${Math.round(latest)}${suffix}`;
+                if (node) {
+                    node.textContent = `${prefix}${Math.round(latest)}${suffix}`;
+                }
             },
         });
 
@@ -180,90 +182,62 @@ export default function UseCases() {
         return () => window.removeEventListener("resize", handleResize)
     }, [])
 
-    // Function to scroll to video section
-    const scrollToVideo = () => {
-        videoSectionRef.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-        })
-    }
 
     return (
         <div className="min-h-screen">
             <Header />
 
-            {/* Hero Section */}
-            <section className="relative pt-16 pb-12 px-4 sm:px-6 lg:px-8 mt-24">
-                <div className="max-w-6xl mx-auto text-center">
-                    <div className="mb-6">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
-                            <Zap className="w-4 h-4 mr-2" />
-                            AI-Powered Ad Analytics
-                        </span>
-                    </div>
-
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                        Adalyze AI Works for <span className="text-primary">Every Business</span>
-                    </h1>
-
-                    <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-                        From agencies to e-commerce, see how we help you maximize ad ROI with intelligent insights and automated optimization.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-                        <Button
-                            onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_Start_Free_Trial_button_clicked", window.location.href); }}
-                            className="bg-primary hover:bg-primary/90 text-lg px-3 py-6 text-primary-foreground">
-                            Start Free Trial
-                            <ArrowRight className="w-5 h-5 ml-2" />
-                        </Button>
-                    </div>
-
-
-                </div>
-            </section>
-
-
             {/* Features Section - Updated with Inline Counters */}
-            <section className="py-6 px-4 sm:px-6 lg:px-8">
+            <section className="relative pt-16 pb-12 px-4 sm:px-6 lg:px-8 mt-24">
                 <div className="max-w-6xl mx-auto">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                            Built for Your Business Model
-                        </h2>
-                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                            Whether you're a solo freelancer or managing enterprise campaigns, Adalyze AI adapts to your workflow.
+                    <div className="text-center py-4 sm:py-6 md:py-8 px-4 mb-12 sm:mb-16 lg:mb-20">
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary mb-4 sm:mb-6 leading-tight">
+                            Adalyze AI Works for Every Business
+                        </h1>
+                        <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto text-white/70">
+                            From agencies to e-commerce, see how we help you <span className="text-white font-bold">maximize ad ROI </span> with intelligent insights and automated optimization.
                         </p>
                     </div>
 
-                    <div className="space-y-16">
+                    <div className="space-y-12 sm:space-y-16 lg:space-y-20">
                         {features.map((feature, index) => {
                             const isEven = index % 2 === 0
 
                             return (
                                 <div
                                     key={index}
-                                    className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center"
+                                    className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center"
                                 >
+                                    {/* Image Side - First on mobile, positioned based on desktop layout */}
+                                    <div className={`flex justify-center ${!isEven ? "lg:order-1" : ""} ${isEven ? "order-1 lg:order-2" : "order-1"}`}>
+                                        <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg bounce-slow">
+                                            <img
+                                                src={feature.desktopImage.src}
+                                                alt={feature.title}
+                                                className="w-full h-auto rounded-lg shadow-lg bounce-slow"
+                                            />
+                                        </div>
+                                    </div>
+
                                     {/* Text Side */}
                                     <motion.div
                                         initial={{ x: isEven ? -50 : 50, opacity: 0 }}
                                         whileInView={{ x: 0, opacity: 1 }}
                                         transition={{ duration: 0.5 }}
                                         viewport={{ once: true, amount: 0.3 }}
-                                        className={`space-y-4 ${!isEven ? "lg:order-2" : ""}`}
+                                        className={`space-y-4 ${!isEven ? "lg:order-2" : ""} ${isEven ? "order-2 lg:order-1" : "order-2"}`}
                                     >
                                         {feature.badge && (
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-base font-bold bg-white text-primary border border-primary/20">
                                                 {feature.badge}
                                             </span>
                                         )}
 
-                                        <h3 className="text-2xl sm:text-3xl font-bold text-primary">
+                                        <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary">
                                             {feature.title}
                                         </h3>
 
-                                        <p className="text-gray-300 text-base leading-relaxed">
+                                        <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
                                             {feature.description}
                                         </p>
 
@@ -278,10 +252,10 @@ export default function UseCases() {
                                         </div>
 
                                         {/* Animated Metrics */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4">
                                             {feature.metrics.map((metric, i) => (
                                                 <div key={i} className="text-center py-2 px-2 bg-black rounded-lg border border-primary/10">
-                                                    <div className="text-2xl font-bold text-primary mb-1">
+                                                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary mb-1">
                                                         {metric.prefix}
                                                         <InlineCounter
                                                             value={metric.value}
@@ -296,31 +270,29 @@ export default function UseCases() {
                                             ))}
                                         </div>
 
-                                        <Button
+                                        {/* <Button
                                             onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_See_How_button_clicked", window.location.href); }}
                                             variant="outline"
                                             className="text-white border-primary hover:bg-primary hover:text-white"
                                         >
                                             {feature.buttonText}
                                             <ArrowRight className="ml-2 h-4 w-4" />
-                                        </Button>
+                                        </Button> */}
                                     </motion.div>
-
-                                    {/* Image Side - Clean without backgrounds */}
-                                    <div className={`flex justify-center ${!isEven ? "lg:order-1" : ""}`}>
-                                        <div className="w-full max-w-lg bounce-slow">
-                                            <img
-                                                src={feature.desktopImage.src}
-                                                alt={feature.title}
-                                                className="w-full h-auto rounded-lg shadow-lg bounce-slow"
-                                            />
-                                        </div>
-                                    </div>
                                 </div>
                             )
                         })}
                     </div>
+                    <div className="flex justify-center mt-20">
+                        <Button
+                            onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_Start_Free_Trial_button_clicked", window.location.href); }}
+                            className="bg-primary hover:bg-primary/90 text-lg px-3 py-6 text-primary-foreground">
+                            Start Free Trial
+                            <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+                        </div>
                 </div>
+               
             </section>
 
             {/* Video Section - Add ref here */}
@@ -368,29 +340,29 @@ export default function UseCases() {
                     <div className="absolute -bottom-20 -right-20 w-[300px] h-[300px] bg-[#ff6b00] opacity-15 rounded-full blur-[100px]" />
                 </div>
 
-                <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-center">
                         {/* Left Content */}
-                        <div className="text-center lg:text-left space-y-6">
-                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+                        <div className="text-center lg:text-left space-y-4 sm:space-y-6">
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white">
                                 Ready to Analyze Your Ads?
                             </h2>
 
-                            <p className="text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
+                            <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
                                 Start your free trial and see results in minutes. Join thousands of businesses already maximizing their ad ROI with Adalyze AI.
                             </p>
 
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
                                 <Button
                                     onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_Start_Free_Trial_button_clicked", window.location.href); }}
-                                    className="px-6 py-3"
+                                    className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base"
                                 >
                                     Start Free Trial <ArrowRight className="ml-2" />
                                 </Button>
                                 <Button
                                     onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("UC_Schedule_Demo_button_clicked", window.location.href); }}
                                     variant="outline"
-                                    className="px-6 py-3 border-white/30 text-white hover:bg-white/10"
+                                    className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base border-white/30 text-white hover:bg-white/10"
                                 >
                                     Schedule Demo
                                 </Button>
@@ -398,8 +370,8 @@ export default function UseCases() {
                         </div>
 
                         {/* Right Content – Image without background */}
-                        <div className="flex justify-center lg:justify-end">
-                            <div className="w-full max-w-md">
+                        <div className="flex justify-center lg:justify-end order-first lg:order-last">
+                            <div className="w-full max-w-sm sm:max-w-md">
                                 <Image
                                     src={PromoImg}
                                     alt="Adalyze AI Assistant"
@@ -414,7 +386,7 @@ export default function UseCases() {
                 </div>
             </div>
 
-            <FAQSection />
+            <FAQSection ButtonText="Get Started" />
             <BlogSection />
             <LandingPageFooter />
         </div>

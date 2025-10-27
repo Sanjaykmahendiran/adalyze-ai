@@ -12,6 +12,12 @@ export interface DashboardData {
   recentads: RecentAd[];
 }
 
+export interface GlobalInsight {
+  id: number;
+  content: string;
+  source: string;
+}
+
 export interface Dashboard2Data {
   viral_potential_score: number;
   predicted_reach: number;
@@ -19,6 +25,7 @@ export interface Dashboard2Data {
   conversion_probability: number;
   scroll_stoppower: number;
   latest_feedbacks: string[];
+  global_insights: GlobalInsight[];
 }
 
 export interface RecentAd {

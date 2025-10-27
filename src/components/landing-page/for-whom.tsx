@@ -61,15 +61,16 @@ export default function ForWhomSection() {
         <section
             id='use-cases'
             className="relative h-auto lg:h-[300vh]" ref={containerRef}>
-            <motion.div
+            <motion.h2
                 initial={{ y: -50, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
                 viewport={{ once: false, amount: 0.3 }}
                 className="text-center py-4 sm:py-6 md:py-8 px-4"
             >
-                <p className="text-white font-semibold text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-1">Who Benefits from <span className='text-primary'>Adalyze AI</span></p>
-            </motion.div>
+                <p className="text-white font-semibold text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-1">
+                    Who Benefits from <span className='text-primary'>Adalyze AI</span></p>
+            </motion.h2>
             {/* Sticky container (desktop only) */}
             <div className="hidden lg:flex sticky top-0 h-screen items-center justify-start overflow-hidden">
                 {/* Cards container */}

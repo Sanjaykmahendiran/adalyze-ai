@@ -94,12 +94,12 @@ export default function ClientSection() {
         <div className="inline-flex items-center border-2 border-[#FF6154] rounded-xl px-3 py-2 text-[#FF6154] bg-[#1A1A1A] mb-12">
           <AwardIcon className="w-6 h-6 mr-2 text-white fill-[gold]" stroke="currentColor" />
           <div className="flex flex-col items-start justify-start gap-1">
-            <div className="text-[10px] font-thin uppercase leading-tight text-gray-300">
+            <h2 className="text-[10px] font-thin uppercase leading-tight text-gray-300">
               AdalyzeAI Platform
-            </div>
-            <div className="text-sm font-bold leading-tight text-white">
+            </h2>
+            <h2 className="text-sm font-bold leading-tight text-white">
               Trusted by Leading Brands
-            </div>
+            </h2>
           </div>
         </div>
 
@@ -107,11 +107,11 @@ export default function ClientSection() {
         <h3 className="mb-2">
           <span
             ref={countRef}
-            className="text-8xl font-bold bg-gradient-to-r from-[#db4900] via-[#ff7c1f] to-[#ffb347] bg-clip-text text-transparent"
+            className="text-7xl sm:text-8xl xl:text-9xl font-bold bg-gradient-to-r from-[#db4900] via-[#ff7c1f] to-[#ffb347] bg-clip-text text-transparent"
           >
             {count.toLocaleString()}
           </span>
-          <span className="text-8xl font-bold bg-gradient-to-r from-[#db4900] via-[#ff7c1f] to-[#ffb347] bg-clip-text text-transparent">
+          <span className="text-7xl sm:text-8xl xl:text-9xl font-bold bg-gradient-to-r from-[#db4900] via-[#ff7c1f] to-[#ffb347] bg-clip-text text-transparent">
             +
           </span>
 

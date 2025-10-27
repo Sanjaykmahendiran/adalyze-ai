@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,17 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { event, trackSignup } from "@/lib/gtm";
 import { login } from "@/services/authService";
 import { trackEvent } from "@/lib/eventTracker";
-
-const sourceOptions = [
-  "Google",
-  "Facebook",
-  "Instagram",
-  "LinkedIn",
-  "Twitter",
-  "Word of Mouth",
-  "Referral",
-  "Other",
-];
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface LoginFormData {
   token?: string;
@@ -47,16 +38,14 @@ const emailSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
 });
 
-// Step 2 schema - updated fields as per API payload
+// Step 2 schema - updated fields as per requirements
 const registrationSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  mobileno: z.string().min(10, { message: "Mobile number must be at least 10 digits." }),
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters." }),
-  role: z.string().min(1, { message: "Please select a role." }),
-  city: z.string().min(2, { message: "City must be at least 2 characters." }),
-  source: z.string().min(1, { message: "Please select a source." }),
+  type: z.string().min(1, { message: "Please select an option." }),
+  city: z.string().min(1, { message: "Please select a city." }),
   referral_code: z.string().optional(),
 });
 
@@ -72,6 +61,13 @@ export default function RegistrationForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+
+  // City data states
+  const [cities, setCities] = useState<Array<{ id: string, name: string }>>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const citySearchInputRef = useRef<HTMLInputElement>(null);
 
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
@@ -93,15 +89,23 @@ export default function RegistrationForm() {
         trackEvent("Google_Register_completed", window.location.href, user.email);
         toast.success("Login successful!");
 
-        if (user.payment_status === 0) {
-          if (user.fretra_status === 1) {
-            router.push("/dashboard"); // Allowed even if unpaid
-          } else {
-            router.push("/pricing"); // Unpaid and fretra_status not 1
-          }
-        } else {
-          router.push("/dashboard"); // Paid users
-        }
+        // if (user.payment_status === 0) {
+        //   if (user.fretra_status === 1) {
+        //     setEmailValue(user.email);
+        //     setUserId(user.user_id.toString());
+        //     setStep(2); // Allowed even if unpaid
+        //   } else {
+        //     router.push("/pricing"); // Unpaid and fretra_status not 1
+        //   }
+        // } else {
+        //   router.push("/dashboard"); // Paid users
+        // }
+
+        // Set user data and transition to step 2
+        setEmailValue(user.email);
+        setUserId(user.user_id.toString());
+        setStep(2);
+
       } else {
         toast.error(loginData.message || "Login failed. Please check your credentials.");
       }
@@ -123,14 +127,19 @@ export default function RegistrationForm() {
     }
   }, [searchParams]);
 
-  
+
   // Get referral code from search params
   const referralCode = searchParams.get('referral_code') || '';
-  
+
   // Get UTM parameters from search params
   const utmSource = searchParams.get('utm_source') || '';
   const utmMedium = searchParams.get('utm_medium') || '';
   const utmCampaign = searchParams.get('utm_campaign') || '';
+  const utmContent = searchParams.get('utm_content') || '';
+  const utmTerm = searchParams.get('utm_term') || '';
+
+  // Get source from search params
+  const sourceFromParams = searchParams.get('source') || '';
 
   // Effect to persist the step and user data in localStorage
   useEffect(() => {
@@ -173,14 +182,33 @@ export default function RegistrationForm() {
     resolver: zodResolver(registrationSchema),
     defaultValues: {
       name: "",
-      mobileno: "",
       password: "",
-      role: "",
+      type: "",
       city: "",
-      source: referralCode ? "Referral" : "",
       referral_code: referralCode,
     },
   });
+
+  // Function to fetch cities based on search
+  const fetchCities = async (searchTerm: string) => {
+    if (!searchTerm.trim()) {
+      setCities([]);
+      return;
+    }
+
+    setLoadingCities(true);
+    try {
+      const response = await fetch(`https://techades.com/App/api.php?gofor=locationlist&search=${encodeURIComponent(searchTerm)}`);
+      const data = await response.json();
+      setCities(data);
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+      // Don't show error toast for every search, just log it
+      console.log("City search failed for:", searchTerm);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
 
   // Function to check referral code and get referred by name and user ID
   const checkReferralCode = async (code: string) => {
@@ -224,18 +252,40 @@ export default function RegistrationForm() {
     }
   };
 
-  // Watch source field to handle referral selection
-  const sourceValue = registrationForm.watch("source");
+  // Watch referral code field
   const referralCodeValue = registrationForm.watch("referral_code");
 
   // Effect to check referral code when it changes
   useEffect(() => {
-    if (sourceValue === "Referral" && referralCodeValue) {
+    if (sourceFromParams === "Referral" && referralCodeValue) {
       checkReferralCode(referralCodeValue);
     } else {
       setReferredBy("");
     }
-  }, [sourceValue, referralCodeValue]);
+  }, [sourceFromParams, referralCodeValue]);
+
+  // Auto-focus search input when city dropdown opens
+  useEffect(() => {
+    if (cityDropdownOpen) {
+      setTimeout(() => {
+        citySearchInputRef.current?.focus();
+      }, 100);
+    }
+  }, [cityDropdownOpen]);
+
+  // Fetch cities when search term changes - continuous typing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (citySearch.trim()) {
+        fetchCities(citySearch);
+      } else {
+        setCities([]);
+      }
+    }, 200); // Reduced debounce for more responsive search
+
+    return () => clearTimeout(timeoutId);
+  }, [citySearch]);
+
 
   // Step 1 submission - Email verification with real API
   async function onSubmitEmail(values: z.infer<typeof emailSchema>) {
@@ -265,6 +315,30 @@ export default function RegistrationForm() {
 
         trackEvent("1St_level_email_register", window.location.href, values.email);
 
+        // Call addidentifier API after step 1 completion
+        try {
+          const cookieId = Cookies.get('cookie_id') || '';
+          const addIdentifierResponse = await fetch("https://adalyzeai.xyz/App/api.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              gofor: "addidentifier",
+              cookie_id: cookieId,
+              user_id: data.user_id,
+              email: values.email,
+              phone: "" // Phone will be added in step 2 if needed
+            }),
+          });
+
+          const addIdentifierData = await addIdentifierResponse.json();
+          console.log("Add identifier response:", addIdentifierData);
+        } catch (error) {
+          console.error("Add identifier API error:", error);
+          // Don't block the flow if this API fails
+        }
+
         setStep(2);
       } else if (data.status === "error" && data.message) {
         toast.error(data.message);
@@ -289,28 +363,32 @@ export default function RegistrationForm() {
         gofor: string;
         user_id: string;
         name: string;
-        mobileno: string;
         password: string;
-        role: string;
+        type: string;
         city: string;
-        source: string;
+        source?: string;
         referred_by?: number;
         utm_source?: string;
         utm_medium?: string;
         utm_campaign?: string;
+        utm_content?: string;
+        utm_term?: string;
       } = {
         gofor: "register",
         user_id: userId,
         name: values.name,
-        mobileno: values.mobileno,
         password: values.password,
-        role: values.role,
+        type: values.type, // This will be "1" for Single Brand or "2" for Multiple Brand
         city: values.city,
-        source: values.source,
       };
 
+      // Only add source if it comes from search params
+      if (sourceFromParams) {
+        payload.source = sourceFromParams;
+      }
+
       // Add referred_by field if source is Referral and we have the user ID
-      if (values.source === "Referral" && referralUserId) {
+      if (sourceFromParams === "Referral" && referralUserId) {
         // Send the user ID as integer in referred_by field
         payload.referred_by = parseInt(referralUserId);
       }
@@ -324,6 +402,12 @@ export default function RegistrationForm() {
       }
       if (utmCampaign) {
         payload.utm_campaign = utmCampaign;
+      }
+      if (utmContent) {
+        payload.utm_content = utmContent;
+      }
+      if (utmTerm) {
+        payload.utm_term = utmTerm;
       }
 
       const response = await fetch("https://adalyzeai.xyz/App/api.php", {
@@ -344,7 +428,7 @@ export default function RegistrationForm() {
         trackEvent("Register_completed", window.location.href, emailValue);
         // ✅ GA4 / GTM custom event
 
-        trackSignup(values.source === "Referral" ? "Referral" : values.source || "Email", userId);
+        trackSignup(sourceFromParams === "Referral" ? "Referral" : sourceFromParams || "Email", userId);
 
         toast.success(data.message || "Registration successful!");
         registrationForm.reset();
@@ -422,16 +506,71 @@ export default function RegistrationForm() {
             onSubmit={registrationForm.handleSubmit(onSubmitRegistration)}
             className="space-y-3 text-xs text-left"
           >
-            {/* Display the email (read-only) */}
-            <div className="space-y-1">
-              <h3 className="font-bold text-xs">Email</h3>
-              <input
-                type="email"
-                value={emailValue}
-                readOnly
-                className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
-              />
-            </div>
+
+            <FormField
+              control={registrationForm.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-bold text-white">Analyze For</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="bg-black text-white focus:ring-none text-sm  w-full py-7">
+                        <SelectValue placeholder="Select Analyze For" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-black border border-orange-500/20 text-white gap-y-2">
+                      {/* Single Brand */}
+                      <SelectItem
+                        value="1"
+                        className={`p-4 rounded-lg bg-[#171717] cursor-pointer transition-all data-[state=checked]:bg-orange-500/10 data-[state=checked]:border-orange-500`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          {/* Checkbox */}
+                          <div className="flex items-center justify-center">
+                            <Checkbox checked={field.value === "1"} onCheckedChange={() => field.onChange("1")} />
+                          </div>
+
+                          {/* Text content */}
+                          <div className="flex flex-col text-left">
+                            <p className="font-semibold text-white">Single Brand</p>
+                            <p className="text-xs text-white/80">
+                              Upload and analyze ads for one brand
+                            </p>
+                          </div>
+                        </div>
+                      </SelectItem>
+
+                      {/* Multi Brand */}
+                      <SelectItem
+                        value="2"
+                        className={`p-4 rounded-lg bg-[#171717] cursor-pointer transition-all data-[state=checked]:bg-orange-500/10 data-[state=checked]:border-orange-500`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          {/* Checkbox */}
+                          <div className="flex items-center justify-center">
+                            <Checkbox checked={field.value === "2"} onCheckedChange={() => field.onChange("2")} />
+                          </div>
+
+                          {/* Text content */}
+                          <div className="flex flex-col text-left">
+                            <p className="font-semibold text-white">Multi Brand</p>
+                            <p className="text-xs text-white/80">
+                              Upload and analyze ads for multiple brands
+                            </p>
+                          </div>
+                        </div>
+
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={registrationForm.control}
@@ -451,24 +590,6 @@ export default function RegistrationForm() {
               )}
             />
 
-            <FormField
-              control={registrationForm.control}
-              name="mobileno"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold">Mobile Number</FormLabel>
-                  <FormControl>
-                    <input
-                      type="tel"
-                      placeholder="Your Mobile Number"
-                      {...field}
-                      className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={registrationForm.control}
@@ -507,56 +628,7 @@ export default function RegistrationForm() {
               )}
             />
 
-            <FormField
-              control={registrationForm.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold">I'm a</FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger
-                        className="w-full px-4 py-5.5 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
-                        title={field.value}
-                      >
-                        <SelectValue
-                          placeholder="Select Role"
-                          children={
-                            field.value && field.value.length > 40
-                              ? field.value.slice(0, 40) + "…"
-                              : field.value
-                          }
-                        />
-                      </SelectTrigger>
-
-                      <SelectContent className="min-w-full">
-                        <SelectItem value="Freelancer">Freelancer</SelectItem>
-                        <SelectItem value="Digital Marketer">Digital Marketer</SelectItem>
-                        <SelectItem value="Business Owner - Entrepreneur">
-                          Business Owner / Entrepreneur
-                        </SelectItem>
-                        <SelectItem value="Marketing Agency">Marketing Agency</SelectItem>
-                        <SelectItem value="Content Creator">
-                          Content Creator (YouTuber, Blogger, etc.)
-                        </SelectItem>
-                        <SelectItem value="Graphic Designer">Graphic Designer</SelectItem>
-                        <SelectItem value="Social Media Manager">Social Media Manager</SelectItem>
-                        <SelectItem value="Brand Manager">Brand Manager</SelectItem>
-                        <SelectItem value="Startup - SME">Startup / SME</SelectItem>
-                        <SelectItem value="others">Others</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            {/* City Field */}
             <FormField
               control={registrationForm.control}
               name="city"
@@ -564,34 +636,61 @@ export default function RegistrationForm() {
                 <FormItem>
                   <FormLabel className="font-bold">City</FormLabel>
                   <FormControl>
-                    <input
-                      placeholder="Your City"
-                      {...field}
-                      className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={registrationForm.control}
-              name="source"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold">How did you hear about us?</FormLabel>
-                  <FormControl>
-                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                      <SelectTrigger className="w-full px-4 py-5 text-sm bg-black text-white rounded-md transition-colors">
-                        <SelectValue placeholder="Select Source" />
+                    <Select
+                      key={field.value || 'empty'}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setCitySearch("");
+                        setCityDropdownOpen(false);
+                      }}
+                      value={field.value}
+                      defaultValue={field.value}
+                      disabled={loadingCities}
+                      onOpenChange={setCityDropdownOpen}
+                    >
+                      <SelectTrigger className="w-full px-4 py-5.5 text-sm bg-black text-white rounded-md placeholder-white/50  transition-colors">
+                        <SelectValue placeholder={
+                          loadingCities
+                            ? "Loading cities..."
+                            : "Select City"
+                        } />
                       </SelectTrigger>
-                      <SelectContent>
-                        {sourceOptions.map((src) => (
-                          <SelectItem key={src} value={src}>
-                            {src}
-                          </SelectItem>
-                        ))}
+                      <SelectContent className="max-h-60 overflow-y-auto bg-black border-none">
+                        <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                          <input
+                            ref={citySearchInputRef}
+                            placeholder="Type to search cities..."
+                            value={citySearch}
+                            onChange={(e) => {
+                              setCitySearch(e.target.value);
+                              // Clear cities when search is empty for immediate response
+                              if (!e.target.value.trim()) {
+                                setCities([]);
+                              }
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            className="w-full px-3 py-2 text-sm bg-[#171717] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                            autoComplete="off"
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {cities.length > 0 ? (
+                            cities.map((city) => (
+                              <SelectItem
+                                key={city.id}
+                                value={city.name}
+                              >
+                                {city.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            citySearch.trim() && !loadingCities && (
+                              <div className="px-3 py-2 text-sm text-gray-400">
+                                No cities found for "{citySearch}"
+                              </div>
+                            )
+                          )}
+                        </div>
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -600,8 +699,10 @@ export default function RegistrationForm() {
               )}
             />
 
-            {/* Referral Code Field - Only show when source is "Referral" */}
-            {sourceValue === "Referral" && (
+
+
+            {/* Referral Code Field - Only show when source is "Referral" from search params */}
+            {sourceFromParams === "Referral" && (
               <FormField
                 control={registrationForm.control}
                 name="referral_code"

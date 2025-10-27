@@ -26,8 +26,23 @@ const FloatingChat = () => {
   // Close chat on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (chatRef.current && !chatRef.current.contains(event.target as Node)) {
-        setIsChatOpen(false)
+      const target = event.target as Element
+      
+      // Check if the click is outside the chat component
+      if (chatRef.current && !chatRef.current.contains(target)) {
+        // Check if the click is on any Radix UI Select dropdown elements
+        const isSelectDropdown = target?.closest('[data-radix-select-content]') ||
+                                target?.closest('[data-radix-popper-content-wrapper]') ||
+                                target?.closest('[data-radix-portal]') ||
+                                target?.closest('[data-slot="select-content"]') ||
+                                target?.closest('[role="listbox"]') ||
+                                target?.closest('[role="option"]') ||
+                                target?.closest('[data-state="open"]');
+        
+        // Don't close if clicking on Select dropdown elements
+        if (!isSelectDropdown) {
+          setIsChatOpen(false)
+        }
       }
     }
 

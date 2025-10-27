@@ -8,10 +8,10 @@ import RegistrationForm from "./_components/registration-form"
 
 const RegisterPage = () => {
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
       <div className="flex flex-grow flex-col xl:flex-row">
         {/* Left Side (Register Form) */}
-        <div className="w-full xl:w-1/2 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-4 xl:py-0  min-h-screen xl:min-h-0">
+        <div className="w-full xl:w-1/2 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-4 xl:py-0 min-h-screen xl:min-h-0 overflow-y-auto overflow-x-hidden">
           <div className="w-full max-w-md xl:mt-0">
             {/* Logo - Reduced space above */}
             <div className="flex justify-center mb-2 mt-2">
@@ -30,7 +30,7 @@ const RegisterPage = () => {
               <h1 className="text-2xl font-bold text-white mb-2">Create Your Account</h1>
               <p className="text-gray-300 text-sm">Turn every ad into an opportunity</p>
             </div>
-            <div className="mt-4 sm:mt-4">
+            <div className="mt-4 sm:mt-4 w-full overflow-hidden">
               <RegistrationForm />
             </div>
 
@@ -59,7 +59,7 @@ const RegisterPage = () => {
         </div>
 
         {/* Right Side (LoginCarousel) */}
-        <div className="hidden xl:block w-1/2 bg-black">
+        <div className="hidden xl:block w-1/2 bg-black overflow-hidden">
           <div className="hidden md:block relative w-full h-screen overflow-hidden">
             <video
               src="https://adalyze.app/uploads/Login-Video.mp4"

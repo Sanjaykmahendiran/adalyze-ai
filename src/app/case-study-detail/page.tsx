@@ -102,9 +102,9 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
       })
   }
 
-  const fetchCaseStudyById = (csId: string) => {
+  const fetchCaseStudyById = (slug: string) => {
     return fetch(
-      `https://adalyzeai.xyz/App/api.php?gofor=getcasestudy&cs_id=${csId}`,
+      `https://adalyzeai.xyz/App/api.php?gofor=getcasestudy&slug=${slug}`,
       { cache: 'no-store' }
     )
       .then(response => {
@@ -123,19 +123,19 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
       setLoading(true)
       setError(null)
 
-      const csId = searchParams.get('cs_id')
+      const slug = searchParams.get('slug')
 
-      if (!csId) {
+      if (!slug) {
         // If no cs_id in search params, try to find by slug
         fetchAllCaseStudies()
           .then(allStudies => {
-            const studyBySlug = allStudies.find(study => study.slug === params.slug)
+            const studyBySlug = allStudies.find(study => study.slug === slug)
 
             if (studyBySlug) {
               setCaseStudy(studyBySlug)
               setOtherCaseStudies(
                 allStudies
-                  .filter(study => study.cs_id !== studyBySlug.cs_id)
+                  .filter(study => study.slug !== slug)
 
               )
             } else {
@@ -150,7 +150,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
       } else {
         // Fetch by cs_id from search params
         Promise.all([
-          fetchCaseStudyById(csId),
+          fetchCaseStudyById(slug),
           fetchAllCaseStudies()
         ])
           .then(([studyData, allStudies]) => {
@@ -158,7 +158,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
               setCaseStudy(studyData)
               setOtherCaseStudies(
                 allStudies
-                  .filter(study => study.cs_id !== studyData.cs_id)
+                  .filter(study => study.slug !== slug)
                   .slice(0, 3)
               )
             } else {
@@ -291,10 +291,10 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                       PLATFORM
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Badge className="bg-[#3d3d3d] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
+                      <Badge className="bg-black text-primary text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full">
                         {caseStudy.platform}
                       </Badge>
-                      <Badge className="bg-[#3d3d3d] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
+                      <Badge className="bg-black text-primary text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full">
                         {caseStudy.region}
                       </Badge>
                     </div>
@@ -309,14 +309,14 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                       INDUSTRY
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Badge className="bg-[#3d3d3d] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
+                      <Badge className="bg-black text-primary text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full">
                         {caseStudy.industry}
                       </Badge>
                       {caseStudy.tags &&
                         caseStudy.tags.split(",").map((tag, index) => (
                           <Badge
                             key={index}
-                            className="bg-[#3d3d3d] text-primary text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full"
+                            className="bg-black text-primary text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full"
                           >
                             {tag.trim()}
                           </Badge>
@@ -327,7 +327,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
               </div>
 
               {/* Sidebar card - Mobile First */}
-              <div className="bg-[#1a1a1a] p-4 sm:p-6 rounded-lg rounded-br-[60px] sm:rounded-br-[100px] shadow-sm border border-[#2b2b2b] order-1 lg:order-2">
+              <div className="bg-black p-4 sm:p-6 rounded-lg rounded-br-[60px] sm:rounded-br-[100px] shadow-sm  order-1 lg:order-2">
                 <div className="flex items-center mb-3 sm:mb-4">
                   <p className="font-bold text-xl sm:text-2xl text-white">{caseStudy.industry}</p>
                 </div>
@@ -363,7 +363,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
             {/* Mobile Results Section - Shows first on mobile */}
-            <div className="lg:hidden bg-[#1a1a1a] p-4 sm:p-6 rounded-lg border border-[#2b2b2b] mt-6">
+            <div className="lg:hidden bg-[#1a1a1a] p-4 sm:p-6 rounded-lg border border-[#2b2b2b] mt-6 mb-6">
               <h2 className="text-lg sm:text-xl font-semibold mb-4 text-white">Key Results:</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
@@ -426,7 +426,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
                 {/* Testimonial - Mobile Optimized */}
                 {caseStudy.testimonial_quote && (
-                  <div className="border-l-4 border-[#3d3d3d] pl-4 sm:pl-6 italic text-gray-300 bg-[#171717] p-4 sm:p-6 rounded-r-lg">
+                  <div className="border-l-4 border-[#3d3d3d] pl-4 sm:pl-6 italic text-gray-300 bg-black p-4 sm:p-6 rounded-r-lg">
                     <p className="text-sm sm:text-base leading-relaxed">&quot;{caseStudy.testimonial_quote}&quot;</p>
                     <p className="mt-3 text-xs sm:text-sm font-medium">
                       — {caseStudy.testimonial_name}, {caseStudy.testimonial_role}
@@ -516,7 +516,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                 </div>
 
                 {/* Results Summary - Mobile Optimized */}
-                <div className="border-l-4 border-blue-600 bg-[#1a1a1a] p-4 sm:p-6 rounded-r-lg">
+                <div className="border-l-4 border-blue-600 bg-black p-4 sm:p-6 rounded-r-lg">
                   <p className="text-gray-200 text-sm sm:text-base leading-relaxed">{caseStudy.results_summary}</p>
                   <p className="mt-3 text-gray-300 text-xs sm:text-sm">
                     — {caseStudy.testimonial_name}, {caseStudy.testimonial_role}
@@ -527,7 +527,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                 )}
                 {/* CTA Section - Mobile Optimized */}
                 {!isDashboard && (
-                  <div className="bg-[#1a1a1a] p-4 sm:p-6 rounded-lg shadow-sm border border-gray-800">
+                  <div className="bg-black p-4 sm:p-6 rounded-lg shadow-sm  mb-6">
                     <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-white">
                       Want Similar Results?
                     </h3>
@@ -563,7 +563,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
                 <div className="flex gap-4 sm:gap-6 pb-4 h-full ">
                   {otherCaseStudies.map((study) => (
                     <article
-                      key={study.cs_id}
+                      key={study.slug}
                       className="bg-[#121212] rounded-lg overflow-hidden shadow-md border border-[#2b2b2b] flex flex-col hover:border-[#3d3d3d] transition-colors w-120  flex-shrink-0 "
                     >
                       {/* Banner Image - Fixed Height */}
@@ -628,7 +628,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
                           {/* CTA - Touch Friendly */}
                           <Link
-                            href={`/case-study-detail?cs_id=${study.cs_id}`}
+                            href={`/case-study-detail?slug=${study.slug}`}
                             className="inline-flex items-center text-primary font-medium hover:text-[#db4900]/70 transition-colors text-sm sm:text-base group"
                           >
                             {study.banner_cta_label || "Read case study"}{" "}

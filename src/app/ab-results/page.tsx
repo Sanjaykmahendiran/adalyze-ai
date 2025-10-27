@@ -28,6 +28,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import toast from "react-hot-toast";
 import logo from "@/assets/ad-icon-logo.png"
+import { getAdIdFromUrlParams } from "@/lib/tokenUtils"
 import { ABTestResult, ApiResponse } from "./type";
 
 // Array helper
@@ -63,8 +64,10 @@ export default function ABTestResults() {
     useEffect(() => {
         const fetchAdDetails = async () => {
             try {
-                const adIdA = searchParams.get("ad_id_a") || "";
-                const adIdB = searchParams.get("ad_id_b") || "";
+                const tokenA = searchParams.get("ad-token-a");
+                const tokenB = searchParams.get("ad-token-b");
+                const adIdA = tokenA ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenA })) : searchParams.get("ad_id_a") || "";
+                const adIdB = tokenB ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenB })) : searchParams.get("ad_id_b") || "";
                 if (!adIdA || !adIdB) throw new Error("Missing ad IDs for comparison");
                 const [responseA, responseB] = await Promise.all([
                     fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdA}`),
@@ -107,8 +110,10 @@ export default function ABTestResults() {
         try {
             setFetchingWinner(true);
 
-            const adIdA = searchParams.get("ad_id_a") || "";
-            const adIdB = searchParams.get("ad_id_b") || "";
+            const tokenA = searchParams.get("ad-token-a");
+            const tokenB = searchParams.get("ad-token-b");
+            const adIdA = tokenA ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenA })) : searchParams.get("ad_id_a") || "";
+            const adIdB = tokenB ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenB })) : searchParams.get("ad_id_b") || "";
 
             if (!adIdA || !adIdB) {
                 console.log("Missing ad IDs for A/B test comparison");
@@ -139,8 +144,10 @@ export default function ABTestResults() {
 
     // Delete AB ad function
     const handleDeleteAbAd = async () => {
-        const adIdA = searchParams.get("ad_id_a") || "";
-        const adIdB = searchParams.get("ad_id_b") || "";
+        const tokenA = searchParams.get("ad-token-a");
+        const tokenB = searchParams.get("ad-token-b");
+        const adIdA = tokenA ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenA })) : searchParams.get("ad_id_a") || "";
+        const adIdB = tokenB ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenB })) : searchParams.get("ad_id_b") || "";
         
         if (!adIdA || !adIdB) {
             toast.error('No ad IDs found');

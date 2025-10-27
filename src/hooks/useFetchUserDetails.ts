@@ -5,6 +5,21 @@ import { usePathname } from "next/navigation";
 import useLogout from "@/hooks/useLogout";
 import { axiosInstance } from "@/configs/axios";
 
+interface Brand {
+  brand_id: number;
+  user_id: number;
+  brand_name: string;
+  email: string;
+  mobile: string;
+  logo_url: string;
+  logo_hash: string;
+  verified: number;
+  locked: number;
+  status: number;
+  created_date: string;
+  modified_date: string | null;
+}
+
 interface UserDetails {
   user_id: number;
   mobileno: string;
@@ -15,6 +30,7 @@ interface UserDetails {
   name: string;
   city: string;
   role: string;
+  type: string;
   imgname: string | null;
   company: string;
   source: string;
@@ -29,6 +45,7 @@ interface UserDetails {
   status: number;
   ads_limit: number;
   valid_till: string;
+  brand: Brand | false;
 }
 
 const useFetchUserDetails = () => {

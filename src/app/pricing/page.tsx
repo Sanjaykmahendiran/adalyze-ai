@@ -1,30 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
-import {
-    Check,
-    Crown,
-    Upload,
-    Brain,
-    Wrench,
-    TestTube,
-    Download,
-    Zap,
-    Star,
-    Target,
-    FileText,
-    TrendingUp,
-    ChevronLeft,
-    ChevronRight,
-    CreditCard,
-    Loader2,
-    Gift,
-    Globe,
-} from "lucide-react"
+import { Check, CreditCard, Loader2, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import toast from "react-hot-toast"
 import logo from "@/assets/ad-logo.webp"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
@@ -38,6 +20,7 @@ import { trackFreeTrial, trackPurchase } from "@/lib/gtm"
 import { trackEvent } from "@/lib/eventTracker"
 import Cookies from "js-cookie"
 import PricingHelp from "./_components/pricing-help"
+import { trackPaymentSuccess } from "@/lib/ga4"
 
 // Extend Window interface for Razorpay
 declare global {
@@ -46,16 +29,18 @@ declare global {
     }
 }
 
-// Updated interface to include original prices
+// Updated interface to include original prices and type
 interface PricingPlan {
     package_id: number
+    type: string  // Added type field
     plan_name: string
     price_inr: number
     ori_price_inr: number  // Added original INR price
     ori_price_usd: number  // Added original USD price
     price_usd: string
     features: string
-    ads_limit: number
+    brands_count: number  // Added brands_count field
+    ads_limit: string  // Changed to string to handle "Unlimited"
     valid_till: string
     status: number
 }
@@ -90,6 +75,8 @@ interface RazorpayResponse {
 }
 
 type Currency = "INR" | "USD"
+type PackageType = "Single" | "Multi"
+type BillingPeriod = "monthly" | "half-yearly" | "yearly"
 
 
 const parseFeatures = (featuresStr: string): Feature[] => {
@@ -121,6 +108,8 @@ const ProPage: React.FC = () => {
     const [razorpayLoaded, setRazorpayLoaded] = useState<boolean>(false)
     const [userCurrency, setUserCurrency] = useState<Currency>("INR")
     const [currencyLoading, setCurrencyLoading] = useState<boolean>(true)
+    const [selectedPackageType, setSelectedPackageType] = useState<PackageType>("Single")
+    const [billingPeriods, setBillingPeriods] = useState<{ [key: number]: BillingPeriod }>({})
     const userId = Cookies.get("userId");
 
     // Currency detection function
@@ -191,7 +180,7 @@ const ProPage: React.FC = () => {
         const fetchData = async () => {
             try {
                 const [pricingRes, faqRes, testiRes] = await Promise.all([
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=packageslist"),
+                    fetch("https://adalyzeai.xyz/App/api.php?gofor=packages"),
                     fetch("https://adalyzeai.xyz/App/api.php?gofor=faqlist"),
                     fetch("https://adalyzeai.xyz/App/api.php?gofor=testimonialslist"),
                 ])
@@ -228,61 +217,101 @@ const ProPage: React.FC = () => {
         }
     }, [])
 
-    // Get specific plans
-    const basicPlan = useMemo(
-        () => pricingData.find((plan) => plan.plan_name === "Basic"),
-        [pricingData]
-    )
-    const starterPlan = useMemo(
-        () => pricingData.find((plan) => plan.plan_name === "Starter"),
-        [pricingData]
-    )
-    const growthPlan = useMemo(
-        () => pricingData.find((plan) => plan.plan_name === "Growth"),
-        [pricingData]
+    // Get filtered active plans by type
+    const activePlans = useMemo(
+        () => pricingData.filter((plan) => plan.status === 1 && plan.type === selectedPackageType),
+        [pricingData, selectedPackageType]
     )
 
-    const basicFeatures = useMemo(
-        () => (basicPlan ? parseFeatures(basicPlan.features) : []),
-        [basicPlan]
-    )
-    const starterFeatures = useMemo(
-        () => (starterPlan ? parseFeatures(starterPlan.features) : []),
-        [starterPlan]
-    )
-    const growthFeatures = useMemo(
-        () => (growthPlan ? parseFeatures(growthPlan.features) : []),
-        [growthPlan]
-    )
+    // Helper function to get features for any plan
+    const getPlanFeatures = (plan: PricingPlan) => parseFeatures(plan.features)
 
-    // Updated helper function to get price display with discount logic
+    // Helper function to get billing period for a specific plan
+    const getBillingPeriod = (planId: number): BillingPeriod => {
+        return billingPeriods[planId] || "monthly"
+    }
+
+    // Helper function to set billing period for a specific plan
+    const setBillingPeriodForPlan = (planId: number, period: BillingPeriod) => {
+        setBillingPeriods(prev => ({
+            ...prev,
+            [planId]: period
+        }))
+    }
+
+    // Helper function to calculate price based on billing period
+    const calculatePrice = (basePrice: number, period: BillingPeriod) => {
+        switch (period) {
+            case "monthly":
+                return basePrice
+            case "half-yearly":
+                return basePrice * 5  // 5 months (1 month free)
+            case "yearly":
+                return basePrice * 10  // 10 months (2 months free)
+            default:
+                return basePrice
+        }
+    }
+
+    // Helper function to calculate ads limit based on billing period
+    const calculateAdsLimit = (baseAdsLimit: string, period: BillingPeriod) => {
+        if (baseAdsLimit === "Unlimited") return "Unlimited"
+
+        const numericLimit = parseInt(baseAdsLimit)
+        switch (period) {
+            case "monthly":
+                return baseAdsLimit
+            case "half-yearly":
+                return (numericLimit * 6).toString()  // 6 months worth
+            case "yearly":
+                return (numericLimit * 12).toString()  // 12 months worth
+            default:
+                return baseAdsLimit
+        }
+    }
+
+    // Updated helper function to get price display with discount logic and billing period
     const getPriceDisplay = (plan: PricingPlan) => {
+        const basePriceInr = plan.price_inr
+        const baseOriPriceInr = plan.ori_price_inr
+        const basePriceUsd = typeof plan.price_usd === 'string' ? parseFloat(plan.price_usd) : plan.price_usd
+        const baseOriPriceUsd = typeof plan.ori_price_usd === 'string' ? parseFloat(plan.ori_price_usd) : plan.ori_price_usd
+
+        // Get billing period for this specific plan
+        const planBillingPeriod = getBillingPeriod(plan.package_id)
+
+        // Calculate prices based on billing period (skip for first package)
+        const finalPriceInr = plan.package_id === 1 ? basePriceInr : calculatePrice(basePriceInr, planBillingPeriod)
+        const finalOriPriceInr = plan.package_id === 1 ? baseOriPriceInr : calculatePrice(baseOriPriceInr, planBillingPeriod)
+        const finalPriceUsd = plan.package_id === 1 ? basePriceUsd : calculatePrice(basePriceUsd, planBillingPeriod)
+        const finalOriPriceUsd = plan.package_id === 1 ? baseOriPriceUsd : calculatePrice(baseOriPriceUsd, planBillingPeriod)
+
         if (userCurrency === "INR") {
-            const hasDiscount = plan.ori_price_inr > plan.price_inr
+            const hasDiscount = finalOriPriceInr > finalPriceInr
             return {
-                discountedPrice: `₹${plan.price_inr}`,
-                originalPrice: `₹${plan.ori_price_inr}`,
+                discountedPrice: `₹${finalPriceInr}`,
+                originalPrice: `₹${finalOriPriceInr}`,
                 hasDiscount,
-                primary: `₹${plan.price_inr}`,
-                secondary: `$${plan.price_usd}`,
+                primary: `₹${finalPriceInr}`,
+                secondary: `$${finalPriceUsd}`,
                 primaryCurrency: "INR" as Currency,
                 secondaryCurrency: "USD" as Currency,
-                discountPercentage: hasDiscount ? Math.round(((plan.ori_price_inr - plan.price_inr) / plan.ori_price_inr) * 100) : 0
+                discountPercentage: hasDiscount ? Math.round(((finalOriPriceInr - finalPriceInr) / finalOriPriceInr) * 100) : 0,
+                billingPeriod: planBillingPeriod
             }
         } else {
-            const oriPriceUsd = typeof plan.ori_price_usd === 'string' ? parseFloat(plan.ori_price_usd) : plan.ori_price_usd
-            const priceUsd = typeof plan.price_usd === 'string' ? parseFloat(plan.price_usd) : plan.price_usd
-            const hasDiscount = oriPriceUsd > priceUsd
+            const hasDiscount = finalOriPriceUsd > finalPriceUsd
 
             return {
-                discountedPrice: `$${plan.price_usd}`,
-                originalPrice: `$${plan.ori_price_usd}`,
+                discountedPrice: `$${finalPriceUsd}`,
+                originalPrice: `$${finalOriPriceUsd}`,
                 hasDiscount,
-                primary: `$${plan.price_usd}`,
-                secondary: `₹${plan.price_inr}`,
+                primary: `$${finalPriceUsd}`,
+                secondary: `₹${finalPriceInr}`,
                 primaryCurrency: "USD" as Currency,
                 secondaryCurrency: "INR" as Currency,
-                discountPercentage: hasDiscount ? Math.round(((oriPriceUsd - priceUsd) / oriPriceUsd) * 100) : 0
+                discountPercentage: hasDiscount ? Math.round(((finalOriPriceUsd - finalPriceUsd) / finalOriPriceUsd) * 100) : 0,
+                billingPeriod: planBillingPeriod
             }
         }
     }
@@ -310,10 +339,9 @@ const ProPage: React.FC = () => {
 
             // Check if the response indicates success
             if (result.response === "Free Trial Activated") {
-                toast.success("Free trial activated successfully! Enjoy 2 days of premium features.")
                 trackFreeTrial("Free Trial", userDetails?.user_id?.toString());
                 trackEvent("Free_Trial_Activated", window.location.href, userDetails?.email?.toString());
-                router.push("/upload")
+                router.push("/thanks?order_id=free_trial")
             } else {
                 throw new Error(result.response || 'Failed to activate free trial')
             }
@@ -351,14 +379,21 @@ const ProPage: React.FC = () => {
                     [{ name: selectedPlan.plan_name, price: userCurrency === "INR" ? selectedPlan?.price_inr || 0 : parseFloat(selectedPlan?.price_usd || "0"), quantity: 1 }]
                 );
                 router.push(`/thanks?order_id=${paymentData.razorpay_order_id}`)
-                trackEvent(`Payment_Successful_completed_${selectedPlan.plan_name}`, window.location.href, userDetails?.email?.toString());
+                trackEvent(`Payment_Successful_completed_${selectedPlan.plan_name}`, window.location.href, userDetails?.email?.toString(), userCurrency, selectedPlan?.price_inr || 0);
+                trackPaymentSuccess(
+                    userCurrency === "INR" ? selectedPlan?.price_inr || 0 : parseFloat(selectedPlan?.price_usd || "0"),
+                    userCurrency,
+                    paymentData.razorpay_order_id,
+                    selectedPlan.plan_name,
+                    userDetails?.user_id?.toString()
+                );
             } else {
                 throw new Error(result.message || 'Payment verification failed')
             }
         } catch (error) {
             console.error('Payment verification error:', error)
             toast.error("Payment verification failed. Please contact support if amount was deducted.")
-            trackEvent("Payment_Failed", window.location.href, userDetails?.email?.toString());
+            trackEvent("Payment_Failed", window.location.href, userDetails?.email?.toString(), userCurrency, selectedPlan?.price_inr || 0);
         }
     }
 
@@ -394,6 +429,7 @@ const ProPage: React.FC = () => {
                     user_id: userDetails.user_id.toString(),
                     package_id: selectedPlan.package_id.toString(),
                     ctype: currency,
+                    period: getBillingPeriod(selectedPlan.package_id), // Add billing period to the request
                 }),
             });
 
@@ -403,12 +439,17 @@ const ProPage: React.FC = () => {
                 throw new Error(orderData.message || 'Failed to create order');
             }
 
+            // Calculate the final price based on billing period
+            const finalPrice = currency === 'INR'
+                ? (selectedPlan.package_id === 1 ? selectedPlan.price_inr : calculatePrice(selectedPlan.price_inr, getBillingPeriod(selectedPlan.package_id)))
+                : (selectedPlan.package_id === 1 ? parseFloat(selectedPlan.price_usd) : calculatePrice(parseFloat(selectedPlan.price_usd), getBillingPeriod(selectedPlan.package_id)))
+
             const options = {
                 key: rzpKey,
-                amount: currency === 'INR' ? selectedPlan.price_inr * 100 : Math.round(parseFloat(selectedPlan.price_usd) * 100),
+                amount: Math.round(finalPrice * 100),
                 currency: currency,
                 name: 'Adalyze AI',
-                description: `${selectedPlan.plan_name} Plan Subscription`,
+                description: `${selectedPlan.plan_name} Plan Subscription (${getBillingPeriod(selectedPlan.package_id)})`,
                 order_id: orderData.order_id,
                 handler: function (response: RazorpayResponse) {
                     verifyPayment(response, selectedPlan);
@@ -433,7 +474,7 @@ const ProPage: React.FC = () => {
             console.error('Payment initiation error:', error);
             toast.error(error instanceof Error ? error.message : "Unable to process payment");
             setPaymentLoading(prev => ({ ...prev, [selectedPlan.package_id]: false }));
-            trackEvent("Payment_Failed", window.location.href, userDetails?.email?.toString());
+            trackEvent("Payment_Failed", window.location.href, userDetails?.email?.toString(), userCurrency, selectedPlan?.price_inr || 0);
         }
     }
 
@@ -456,7 +497,7 @@ const ProPage: React.FC = () => {
             {loading ? (
                 <StaticProSkeleton />
             ) : (
-                <div className="min-h-screen text-white space-y-16">
+                <div className="min-h-screen text-white space-y-14">
                     {/* Conditionally render Header only when IS dashboard page */}
                     {isDashboardPage && <Header />}
 
@@ -493,10 +534,10 @@ const ProPage: React.FC = () => {
                     </div>
 
                     {/* Pricing Section */}
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
                         {/* Free Trial - Full Width Row */}
-                        <div className="mb-8 sm:mb-12">
+                        <div className="mb-8 sm:mb-10">
                             <div className="bg-gradient-to-r from-green-900/20 to-green-800/10 rounded-lg p-4 sm:p-6 shadow-lg shadow-green-500/10 border border-green-500/30 hover:scale-[1.02] transition-all duration-300 relative max-w-6xl mx-auto">
                                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                                     <Badge className="bg-green-600 text-white px-3 sm:px-4 py-1 text-xs sm:text-sm">
@@ -505,7 +546,7 @@ const ProPage: React.FC = () => {
                                     </Badge>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 items-center">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 items-center p-2 sm:p-0">
                                     {/* Left: Plan Info */}
                                     <div className="lg:col-span-2">
                                         <h3 className="text-xl sm:text-2xl font-semibold mb-2">
@@ -526,7 +567,7 @@ const ProPage: React.FC = () => {
                                     {/* Right: CTA Button */}
                                     <div className="flex justify-center lg:justify-end">
                                         <Button
-                                            className="bg-green-600 hover:bg-green-700 text-base px-8 py-4 h-auto min-w-[200px]"
+                                            className="bg-green-600 hover:bg-green-700 text-base px-8 py-2 sm:px-8 sm:py-4 h-auto sm:min-w-[200px] w-full"
                                             type="button"
                                             onClick={() => {
                                                 if (isDashboardPage && !userId) {
@@ -535,9 +576,9 @@ const ProPage: React.FC = () => {
                                                     activateFreeTrial();
                                                 }
                                             }}
-                                            disabled={freeTrialLoading && !isDashboardPage}
+                                            disabled={freeTrialLoading}
                                         >
-                                            {freeTrialLoading && !isDashboardPage ? (
+                                            {freeTrialLoading ? (
                                                 <>
                                                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                                     Activating...
@@ -554,293 +595,219 @@ const ProPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Paid Plans - Grid Layout */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
-                            {/* Basic Plan */}
-                            {basicPlan && (
-                                <div className="bg-[#121212] rounded-lg p-6 sm:p-8 shadow-lg shadow-white/5 border border-[#2a2a2a] hover:scale-[1.02] transition-all duration-300 flex flex-col w-full">
-                                    <div className="flex-1">
-                                        <h3 className="text-lg sm:text-xl font-semibold mb-3">
-                                            {basicPlan.plan_name}
-                                        </h3>
-
-                                        {/* Price Display with Strikethrough */}
-                                        {currencyLoading ? (
-                                            <div className="mb-4">
-                                                <div className="h-8 bg-gray-700 rounded animate-pulse mb-2"></div>
-                                                <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
-                                            </div>
-                                        ) : (
-                                            <div className="mb-4">
-                                                {(() => {
-                                                    const priceInfo = getPriceDisplay(basicPlan)
-                                                    return (
-                                                        <div>
-                                                            <div className="flex items-center gap-3 mb-2">
-                                                                {priceInfo.hasDiscount && (
-                                                                    <span className="text-lg sm:text-xl text-gray-400 line-through">
-                                                                        {priceInfo.originalPrice}
-                                                                    </span>
-                                                                )}
-                                                                <span className="text-2xl sm:text-3xl font-bold text-white">
-                                                                    {priceInfo.discountedPrice}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-base sm:text-lg text-gray-300">
-                                                                Validity: {basicPlan.valid_till} days
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                })()}
-                                            </div>
-                                        )}
-
-                                        <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                            {basicPlan.ads_limit} ad analysis Credits
-                                        </div>
-
-                                        <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                                            {basicFeatures.map((feature, index) => (
-                                                <li
-                                                    key={`${feature.text}-${index}`}
-                                                    className="flex items-start gap-3 text-sm sm:text-base"
-                                                >
-                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
-                                                    <span className="leading-relaxed">{feature.text}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-
-                                    <div className="mt-auto">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full bg-primary hover:bg-primary/90 text-sm sm:text-base"
-                                            type="button"
-                                            onClick={() => {
-                                                if (isDashboardPage && !userId) {
-                                                    router.push("/register");
-                                                } else {
-                                                    initiatePayment(userCurrency, basicPlan);
-                                                }
-                                            }}
-                                            disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[basicPlan.package_id]))}
-
-                                        >
-                                            {paymentLoading[basicPlan.package_id] && !isDashboardPage ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Processing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CreditCard className="w-4 h-4 mr-2" />
-                                                    {isDashboardPage ? "Analyze Ad" : `Pay ${getPriceDisplay(basicPlan).primary}`}
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-
-                                    {!razorpayLoaded && !currencyLoading && (
-                                        <p className="text-xs text-gray-500 text-center mt-2">
-                                            Loading payment gateway...
-                                        </p>
-                                    )}
+                        {/* Package Type Tabs */}
+                        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-14">
+                            <div className="flex justify-center">
+                                <div className="bg-black rounded-lg p-1 ">
+                                    <button
+                                        onClick={() => setSelectedPackageType("Single")}
+                                        className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === "Single"
+                                            ? "bg-primary text-white shadow-lg"
+                                            : "text-white hover:text-white hover:bg-[#171717]"
+                                            }`}
+                                    >
+                                        Single Brand
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedPackageType("Multi")}
+                                        className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === "Multi"
+                                            ? "bg-primary text-white shadow-lg"
+                                            : "text-white hover:text-white hover:bg-[#171717]"
+                                            }`}
+                                    >
+                                        Multi Brand
+                                    </button>
                                 </div>
-                            )}
+                            </div>
+                        </div>
 
-                            {/* Starter Plan */}
-                            {starterPlan && (
-                                <div className="bg-[#121212] rounded-lg p-6 sm:p-8 relative shadow-lg shadow-white/5 border border-primary hover:scale-[1.02] transition-all duration-300 flex flex-col w-full">
-                                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                                        <Badge className="bg-primary text-white px-3 sm:px-4 py-1 text-xs sm:text-sm">
-                                            Most Popular
-                                        </Badge>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-lg sm:text-xl font-semibold mb-3">
-                                            {starterPlan.plan_name}
-                                        </h3>
 
-                                        {/* Price Display with Strikethrough */}
-                                        {currencyLoading ? (
-                                            <div className="mb-4">
-                                                <div className="h-8 bg-gray-700 rounded animate-pulse mb-2"></div>
-                                                <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
-                                            </div>
-                                        ) : (
-                                            <div className="mb-4">
-                                                {(() => {
-                                                    const priceInfo = getPriceDisplay(starterPlan)
-                                                    return (
-                                                        <div>
-                                                            <div className="flex items-center gap-3 mb-2">
-                                                                {priceInfo.hasDiscount && (
-                                                                    <span className="text-lg sm:text-xl text-gray-400 line-through">
-                                                                        {priceInfo.originalPrice}
-                                                                    </span>
-                                                                )}
-                                                                <span className="text-2xl sm:text-3xl font-bold text-white">
-                                                                    {priceInfo.discountedPrice}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-base sm:text-lg text-gray-300">
-                                                                Validity: {starterPlan.valid_till} days
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                })()}
-                                            </div>
-                                        )}
+                        {/* Paid Plans - Dynamic Grid Layout */}
+                        <div className={`grid gap-6 sm:gap-8 max-w-5xl mx-auto ${activePlans.length === 1 ? 'grid-cols-1 max-w-md' :
+                            activePlans.length === 2 ? 'grid-cols-1 lg:grid-cols-2' :
+                                activePlans.length === 3 ? 'grid-cols-1 lg:grid-cols-3' :
+                                    'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                            }`}>
+                            {activePlans.map((plan, index) => {
+                                const planFeatures = getPlanFeatures(plan)
+                                const isPopular = index === 1 && activePlans.length >= 2 // Mark second plan as popular if we have 2+ plans
 
-                                        <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                            {starterPlan.ads_limit} ad analyses Credits
-                                        </div>
+                                return (
+                                    <div key={plan.package_id}>
 
-                                        <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                                            {starterFeatures.map((feature, index) => (
-                                                <li
-                                                    key={`${feature.text}-${index}`}
-                                                    className="flex items-start gap-3 text-sm sm:text-base"
-                                                >
-                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
-                                                    <span className="leading-relaxed">{feature.text}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-
-                                    <div className="mt-auto">
-                                        <Button
-                                            className="w-full bg-primary hover:bg-primary/90 text-sm sm:text-base"
-                                            type="button"
-                                            onClick={() => {
-                                                if (isDashboardPage && !userId) {
-                                                    router.push("/register");
-                                                } else {
-                                                    initiatePayment(userCurrency, starterPlan);
-                                                }
-                                            }}
-                                            disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[starterPlan.package_id]))}
+                                        <div
+                                            className={`bg-black rounded-lg p-6 sm:p-8 relative shadow-lg shadow-white/5 border hover:scale-[1.02] transition-all duration-300 flex flex-col w-full ${isPopular ? 'border-primary' : 'border-[#2a2a2a]'
+                                                }`}
                                         >
-                                            {paymentLoading[starterPlan.package_id] && !isDashboardPage ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Processing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CreditCard className="w-4 h-4 mr-2" />
-                                                    {isDashboardPage ? "Analyze Ad" : `Pay ${getPriceDisplay(starterPlan).primary}`}
-                                                </>
+                                            {/* Popular Badge */}
+                                            {isPopular && (
+                                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                                                    <Badge className="bg-primary text-white px-3 sm:px-4 py-1 text-xs sm:text-sm">
+                                                        Most Popular
+                                                    </Badge>
+                                                </div>
                                             )}
-                                        </Button>
-                                    </div>
 
-                                    {!razorpayLoaded && !currencyLoading && (
-                                        <p className="text-xs text-gray-500 text-center mt-2">
-                                            Loading payment gateway...
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Growth Plan */}
-                            {growthPlan && (
-                                <div className="bg-[#121212] rounded-lg p-6 sm:p-8 relative shadow-lg shadow-white/5 border border-[#2a2a2a] hover:scale-[1.02] transition-all duration-300 flex flex-col w-full">
-                                    <div className="flex-1">
-                                        <h3 className="text-lg sm:text-xl font-semibold mb-3">
-                                            {growthPlan.plan_name}
-                                        </h3>
-
-                                        {/* Price Display with Strikethrough */}
-                                        {currencyLoading ? (
-                                            <div className="mb-4">
-                                                <div className="h-8 bg-gray-700 rounded animate-pulse mb-2"></div>
-                                                <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
-                                            </div>
-                                        ) : (
-                                            <div className="mb-4">
-                                                {(() => {
-                                                    const priceInfo = getPriceDisplay(growthPlan)
-                                                    return (
-                                                        <div>
-                                                            <div className="flex items-center gap-3 mb-2">
-                                                                {priceInfo.hasDiscount && (
-                                                                    <span className="text-lg sm:text-xl text-gray-400 line-through">
-                                                                        {priceInfo.originalPrice}
-                                                                    </span>
-                                                                )}
-                                                                <span className="text-2xl sm:text-3xl font-bold text-white">
-                                                                    {priceInfo.discountedPrice}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-base sm:text-lg text-gray-300">
-                                                                Validity: {growthPlan.valid_till} days
-                                                            </div>
+                                            <div className="flex-1">
+                                                {/* Plan name with One Time text or billing dropdown in justify-between */}
+                                                {selectedPackageType === "Single" && plan.package_id === 1 ? (
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <h3 className="text-lg sm:text-xl font-semibold">
+                                                            {plan.plan_name}
+                                                        </h3>
+                                                        <div className="text-sm text-white/80">
+                                                            One Time
                                                         </div>
-                                                    )
-                                                })()}
+                                                    </div>
+                                                ) : (selectedPackageType === "Single" && plan.package_id === 3) || (selectedPackageType === "Multi" && plan.package_id !== 1) ? (
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <h3 className="text-lg sm:text-xl font-semibold">
+                                                            {plan.plan_name}
+                                                        </h3>
+                                                        <Select
+                                                            value={getBillingPeriod(plan.package_id)}
+                                                            onValueChange={(value) => setBillingPeriodForPlan(plan.package_id, value as BillingPeriod)}
+                                                        >
+                                                            <SelectTrigger className="w-32 py-2 text-sm bg-[#171717] text-white">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-[#171717]">
+                                                                <SelectItem value="monthly" className="text-white hover:bg-[#171717]">
+                                                                    Monthly
+                                                                </SelectItem>
+                                                                <SelectItem value="half-yearly" className="text-white hover:bg-[#171717]">
+                                                                    Half-Yearly
+                                                                </SelectItem>
+                                                                <SelectItem value="yearly" className="text-white hover:bg-[#171717]">
+                                                                    Yearly
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                ) : (
+                                                    <h3 className="text-lg sm:text-xl font-semibold mb-3">
+                                                        {plan.plan_name}
+                                                    </h3>
+                                                )}
+
+                                                {/* Price Display with Strikethrough */}
+                                                {currencyLoading ? (
+                                                    <div className="mb-4">
+                                                        <div className="h-8 bg-[#171717] rounded animate-pulse mb-2"></div>
+                                                        <div className="h-4 bg-[#171717] rounded w-24 animate-pulse"></div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="mb-4">
+                                                        {(() => {
+                                                            const priceInfo = getPriceDisplay(plan)
+                                                            return (
+                                                                <div>
+                                                                    <div className="flex items-center gap-3 mb-2">
+                                                                        {priceInfo.hasDiscount && (
+                                                                            <span className="text-lg sm:text-xl text-white/60 line-through">
+                                                                                {priceInfo.originalPrice}
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="text-2xl sm:text-3xl font-bold text-white">
+                                                                            {priceInfo.discountedPrice}
+                                                                        </span>
+                                                                        {/* Savings Badge */}
+                                                                        {plan.package_id !== 1 && getBillingPeriod(plan.package_id) !== 'monthly' && (
+                                                                            <Badge className="bg-green-600 text-white px-2 py-1 text-xs">
+                                                                                {getBillingPeriod(plan.package_id) === 'half-yearly' ? 'Save 1 Month' : 'Save 2 Months'}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-base sm:text-lg text-gray-300">
+                                                                        <span className="text-green-600 font-semibold">
+                                                                            Ad Credits: {plan.package_id === 1
+                                                                                ? (plan.ads_limit === "Unlimited" ? "Unlimited" : plan.ads_limit)
+                                                                                : calculateAdsLimit(plan.ads_limit, getBillingPeriod(plan.package_id))
+                                                                            } </span> |
+                                                                        Validity: {plan.package_id === 1
+                                                                            ? `${plan.valid_till} days`
+                                                                            : getBillingPeriod(plan.package_id) === 'monthly'
+                                                                                ? `${plan.valid_till} days`
+                                                                                : getBillingPeriod(plan.package_id) === 'half-yearly'
+                                                                                    ? '6 months'
+                                                                                    : '12 months'
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })()}
+                                                    </div>
+                                                )}
+
+                                                <div className=" mb-6">
+                                                    {plan.type === "Multi" && plan.brands_count > 0 && (
+                                                        <span className="bg-primary/90 text-white px-3 sm:px-4 py-1 text-xs sm:text-sm rounded-lg">
+                                                            {plan.brands_count} brands included
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-auto">
+                                                    <Button
+                                                        className={`w-full text-sm sm:text-base ${isPopular
+                                                            ? 'bg-primary hover:bg-primary/90'
+                                                            : 'bg-primary hover:bg-primary/90'
+                                                            }`}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (isDashboardPage && !userId) {
+                                                                router.push("/register");
+                                                            } else {
+                                                                initiatePayment(userCurrency, plan);
+                                                            }
+                                                        }}
+                                                        disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[plan.package_id]))}
+                                                    >
+                                                        {paymentLoading[plan.package_id] && !isDashboardPage ? (
+                                                            <>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                                Processing...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <CreditCard className="w-4 h-4 mr-2" />
+                                                                {isDashboardPage ? "Analyze Ad" : `Pay ${getPriceDisplay(plan).primary}`}
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+
+                                                {!razorpayLoaded && !currencyLoading && (
+                                                    <p className="text-xs text-gray-500 text-center mt-2">
+                                                        Loading payment gateway...
+                                                    </p>
+                                                )}
+
+                                                <div className="mt-6">
+                                                    <h3 className="text-lg sm:text-xl font-semibold  mb-3">Features</h3>
+                                                    <ul className="space-y-2 sm:space-y-4 mb-6 sm:mb-8">
+                                                        {planFeatures.map((feature, featureIndex) => (
+                                                            <li
+                                                                key={`${feature.text}-${featureIndex}`}
+                                                                className="flex items-start gap-3 text-sm sm:text-base"
+                                                            >
+                                                                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
+                                                                <span className="leading-relaxed">{feature.text}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
                                             </div>
-                                        )}
-
-                                        <div className=" text-green-600 text-lg px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300 mb-6">
-                                            {growthPlan.ads_limit} ad analyses Credits
                                         </div>
-
-                                        <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                                            {growthFeatures.map((feature, index) => (
-                                                <li
-                                                    key={`${feature.text}-${index}`}
-                                                    className="flex items-start gap-3 text-sm sm:text-base"
-                                                >
-                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
-                                                    <span className="leading-relaxed">{feature.text}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
                                     </div>
-                                    <div className="mt-auto">
-                                        <Button
-                                            className="w-full bg-primary hover:bg-primary/90 text-sm sm:text-base"
-                                            type="button"
-                                            onClick={() => {
-                                                if (isDashboardPage && !userId) {
-                                                    router.push("/register");
-                                                } else {
-                                                    initiatePayment(userCurrency, growthPlan);
-                                                }
-                                            }}
-                                            disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[growthPlan.package_id]))}
-
-                                        >
-                                            {paymentLoading[growthPlan.package_id] && !isDashboardPage ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Processing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CreditCard className="w-4 h-4 mr-2" />
-                                                    {isDashboardPage ? "Analyze Ad " : `Pay ${getPriceDisplay(growthPlan).primary}`}
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-
-                                    {!razorpayLoaded && !currencyLoading && (
-                                        <p className="text-xs text-gray-500 text-center mt-2">
-                                            Loading payment gateway...
-                                        </p>
-                                    )}
-                                </div>
-                            )}
+                                )
+                            })}
                         </div>
                     </div>
 
                     {/* Conditionally render CompetitorTable only when dashboard page */}
-                    {isDashboardPage && basicPlan && (
-                        <CompetitorTable basicPrice={getPriceDisplay(basicPlan).primary} />
+                    {isDashboardPage && activePlans.length > 0 && (
+                        <CompetitorTable basicPrice={getPriceDisplay(activePlans[0]).primary} />
                     )}
 
                     <VersionCard />
@@ -879,7 +846,7 @@ const ProPage: React.FC = () => {
 
             {/* Conditionally render Footer only when dashboard page */}
             {isDashboardPage && <LandingPageFooter />}
-                <PricingHelp  />
+            <PricingHelp />
         </div>
     )
 }

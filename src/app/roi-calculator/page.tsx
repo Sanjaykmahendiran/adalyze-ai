@@ -12,6 +12,8 @@ import { Info, Star, X, Loader, ChevronLeft, ChevronRight } from "lucide-react"
 import FAQSection from "@/components/landing-page/faq-section"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import Header from "@/components/landing-page/header"
+import avt1 from "@/assets/roi-p1.webp"
+import avt2 from "@/assets/roi-p2.webp"
 
 interface ROIData {
     Return_on_Investment?: string
@@ -487,18 +489,18 @@ export default function ROICalculator() {
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-3 gap-6 mb-8">
-                                <div className="text-center bg-[#171717] rounded-lg p-6 flex flex-col items-center gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+                                <div className="text-center bg-[#171717] rounded-lg p-4 sm:p-6 flex flex-col items-center gap-2">
                                     <div className="text-sm text-white/80 mb-1">Cost Savings</div>
-                                    <div className="text-2xl font-bold text-white">{costSavings}</div>
+                                    <div className="text-xl sm:text-2xl font-bold text-white">{costSavings}</div>
                                 </div>
-                                <div className="text-center bg-[#171717] rounded-lg p-6 flex flex-col items-center gap-2">
+                                <div className="text-center bg-[#171717] rounded-lg p-4 sm:p-6 flex flex-col items-center gap-2">
                                     <div className="text-sm text-white/80 mb-1">Time Saved</div>
-                                    <div className="text-2xl font-bold text-white">{timeSaved}</div>
+                                    <div className="text-xl sm:text-2xl font-bold text-white">{timeSaved}</div>
                                 </div>
-                                <div className="text-center bg-[#171717] rounded-lg p-6 flex flex-col items-center gap-2">
+                                <div className="text-center bg-[#171717] rounded-lg p-4 sm:p-6 flex flex-col items-center gap-2 sm:col-span-2 lg:col-span-1">
                                     <div className="text-sm text-white/80 mb-1">ROI</div>
-                                    <div className="text-2xl font-bold text-white">{roi}</div>
+                                    <div className="text-xl sm:text-2xl font-bold text-white">{roi}</div>
                                 </div>
                             </div>
 
@@ -583,9 +585,11 @@ export default function ROICalculator() {
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="flex -space-x-2">
                                         <Avatar className="w-8 h-8 border-2 border-[#171717]">
+                                            <AvatarImage src={avt1.src} alt="User 1" />
                                             <AvatarFallback>U1</AvatarFallback>
                                         </Avatar>
                                         <Avatar className="w-8 h-8 border-2 border-[#171717]">
+                                            <AvatarImage src={avt2.src} alt="User 2" />
                                             <AvatarFallback>U2</AvatarFallback>
                                         </Avatar>
                                     </div>
@@ -601,7 +605,7 @@ export default function ROICalculator() {
                     </div>
                 </div>
             </div>
-            <FAQSection />
+            <FAQSection ButtonText={"Start Free Trial"} />
             <LandingPageFooter />
             {showContactForm && (
                 <ContactFormModal onClose={() => setShowContactForm(false)} />

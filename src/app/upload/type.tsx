@@ -1,15 +1,16 @@
 export interface Country {
     id: string
     name: string
-    iso3: string
-    numeric_code: string
-    iso2: string
-    phonecode: string
-    region_id: string
-    subregion_id: string
-    created_at: string
-    updated_at: string
-    flag: string
+    type?: string
+    iso3?: string
+    numeric_code?: string
+    iso2?: string
+    phonecode?: string
+    region_id?: string
+    subregion_id?: string
+    created_at?: string
+    updated_at?: string
+    flag?: string
 }
 
 export interface State {
@@ -28,15 +29,14 @@ export interface State {
     wikiDataId: string
 }
 
+// Updated to support multiple country selection
 export interface TargetInfo {
     platform: string
     industry: string
     age: string
     gender: string
-    country: string
-    state: string
+    country: string[]
     countryName?: string
-    stateName?: string
 }
 
 export interface Industry {

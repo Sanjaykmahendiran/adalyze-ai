@@ -41,6 +41,7 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
         }));
     };
 
+
     const handleSubmit = async () => {
         if (isSubmitting) return;
 
@@ -102,7 +103,7 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
                 </CardHeader>
                 <CardContent className="space-y-4 max-h-[400px] overflow-auto">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium mb-1 text-white">
+                        <label htmlFor="email" className="block text-sm font-medium mb-1 text-white/70">
                             Email
                         </label>
                         <Input
@@ -119,7 +120,7 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
                     <div>
                         <label
                             htmlFor="category"
-                            className="block text-sm font-medium mb-1 text-white"
+                            className="block text-sm font-medium mb-1 text-white/70"
                         >
                             Category
                         </label>
@@ -156,7 +157,7 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
                         </Select>
                     </div>
                     <div>
-                        <label htmlFor="description" className="block text-sm font-medium mb-1 text-white">
+                        <label htmlFor="description" className="block text-sm font-medium mb-1 text-white/70">
                             Message
                         </label>
                         <Textarea

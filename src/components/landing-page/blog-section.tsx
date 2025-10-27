@@ -103,14 +103,15 @@ export default function BlogSection() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {blogPosts.map((post) => (
                 <div
-                  key={post.blogs_id}
+                  key={post.slug}
                   className="border border-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-[#1a1a1a]"
                 >
                   <Link
-                    href={`/blogdetail?blogs_id=${post.blogs_id}`}
+                    href={`/blogdetail?slug=${post.slug}`}
                     className="block group"
-                    onClick={() => {router.push(`/blogdetail?blogs_id=${post.blogs_id}`);
-                        trackEvent("LP_Blog_button_clicked", window.location.href);
+                    onClick={() => {
+                      router.push(`/blogdetail?slug=${post.slug}`);
+                      trackEvent("LP_Blog_button_clicked", window.location.href);
                     }}
                   >
                     {/* Image Section */}
@@ -169,7 +170,7 @@ export default function BlogSection() {
                           className="group-hover:translate-x-1 transition-transform duration-200"
                         />
                       </div>
-                    </div> 
+                    </div>
                   </Link>
                 </div>
               ))}
@@ -193,8 +194,9 @@ export default function BlogSection() {
               <Link
                 href="/blog"
                 className="px-6 py-3 rounded-lg bg-primary/90 hover:bg-primary text-white font-medium transition-all flex items-center gap-2 shadow-md"
-                onClick={() => {router.push("/blog");
-                    trackEvent("LP_Blog_button_clicked", window.location.href);
+                onClick={() => {
+                  router.push("/blog");
+                  trackEvent("LP_Blog_button_clicked", window.location.href);
                 }}
               >
                 View All

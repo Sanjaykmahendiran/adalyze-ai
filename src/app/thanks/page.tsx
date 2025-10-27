@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Spinner from "@/components/overlay";
 import confetti from "canvas-confetti";
@@ -13,6 +13,7 @@ export default function ThanksPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const order_id = searchParams?.get("order_id");
+  const isFreeTrial = order_id === "free_trial";
 
   useEffect(() => {
     if (order_id) {
@@ -36,7 +37,8 @@ export default function ThanksPage() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          router.push("/upload");
+          // Route to upload for free trial, dashboard for regular payment
+          router.push(isFreeTrial ? "/upload" : "/dashboard");
           return 0;
         }
         return prev - 1;
@@ -51,31 +53,66 @@ export default function ThanksPage() {
   }
 
   return (
-    <div className="loginwrapper  flex justify-center items-center min-h-screen overflow-hidden">
-      <div className="flex flex-col gap-4 justify-center bg-[#121212] my-6 p-6 lg:p-10 m-4 w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[80%] 2xl:max-w-[70%] 2xl:px-16 2xl:py-12 rounded-3xl">
-        <div className="relative rounded-xl ">
-          <div className="flex flex-col items-center text-center p-6">
-            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
-              <Check className="w-12 h-12" />
+    <div className="loginwrapper flex justify-center items-center min-h-screen overflow-hidden">
+      <div className="flex flex-col gap-4 justify-center bg-black my-6 p-6 lg:p-10 m-4 w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[80%] 2xl:max-w-[70%] 2xl:px-16 2xl:py-12 rounded-3xl">
+        <div className="relative rounded-xl">
+          {isFreeTrial ? (
+            // Free Trial Content
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+                <Gift className="w-12 h-12" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">
+                Welcome to Your Free Trial!
+              </h1>
+              <p className="text-gray-300 mb-4">
+                Your free trial has been activated successfully.
+              </p>
+              <p className="text-sm mb-6 font-bold text-white">Trial ID: {order_id}</p>
+
+
+              <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-6 w-full">
+                <p className="text-green-400 text-sm font-medium">
+                  ⏰ Your free trial expires in 5 days. Make the most of it!
+                </p>
+              </div>
+
+              <p className="text-gray-300 mb-4">
+                Redirecting in <span className="font-bold">{countdown}</span> seconds...
+              </p>
+              <Button
+                onClick={() => router.push("/upload")}
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Start Your Free Trial
+              </Button>
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Payment Successful
-            </h1>
-            <p className="text-gray-300 mb-2">
-              Thank you for your payment! Your transaction has been processed successfully.
-            </p>
-            <p className="text-sm mb-6 font-bold text-white">Order ID: {order_id}</p>
-            <p className="text-gray-300 mb-4">
-              Redirecting in <span className="font-bold">{countdown}</span> seconds...
-            </p>
-            <Button
-              onClick={() => router.push("/upload")}
-              variant="default"
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Continue to Upload
-            </Button>
-          </div>
+          ) : (
+            // Regular Payment Content
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+                <Check className="w-12 h-12" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">
+                Payment Successful
+              </h1>
+              <p className="text-gray-300 mb-2">
+                Thank you for your payment! Your transaction has been processed successfully.
+              </p>
+              <p className="text-sm mb-6 font-bold text-white">Order ID: {order_id}</p>
+              <p className="text-gray-300 mb-4">
+                Redirecting in <span className="font-bold">{countdown}</span> seconds...
+              </p>
+              <Button
+                onClick={() => router.push("/dashboard")}
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Continue to Dashboard
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

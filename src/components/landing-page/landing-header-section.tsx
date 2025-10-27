@@ -300,7 +300,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
   return (
     <main className="flex flex-col min-h-screen items-center overflow-x-hidden">
       <div className="relative w-full flex flex-col items-center overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-[95%] sm:h-[90%] md:h-[85%] lg:h-[80%] z-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-[100%] z-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-[rgba(219,73,0,0.3)] via-[rgba(255,102,0,0.2)] to-[rgba(255,150,50,0.1)] blur-md" />
           <Squares
             direction="diagonal"
@@ -329,7 +329,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                 minHeight: `${viewportHeight * 0.8}px`,
               }}
             >
-              <div className="pt-20 sm:pt-24">
+              <div className="pt-24 sm:pt-28">
                 <div className="flex items-center justify-center px-3 py-1 mb-3 rounded-full bg-[#db4900]/10 text-[#db4900] font-semibold text-base">
                   {bannerData.tagline}
                 </div>
@@ -348,8 +348,8 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                   </span>
                 </div>
 
-                <div className="mt-4 px-2">
-                  <span className="bg-gradient-to-r from-orange-300 via-[#db4900] to-yellow-400 bg-clip-text text-transparent font-bold inline-block text-xl sm:text-2xl">
+                <div className="mt-4 px-2 mb-4">
+                  <span className="bg-gradient-to-r from-orange-300 via-[#db4900] to-yellow-400 bg-clip-text text-transparent font-bold inline-block text-3xl">
                     {text}
                     <span className={`${isTyping ? "animate-pulse" : "opacity-0"}`}>|</span>
                   </span>
@@ -360,7 +360,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
-                className="text-base sm:text-lg text-gray-300 text-center mx-auto max-w-md mt-5 px-3 leading-relaxed"
+                className="text-lg sm:text-lg text-gray-300 text-center mx-auto max-w-md mt-5 mb-4 px-3 leading-relaxed"
               >
                 {bannerData.brief}
               </motion.p>
@@ -373,57 +373,15 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
               >
                 <Button
                   onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
-                  className="flex items-center cursor-pointer gap-2 px-6 py-6 text-white text-lg font-semibold rounded-xl transition-colors w-full sm:w-auto min-w-[200px] shadow-lg shadow-orange-500/20"
+                  className="flex items-center cursor-pointer gap-2 px-6 py-6 text-white text-xl font-semibold rounded-xl transition-colors w-full sm:w-auto min-w-[200px]"
                 >
                   {bannerData.pcta}
                 </Button>
-                <div className="flex items-center justify-center gap-2 mt-2 text-white/70 text-xs text-center">
+                <div className="flex items-center justify-center gap-2 mt-2 text-white/70 text-sm text-center">
                   <span>{bannerData.scta}</span>
                 </div>
               </motion.div>
-            </div>
-            {/* Video section - 10% visible, rest overflows downward */}
-            <div
-              ref={videoContainerRef}
-              className="w-full flex items-center justify-center overflow-visible rounded-xl sm:rounded-2xl z-20 shadow-xl bg-black/20 backdrop-blur-sm my-8 "
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onMouseMove={handleMouseMove}
-              onClick={togglePlay}
-            >
-              <video
-                ref={videoRef}
-                className="w-full h-auto object-cover rounded-xl sm:rounded-2xl"
-                poster="https://adalyze.app/uploads/thumbnail-mobile.webp"
-                playsInline
-                preload="metadata"
-                {...({ fetchpriority: "high" } as React.VideoHTMLAttributes<HTMLVideoElement>)}
-              >
-                <source src="https://adalyze.app/uploads/video.mp4" type="video/mp4" />
-              </video>
 
-              {/* Play/Pause button */}
-              <motion.div
-                initial={{ opacity: 1 }}
-                animate={{ opacity: showControls ? 1 : 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="absolute inset-0 flex items-center justify-center"
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    togglePlay();
-                  }}
-                  className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-3 transition-all duration-200 transform hover:scale-110"
-                  aria-label={isPlaying ? "Pause video" : "Play video"}
-                >
-                  {isPlaying ? (
-                    <Pause className="w-6 h-6 text-white" />
-                  ) : (
-                    <Play className="w-6 h-6 text-white ml-0.5" />
-                  )}
-                </button>
-              </motion.div>
             </div>
           </div>
 
@@ -489,7 +447,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
               >
                 <div className="flex flex-col items-center space-y-2 sm:space-y-3 mt-2 sm:mt-4">
                   <Button
-                    onClick={() => {window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("LP_Banner_RB", window.location.href);}}
+                    onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("LP_Banner_RB", window.location.href); }}
                     className="flex items-center cursor-pointer gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 lg:py-6 text-white text-sm sm:text-base md:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[180px] sm:min-w-[200px]"
                   >
                     {bannerData.pcta}
@@ -635,7 +593,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                     poster="https://adalyze.app/uploads/thumbnail.webp"
                     playsInline
                     preload="metadata"
-                    {...({ fetchpriority: "high" } as React.VideoHTMLAttributes<HTMLVideoElement>)}
+                    {...({ fetchPriority: "high" } as React.VideoHTMLAttributes<HTMLVideoElement>)}
                   >
                     <source src="https://adalyze.app/uploads/video.mp4" type="video/mp4" />
                   </video>

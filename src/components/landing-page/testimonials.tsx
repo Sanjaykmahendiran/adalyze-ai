@@ -68,7 +68,7 @@ export default function Testimonials() {
         viewport={{ once: false, amount: 0.3 }}
         className="text-center py-2 sm:py-3"
       >
-        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
+        <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
           Why Marketers Trust Adalyze
         </h2>
         <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Real Stories, Real Results</p>

@@ -112,10 +112,10 @@ export default function Blogs() {
           <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {blogPosts.map((post) => (
               <div
-                key={post.blogs_id}
+                key={post.slug}
                 className="border border-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-black"
               >
-                <Link href={`/blogdetail?blogs_id=${post.blogs_id}`}>
+                <Link href={`/blogdetail?slug=${post.slug}`}>
                   <div className="h-48 relative m-6 rounded-lg overflow-hidden shine-effect">
                     <Image
                       src={post.banner}

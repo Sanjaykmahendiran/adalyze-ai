@@ -74,7 +74,7 @@ export default function SocialProofSection() {
         {/* Right - Text Content */}
         <div className="w-full lg:w-1/2 space-y-6 sm:space-y-8" ref={countRef}>
           {/* Heading */}
-          <motion.h1
+          <motion.h2
             initial={{ x: -100, opacity: 0 }}
             whileInView={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.6 }}
@@ -82,7 +82,7 @@ export default function SocialProofSection() {
             className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4 px-2 text-center lg:text-left"
           >
             Adalyze: <span className="text-[#db4900]"> Optimize Your Ads Instantly </span>
-          </motion.h1>
+          </motion.h2>
 
           {/* Paragraph */}
           <motion.p

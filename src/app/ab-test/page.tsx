@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CountrySelector } from "@/components/ui/country-selector"
 import { X, Lock } from "lucide-react"
 import { AnalyzingOverlay } from "../../components/analyzing-overlay"
 import ABFileUploadCard from "./_components/file-uploader"
@@ -15,6 +16,9 @@ import toast from "react-hot-toast"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import { trackEvent } from "@/lib/eventTracker"
+import { Industry } from "../upload/type"
+import { generateAdToken } from "@/lib/tokenUtils"
+import Footer from "@/components/footer"
 
 interface Country {
     id: string
@@ -32,10 +36,8 @@ interface TargetInfo {
     industry: string
     age: string
     gender: string
-    country: string
-    state: string
+    country: string[]
     countryName?: string
-    stateName?: string
 }
 
 export default function AdComparisonUpload() {
@@ -53,10 +55,10 @@ export default function AdComparisonUpload() {
     const [industry, setIndustry] = useState("")
     const [age, setAge] = useState("")
     const [gender, setGender] = useState("")
-    const [country, setCountry] = useState("")
-    const [state, setState] = useState("")
+    const [country, setCountry] = useState<string[]>([])
     const [minAge, setMinAge] = useState("")
     const [maxAge, setMaxAge] = useState("")
+    const [industries, setIndustries] = useState<Industry[]>([])
 
 
     // File states
@@ -73,17 +75,34 @@ export default function AdComparisonUpload() {
 
     // Location states
     const [countries, setCountries] = useState<Country[]>([])
-    const [states, setStates] = useState<State[]>([])
     const [loadingCountries, setLoadingCountries] = useState(false)
-    const [loadingStates, setLoadingStates] = useState(false)
     const [countrySearch, setCountrySearch] = useState("")
-    const [stateSearch, setStateSearch] = useState("")
-    const [countryDropdownOpen, setCountryDropdownOpen] = useState(false)
-    const [stateDropdownOpen, setStateDropdownOpen] = useState(false)
-    const countrySearchInputRef = useRef<HTMLInputElement>(null)
-    const stateSearchInputRef = useRef<HTMLInputElement>(null)
+    const [industrySearch, setIndustrySearch] = useState("")
+    const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false)
+    const industrySearchInputRef = useRef<HTMLInputElement>(null)
+
 
     const userId = cookies.get("userId") || ""
+
+    const fetchIndustries = async () => {
+        try {
+            const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=industrylist')
+            if (!response.ok) {
+                throw new Error('Failed to fetch industries')
+            }
+            const data: Industry[] = await response.json()
+            setIndustries(data)
+        } catch (error) {
+            console.error('Error fetching industries:', error)
+            toast.error('Failed to load industries')
+        } finally {
+        }
+    }
+
+    // Filter industries based on search
+    const filteredIndustries = industries.filter(industryItem =>
+        industryItem.name.toLowerCase().includes(industrySearch.toLowerCase())
+    )
 
     // Modal scroll lock
     useEffect(() => {
@@ -97,65 +116,92 @@ export default function AdComparisonUpload() {
         }
     }, [sidePanelOpen])
 
-    // Auto-focus country search when dropdown opens
-    useEffect(() => {
-        if (countryDropdownOpen) {
-            setTimeout(() => {
-                countrySearchInputRef.current?.focus()
-            }, 100)
-        }
-    }, [countryDropdownOpen])
 
-    // Auto-focus state search when dropdown opens
+
+    // Auto-focus industry search when dropdown opens
     useEffect(() => {
-        if (stateDropdownOpen) {
+        if (industryDropdownOpen) {
             setTimeout(() => {
-                stateSearchInputRef.current?.focus()
+                industrySearchInputRef.current?.focus()
             }, 100)
         }
-    }, [stateDropdownOpen])
+    }, [industryDropdownOpen])
 
     // Check if files are uploaded
     const hasUploadedFiles = useCallback(() => {
         return fileA && fileB && uploadedImagePathA && uploadedImagePathB
     }, [fileA, fileB, uploadedImagePathA, uploadedImagePathB])
 
-    // Fetch countries on component mount
+    // Fetch industries on component mount
     useEffect(() => {
-        fetchCountries()
+        fetchIndustries()
     }, [])
 
-    // Fetch states when country changes
+    // Handle country search with debouncing
     useEffect(() => {
-        if (country) {
-            fetchStates(country)
-            setState("")
-            setStateSearch("")
-        } else {
-            setStates([])
-            setState("")
-            setStateSearch("")
-        }
-    }, [country])
+        const timeoutId = setTimeout(() => {
+            if (countrySearch.length >= 2) {
+                fetchCountries(countrySearch)
+            } else if (countrySearch.length === 0) {
+                fetchCountries()
+            }
+        }, 300) // 300ms debounce
 
-    // Filter countries and states based on search
-    const filteredCountries = countries.filter(countryItem =>
+        return () => clearTimeout(timeoutId)
+    }, [countrySearch])
+
+
+    // Filter countries based on search
+    const filteredCountries = Array.isArray(countries) ? countries.filter(countryItem =>
         countryItem.name.toLowerCase().includes(countrySearch.toLowerCase())
-    )
+    ) : []
 
-    const filteredStates = states.filter(stateItem =>
-        stateItem.name.toLowerCase().includes(stateSearch.toLowerCase())
-    )
+    // Helper functions to convert between names and IDs
+    const getCountryIdsFromNames = (names: string[]) => {
+        return Array.isArray(countries) ? names.map(name => countries.find(c => c.name === name)?.id).filter(Boolean) as string[] : []
+    }
+    
+    const getCountryNamesFromIds = (ids: string[]) => {
+        return Array.isArray(countries) ? ids.map(id => countries.find(c => c.id === id)?.name).filter(Boolean) as string[] : []
+    }
 
-    const fetchCountries = async () => {
+    // Prepare data for CountrySelector components
+    const countryOptions = Array.isArray(countries) ? countries.map(country => ({
+        value: country.name,
+        label: country.name,
+        id: country.id,
+        type: 'country'
+    })) : []
+
+    // Get currently selected country names that are still available in the options
+    const availableSelectedNames = getCountryNamesFromIds(country)
+
+    const fetchCountries = async (searchTerm: string = '') => {
+        // Only fetch countries if search term has 2 or more characters
+        if (searchTerm.length < 2) {
+          return  // Don't clear countries, just return
+        }
+        
         setLoadingCountries(true)
         try {
-            const response = await fetch('https://techades.com/App/api.php?gofor=countrieslist')
+            const response = await fetch(`https://techades.com/App/api.php?gofor=locationlist&search=${searchTerm}`)
             if (!response.ok) {
                 throw new Error('Failed to fetch countries')
             }
-            const data: Country[] = await response.json()
-            setCountries(data)
+            const data = await response.json()
+            
+            // Get currently selected country names to preserve them
+            const selectedCountryNames = getCountryNamesFromIds(country)
+            
+            // Merge new data with existing selected countries to ensure they remain available
+            const existingCountries = countries || []
+            const selectedCountries = existingCountries.filter(c => selectedCountryNames.includes(c.name))
+            const newCountries = data.filter((newCountry: any) => 
+                !existingCountries.some(existing => existing.id === newCountry.id)
+            )
+            
+            // Combine selected countries with new search results
+            setCountries([...selectedCountries, ...newCountries])
         } catch (error) {
             console.error('Error fetching countries:', error)
             toast.error('Failed to load countries')
@@ -164,22 +210,6 @@ export default function AdComparisonUpload() {
         }
     }
 
-    const fetchStates = async (countryId: string) => {
-        setLoadingStates(true)
-        try {
-            const response = await fetch(`https://techades.com/App/api.php?gofor=stateslist&country_id=${countryId}`)
-            if (!response.ok) {
-                throw new Error('Failed to fetch states')
-            }
-            const data: State[] = await response.json()
-            setStates(data)
-        } catch (error) {
-            console.error('Error fetching states:', error)
-            toast.error('Failed to load states')
-        } finally {
-            setLoadingStates(false)
-        }
-    }
 
     const uploadFile = async (fileToUpload: File, type: string) => {
         const isTypeA = type === "A"
@@ -282,8 +312,7 @@ export default function AdComparisonUpload() {
     }
 
     const handleSaveTarget = async () => {
-        const selectedCountry = countries.find(c => c.id === country)
-        const selectedState = states.find(s => s.id === state)
+        const selectedCountries = Array.isArray(countries) ? countries.filter(c => country.includes(c.id)) : []
 
         setTargetInfo({
             platform,
@@ -291,9 +320,7 @@ export default function AdComparisonUpload() {
             age: `${minAge}-${maxAge}`,
             gender,
             country,
-            state,
-            countryName: selectedCountry?.name || "",
-            stateName: selectedState?.name || ""
+            countryName: selectedCountries.map(c => c.name).join(", ")
         })
         setSidePanelOpen(false)
 
@@ -314,15 +341,16 @@ export default function AdComparisonUpload() {
         setIsAnalyzing(true)
 
         try {
+            // Use targetInfo if available, otherwise use current form values
+            
             const analyzeData = {
                 user_id: userId,
                 ads_name: adName,
-                industry: targetInfo?.industry || "",
-                platform: targetInfo?.platform || "",
-                age: targetInfo?.age || "",
-                gender: targetInfo?.gender || "",
+                industry: targetInfo?.industry || industry,
+                platform: targetInfo?.platform || platform,
+                age: targetInfo?.age || (minAge && maxAge ? `${minAge}-${maxAge}` : ""),
+                gender: targetInfo?.gender || gender,
                 country: targetInfo?.countryName || "",
-                state: targetInfo?.stateName || "",
                 imagePathA: uploadedImagePathA,
                 imagePathB: uploadedImagePathB
             }
@@ -346,7 +374,10 @@ export default function AdComparisonUpload() {
                     localStorage.setItem('abAnalysisResults', JSON.stringify(result))
                 }
                 toast.success("A/B analysis completed successfully!", { id: "analyze" })
-                router.push(`/ab-results?ad_id_a=${result.ad_upload_id_a}&ad_id_b=${result.ad_upload_id_b}`)
+                // Generate tokens for both ad IDs
+                const tokenA = generateAdToken(result.ad_upload_id_a);
+                const tokenB = generateAdToken(result.ad_upload_id_b);
+                router.push(`/ab-results?ad-token-a=${tokenA}&ad-token-b=${tokenB}`)
                 trackEvent("A/B_Ad_Analyzed_Completed", window.location.href, userDetails?.email?.toString())
             } else {
                 throw new Error(result.message || 'A/B analysis failed')
@@ -375,20 +406,25 @@ export default function AdComparisonUpload() {
         if (targetInfo) {
             setPlatform(targetInfo.platform)
             setIndustry(targetInfo.industry)
-            setAge(targetInfo.age)
             setGender(targetInfo.gender)
             setCountry(targetInfo.country)
-            setState(targetInfo.state)
+            
+            // Parse age range from targetInfo.age (format: "min-max")
+            if (targetInfo.age && targetInfo.age.includes('-')) {
+                const [min, max] = targetInfo.age.split('-')
+                setMinAge(min)
+                setMaxAge(max)
+            }
         }
     }
 
-    const isFreeTrailUser = userDetails?.fretra_status === 1 || (userDetails?.ads_limit ?? 0) < 3;
+    const isFreeTrailUser = userDetails && (userDetails.fretra_status === 1 || (userDetails.ads_limit ?? 0) < 3);
 
     let overlayText = "Upgrade to Pro to unlock A/B testing.";
     let buttonText = "Upgrade";
 
     // If not a free trial user, but ads_limit is less than 3
-    if ((userDetails?.ads_limit ?? 0) < 3 && userDetails?.fretra_status !== 1) {
+    if (userDetails && (userDetails.ads_limit ?? 0) < 3 && userDetails.fretra_status !== 1) {
         overlayText = "You don't have sufficient credits. Upgrade to Pro to analyze more ads.";
         buttonText = "Add Credits";
     }
@@ -494,37 +530,44 @@ export default function AdComparisonUpload() {
                                                             <SelectValue placeholder="Select platform" />
                                                         </SelectTrigger>
                                                         <SelectContent className="bg-black border-[#3d3d3d]">
-                                                            <SelectItem value="instagram">Instagram</SelectItem>
-                                                            <SelectItem value="facebook">Facebook</SelectItem>
-                                                            <SelectItem value="twitter">Twitter</SelectItem>
-                                                            <SelectItem value="linkedin">LinkedIn</SelectItem>
-                                                            <SelectItem value="tiktok">TikTok</SelectItem>
-                                                            <SelectItem value="pinterest">Pinterest</SelectItem>
-                                                            <SelectItem value="youtube">YouTube</SelectItem>
-                                                            <SelectItem value="other">Other</SelectItem>
+                                                            <SelectItem value="Instagram">Instagram</SelectItem>
+                                                            <SelectItem value="Facebook">Facebook</SelectItem>
+                                                            <SelectItem value="Meta(FB & IG)">Meta(FB & IG)</SelectItem>
+                                                            <SelectItem value="Twitter">Twitter</SelectItem>
+                                                            <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                                                            <SelectItem value="TikTok">TikTok</SelectItem>
+                                                            <SelectItem value="Pinterest">Pinterest</SelectItem>
+                                                            <SelectItem value="YouTube">YouTube</SelectItem>
+                                                            <SelectItem value="Other">Other</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
 
                                                 <div className="space-y-2">
                                                     <Label className="text-white/70 font-semibold">Industry Category</Label>
-                                                    <Select value={industry} onValueChange={setIndustry}>
+                                                    <Select value={industry} onValueChange={setIndustry} onOpenChange={setIndustryDropdownOpen}>
                                                         <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                             <SelectValue placeholder="Select industry" />
                                                         </SelectTrigger>
-                                                        <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
-                                                            <SelectItem value="retail">Retail & E-commerce</SelectItem>
-                                                            <SelectItem value="technology">Technology</SelectItem>
-                                                            <SelectItem value="finance">Finance & Banking</SelectItem>
-                                                            <SelectItem value="healthcare">Healthcare</SelectItem>
-                                                            <SelectItem value="education">Education</SelectItem>
-                                                            <SelectItem value="travel">Travel & Hospitality</SelectItem>
-                                                            <SelectItem value="food">Food & Beverage</SelectItem>
-                                                            <SelectItem value="entertainment">Entertainment & Media</SelectItem>
-                                                            <SelectItem value="automotive">Automotive</SelectItem>
-                                                            <SelectItem value="real-estate">Real Estate</SelectItem>
-                                                            <SelectItem value="service">Service & Cleaning</SelectItem>
-                                                            <SelectItem value="other">Other</SelectItem>
+                                                        <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
+                                                            <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                                                                <Input
+                                                                    ref={industrySearchInputRef}
+                                                                    placeholder="Search industries..."
+                                                                    value={industrySearch}
+                                                                    onChange={(e) => setIndustrySearch(e.target.value)}
+                                                                    onKeyDown={(e) => e.stopPropagation()}
+                                                                    className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
+                                                                    autoComplete="off"
+                                                                />
+                                                            </div>
+                                                            <div className="max-h-48 overflow-y-auto">
+                                                                {filteredIndustries.map((industryItem: Industry) => (
+                                                                    <SelectItem key={industryItem.industry_id} value={industryItem.name}>
+                                                                        {industryItem.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </div>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -576,72 +619,27 @@ export default function AdComparisonUpload() {
                                                 </div>
 
                                                 <div className="space-y-2">
-                                                    <Label className="text-white/70 font-semibold">Country</Label>
-                                                    <Select value={country} onValueChange={setCountry} disabled={loadingCountries} onOpenChange={setCountryDropdownOpen}>
-                                                        <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
-                                                            <SelectValue placeholder={loadingCountries ? "Loading..." : "Select country"} />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                                            <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                                                <Input
-                                                                    ref={countrySearchInputRef}
-                                                                    placeholder="Search countries..."
-                                                                    value={countrySearch}
-                                                                    onChange={(e) => setCountrySearch(e.target.value)}
-                                                                    onKeyDown={(e) => e.stopPropagation()}
-                                                                    className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
-                                                                    autoComplete="off"
-                                                                />
-                                                            </div>
-                                                            <div className="max-h-48 overflow-y-auto">
-                                                                {filteredCountries.map((countryItem) => (
-                                                                    <SelectItem key={countryItem.id} value={countryItem.id}>
-                                                                        {countryItem.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </div>
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <Label className="text-white/70 font-semibold">Cities and Countries to Advertise</Label>
+                                                    <CountrySelector
+                                                        options={countryOptions}
+                                                        selectedValues={availableSelectedNames}
+                                                        onValueChange={(selectedNames) => {
+                                                            const selectedIds = getCountryIdsFromNames(selectedNames)
+                                                            setCountry(selectedIds)
+                                                        }}
+                                                        placeholder="Select cities and countries..."
+                                                        className="bg-black border-[#3d3d3d] text-white"
+                                                        onSearchChange={(searchValue) => {
+                                                            setCountrySearch(searchValue)
+                                                            // Only fetch if we have a search term
+                                                            if (searchValue.length >= 2) {
+                                                                fetchCountries(searchValue)
+                                                            }
+                                                        }}
+                                                        loading={loadingCountries}
+                                                    />
                                                 </div>
 
-                                                <div className="space-y-2">
-                                                    <Label className="text-white/70 font-semibold">State/Province</Label>
-                                                    <Select value={state} onValueChange={setState} disabled={!country || loadingStates} onOpenChange={setStateDropdownOpen}>
-                                                        <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
-                                                            <SelectValue
-                                                                placeholder={
-                                                                    !country
-                                                                        ? "Select country first"
-                                                                        : loadingStates
-                                                                            ? "Loading..."
-                                                                            : "Select state"
-                                                                }
-                                                            />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                                            {states.length > 0 && (
-                                                                <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                                                    <Input
-                                                                        ref={stateSearchInputRef}
-                                                                        placeholder="Search states..."
-                                                                        value={stateSearch}
-                                                                        onChange={(e) => setStateSearch(e.target.value)}
-                                                                        onKeyDown={(e) => e.stopPropagation()}
-                                                                        className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
-                                                                        autoComplete="off"
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            <div className="max-h-48 overflow-y-auto">
-                                                                {filteredStates.map((stateItem) => (
-                                                                    <SelectItem key={stateItem.id} value={stateItem.id}>
-                                                                        {stateItem.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </div>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
                                             </div>
 
                                             <div className="pt-4 flex flex-col sm:flex-row gap-3">
@@ -741,7 +739,7 @@ export default function AdComparisonUpload() {
                     </div>
                 )}
             </div>
-
+            <Footer />
         </UserLayout>
     )
 }

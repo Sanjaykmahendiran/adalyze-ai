@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Eye, Facebook, Instagram, MessageCircle, FileImage, Upload, Loader2, Linkedin, TrendingUp, TrendingDown } from "lucide-react"
+import { Search, Eye, Facebook, Instagram, MessageCircle, FileImage, Upload, Loader2, Linkedin, TrendingUp, TrendingDown, Share } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -13,6 +13,7 @@ import NoDataFoundImage from "@/assets/no-data-found.webp";
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import MyAdsSkeleton from "@/components/Skeleton-loading/myads-loading"
+import { useAdNavigation } from "@/hooks/useAdNavigation"
 
 // Define the API response interface
 interface AdsApiResponse {
@@ -111,8 +112,27 @@ export default function MyAdsPage() {
     const [abLoading, setAbLoading] = useState(false)
     const [scoreFilter, setScoreFilter] = useState("all")
     const [adTypeFilter, setAdTypeFilter] = useState("all")
-    const [activeTab, setActiveTab] = useState<"ads" | "ab-ads">("ads")
 
+    // Initialize activeTab from session storage or default to "ads"
+    const [activeTab, setActiveTab] = useState<"ads" | "ab-ads">(() => {
+        if (typeof window !== 'undefined') {
+            const savedTab = sessionStorage.getItem('my-ads-active-tab')
+            return (savedTab === "ab-ads" || savedTab === "ads") ? savedTab : "ads"
+        }
+        return "ads"
+    })
+
+    // Use the new ad navigation hook
+    const { navigateToAdResults, navigateToABResults } = useAdNavigation()
+
+    // Function to handle tab switching with session storage
+    const handleTabChange = (tab: "ads" | "ab-ads") => {
+        setActiveTab(tab)
+        // Save to session storage
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('my-ads-active-tab', tab)
+        }
+    }
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -289,9 +309,9 @@ export default function MyAdsPage() {
                 key={ad.ad_id}
                 className="bg-black border border-[#3d3d3d] rounded-lg overflow-hidden hover:border-[#db4900]/50 group hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300"
             >
-                <div 
-                onClick={() => router.push(`/results?ad_id=${ad.ad_id}`)}
-                className="relative cursor-pointer">
+                <div
+                    onClick={() => navigateToAdResults(ad.ad_id.toString())}
+                    className="relative cursor-pointer">
                     <img
                         src={ad.image_path}
                         alt={ad.ads_name}
@@ -347,22 +367,22 @@ export default function MyAdsPage() {
                     <div className="flex gap-2 items-center">
                         <div className="flex-1 min-w-0">
                             <div className={`w-full px-2 sm:px-3 py-1 rounded-md flex items-center justify-center gap-1 text-sm sm:text-lg font-semibold ${ad.go_nogo === "Go"
-                                    ? "bg-green-600/20 text-green-400 border border-green-600"
-                                    : ad.go_nogo === "No-Go"
-                                        ? "bg-red-600/20 text-red-400 border border-red-600"
-                                        : "bg-gray-600/20 text-gray-400 border border-gray-600"
+                                ? "bg-green-600/20 text-green-400 border border-green-600"
+                                : ad.go_nogo === "No-Go"
+                                    ? "bg-red-600/20 text-red-400 border border-red-600"
+                                    : "bg-gray-600/20 text-gray-400 border border-gray-600"
                                 }`}>
                                 {ad.go_nogo === "Go" && <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />}
                                 {ad.go_nogo === "No-Go" && <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />}
                                 <span>{ad.go_nogo || "N/A"}</span>
                             </div>
                         </div>
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 flex gap-2">
                             <Button
-                                onClick={() => router.push(`/results?ad_id=${ad.ad_id}`)}
+                                onClick={() => navigateToAdResults(ad.ad_id.toString())}
                                 size="sm"
                                 variant="outline"
-                                className="text-white bg-[#db4900] border-[#db4900] hover:bg-white hover:text-[#db4900] transition-colors w-8 h-8 sm:w-auto sm:h-auto sm:px-3"
+                                className="text-white bg-[#db4900] border-[#db4900] hover:bg-white hover:text-[#db4900] transition-colors sm:w-auto sm:h-auto sm:px-3 py-2"
                             >
                                 <Eye className="w-3 h-3" />
                                 <span className="hidden sm:inline ml-1">View</span>
@@ -376,11 +396,11 @@ export default function MyAdsPage() {
 
     const renderAbAdCard = (abAdPair: ABAdPair, index: number) => {
         if (!abAdPair || !abAdPair.ad_a || !abAdPair.ad_b) return null
-        
+
         const platformListA = parsePlatforms(abAdPair.ad_a.platforms)
         const platformListB = parsePlatforms(abAdPair.ad_b.platforms)
         const dateFormatted = formatDate(abAdPair.ad_a.uploaded_on)
-        
+
         return (
             <div
                 key={index}
@@ -392,11 +412,12 @@ export default function MyAdsPage() {
                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
                         {/* Ad A */}
                         <div className="space-y-2">
-                            <div 
+                            <div
                                 className="relative cursor-pointer"
                                 onClick={() =>
-                                    router.push(
-                                        `/ab-results?ad_id_a=${abAdPair.ad_a.ad_id}&ad_id_b=${abAdPair.ad_b.ad_id}`
+                                    navigateToABResults(
+                                        abAdPair.ad_a.ad_id.toString(),
+                                        abAdPair.ad_b.ad_id.toString()
                                     )
                                 }
                             >
@@ -412,12 +433,12 @@ export default function MyAdsPage() {
                                     <Badge className="bg-blue-600 text-white text-xs">A</Badge>
                                 </div>
                             </div>
-                            
+
                             {/* Ad A Details */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <p 
-                                        className="text-xs text-gray-300 truncate flex-1" 
+                                    <p
+                                        className="text-xs text-gray-300 truncate flex-1"
                                         title={abAdPair.ad_a.ads_name}
                                         style={{ maxWidth: "70%" }}
                                     >
@@ -436,7 +457,7 @@ export default function MyAdsPage() {
                                         })}
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex items-center justify-between">
                                     {abAdPair.ad_a.score > 0 ? (
                                         <div className="text-xs text-gray-300">
@@ -446,14 +467,13 @@ export default function MyAdsPage() {
                                         <div className="text-xs text-gray-500">Score: <span className="text-gray-400">N/A</span></div>
                                     )}
                                 </div>
-                                
-                                <div className={`w-full px-1 sm:px-2 py-1 rounded-md flex items-center justify-center gap-1 text-xs font-semibold ${
-                                    abAdPair.ad_a.go_nogo === "Go"
-                                        ? "bg-green-600/20 text-green-400 border border-green-600"
-                                        : abAdPair.ad_a.go_nogo === "No-Go"
-                                            ? "bg-red-600/20 text-red-400 border border-red-600"
-                                            : "bg-gray-600/20 text-gray-400 border border-gray-600"
-                                }`}>
+
+                                <div className={`w-full px-1 sm:px-2 py-1 rounded-md flex items-center justify-center gap-1 text-xs font-semibold ${abAdPair.ad_a.go_nogo === "Go"
+                                    ? "bg-green-600/20 text-green-400 border border-green-600"
+                                    : abAdPair.ad_a.go_nogo === "No-Go"
+                                        ? "bg-red-600/20 text-red-400 border border-red-600"
+                                        : "bg-gray-600/20 text-gray-400 border border-gray-600"
+                                    }`}>
                                     {abAdPair.ad_a.go_nogo === "Go" && <TrendingUp className="w-2 h-2 sm:w-3 sm:h-3" />}
                                     {abAdPair.ad_a.go_nogo === "No-Go" && <TrendingDown className="w-2 h-2 sm:w-3 sm:h-3" />}
                                     <span>{abAdPair.ad_a.go_nogo || "N/A"}</span>
@@ -463,11 +483,12 @@ export default function MyAdsPage() {
 
                         {/* Ad B */}
                         <div className="space-y-2">
-                            <div 
+                            <div
                                 className="relative cursor-pointer"
                                 onClick={() =>
-                                    router.push(
-                                        `/ab-results?ad_id_a=${abAdPair.ad_a.ad_id}&ad_id_b=${abAdPair.ad_b.ad_id}`
+                                    navigateToABResults(
+                                        abAdPair.ad_a.ad_id.toString(),
+                                        abAdPair.ad_b.ad_id.toString()
                                     )
                                 }
                             >
@@ -483,12 +504,12 @@ export default function MyAdsPage() {
                                     <Badge className="bg-green-600 text-white text-xs">B</Badge>
                                 </div>
                             </div>
-                            
+
                             {/* Ad B Details */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <p 
-                                        className="text-xs text-gray-300 truncate flex-1" 
+                                    <p
+                                        className="text-xs text-gray-300 truncate flex-1"
                                         title={abAdPair.ad_b.ads_name}
                                         style={{ maxWidth: "70%" }}
                                     >
@@ -507,7 +528,7 @@ export default function MyAdsPage() {
                                         })}
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex items-center justify-between">
                                     {abAdPair.ad_b.score > 0 ? (
                                         <div className="text-xs text-gray-300">
@@ -517,14 +538,13 @@ export default function MyAdsPage() {
                                         <div className="text-xs text-gray-500">Score: <span className="text-gray-400">N/A</span></div>
                                     )}
                                 </div>
-                                
-                                <div className={`w-full px-1 sm:px-2 py-1 rounded-md flex items-center justify-center gap-1 text-xs font-semibold ${
-                                    abAdPair.ad_b.go_nogo === "Go"
-                                        ? "bg-green-600/20 text-green-400 border border-green-600"
-                                        : abAdPair.ad_b.go_nogo === "No-Go"
-                                            ? "bg-red-600/20 text-red-400 border border-red-600"
-                                            : "bg-gray-600/20 text-gray-400 border border-gray-600"
-                                }`}>
+
+                                <div className={`w-full px-1 sm:px-2 py-1 rounded-md flex items-center justify-center gap-1 text-xs font-semibold ${abAdPair.ad_b.go_nogo === "Go"
+                                    ? "bg-green-600/20 text-green-400 border border-green-600"
+                                    : abAdPair.ad_b.go_nogo === "No-Go"
+                                        ? "bg-red-600/20 text-red-400 border border-red-600"
+                                        : "bg-gray-600/20 text-gray-400 border border-gray-600"
+                                    }`}>
                                     {abAdPair.ad_b.go_nogo === "Go" && <TrendingUp className="w-2 h-2 sm:w-3 sm:h-3" />}
                                     {abAdPair.ad_b.go_nogo === "No-Go" && <TrendingDown className="w-2 h-2 sm:w-3 sm:h-3" />}
                                     <span>{abAdPair.ad_b.go_nogo || "N/A"}</span>
@@ -543,8 +563,9 @@ export default function MyAdsPage() {
 
                         <Button
                             onClick={() =>
-                                router.push(
-                                    `/ab-results?ad_id_a=${abAdPair.ad_a.ad_id}&ad_id_b=${abAdPair.ad_b.ad_id}`
+                                navigateToABResults(
+                                    abAdPair.ad_a.ad_id.toString(),
+                                    abAdPair.ad_b.ad_id.toString()
                                 )
                             }
                             size="sm"
@@ -717,7 +738,7 @@ export default function MyAdsPage() {
                     {/* Tabs */}
                     <div className="flex space-x-1 mb-6 bg-[#171717] p-1 rounded-lg border border-[#3d3d3d]">
                         <button
-                            onClick={() => setActiveTab("ads")}
+                            onClick={() => handleTabChange("ads")}
                             className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${activeTab === "ads"
                                 ? "bg-[#db4900] text-white"
                                 : "text-gray-300 hover:text-white hover:bg-[#3d3d3d]"
@@ -727,7 +748,7 @@ export default function MyAdsPage() {
                             <span className="sm:hidden">Ads</span>
                         </button>
                         <button
-                            onClick={() => setActiveTab("ab-ads")}
+                            onClick={() => handleTabChange("ab-ads")}
                             className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${activeTab === "ab-ads"
                                 ? "bg-[#db4900] text-white"
                                 : "text-gray-300 hover:text-white hover:bg-[#3d3d3d]"

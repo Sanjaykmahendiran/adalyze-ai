@@ -49,11 +49,11 @@ const WorkflowSection = () => {
           viewport={{ once: false, amount: 0.3 }}
           className="text-center py-2 sm:py-3 "
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
+          <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
             How Adalyze Works
           </h2>
           <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">3 Simple Steps to Smarter Ads</p>
-          <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1">
+          <p className="text-sm sm:text-base text-white/80 max-w-xl sm:max-w-2xl mx-auto px-1">
             Adalyze AI guides you through a seamless process: upload ad, get instant AI-based analysis, receive actionable suggestions. Transform guesswork into measurable results.
           </p>
         </motion.div>

@@ -104,7 +104,7 @@ export default function BlogSection() {
               {blogPosts.map((post) => (
                 <div
                   key={post.slug}
-                  className="border border-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-[#1a1a1a]"
+                  className=" rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-black"
                 >
                   <Link
                     href={`/blogdetail?slug=${post.slug}`}

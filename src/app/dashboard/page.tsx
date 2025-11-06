@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import Cookies from "js-cookie"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Upload, Crown, MessageCircle, User, Facebook, Instagram, FileImage, X, GitCompareArrows, Calendar, User2Icon, CalendarIcon, ClockIcon, ArrowRightIcon,
   MessageSquare,
@@ -15,7 +16,6 @@ import { useRouter } from "next/navigation"
 import UserLayout from "@/components/layouts/user-layout"
 import DashboardLoadingSkeleton from "@/components/Skeleton-loading/dashboard-loading"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
-import TokenModal from "@/components/TokenModal"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
 
 import TotalAdsAnalyzed from "@/assets/dashboard/total-analyze.png"
@@ -36,7 +36,8 @@ import AdCard from "./_components/ad-card"
 import LimitReached from "@/assets/limit-reached.webp"
 import ExpertConsultationPopup from "@/components/expert-form"
 import { Badge } from "@/components/ui/badge"
-import AddBrandForm from "../brands/_components/add-brand-form"
+import AddBrandForm from "@/app/brands/_components/add-brand-form"
+import { MainStatCard } from "./_components/main-status-card"
 
 const platformIcons = {
   facebook: Facebook,
@@ -72,37 +73,6 @@ const formatDate = (dateString: string | undefined): string => {
   }
 }
 
-// Component definitions
-const MainStatCard = ({ title, value, subtitle, imageSrc }: {
-  title: string;
-  value: string | number;
-  subtitle: string;
-  imageSrc: string;
-}) => (
-  <div className="bg-black rounded-2xl px-4 sm:px-6 py-4 sm:py-6 h-full flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#db4900]/20  group">
-    <div className="flex items-center justify-between mb-2 flex-1">
-      {/* Text Section */}
-      <div className="flex flex-col justify-center min-w-0 flex-1 mr-2">
-        <h3 className="text-gray-200 text-base sm:text-lg font-medium mb-1 sm:mb-2 group-hover:text-white transition-colors duration-300 leading-tight">{title}</h3>
-        <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#db4900] group-hover:text-[#ff5722] transition-colors duration-300">{value}</div>
-      </div>
-      {/* Image Section */}
-      <div className="flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
-        <img
-          src={imageSrc}
-          alt={title}
-          className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain"
-        />
-      </div>
-    </div>
-    {/* Subtitle */}
-    <div className="mt-auto">
-      <div className="bg-[#ffe7d9] text-gray-900 text-xs sm:text-sm px-2 sm:px-3 py-1 font-medium rounded-full inline-block group-hover:bg-[#ffccaa] transition-colors duration-300">
-        {subtitle}
-      </div>
-    </div>
-  </div>
-);
 
 export default function Dashboard() {
   const { userDetails } = useFetchUserDetails()
@@ -124,6 +94,13 @@ export default function Dashboard() {
   const [showAddBrandPopup, setShowAddBrandPopup] = useState(false)
   // Remove userBrands state as brand info comes from userDetails.brand
   const [brandsLoading, setBrandsLoading] = useState(false)
+  // Client brands for type "2"
+  const [clientBrands, setClientBrands] = useState<Array<{ brand_id: number; brand_name: string }>>([])
+  const [clientBrandsLoading, setClientBrandsLoading] = useState(false)
+  const [selectedBrandId, setSelectedBrandId] = useState<string>("")
+  const handleBrandChange = useCallback((val: string) => {
+    setSelectedBrandId(val)
+  }, [])
 
   // Use the new ad navigation hook
   const { navigateToAdResults } = useAdNavigation()
@@ -133,13 +110,17 @@ export default function Dashboard() {
   const handleMyAdsClick = useCallback(() => router.push('/my-ads'), [router])
   const handleViewIdea = useCallback(() => router.push('/guide'), [router])
   const handleViewReport = useCallback((adId: string) => {
-    navigateToAdResults(adId)
+    navigateToAdResults(adId, userDetails?.user_id)
+  }, [navigateToAdResults, userDetails?.user_id])
+  const handleTop10ViewReport = useCallback((adId: string , aduserId: string) => {
+    navigateToAdResults(adId, aduserId)
   }, [navigateToAdResults])
 
   // API fetch functions (keeping original implementations)
-  const fetchDashboardData = async (userId: string) => {
+  const fetchDashboardData = async (userId: string, brandId?: string) => {
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard1&user_id=${userId}`)
+      const brandParam = brandId && brandId.length > 0 && brandId !== "All Clients" ? `&brand_id=${encodeURIComponent(brandId)}` : ""
+      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard1&user_id=${userId}${brandParam}`)
       if (!response.ok) throw new Error('Failed to fetch dashboard data')
       return await response.json()
     } catch (error) {
@@ -148,10 +129,11 @@ export default function Dashboard() {
     }
   }
 
-  const fetchDashboard2Data = async (userId: string) => {
+  const fetchDashboard2Data = async (userId: string, brandId?: string) => {
     try {
       const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }).toUpperCase()
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard2&user_id=${userId}&month=${currentMonth}`)
+      const brandParam = brandId && brandId.length > 0 && brandId !== "All Clients" ? `&brand_id=${encodeURIComponent(brandId)}` : ""
+      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard2&user_id=${userId}&month=${currentMonth}${brandParam}`)
       if (!response.ok) throw new Error('Failed to fetch dashboard2 data')
       return await response.json()
     } catch (error) {
@@ -167,17 +149,6 @@ export default function Dashboard() {
       return await response.json()
     } catch (error) {
       console.error('Error fetching case studies:', error)
-      throw error
-    }
-  }
-
-  const fetchBlogPosts = async () => {
-    try {
-      const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=recentblogs')
-      if (!response.ok) throw new Error('Failed to fetch blog posts')
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching blog posts:', error)
       throw error
     }
   }
@@ -247,7 +218,7 @@ export default function Dashboard() {
         <div className="relative">
           <img
             src={ad.image_path}
-            alt={ad.ads_name}
+            alt={ad.ads_name || "Ad"}
             className="w-full aspect-square object-contain transform group-hover:scale-105 transition-all duration-300"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/placeholder.svg";
@@ -275,10 +246,10 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-2">
             <h3
               className="font-medium text-sm truncate text-white"
-              title={ad.ads_name}
+              title={ad.ads_name || "Untitled Ad"}
               style={{ maxWidth: "70%" }}
             >
-              {ad.ads_name}
+              {ad.ads_name || "Untitled Ad"}
             </h3>
             <div className="flex gap-1 flex-shrink-0">
               {platformList.map((platform, idx) => {
@@ -307,7 +278,7 @@ export default function Dashboard() {
           <div className="flex gap-2 items-center">
             <div className="flex-1 min-w-0">
               <Button
-                onClick={() => navigateToAdResults(ad.ad_id.toString())}
+                onClick={() => handleTop10ViewReport(String(ad.ad_id), String((ad as any).user_id))}
                 size="sm"
                 variant="outline"
                 className="w-full text-[#db4900] border-[#db4900] hover:bg-[#db4900] hover:text-white transition-colors text-xs sm:text-sm"
@@ -316,20 +287,37 @@ export default function Dashboard() {
                 View Report
               </Button>
             </div>
-            <TokenModal adId={ad.ad_id.toString()}>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-[#db4900] border-[#db4900] hover:bg-[#db4900] hover:text-white transition-colors"
-              >
-                <Share className="w-3 h-3" />
-              </Button>
-            </TokenModal>
+
           </div>
         </div>
       </div>
     );
   };
+
+  // Fetch client brands when user is an agency (type "2")
+  useEffect(() => {
+    const shouldFetch = userId && userDetails?.type === "2"
+    if (!shouldFetch) return
+
+    const fetchBrands = async () => {
+      try {
+        setClientBrandsLoading(true)
+        const resp = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`)
+        if (!resp.ok) throw new Error('Failed to fetch brands list')
+        const data = await resp.json()
+        const normalized = Array.isArray(data)
+          ? data.map((b: any) => ({ brand_id: Number(b.brand_id), brand_name: String(b.brand_name || 'Unnamed') }))
+          : []
+        setClientBrands(normalized)
+      } catch (e) {
+        console.error('Error fetching brands list:', e)
+      } finally {
+        setClientBrandsLoading(false)
+      }
+    }
+
+    fetchBrands()
+  }, [userId, userDetails?.type])
 
   // Fetch data effect
   useEffect(() => {
@@ -343,11 +331,10 @@ export default function Dashboard() {
       try {
         setLoading(true)
 
-        const [dashboard1, dashboard2, cases, blogs, topAds, trendingAdsData] = await Promise.all([
-          fetchDashboardData(userId),
-          fetchDashboard2Data(userId),
+        const [dashboard1, dashboard2, cases, topAds, trendingAdsData] = await Promise.all([
+          fetchDashboardData(userId, selectedBrandId || undefined),
+          fetchDashboard2Data(userId, selectedBrandId || undefined),
           fetchCaseStudies(),
-          fetchBlogPosts(),
           fetchTop10Ads(),
           fetchTrendingAds()
         ])
@@ -367,7 +354,7 @@ export default function Dashboard() {
     }
 
     fetchAllData()
-  }, [userId])
+  }, [userId, selectedBrandId])
 
   const accountType = useMemo(
     () => dashboardData?.AccountType || "Trial",
@@ -392,7 +379,7 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    if (userDetails && (userDetails.ads_limit === 0 || (userDetails.valid_till && isPlanExpired(userDetails.valid_till)))) {
+    if (userDetails && (Number(userDetails.ads_limit) === 0 || (userDetails.valid_till && isPlanExpired(userDetails.valid_till)))) {
       setShowLimitPopup(true)
     }
   }, [userDetails])
@@ -448,17 +435,18 @@ export default function Dashboard() {
 
   // Check if brand popup should be shown
   useEffect(() => {
-    if (userDetails && !brandsLoading) {
-      const shouldShowBrandPopup = 
-        userDetails.type === "1" && 
-        userDetails.payment_status === 1 && 
-        userDetails.brand === false
-
-      if (shouldShowBrandPopup) {
+    if (userDetails) {
+      // For type 1: show brand popup if brand is false
+      if (userDetails.payment_status === 1 && userDetails.type === "1" && userDetails.brand === false) {
         setShowAddBrandPopup(true)
       }
+
+      // For type 2: route to myaccount if agency is false
+      if (userDetails.payment_status === 1 && userDetails.type === "2" && userDetails.agency === false) {
+        router.push('/myaccount?action=add-agency')
+      }
     }
-  }, [userDetails, brandsLoading])
+  }, [userDetails, brandsLoading, router])
 
   const handleUpgradeToPro = useCallback(() => {
     setShowLimitPopup(false)
@@ -466,7 +454,7 @@ export default function Dashboard() {
   }, [router])
 
   const LimitExceededPopup = () => {
-    const isAdsLimitZero = userDetails?.ads_limit === 0
+    const isAdsLimitZero = Number(userDetails?.ads_limit) === 0
     const isPlanExpiredStatus = userDetails?.valid_till && isPlanExpired(userDetails.valid_till)
 
     // Prioritize plan expiry message if plan is expired
@@ -764,41 +752,93 @@ export default function Dashboard() {
           <div className="p-4 sm:p-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-              <div className="flex flex-col items-start gap-3 sm:gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-white mb-1">
-                    Hello, <span className="text-3xl sm:text-4xl lg:text-5xl">{userDetails?.name || 'User'}</span>
-                  </h1>
-                </div>
+              <div className="flex flex-col items-start gap-4">
+                {/* Greeting */}
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-white/80">
+                  Hello,{" "}
+                  <span className="text-white">
+                    {userDetails?.name || "User"}
+                  </span>
+                </h1>
+
+                {/* Account Info + Brand Select */}
                 {(accountType || userDetails?.fretra_status === 1) && (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                    <div className="border-2 border-[#db4900] px-3 py-1 items-center gap-2 rounded-full hover:bg-[#db4900]/10 transition-all duration-300  group">
-                      <Crown className="w-4 h-4 text-[#db4900] inline mr-1 group-hover:text-[#ff5722] transition-colors duration-300" />
-                      <span className="text-[#db4900] text-sm font-medium group-hover:text-[#ff5722] transition-colors duration-300">
-                        {accountType === "Pro"
-                          ? "Pro Account"
-                          : userDetails?.fretra_status === 1
-                            ? "Trial Account"
-                            : ""}
-                      </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3">
+
+                    {/* Account Badge + Upgrade Link */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center bg-primary border-2 border-primary px-3 py-1 rounded-full hover:bg-[#db4900]/10 transition-all duration-300 group">
+                        <Crown className="w-4 h-4 text-white mr-2 group-hover:text-[#ff5722] transition-colors duration-300" />
+                        <span className="text-white text-sm font-medium group-hover:text-[#ff5722] transition-colors duration-300">
+                          {accountType === "Pro"
+                            ? "Pro Account"
+                            : userDetails?.fretra_status === 1
+                              ? "Trial Account"
+                              : ""}
+                        </span>
+                      </div>
+
+                      {(
+                        (userDetails?.fretra_status === 1 && accountType !== "Pro") ||
+                        Number(userDetails?.ads_limit) === 0
+                      ) && (
+                          <span
+                            onClick={handleUpgradeToPro}
+                            className="text-[#db4900] text-sm font-medium underline cursor-pointer hover:text-[#ff5722] transition-colors duration-300"
+                          >
+                            {Number(userDetails?.ads_limit) === 0
+                              ? "Add Credits"
+                              : "Upgrade to Pro"}
+                          </span>
+                        )}
                     </div>
 
-                    {(
-                      (userDetails?.fretra_status === 1 && accountType !== "Pro") ||
-                      userDetails?.ads_limit === 0
-                    ) && (
-                        <span
-                          onClick={handleUpgradeToPro}
-                          className="text-[#db4900] text-sm font-medium underline cursor-pointer hover:text-[#ff5722] transition-colors duration-300">
-                          {userDetails?.ads_limit === 0
-                            ? "Add Credits"
-                            : "Upgrade to Pro"}
-                        </span>
-                      )}
-
+                    {/* Brand Select (visible on mobile only for type 2 users) */}
+                    {userDetails?.type === "2" && (
+                      <div className="md:hidden w-full sm:w-auto">
+                        <Select
+                          value={selectedBrandId}
+                          onValueChange={handleBrandChange}
+                          disabled={clientBrandsLoading}
+                        >
+                          <SelectTrigger className="w-full sm:w-[180px] bg-black text-white border border-[#171717] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#db4900]">
+                            <SelectValue
+                              placeholder={
+                                clientBrandsLoading
+                                  ? "Loading..."
+                                  : clientBrands.length === 0
+                                    ? "Select Client"
+                                    : "Select Client"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="All Clients">All Clients</SelectItem>
+                            {clientBrandsLoading && (
+                              <SelectItem value="__loading" disabled>
+                                Loading...
+                              </SelectItem>
+                            )}
+                            {!clientBrandsLoading && clientBrands.length === 0 && (
+                              <SelectItem value="__no_clients" disabled>
+                                No clients
+                              </SelectItem>
+                            )}
+                            {!clientBrandsLoading &&
+                              clientBrands.map((b) => (
+                                <SelectItem key={b.brand_id} value={String(b.brand_id)}>
+                                  {b.brand_name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+
+
               <div className="hidden md:flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
                 <Button
                   onClick={handleUploadClick}
@@ -816,6 +856,33 @@ export default function Dashboard() {
                     <GitCompareArrows className="w-4 h-4 mr-2" />
                     Run AB Test
                   </Button>
+                )}
+                {userDetails?.type === "2" && (
+                  <div>
+                    <Select
+                      value={selectedBrandId}
+                      onValueChange={handleBrandChange}
+                      disabled={clientBrandsLoading}
+                    >
+                      <SelectTrigger className="min-w-[220px] bg-black text-white border border-[#171717] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#db4900]">
+                        <SelectValue placeholder={clientBrandsLoading ? "Loading..." : (clientBrands.length === 0 ? "No clients" : "Select client")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All Clients">All Clients</SelectItem>
+                        {clientBrandsLoading && (
+                          <SelectItem value="__loading" disabled>Loading...</SelectItem>
+                        )}
+                        {!clientBrandsLoading && clientBrands.length === 0 && (
+                          <SelectItem value="__no_clients" disabled>No clients</SelectItem>
+                        )}
+                        {!clientBrandsLoading && clientBrands.map((b) => (
+                          <SelectItem key={b.brand_id} value={String(b.brand_id)}>
+                            {b.brand_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </div>
             </div>
@@ -838,7 +905,7 @@ export default function Dashboard() {
                 />
 
                 <MainStatCard
-                  title="Total Gos"
+                  title="Total Go's"
                   value={String(dashboardData?.TotalGos || 0).toString().padStart(2, "0")}
                   subtitle={`Analyzed ${dashboardData?.AdAnalysed || 0} Ads`}
                   imageSrc={TotalSuggestions.src}
@@ -1335,20 +1402,19 @@ export default function Dashboard() {
       {showAddBrandPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowAddBrandPopup(false)}
           />
           {/* Popup Content */}
-          <div className="relative z-10 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <AddBrandForm
-              onCancel={() => setShowAddBrandPopup(false)}
-              onAdded={async () => {
-                setShowAddBrandPopup(false)
-                router.refresh()
-              }}
-            />
-          </div>
+          <AddBrandForm
+            onCancel={() => setShowAddBrandPopup(false)}
+            onAdded={async () => {
+              setShowAddBrandPopup(false)
+              router.refresh()
+            }}
+            userDetails={userDetails}
+          />
         </div>
       )}
     </UserLayout>

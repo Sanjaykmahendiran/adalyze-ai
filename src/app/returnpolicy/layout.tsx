@@ -10,8 +10,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Adalyze AI – Smart Ad Analysis for Agencies & Marketers",
-  description: "Adalyze AI helps marketers and agencies analyze, optimize, and improve ad performance with smart AI insights to boost ROI and creative quality.",
+  title: "Adalyze Return Policy | Refund & subscription terms",
+  description: "Read Adalyze AI’s return and refund policy. Know your rights and the terms for subscription cancellations.",
 };
 
 export default function Layout({
@@ -21,6 +21,18 @@ export default function Layout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <title> Adalyze Return Policy | Refund & subscription terms</title>
+        <meta
+          name="description"
+          content="Read Adalyze AI’s return and refund policy. Know your rights and the terms for subscription cancellations."
+        />
+
+        <meta
+          name="keywords"
+          content="adalyze return policy, ai software refund, subscription cancellation, ad analysis return, refund terms, adalyze refund policy"
+        />
+      </head>
       <body className={`${poppins.variable} antialiased`}>
         <div className="bg-[#171717]">
           {children}

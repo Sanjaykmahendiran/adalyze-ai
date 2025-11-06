@@ -49,7 +49,7 @@ function SkeletonCard() {
   );
 }
 
-export default function AiAdMistakes({ ButtonText }: { ButtonText: string }) {
+export default function AiAdMistakes({ category }: { category: string }) {
   const [issues, setIssues] = useState<Issue[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -60,10 +60,10 @@ export default function AiAdMistakes({ ButtonText }: { ButtonText: string }) {
     async function load() {
       try {
         setError(null);
-        const res = await fetch(
-          "https://adalyzeai.xyz/App/api.php?gofor=issueslist",
-          { cache: "no-store" }
-        );
+        const url = category
+          ? `https://adalyzeai.xyz/App/api.php?gofor=issueslist&category=${encodeURIComponent(category)}`
+          : `https://adalyzeai.xyz/App/api.php?gofor=issueslist`;
+        const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error(`Failed: ${res.status}`);
         const data = (await res.json()) as Issue[] | unknown;
         if (!active) return;
@@ -89,7 +89,7 @@ export default function AiAdMistakes({ ButtonText }: { ButtonText: string }) {
   }, [issues]);
 
   return (
-    <section id="ai-ad-mistakes" className="py-14 relative overflow-hidden">
+    <section id="ai-ad-mistakes" className="py-14 relative overflow-hidden hidden lg:block">
       <div className="container mx-auto px-6 lg:px-20">
         {/* Header */}
         <motion.div
@@ -110,7 +110,7 @@ export default function AiAdMistakes({ ButtonText }: { ButtonText: string }) {
 
         {/* Cards */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"

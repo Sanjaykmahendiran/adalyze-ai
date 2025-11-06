@@ -27,23 +27,23 @@ const LandingPageFooter = () => {
           </div>
 
           {/* Bottom Links */}
-          <div className="flex flex-wrap justify-center md:justify-start items-center text-sm gap-3 sm:gap-4 md:gap-8 text-center md:text-left">
-            <Link href="/privacypolicy" className="hover:underline">
+          <div className="flex flex-wrap md:flex-nowrap justify-center md:justify-start items-center text-sm gap-3 sm:gap-4 md:gap-8 text-center md:text-left">
+            <Link href="/privacypolicy" className="hover:underline whitespace-nowrap">
               Privacy Policy
             </Link>
-            <Link href="/returnpolicy" className="hover:underline">
+            <Link href="/returnpolicy" className="hover:underline whitespace-nowrap">
               Return Policy
             </Link>
-            <Link href="/termsandconditions" className="hover:underline">
+            <Link href="/termsandconditions" className="hover:underline whitespace-nowrap">
               Terms of Use
             </Link>
-            <Link href="/aboutus" className="hover:underline">
+            <Link href="/aboutus" className="hover:underline whitespace-nowrap">
               About
             </Link>
-            <Link href="/cookie-policy" className="hover:underline">
+            <Link href="/cookie-policy" className="hover:underline whitespace-nowrap">
               Cookie Policy
             </Link>
-            <Link href="/affiliate-program" className="hover:underline">
+            <Link href="/affiliate-program" className="hover:underline whitespace-nowrap">
               Affiliate program
             </Link>
           </div>
@@ -52,15 +52,15 @@ const LandingPageFooter = () => {
         </div>
 
         {/* Right Section: Contact & Buttons */}
-        <div className="text-center md:text-right w-full">
+        <div className="text-center md:text-right w-full md:mr-10">
           <h3 className="text-lg sm:text-xl font-bold text-primary mb-2">Contact</h3>
-          <a href="mailto:support@adalyze.ai" className="text-sm hover:text-primary block mb-4 sm:mb-6">
-            support@adalyze.ai
+          <a href="mailto:support@adalyze.app" className="text-sm hover:text-primary block mb-4 sm:mb-6">
+            support@adalyze.app
           </a>
         </div>
       </div>
       <div className=" text-center text-xs sm:text-sm mt-2">
-        Adalyze AI: © {new Date().getFullYear()} Techades Ebiz Arena. Adalyze AI is a product of Techades.
+        © {new Date().getFullYear()} Techades Ebiz Arena. Adalyze AI is a product of Techades.
       </div>
     </footer>
   )

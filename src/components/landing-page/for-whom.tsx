@@ -61,16 +61,22 @@ export default function ForWhomSection() {
         <section
             id='use-cases'
             className="relative h-auto lg:h-[300vh]" ref={containerRef}>
-            <motion.h2
+            {/* Section Title - Optimized for small screens */}
+            <motion.div
                 initial={{ y: -50, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
                 viewport={{ once: false, amount: 0.3 }}
-                className="text-center py-4 sm:py-6 md:py-8 px-4"
+                className="text-center py-2 sm:py-3 "
             >
-                <p className="text-white font-semibold text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-1">
-                    Who Benefits from <span className='text-primary'>Adalyze AI</span></p>
-            </motion.h2>
+                <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
+                    Who Benefits from <span className='text-primary'>Adalyze AI</span>
+                </h2>
+                <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1"> Designed for Marketers, Designers & Ad Agencies</p>
+                <p className="text-sm sm:text-base text-white/80 max-w-xl sm:max-w-2xl mx-auto px-1">
+                    Adalyze AI helps marketers, designers, and agencies create better ads with AI-powered insights, ad scores, and trend analysis to boost performance and ROI.
+                </p>
+            </motion.div>
             {/* Sticky container (desktop only) */}
             <div className="hidden lg:flex sticky top-0 h-screen items-center justify-start overflow-hidden">
                 {/* Cards container */}
@@ -131,7 +137,7 @@ export default function ForWhomSection() {
                     className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
                 >
                     <div className="text-end">
-                        <h2 className="text-8xl font-bold text-white uppercase tracking-wider">
+                        <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white uppercase tracking-wider">
                             For Whom We Are Made
                         </h2>
                         <div className="w-32 h-1 bg-primary mx-auto mt-4"></div>
@@ -144,7 +150,7 @@ export default function ForWhomSection() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                     {teamMembers.map((member) => (
                         <div key={member.id} className="bg-black rounded-xl sm:rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                            <div className="relative h-56 sm:h-64 md:h-72">
+                            <div className="relative h-96 sm:h-96 md:h-96">
                                 <Image
                                     src={member.image.src}
                                     alt={member.title}

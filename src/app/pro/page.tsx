@@ -46,7 +46,7 @@ declare global {
 
 interface PricingPlan {
     package_id: number
-    type: string  // Added type field
+    type: number  // Added type field - 1 = Single, 2 = Multi
     plan_name: string
     price_inr: number
     ori_price_inr: number  // Added original INR price
@@ -89,7 +89,7 @@ interface RazorpayResponse {
 }
 
 type Currency = "INR" | "USD"
-type PackageType = "Single" | "Multi"
+type PackageType = 1 | 2  // 1 = Single, 2 = Multi
 type BillingPeriod = "monthly" | "half-yearly" | "yearly"
 
 const staticFeatures = [
@@ -155,19 +155,21 @@ const ProPage: React.FC = () => {
     const [razorpayLoaded, setRazorpayLoaded] = useState<boolean>(false)
     const [userCurrency, setUserCurrency] = useState<Currency>("INR")
     const [currencyLoading, setCurrencyLoading] = useState<boolean>(true)
-    const [selectedPackageType, setSelectedPackageType] = useState<PackageType>("Single")
+    const [selectedPackageType, setSelectedPackageType] = useState<PackageType>(1)  // Default to Single (1)
+    const [lastSelectedPackageId, setLastSelectedPackageId] = useState<number | null>(null);
 
     // Update selected package type based on user type
     useEffect(() => {
         if (userDetails?.type === "2") {
-            setSelectedPackageType("Multi")
+            setSelectedPackageType(2)  // Multi
         } else if (userDetails?.type === "1") {
-            setSelectedPackageType("Single")
+            setSelectedPackageType(1)  // Single
         }
     }, [userDetails?.type])
     const [billingPeriods, setBillingPeriods] = useState<{ [key: number]: BillingPeriod }>({})
     const [showSuccessPopup, setShowSuccessPopup] = useState<boolean>(false)
     const [countdown, setCountdown] = useState<number>(5)
+    const [lastOrderType, setLastOrderType] = useState<string>("")
     const scrollRef = useRef<HTMLDivElement>(null)
     const userId = Cookies.get("userId")
 
@@ -237,21 +239,24 @@ const ProPage: React.FC = () => {
 
     // Countdown timer and redirect to dashboard
     useEffect(() => {
-        if (!showSuccessPopup) return
-
+        if (!showSuccessPopup) return;
         const interval = setInterval(() => {
             setCountdown((prev) => {
                 if (prev <= 1) {
-                    clearInterval(interval)
-                    router.push("/dashboard")
-                    return 0
+                    clearInterval(interval);
+                    // Redirect logic: if package_id is 3 or 4 and lastOrderType is 'new' or 'agency'
+                    if ((lastSelectedPackageId === 3 || lastSelectedPackageId === 4) && (lastOrderType === "new" || lastOrderType === "agency")) {
+                        router.push("/myaccount?action=add-agency")
+                    } else {
+                        router.push("/dashboard")
+                    }
+                    return 0;
                 }
-                return prev - 1
+                return prev - 1;
             })
-        }, 1000)
-
-        return () => clearInterval(interval)
-    }, [showSuccessPopup, router])
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [showSuccessPopup, router, lastSelectedPackageId, lastOrderType]);
 
     const next = () => {
         scrollRef.current?.scrollBy({ left: scrollAmount, behavior: "smooth" })
@@ -308,7 +313,7 @@ const ProPage: React.FC = () => {
     const activePlans = useMemo(() => {
         // If user type is 2, only show Multi Brand plans
         if (userDetails?.type === "2") {
-            return pricingData.filter((plan) => plan.status === 1 && plan.type === "Multi")
+            return pricingData.filter((plan) => plan.status === 1 && plan.type === 2)
         }
         // If user type is 1 or no user details, use selected package type
         return pricingData.filter((plan) => plan.status === 1 && plan.type === selectedPackageType)
@@ -319,7 +324,7 @@ const ProPage: React.FC = () => {
 
     // Check if a plan is the user's current plan
     const isCurrentPlan = (plan: PricingPlan) => {
-        return userDetails?.package_id === plan.package_id && userDetails?.type === plan.type
+        return userDetails?.package_id === plan.package_id && userDetails?.type === plan.type.toString()
     }
 
     // Helper function to get billing period for a specific plan
@@ -404,6 +409,7 @@ const ProPage: React.FC = () => {
                 // Show success popup
                 setShowSuccessPopup(true)
                 setCountdown(5)
+                setLastSelectedPackageId(selectedPlan.package_id); // <- store the package_id
                 const eventName = isFreeTrailUser ? `free_trail_user_upgrade_Payment_Successful_${selectedPlan.plan_name}` : `upgrade_Payment_Successful_${selectedPlan.plan_name}`
                 trackEvent(eventName, window.location.href, userDetails?.email?.toString(), userCurrency, selectedPlan?.price_inr || 0)
                 trackPaymentSuccess(
@@ -450,6 +456,38 @@ const ProPage: React.FC = () => {
 
             const rzpKey = configData.rzpaykey;
 
+            // Determine order type based on user's current package and selected package
+            let orderType = "new";
+            const userType = parseInt(userDetails.type);
+            const currentPackageId = userDetails.package_id || 0;
+            const selectedPackageId = selectedPlan.package_id;
+            const selectedType = selectedPlan.type;
+
+            // If user type is 1 and package_id is 1, and they choose package_id 2 → upgrade
+            if (userType === 1 && currentPackageId === 1 && selectedPackageId === 2 && selectedType === 1) {
+                orderType = "upgrade";
+            }
+            // If user type is 2 and package_id is 3, and they choose package_id 4 → upgrade
+            else if (userType === 2 && currentPackageId === 3 && selectedPackageId === 4 && selectedType === 2) {
+                orderType = "upgrade";
+            }
+            // If user type is 1 and package_id is 1 or 2, and they choose package_id 3 or 4 from type 2 → agency
+            else if (userType === 1 && (currentPackageId === 1 || currentPackageId === 2) && 
+                     (selectedPackageId === 3 || selectedPackageId === 4) && selectedType === 2) {
+                orderType = "agency";
+            }
+            // If user type is 1 and package_id is 2, and they choose package_id 1 → downgrade
+            else if (userType === 1 && currentPackageId === 2 && selectedPackageId === 1 && selectedType === 1) {
+                orderType = "downgrade";
+            }
+            // If user type is 2 and package_id is 4, and they choose package_id 3 → downgrade
+            else if (userType === 2 && currentPackageId === 4 && selectedPackageId === 3 && selectedType === 2) {
+                orderType = "downgrade";
+            }
+
+            // Store order type for routing logic
+            setLastOrderType(orderType);
+
             // Create order
             const orderResponse = await fetch('https://adalyzeai.xyz/App/razorpay.php', {
                 method: 'POST',
@@ -459,6 +497,7 @@ const ProPage: React.FC = () => {
                     package_id: selectedPlan.package_id.toString(),
                     ctype: currency,
                     period: getBillingPeriod(selectedPlan.package_id), // Add billing period to the request
+                    order_type: orderType
                 }),
             });
 
@@ -554,15 +593,6 @@ const ProPage: React.FC = () => {
         }
     }
 
-    // Helper function to get primary price (for payment button)
-    const getPrimaryPrice = (plan: PricingPlan) => {
-        if (userCurrency === 'INR') {
-            return `₹${plan.price_inr}`
-        } else {
-            return `$${plan.price_usd}`
-        }
-    }
-
 
     if (error) {
         return (
@@ -599,12 +629,12 @@ const ProPage: React.FC = () => {
 
                             {/* Package Type Tabs - Only show if user type is 1 */}
                             {userDetails?.type === "1" && (
-                                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-14">
+                                <div className="max-w-5xl mx-auto  mb-14">
                                     <div className="flex justify-center">
                                         <div className="bg-black rounded-lg p-1 ">
                                             <button
-                                                onClick={() => setSelectedPackageType("Single")}
-                                                className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === "Single"
+                                                onClick={() => setSelectedPackageType(1)}
+                                                className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === 1
                                                     ? "bg-primary text-white shadow-lg"
                                                     : "text-white hover:text-white hover:bg-[#171717]"
                                                     }`}
@@ -612,8 +642,8 @@ const ProPage: React.FC = () => {
                                                 Single Brand
                                             </button>
                                             <button
-                                                onClick={() => setSelectedPackageType("Multi")}
-                                                className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === "Multi"
+                                                onClick={() => setSelectedPackageType(2)}
+                                                className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === 2
                                                     ? "bg-primary text-white shadow-lg"
                                                     : "text-white hover:text-white hover:bg-[#171717]"
                                                     }`}
@@ -660,7 +690,7 @@ const ProPage: React.FC = () => {
 
                                                 <div className="flex-1">
                                                     {/* Plan name with One Time text or billing dropdown in justify-between */}
-                                                    {selectedPackageType === "Single" && plan.package_id === 1 ? (
+                                                    {selectedPackageType === 1 && plan.package_id === 1 ? (
                                                         <div className="flex justify-between items-center mb-3">
                                                             <h3 className="text-lg sm:text-xl font-semibold">
                                                                 {plan.plan_name}
@@ -669,7 +699,7 @@ const ProPage: React.FC = () => {
                                                                 One Time
                                                             </div>
                                                         </div>
-                                                    ) : (selectedPackageType === "Single" && plan.package_id === 3) || (selectedPackageType === "Multi" && plan.package_id !== 1) ? (
+                                                    ) : (selectedPackageType === 1 && (plan.package_id === 2 || plan.package_id === 3)) || (selectedPackageType === 2 && plan.package_id !== 1) ? (
                                                         <div className="flex justify-between items-center mb-3">
                                                             <h3 className="text-lg sm:text-xl font-semibold">
                                                                 {plan.plan_name}
@@ -748,14 +778,6 @@ const ProPage: React.FC = () => {
                                                             })()}
                                                         </div>
                                                     )}
-
-                                                    <div className=" mb-6">
-                                                        {plan.type === "Multi" && plan.brands_count > 0 && (
-                                                            <span className="bg-primary/90 text-white px-3 sm:px-4 py-1 text-xs sm:text-sm rounded-lg">
-                                                                {plan.brands_count} brands included
-                                                            </span>
-                                                        )}
-                                                    </div>
 
                                                     <div className="mt-auto">
                                                         <Button
@@ -904,15 +926,26 @@ const ProPage: React.FC = () => {
                     </DialogHeader>
                     <div className="flex flex-col items-center gap-4 mt-4">
                         <p className="text-gray-300 text-center">
-                            Redirecting to dashboard in{" "}
-                            <span className="font-bold text-white text-lg">{countdown}</span>{" "}
-                            seconds...
+                            {lastSelectedPackageId === 3 || lastSelectedPackageId === 4 && (lastOrderType === "new" || lastOrderType === "agency") 
+                                ? `Redirecting to my account to add your Agency details in ${countdown} seconds...`
+                                : `Redirecting to dashboard in ${countdown} seconds...`
+                            }
                         </p>
                         <Button
-                            onClick={() => router.push("/dashboard")}
+                            onClick={() => {
+                                // Redirect (manual): if package_id is 3 or 4 and lastOrderType is 'new' or 'agency'
+                                if ((lastSelectedPackageId === 3 || lastSelectedPackageId === 4) && (lastOrderType === "new" || lastOrderType === "agency")) {
+                                    router.push("/myaccount?action=add-agency")
+                                } else {
+                                    router.push("/dashboard")
+                                }
+                            }}
                             className="w-full bg-green-600 hover:bg-green-700 text-white"
                         >
-                            Go to Dashboard Now
+                            {userDetails?.type === "2" && (lastOrderType === "new" || lastOrderType === "agency") 
+                                ? "Go to My Account Now"
+                                : "Go to Dashboard Now"
+                            }
                         </Button>
                     </div>
                 </DialogContent>

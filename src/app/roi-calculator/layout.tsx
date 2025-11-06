@@ -10,8 +10,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Adalyze AI – Smart Ad Analysis for Agencies & Marketers",
-  description: "Adalyze AI helps marketers and agencies analyze, optimize, and improve ad performance with smart AI insights to boost ROI and creative quality.",
+  title: "Ad ROI Calculator | Measure & maximize your ad spend with AI",
+  description: "Estimate your advertising ROI in seconds. Use Adalyze AI’s free ROI calculator to measure performance and maximize returns.",
 };
 
 export default function Layout({
@@ -21,6 +21,18 @@ export default function Layout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <title>Ad ROI Calculator | Measure & maximize your ad spend with AI</title>
+        <meta
+          name="description"
+          content="Estimate your advertising ROI in seconds. Use Adalyze AI’s free ROI calculator to measure performance and maximize returns."
+        />
+
+        <meta
+          name="keywords"
+          content="ad roi calculator, ai roi tool, ad performance roi, campaign roi analysis, digital marketing roi, ai advertising metrics"
+        />
+      </head>
       <body className={`${poppins.variable} antialiased`}>
         <div className="bg-[#171717]">
           {children}

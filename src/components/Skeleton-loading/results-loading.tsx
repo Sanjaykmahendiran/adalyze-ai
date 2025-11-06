@@ -1,6 +1,6 @@
 const ResultsPageLoadingSkeleton = () => (
      <div className="min-h-screen bg-black text-white">
-        <main className="container mx-auto px-6 py-12 space-y-8 animate-pulse">
+        <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 animate-pulse">
           {/* Header Skeleton */}
           <div className="text-center space-y-2">
             <div className="h-8 w-1/3 mx-auto bg-[#121212] rounded"></div>
@@ -8,7 +8,7 @@ const ResultsPageLoadingSkeleton = () => (
           </div>
 
           {/* Ad Overview Skeleton */}
-          <div className="bg-[#121212] rounded-3xl p-8 grid lg:grid-cols-3 gap-8">
+          <div className="bg-[#121212] rounded-3xl p-4 sm:p-8 grid lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Image Skeleton */}
             <div className="aspect-square bg-[#121212] rounded-2xl w-full" />
             

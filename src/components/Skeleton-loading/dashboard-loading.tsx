@@ -11,7 +11,7 @@ const DashboardLoadingSkeleton = () => (
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="bg-[#121212] rounded-lg p-4 animate-pulse">
                         <div className="h-4 w-32 bg-[#2b2b2b] rounded mb-2" />
@@ -51,7 +51,7 @@ const DashboardLoadingSkeleton = () => (
                     <div className="h-12 w-12 bg-[#2b2b2b] rounded-full animate-pulse" />
                     <div className="space-y-2">
                         <div className="h-6 w-64 bg-[#2b2b2b] rounded animate-pulse" />
-                        <div className="h-4 w-96 bg-[#2b2b2b] rounded animate-pulse" />
+                        <div className="h-4 w-full max-w-xs sm:max-w-md bg-[#2b2b2b] rounded animate-pulse" />
                     </div>
                 </div>
                 <div className="h-12 w-48 bg-[#db4900]/70 rounded animate-pulse" />

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
-import UserLayout from "@/components/layouts/user-layout";
-import { Toaster } from "react-hot-toast";
+
 
 // Import Poppins
 const poppins = Poppins({
@@ -23,9 +22,7 @@ export default function Layout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} antialiased`}>
-        <div className="bg-[#171717]">
           {children}
-        </div>
       </body>
     </html>
   );

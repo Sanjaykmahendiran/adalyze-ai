@@ -39,7 +39,7 @@ export default function AffiliatePage() {
     const router = useRouter()
 
     return (
-        <div className="min-h-screen bg-black">
+        <div className="min-h-screen">
             {/* Header */}
             <Header />
 
@@ -76,7 +76,7 @@ export default function AffiliatePage() {
                         {steps.map((item, idx) => (
                             <Card
                                 key={idx}
-                                className="bg-[#121212] border border-[#2b2b2b] rounded-xl shadow-lg hover:shadow-xl hover:border-gray-700 transition-all duration-300 relative group"
+                                className="bg-black border rounded-xl shadow-lg hover:shadow-xl  transition-all duration-300 relative group"
                             >
                                 <CardContent className="p-6 sm:p-8 text-center">
                                     {/* Badge - Mobile Optimized */}
@@ -126,7 +126,7 @@ export default function AffiliatePage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                         
                         {/* Commission Rate */}
-                        <Card className="bg-[#121212] border border-[#2b2b2b] rounded-xl shadow-lg hover:shadow-xl hover:border-gray-700 transition-all duration-300">
+                        <Card className="bg-black border-none rounded-xl shadow-lg hover:shadow-xl  transition-all duration-300">
                             <CardContent className="p-5 sm:p-6">
                                 <div className="flex items-start gap-3 sm:gap-4">
                                     <div className="bg-green-900/30 p-2 sm:p-3 rounded-full flex-shrink-0">
@@ -146,7 +146,7 @@ export default function AffiliatePage() {
                         </Card>
 
                         {/* Cookie Duration */}
-                        <Card className="bg-[#121212] border border-[#2b2b2b] rounded-xl shadow-lg hover:shadow-xl hover:border-gray-700 transition-all duration-300">
+                        <Card className="bg-black border-none rounded-xl shadow-lg hover:shadow-xl  transition-all duration-300">
                             <CardContent className="p-5 sm:p-6">
                                 <div className="flex items-start gap-3 sm:gap-4">
                                     <div className="bg-blue-900/30 p-2 sm:p-3 rounded-full flex-shrink-0">
@@ -166,7 +166,7 @@ export default function AffiliatePage() {
                         </Card>
 
                         {/* Marketing Assets */}
-                        <Card className="bg-[#121212] border border-[#2b2b2b] rounded-xl shadow-lg hover:shadow-xl hover:border-gray-700 transition-all duration-300">
+                        <Card className="bg-black border-none rounded-xl shadow-lg hover:shadow-xl  transition-all duration-300">
                             <CardContent className="p-5 sm:p-6">
                                 <div className="flex items-start gap-3 sm:gap-4">
                                     <div className="bg-purple-900/30 p-2 sm:p-3 rounded-full flex-shrink-0">
@@ -187,7 +187,7 @@ export default function AffiliatePage() {
                         </Card>
 
                         {/* Payment Terms */}
-                        <Card className="bg-[#121212] border border-[#2b2b2b] rounded-xl shadow-lg hover:shadow-xl hover:border-gray-700 transition-all duration-300">
+                        <Card className="bg-black border-none rounded-xl shadow-lg hover:shadow-xl  transition-all duration-300">
                             <CardContent className="p-5 sm:p-6">
                                 <div className="flex items-start gap-3 sm:gap-4">
                                     <div className="bg-orange-900/30 p-2 sm:p-3 rounded-full flex-shrink-0">
@@ -207,7 +207,7 @@ export default function AffiliatePage() {
                         </Card>
 
                         {/* Support & Training */}
-                        <Card className="bg-[#121212] border border-[#2b2b2b] rounded-xl shadow-lg hover:shadow-xl hover:border-gray-700 transition-all duration-300">
+                        <Card className="bg-black border-none rounded-xl shadow-lg hover:shadow-xl  transition-all duration-300">
                             <CardContent className="p-5 sm:p-6">
                                 <div className="flex items-start gap-3 sm:gap-4">
                                     <div className="bg-teal-900/30 p-2 sm:p-3 rounded-full flex-shrink-0">
@@ -227,7 +227,7 @@ export default function AffiliatePage() {
                         </Card>
 
                         {/* Program Restrictions */}
-                        <Card className="bg-[#121212] border border-[#2b2b2b] rounded-xl shadow-lg hover:shadow-xl hover:border-gray-700 transition-all duration-300">
+                        <Card className="bg-black border-none rounded-xl shadow-lg hover:shadow-xl  transition-all duration-300">
                             <CardContent className="p-5 sm:p-6">
                                 <div className="flex items-start gap-3 sm:gap-4">
                                     <div className="bg-indigo-900/30 p-2 sm:p-3 rounded-full flex-shrink-0">
@@ -271,7 +271,7 @@ export default function AffiliatePage() {
             </section>
 
             {/* FAQ and Footer */}
-            <FAQSection />
+            <FAQSection ButtonText="Join the Program Now" />
             <LandingPageFooter />
         </div>
     )

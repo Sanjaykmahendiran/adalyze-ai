@@ -33,26 +33,12 @@ type ApiMenuItem = {
 type UIMenuItem = {
   name: string
   href: string
+  badge_text?: string | null
   hasDropdown?: boolean
-  dropdownItems?: { name: string; href: string }[]
+  dropdownItems?: { name: string; href: string; badge_text?: string | null }[]
 }
 
-// Static route map: keep routes as in the existing UI, do NOT take from API
-const STATIC_ROUTES: Record<string, string> = {
-  "Use Cases": "/use-cases",
-  "Features": "#features",
-  "ROI Calculator": "/roi-calculator",
-  "Pricing": "/pricing?page=dashboard",
-  "Multi Brand": "/multi-brand",
-  "Single Brand": "/single-brand",
-  "Resources": "#",
-  "Blog": "/blog",
-  "Case Studies": "/case-study",
-  "FAQ": "/faq",
-}
-
-// Transform API payload into UI-friendly items, using only names/structure;
-// routes are taken from STATIC_ROUTES, not from API
+// Transform API payload into UI-friendly items, using link from API response
 const toNavigationItems = (items: ApiMenuItem[]): UIMenuItem[] => {
   return items
     .filter(
@@ -68,7 +54,8 @@ const toNavigationItems = (items: ApiMenuItem[]): UIMenuItem[] => {
       const hasDropdown = Array.isArray(i.children) && i.children.length > 0
       return {
         name: i.name,
-        href: STATIC_ROUTES[i.name] ?? "#",
+        href: i.link || "#",
+        badge_text: i.badge_text,
         hasDropdown,
         dropdownItems: hasDropdown
           ? [...(i.children ?? [])]
@@ -76,11 +63,56 @@ const toNavigationItems = (items: ApiMenuItem[]): UIMenuItem[] => {
             .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
             .map((c) => ({
               name: c.name,
-              href: STATIC_ROUTES[c.name] ?? "#",
+              href: c.link || "#",
+              badge_text: c.badge_text,
             }))
           : undefined,
       }
     })
+}
+
+// Module-level singleton to prevent duplicate API calls across all Header instances
+let menuFetchPromise: Promise<UIMenuItem[]> | null = null
+let menuCache: UIMenuItem[] | null = null
+
+const fetchMenuData = async (): Promise<UIMenuItem[]> => {
+  // Return cached data if available
+  if (menuCache) {
+    return menuCache
+  }
+
+  // Return existing promise if fetch is already in progress
+  if (menuFetchPromise) {
+    return menuFetchPromise
+  }
+
+  // Create new fetch promise
+  menuFetchPromise = (async () => {
+    try {
+      const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=menulist", {
+        cache: "no-store",
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) return []
+      
+      // Filter out any non-object entries like stray strings
+      const rawItems: ApiMenuItem[] = (data as unknown[]).filter(
+        (it): it is ApiMenuItem => typeof it === "object" && it !== null
+      )
+      const uiItems = toNavigationItems(rawItems)
+      menuCache = uiItems
+      return uiItems
+    } catch (error) {
+      console.error("Error fetching menu data:", error)
+      return []
+    } finally {
+      // Clear promise after completion (but keep cache)
+      menuFetchPromise = null
+    }
+  })()
+
+  return menuFetchPromise
 }
 
 // Enhanced custom hook for detecting scroll direction and top position
@@ -141,34 +173,16 @@ export default function Header() {
     }
   }
 
-  // Fetch menu list from API and map to UI items (no local fallback)
+  // Fetch menu list from API using singleton pattern to prevent duplicate calls
   useEffect(() => {
     let cancelled = false
-    const controller = new AbortController()
-    const loadMenu = async () => {
-      try {
-        const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=menulist", {
-          signal: controller.signal,
-          cache: "no-store",
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data: unknown = await res.json()
-        if (!Array.isArray(data)) return
-        // Filter out any non-object entries like stray strings
-        const rawItems: ApiMenuItem[] = (data as unknown[]).filter(
-          (it): it is ApiMenuItem => typeof it === "object" && it !== null
-        )
-        const uiItems = toNavigationItems(rawItems)
-        if (!cancelled) setNavigationItems(uiItems)
-      } catch {
-        // No fallback: keep empty if API fails
-        if (!cancelled) setNavigationItems([])
+    fetchMenuData().then((items) => {
+      if (!cancelled) {
+        setNavigationItems(items)
       }
-    }
-    loadMenu()
+    })
     return () => {
       cancelled = true
-      controller.abort()
     }
   }, [])
 
@@ -278,8 +292,13 @@ export default function Header() {
               <div key={item.name} className="relative group">
                 {item.hasDropdown ? (
                   <div className="relative">
-                    <button className="flex items-center gap-1 text-white hover:text-[#db4900] transition-colors duration-200 font-medium text-sm xl:text-base py-2 whitespace-nowrap">
+                    <button className="flex items-center gap-1 text-white hover:text-[#db4900] transition-colors duration-200 font-medium text-sm xl:text-base py-2 whitespace-nowrap relative">
                       {item.name}
+                      {item.badge_text && (
+                        <span className="absolute -top-1 -right-5 bg-[#db4900] text-white text-[10px] px-1 py-0.5 rounded-full font-medium min-w-[16px] h-4 flex items-center justify-center">
+                          {item.badge_text}
+                        </span>
+                      )}
                       <ChevronDown className="w-4 h-4 transition-transform group-hover:rotate-180" />
                     </button>
                     {/* Desktop Dropdown - Enhanced positioning */}
@@ -289,9 +308,16 @@ export default function Header() {
                           <Link
                             key={dropdownItem.name}
                             href={dropdownItem.href}
-                            className="block px-4 py-2 text-sm xl:text-base text-white hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200"
+                            className="block px-4 py-2 text-sm xl:text-base text-white hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 relative"
                           >
-                            {dropdownItem.name}
+                            <div className="flex items-center gap-2">
+                              {dropdownItem.name}
+                              {dropdownItem.badge_text && (
+                                <span className="absolute -top-1 -right-5 bg-[#db4900] text-white text-[10px] px-1 py-0.5 rounded-full font-medium min-w-[16px] h-4 flex items-center justify-center">
+                                  {dropdownItem.badge_text}
+                                </span>
+                              )}
+                            </div>
                           </Link>
                         ))}
                       </div>
@@ -301,9 +327,14 @@ export default function Header() {
                   <Link
                     href={item.href}
                     onClick={(e) => handleSmoothScroll(e, item.href)}
-                    className="text-white hover:text-[#db4900] transition-colors duration-200 font-medium text-sm xl:text-base py-2 whitespace-nowrap"
+                    className="flex items-center gap-1 text-white hover:text-[#db4900] transition-colors duration-200 font-medium text-sm xl:text-base py-2 whitespace-nowrap relative"
                   >
                     {item.name}
+                    {item.badge_text && (
+                      <span className="absolute -top-1 -right-5 bg-[#db4900] text-white text-[10px] px-1 py-0.5 rounded-full font-medium min-w-[16px] h-4 flex items-center justify-center">
+                        {item.badge_text}
+                      </span>
+                    )}
                   </Link>
                 )}
               </div>
@@ -383,9 +414,16 @@ export default function Header() {
                             <div>
                               <button
                                 onClick={() => setIsResourcesOpen(!isResourcesOpen)}
-                                className="w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-white hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 font-medium text-sm sm:text-base"
+                                className="w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-white hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 font-medium text-sm sm:text-base relative"
                               >
-                                {item.name}
+                                <div className="flex items-center gap-2">
+                                  {item.name}
+                                  {item.badge_text && (
+                                    <span className="absolute top-1 right-8 lg:top-0 lg:-right-5 bg-[#db4900] text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium min-w-[16px] h-4 flex items-center justify-center">
+                                      {item.badge_text}
+                                    </span>
+                                  )}
+                                </div>
                                 <ChevronDown
                                   className={`w-4 h-4 transition-transform ${isResourcesOpen ? "rotate-180" : ""
                                     }`}
@@ -405,13 +443,20 @@ export default function Header() {
                                       <Link
                                         key={dropdownItem.name}
                                         href={dropdownItem.href}
-                                        className="block px-6 sm:px-8 py-2.5 sm:py-3 text-gray-300 hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 text-sm sm:text-base"
+                                        className="block px-6 sm:px-8 py-2.5 sm:py-3 text-gray-300 hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 text-sm sm:text-base relative"
                                         onClick={() => {
                                           setIsMobileMenuOpen(false)
                                           setIsResourcesOpen(false)
                                         }}
                                       >
-                                        {dropdownItem.name}
+                                        <div className="flex items-center gap-2">
+                                          {dropdownItem.name}
+                                          {dropdownItem.badge_text && (
+                                            <span className="absolute top-1 right-2 lg:top-0 lg:-right-5 bg-[#db4900] text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium min-w-[16px] h-4 flex items-center justify-center">
+                                              {dropdownItem.badge_text}
+                                            </span>
+                                          )}
+                                        </div>
                                       </Link>
                                     ))}
                                   </motion.div>
@@ -421,14 +466,21 @@ export default function Header() {
                           ) : (
                             <Link
                               href={item.href}
-                              className="block px-3 sm:px-4 py-2.5 sm:py-3 text-white hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 font-medium text-sm sm:text-base"
+                              className="block px-3 sm:px-4 py-2.5 sm:py-3 text-white hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 font-medium text-sm sm:text-base relative"
                               onClick={(e) => {
                                 handleSmoothScroll(e, item.href)
                                 setIsMobileMenuOpen(false)
                                 setIsResourcesOpen(false)
                               }}
                             >
-                              {item.name}
+                              <div className="flex items-center gap-2">
+                                {item.name}
+                                {item.badge_text && (
+                                  <span className="absolute top-1 right-2 lg:top-0 lg:-right-5 bg-[#db4900] text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium min-w-[16px] h-4 flex items-center justify-center">
+                                    {item.badge_text}
+                                  </span>
+                                )}
+                              </div>
                             </Link>
                           )}
                         </div>

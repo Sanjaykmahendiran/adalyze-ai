@@ -165,7 +165,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
             }
           }}
         >
-          <Command shouldFilter={false}>
+          <Command shouldFilter={false} className="flex flex-col">
             <CommandInput
               placeholder="Search countries..."
               onKeyDown={(e) => {
@@ -192,7 +192,8 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                 }
               }}
             />
-            <CommandList>
+            <div className="flex flex-col max-h-[360px]">
+            <CommandList className="flex-1 overflow-auto">
               <CommandEmpty>
                 {loading ? "Loading..." : "No countries found."}
               </CommandEmpty>
@@ -271,31 +272,33 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                   </>
                 )}
               </CommandGroup>
-              <CommandGroup>
-                <div className="flex items-center justify-between">
-                  {selectedValues.length > 0 && (
-                    <>
-                      <CommandItem 
-                        onSelect={() => {
-                          handleClear()
-                        }}
-                        className="flex-1 justify-center cursor-pointer"
-                      >
-                        Clear
-                      </CommandItem>
-                    </>
-                  )}
-                  <CommandItem
-                    onSelect={() => {
-                      setIsPopoverOpen(false)
-                    }}
-                    className="flex-1 justify-center cursor-pointer max-w-full"
-                  >
-                    Close
-                  </CommandItem>
-                </div>
-              </CommandGroup>
             </CommandList>
+            {/* Sticky footer with actions */}
+            <div className="sticky bottom-0 bg-background border-t">
+              <div className="flex items-center justify-between">
+                {selectedValues.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClear()
+                    }}
+                    className="flex-1 py-2 text-sm cursor-pointer hover:bg-accent"
+                  >
+                    Clear
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPopoverOpen(false)
+                  }}
+                  className="flex-1 py-2 text-sm cursor-pointer hover:bg-accent max-w-full"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            </div>
           </Command>
         </PopoverContent>
       </Popover>

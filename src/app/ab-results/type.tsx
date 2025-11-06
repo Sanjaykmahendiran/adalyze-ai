@@ -1,16 +1,38 @@
 export interface AdCopy {
-    platform: string;
-    tone: string;
-    copy_text: string;
+  platform: string
+  tone: string
+  copy_text: string
 }
-
-export interface ApiResponse {
+ 
+  export interface ApiResponse {
+    targeting_compare_json: any;
+    suggested_interests: any;
+    target_match_score: any;
+    prevention_tip_to_avoid_ad_fatigue: string;
+    emotional_connection_score: number;
+    cta_strength_score: number;
+    visual_appeal_score: number;
+    traffic_comment: string;
+    top_5_audience(top_5_audience: any): unknown;
+    competitor_uniqueness_text: string;
+    suggested_test_budget_in_usd: string;
+    suggested_test_duration_days: any;
+    top_3_audience: string[];
+    spend_recommendation_strategy_tip: string;
     ad_id: number;
     title: string;
-    images: string[];
     ad_type: string;
-    video: string;
+    video?: string;
+    agency_logo?: string;
+    agency_website?: string;
+    agency_mail?: string;
+    images: string[];
     uploaded_on: string;
+    updated_on?: string;
+    status: number;
+    user_id: number;
+    adanaly_id: number;
+    ad_upload_id: number;
     industry: string;
     platform?: string;
     gender?: string;
@@ -18,74 +40,92 @@ export interface ApiResponse {
     country?: string;
     state?: string;
     score_out_of_100: number;
-    platform_suits: string[] | string;
-    platform_notsuits: string[] | string;
+    why_overall_score_out_of_100?: string[];
+    estimated_ctr_loss_if_issues_unfixed?: string[];
+    platform_suits: string[];
+    platform_notsuits: string[];
     issues: string[];
+    critical_issues?: string[];
+    minor_issues?: string[];
     suggestions: string[];
     feedback_designer: string[];
     feedback_digitalmark: string[];
-    visual_clarity: number | string;
-    emotional_appeal: number | string;
-    primary_emotion?: string;
-    emotional_alignment?: string;
-    emotional_boost_suggestions?: string[];
-    text_visual_balance: number | string;
-    cta_visibility: number | string;
+    visual_clarity: number;
+    emotional_appeal: number;
+    primary_emotion: string;
+    text_visual_balance: number;
+    cta_visibility: number;
     color_harmony: number;
-    color_harmony_feedback?: string;
+    dominant_colors: string[];
+    suggested_colors: string[];
+    font_feedback: string;
+    layout_symmetry_score: number;
+    color_harmony_feedback: string;
     brand_alignment: number;
     text_readability: number;
     image_quality: number;
     scroll_stoppower: string;
     estimated_ctr: string;
     conversion_probability: string;
+    roi_min: number;
+    roi_max: number;
     budget_level: string;
     expected_cpm: string;
+    predicted_reach: number;
+    spend_efficiency: string;
+    faces_detected: number;
+    logo_visibility_score: number;
+    text_percentage_score: number;
+    urgency_trigger_score: number;
+    fomo_score: number;
+    trust_signal_score: number;
+    engagement_score: number;
+    viral_potential_score: number;
+    budget_utilization_score: number;
     confidence_score: number;
-    match_score: number | string;
-    top_audience?: string[] | string;
-    industry_audience?: string[] | string;
-    mismatch_warnings?: string[];
-    roi_min: number | string;
-    roi_max: number | string;
-    dominant_colors: string[] | string;
-    suggested_colors?: string[];
-    font_feedback?: string;
-    layout_symmetry_score?: number;
-    predicted_reach?: number;
-    spend_efficiency?: string;
-    faces_detected?: number;
-    logo_visibility_score?: number;
-    text_percentage_score?: number;
-    urgency_trigger_score?: number;
-    fomo_score?: number;
-    trust_signal_score?: number;
-    engagement_score?: number;
-    viral_potential_score?: number;
-    budget_utilization_score?: number;
-    quick_win_tip?: string;
-    shareability_comment?: string;
-    ad_copies: AdCopy[];
-    go_no_go?: string[] | string;
-    readability_clarity_meter?: number | string;
-    competitor_uniqueness_meter?: number | string;
-    best_day_time_to_post?: string[] | string;
-    ad_fatigue_score?: string[] | string | number;
-    "10_trending_tags_relatedto_ad"?: string[];
-}
+    why_confidence_score?: string;
+    match_score: number;
+    why_match_score?: string[];
+    quick_win_tip: string;
+    shareability_comment: string;
+    emotional_boost_suggestions: string[];
+    emotional_alignment: string;
+    top_audience: string[];
+    industry_audience: string[];
+    mismatch_warnings: string[];
+    go_no_go: string;
+    ad_fatigue_score: string[];
+    best_day_time_to_post: string;
+    readability_clarity_meter: number;
+    competitor_uniqueness_meter: number;
+    traffic_efficiency_index: number;
+    created_date: string;
+    ad_copies: Array<{
+      platform: string;
+      tone: string;
+      copy_text: string;
+      created_on: string;
+    }>;
+    next_ad_idea_based_on_this_post?: {
+      headline: string;
+      visual_idea: string;
+      short_caption: string;
+    };
+    "10_trending_tags_relatedto_ad": string[];
+  }
 
-export interface ABTestResult {
-  abtest_id: number;
-  user_id: number;
-  ads_name: string;
-  industry: string;
-  platform: string;
-  image_path_a: string;
-  image_path_b: string;
-  ad_upload_id_a: number;
-  ad_upload_id_b: number;
-  recommended_ad: "A" | "B";
-  reason: string;
-  status: number;
-  created_date: string;
-}
+  export interface ABTestResult {
+    abtest_id: number;
+    user_id: number;
+    ads_name: string;
+    industry: string;
+    platform: string;
+    image_path_a: string;
+    image_path_b: string;
+    ad_upload_id_a: number;
+    ad_upload_id_b: number;
+    recommended_ad: "A" | "B";
+    reason: string;
+    status: number;
+    created_date: string;
+  }

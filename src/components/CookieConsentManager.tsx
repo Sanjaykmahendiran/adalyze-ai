@@ -3,14 +3,26 @@
 import { useEffect } from "react";
 import "cookieconsent/build/cookieconsent.min.css";
 import { GTM_ID, GA4_MEASUREMENT_ID } from "@/lib/gtm";
-import { sendCookieConsent, createConsentData, hasCookieId, hasExistingConsent, getExistingConsent } from "@/services/cookieConsentService";
+import { sendCookieConsent, createConsentData, getExistingConsent } from "@/services/cookieConsentService";
 
 export default function CookieConsentManager() {
   useEffect(() => {
     // Only import cookieconsent on client
     import("cookieconsent").then(async () => {
       if (typeof window !== "undefined" && (window as any).cookieconsent) {
-        // First check if user has already made a choice (stored in localStorage)
+        // First check if user has already made a choice via API (getExistingConsent)
+        // This is the primary source of truth
+        const existingConsent = await getExistingConsent();
+        if (existingConsent) {
+          // User has already given consent (accepted or rejected), don't show banner
+          // Load tracking scripts if they accepted analytics or marketing cookies
+          if (existingConsent.analytics === 1 || existingConsent.marketing === 1) {
+            loadTrackingScripts();
+          }
+          return;
+        }
+
+        // Fallback: Check if user has already made a choice (stored in localStorage)
         const savedConsent = localStorage.getItem("cookieConsent");
         if (savedConsent === "accepted" || savedConsent === "rejected") {
           // User has already made a choice, don't show banner
@@ -21,26 +33,8 @@ export default function CookieConsentManager() {
           return;
         }
 
-        // Check if cookie_id exists first
-        if (!hasCookieId()) {
-          // No cookie_id exists, show the banner
-          initializeCookieBanner();
-          return;
-        }
-
-        // Check if user has existing consent
-        const hasConsent = await hasExistingConsent();
-        if (!hasConsent) {
-          // Has cookie_id but no consent, show banner
-          initializeCookieBanner();
-          return;
-        }
-
-        // Has cookie_id and consent, load tracking scripts
-        const existingConsent = await getExistingConsent();
-        if (existingConsent && (existingConsent.analytics === 1 || existingConsent.marketing === 1)) {
-          loadTrackingScripts();
-        }
+        // No existing consent found, show the banner
+        initializeCookieBanner();
       }
     });
   }, []);

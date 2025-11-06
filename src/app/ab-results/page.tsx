@@ -1,13 +1,11 @@
 "use client";
 
-import type React from "react";
+import React from "react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-    Lock, Trophy, RefreshCw, Sparkles, Search, AlertTriangle, PenTool, GitCompareArrows,
+    Lock, Trophy, RefreshCw, Sparkles, Search, AlertTriangle, PenTool,
     CheckCircle, XCircle, Eye, Heart, FileText, Target, Palette, Award, ImageIcon, TrendingUp,
     ChevronLeft, ChevronRight, Zap, Shield, Activity, BarChart3, Camera, Type, Layout, DollarSign,
     Users,
@@ -17,7 +15,12 @@ import {
     Copy,
     Trash2,
     Loader2,
+    MessageSquare,
+    MousePointerClick,
+    Lightbulb,
+    ArrowRight,
 } from "lucide-react";
+import Chart from 'chart.js/auto'
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import useFetchUserDetails from "@/hooks/useFetchUserDetails";
@@ -28,7 +31,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import toast from "react-hot-toast";
 import logo from "@/assets/ad-icon-logo.png"
-import { getAdIdFromUrlParams } from "@/lib/tokenUtils"
+import { getAdIdFromUrlParams, parseUserIdFromToken } from "@/lib/tokenUtils"
 import { ABTestResult, ApiResponse } from "./type";
 
 // Array helper
@@ -50,11 +53,14 @@ export default function ABTestResults() {
     const [abTestResult, setAbTestResult] = useState<ABTestResult | null>(null);
     const [fetchingWinner, setFetchingWinner] = useState(false);
     const [tagsCopied, setTagsCopied] = useState(false);
-    
+    const [copiedAdCopyIndex, setCopiedAdCopyIndex] = useState<number | null>(null);
+    const chartRef = React.useRef<HTMLCanvasElement>(null);
+    const chartInstanceRef = React.useRef<any>(null);
+
     // Delete functionality states
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    
+
     // View Target dialog states
     const [viewTargetOpenA, setViewTargetOpenA] = useState(false);
     const [viewTargetOpenB, setViewTargetOpenB] = useState(false);
@@ -68,10 +74,22 @@ export default function ABTestResults() {
                 const tokenB = searchParams.get("ad-token-b");
                 const adIdA = tokenA ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenA })) : searchParams.get("ad_id_a") || "";
                 const adIdB = tokenB ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenB })) : searchParams.get("ad_id_b") || "";
+
+                const token = tokenA || tokenB;
+                let userIdParam = '';
+                if (token) {
+                    const userIdFromToken = parseUserIdFromToken(token);
+                    if (userIdFromToken) {
+                        userIdParam = `&user_id=${userIdFromToken}`;
+                    }
+                } else if (userDetails?.user_id) {
+                    // If no token but userDetails available, use that user_id
+                    userIdParam = `&user_id=${userDetails.user_id}`;
+                }
                 if (!adIdA || !adIdB) throw new Error("Missing ad IDs for comparison");
                 const [responseA, responseB] = await Promise.all([
-                    fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdA}`),
-                    fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdB}`),
+                    fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdA}${userIdParam}`),
+                    fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdB}${userIdParam}`),
                 ]);
                 if (!responseA.ok || !responseB.ok) throw new Error("Failed to fetch ad details");
                 const [resultA, resultB] = await Promise.all([responseA.json(), responseB.json()]);
@@ -85,6 +103,46 @@ export default function ABTestResults() {
         };
         fetchAdDetails();
     }, [searchParams]);
+
+    // Chart: render doughnut for current tab ad
+    useEffect(() => {
+        if (!chartRef.current) return;
+        const current = currentAd as any;
+        if (!current) return;
+        if (chartInstanceRef.current) {
+            chartInstanceRef.current.destroy();
+        }
+        const ctx = chartRef.current.getContext('2d');
+        if (!ctx) return;
+        const dataValues = [
+            Number(current?.visual_clarity) || 0,
+            Number(current?.cta_visibility) || 0,
+            Number(current?.emotional_appeal) || 0,
+            Number(current?.readability_clarity_meter) || 0,
+            Number(current?.text_visual_balance) || 0,
+        ];
+        const labels = [
+            'Visual Appeal',
+            'CTA Strength',
+            'Emotional Connection',
+            'Readability',
+            'Text Visual ',
+        ];
+        const colors = ['#fbbf24', '#f97316', '#fb923c', '#22d3ee', '#a855f7'];
+        chartInstanceRef.current = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data: dataValues, backgroundColor: colors, borderColor: '#171924', borderWidth: 2, hoverOffset: 14, hoverBorderColor: '#fbbf24', hoverBorderWidth: 3 }] },
+            options: {
+                layout: { padding: 4 },
+                cutout: '65%',
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutQuart' },
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1f2937', titleColor: '#fbbf24', bodyColor: '#e5e7eb', borderColor: '#fbbf24', borderWidth: 1, padding: 12, callbacks: { label: (context: any) => `${context.label || ''}: ${context.parsed || 0}/100` } } }
+            }
+        });
+        return () => { if (chartInstanceRef.current) chartInstanceRef.current.destroy(); };
+    }, [activeTab, adDataA, adDataB]);
 
     // Suitability calculations
     const getPlatformSuitability = (apiData: ApiResponse) => {
@@ -148,7 +206,7 @@ export default function ABTestResults() {
         const tokenB = searchParams.get("ad-token-b");
         const adIdA = tokenA ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenA })) : searchParams.get("ad_id_a") || "";
         const adIdB = tokenB ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenB })) : searchParams.get("ad_id_b") || "";
-        
+
         if (!adIdA || !adIdB) {
             toast.error('No ad IDs found');
             return;
@@ -271,6 +329,10 @@ export default function ABTestResults() {
     const currentAd = activeTab === "A" ? adDataA : adDataB;
     const winner = getWinner();
     const filteredAdCopies = currentAd ? getFilteredAdCopies(currentAd) : [];
+    const criticalIssues = safeArray((currentAd as any)?.critical_issues)
+    const minorIssues = safeArray((currentAd as any)?.minor_issues)
+    const estimatedCtrLossArr = safeArray((currentAd as any)?.estimated_ctr_loss_if_issues_unfixed)
+    const estimatedCtrLoss = estimatedCtrLossArr.length > 0 ? estimatedCtrLossArr[0] : null
 
     // Render Ad Preview (unchanged from your file, expanded if needed)
     const renderAdPreview = (adData: ApiResponse, isWinner: boolean, adType: "A" | "B") => {
@@ -278,10 +340,11 @@ export default function ABTestResults() {
         const currentIndex = adType === "A" ? currentImageIndexA : currentImageIndexB;
         const nextImage = adType === "A" ? nextImageA : nextImageB;
         const prevImage = adType === "A" ? prevImageA : nextImageB;
+        const issuesCount = safeArray((adData as any)?.critical_issues).length + safeArray((adData as any)?.minor_issues).length;
 
         return (
             <div className={`bg-black rounded-3xl shadow-lg shadow-white/5 border hover:scale-[1.01] transition-all duration-300 ${isWinner ? "border-2 border-yellow-400 shadow-[0_0_15px_#facc15]" : "border-[#121212]"}`}>
-                <div className="p-6 relative">
+                <div className="p-3 sm:p-6 relative">
                     {isWinner && (
                         <Badge className="absolute -top-3 right-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-black font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
                             <Trophy className="w-4 h-4" />
@@ -349,7 +412,7 @@ export default function ABTestResults() {
                     )}
 
                     {/* Score Section */}
-                    <div className="bg-[#121212] rounded-2xl p-6 border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+                    <div className="bg-[#121212] rounded-2xl p-3 sm:p-6 border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-semibold text-white">Ad {adType} - {adData.title}</h3>
                         </div>
@@ -384,6 +447,28 @@ export default function ABTestResults() {
                                 onMouseLeave={e => {
                                     e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
                                 }}
+                            >                  <h3 className="text-white font-semibold text-sm mb-2">Go / No Go</h3>
+                                <p
+                                    className={`text-3xl font-bold ${adData?.go_no_go === "Go"
+                                        ? "text-green-400"
+                                        : "text-red-400"
+                                        }`}
+                                >
+                                    {adData?.go_no_go || ""}
+                                </p>
+                                <p className="text-white/50 text-xs text-center mt-1">Ready to run?</p>
+                            </div>
+                            <div
+                                className="text-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-4 shadow-lg hover:scale-[1.01] transition-all duration-300"
+                                style={{
+                                    transition: "all 0.3s",
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                }}
                             >
                                 <h4 className="text-base font-medium text-gray-300 mb-2">Performance Score</h4>
                                 <div className={`text-3xl font-bold ${adData.score_out_of_100 < 50
@@ -392,7 +477,7 @@ export default function ABTestResults() {
                                         ? "text-yellow-400"
                                         : "text-[#22C55E]"
                                     }`}>
-                                    {adData.score_out_of_100}/100
+                                    {adData.score_out_of_100}%
                                 </div>
                             </div>
 
@@ -415,7 +500,7 @@ export default function ABTestResults() {
                                         ? "text-yellow-400"
                                         : "text-[#22C55E]"
                                     }`}>
-                                    {adData.confidence_score || 0}/100
+                                    {adData.confidence_score || 0}%
                                 </div>
                             </div>
 
@@ -438,31 +523,10 @@ export default function ABTestResults() {
                                         ? "text-yellow-400"
                                         : "text-[#22C55E]"
                                     }`}>
-                                    {adData.match_score || 0}/100
-                                </div>
-                            </div>
-
-                            <div
-                                className="text-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-4 shadow-lg hover:scale-[1.01] transition-all duration-300"
-                                style={{
-                                    transition: "all 0.3s",
-                                }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                }}
-                            >
-                                <h4 className="text-base font-medium text-gray-300 mb-2">Issues Detected</h4>
-                                <div className={`text-3xl font-bold ${adData.issues.length === 0 ? "text-[#22C55E]" : "text-red-400"
-                                    }`}>
-                                    {String(adData.issues.length).padStart(2, "0")}
+                                    {adData.match_score || 0}%
                                 </div>
                             </div>
                         </div>
-
-
 
                     </div>
                 </div>
@@ -499,31 +563,42 @@ export default function ABTestResults() {
                 </div>
             ) : (
                 <div className="min-h-screen text-white max-w-7xl mx-auto" id="ab-test-results">
-                    <main className="container mx-auto px-6 py-12">
+                    <main className="container mx-auto px-4 py-8 sm:py-12">
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-8">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+
                             {/* Left: Back + Title + Subtitle */}
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-start sm:items-center gap-3">
                                 {/* Back Button */}
                                 <button
                                     onClick={() => router.back()}
                                     className="flex items-center bg-[#121212] text-gray-300 hover:text-white hover:bg-[#2b2b2b] rounded-full p-2 transition-all cursor-pointer no-print skip-block flex-shrink-0"
                                 >
-                                    <ArrowLeft className="w-6 h-6" />
+                                    <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                                 </button>
 
                                 {/* Title + Subtitle */}
                                 <div className="text-left">
-                                    <h1 className="text-4xl font-bold mb-1">A/B Test Comparison</h1>
-                                    <p className="text-gray-300">Side-by-side analysis of your ad creatives</p>
+                                    <h1 className="text-2xl sm:text-4xl font-bold leading-tight">
+                                        A/B Test Comparison
+                                    </h1>
+                                    <p className="text-sm sm:text-base text-gray-300">
+                                        Side-by-side analysis of your ad creatives
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Right: Logo */}
-                            <div>
-                                <Image src={logo} alt="Logo" className="h-14 w-auto" />
+                            {/* Right: Logo (Hidden on mobile) */}
+                            <div className="self-start sm:self-auto hidden sm:block">
+                                <Image
+                                    src={logo}
+                                    alt="Logo"
+                                    className="h-10 sm:h-14 w-auto"
+                                />
                             </div>
+
                         </div>
+
 
                         <div className="w-full mx-auto space-y-8">
                             {/* Ad Comparison Preview Cards */}
@@ -532,6 +607,213 @@ export default function ABTestResults() {
                                 {renderAdPreview(adDataB, winner === "B", "B")}
                             </div>
 
+                            {/* view target and delete */}
+                            <div className="flex gap-2 items-end sm:items-center sm:w-auto w-full justify-end">
+                                {/* View Target Button */}
+                                <Dialog open={activeTab === "A" ? viewTargetOpenA : viewTargetOpenB} onOpenChange={activeTab === "A" ? setViewTargetOpenA : setViewTargetOpenB}>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            size="sm"
+                                            aria-label="View target details"
+                                            className={`
+                                                    flex items-center gap-2 font-medium transition-all duration-200
+                                                    ${(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) >= 80
+                                                    ? "bg-green-700/20 text-green-400 border border-green-700/40 hover:bg-green-700/30"
+                                                    : (activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) >= 60
+                                                        ? "bg-yellow-700/20 text-yellow-400 border border-yellow-700/40 hover:bg-yellow-700/30"
+                                                        : "bg-red-700/20 text-red-400 border border-red-700/40 hover:bg-red-700/30"
+                                                }
+                                                `}
+                                        >
+                                            <Target className="w-3 h-3" />
+                                            View Target
+                                            {(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) && (
+                                                <span className="text-xs font-semibold">
+                                                    ({activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score}%)
+                                                </span>
+                                            )}
+                                            <ArrowRight className="w-3 h-3" />
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="bg-black border border-[#2b2b2b] rounded-2xl w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-4 sm:p-6">
+                                        <DialogHeader>
+                                            <DialogTitle className="text-white text-lg sm:text-xl flex items-center gap-2">
+                                                <Target className="w-5 h-5 text-[#db4900]" />
+                                                Target Details (Ad {activeTab})
+                                            </DialogTitle>
+                                        </DialogHeader>
+
+                                        <div className="space-y-6">
+                                            {/* --- Target Insights Unified Section --- */}
+                                            {(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) && (
+                                                <div className="bg-[#171717] rounded-2xl p-4 sm:p-5 shadow-md space-y-6">
+
+                                                    {/* --- Header with Score --- */}
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                        {/* Left section - title and subtitle */}
+                                                        <div className="flex flex-col gap-1">
+                                                            <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-2">
+                                                                <BarChart3 className="w-5 h-5 text-primary shrink-0" />
+                                                                Targeting Comparison
+                                                            </h3>
+                                                            <p className="text-xs text-white/60">
+                                                                How well your targeting aligns with the suggested setup
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Right section - badge */}
+                                                        <div
+                                                            className={`px-3 py-1 text-sm sm:text-base font-semibold rounded-full border self-start sm:self-auto ${(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) >= 80
+                                                                ? "bg-green-700/20 text-green-400 border-green-700/40"
+                                                                : (activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) >= 60
+                                                                    ? "bg-yellow-700/20 text-yellow-400 border-yellow-700/40"
+                                                                    : "bg-red-700/20 text-red-400 border-red-700/40"
+                                                                }`}
+                                                        >
+                                                            {(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score)}% Match
+                                                        </div>
+                                                    </div>
+
+                                                    {/* --- Targeting Comparison Cards --- */}
+                                                    {(activeTab === "A" ? adDataA?.targeting_compare_json?.length > 0 : adDataB?.targeting_compare_json?.length > 0) && (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {(activeTab === "A" ? adDataA?.targeting_compare_json : adDataB?.targeting_compare_json).map((item: any, index: number) => (
+                                                                <div
+                                                                    key={index}
+                                                                    className={`rounded-lg p-3 border relative overflow-hidden transition-all ${item.match === "match"
+                                                                        ? "border-green-700/40 bg-green-900/10"
+                                                                        : item.match === "partial"
+                                                                            ? "border-yellow-700/40 bg-yellow-900/10"
+                                                                            : "border-red-700/40 bg-red-900/10"
+                                                                        }`}
+                                                                >
+                                                                    {/* Top Indicator */}
+                                                                    <div
+                                                                        className={`absolute top-0 left-0 h-1 w-full ${item.match === "match"
+                                                                            ? "bg-green-500/70"
+                                                                            : item.match === "partial"
+                                                                                ? "bg-yellow-500/70"
+                                                                                : "bg-red-500/70"
+                                                                            }`}
+                                                                    />
+
+                                                                    {/* Metric */}
+                                                                    <div className="flex items-center justify-between mb-2 mt-1">
+                                                                        <p className="text-white font-medium text-sm">{item.metric}</p>
+                                                                        <span
+                                                                            className={`text-xs font-bold uppercase ${item.match === "match"
+                                                                                ? "text-green-400"
+                                                                                : item.match === "partial"
+                                                                                    ? "text-yellow-400"
+                                                                                    : "text-red-400"
+                                                                                }`}
+                                                                        >
+                                                                            {item.match}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {/* Comparison Details */}
+                                                                    <div className="text-xs space-y-1">
+                                                                        <p className="text-white/60">
+                                                                            You:{" "}
+                                                                            <span className="text-white font-medium">{item.user}</span>
+                                                                        </p>
+                                                                        <p className="text-white/60">
+                                                                            Suggested:{" "}
+                                                                            <span className="text-white font-medium">
+                                                                                {item.suggested}
+                                                                            </span>
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* --- Divider Line --- */}
+                                                    {(activeTab === "A" ? adDataA?.suggested_interests?.length > 0 : adDataB?.suggested_interests?.length > 0) && (
+                                                        <div className="border-t border-[#2b2b2b]" />
+                                                    )}
+
+                                                    {/* --- Suggested Interests Section --- */}
+                                                    {(activeTab === "A" ? adDataA?.suggested_interests?.length > 0 : adDataB?.suggested_interests?.length > 0) && (
+                                                        <div>
+                                                            <h3 className="text-white font-semibold flex items-center gap-2 mb-3 text-base sm:text-lg">
+                                                                <Lightbulb className="w-5 h-5 text-primary shrink-0" />
+                                                                Suggested Interests
+                                                            </h3>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {(activeTab === "A" ? adDataA.suggested_interests : adDataB.suggested_interests).map((interest: string, i: number) => (
+                                                                    <span
+                                                                        key={i}
+                                                                        className="text-xs sm:text-sm bg-[#db4900]/20 text-[#db4900] px-3 py-1 rounded-full border border-[#db4900]/40 hover:bg-[#db4900]/30 transition-all duration-200"
+                                                                    >
+                                                                        {interest}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                    </DialogContent>
+                                </Dialog>
+
+                                {/* Delete Button */}
+                                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            aria-label="Delete A/B test"
+                                            className="border-red-600 bg-red-600/20 text-red-400 hover:text-white hover:bg-red-600 hover:border-red-600 transition-colors"
+                                            disabled={deleteLoading}
+                                        >
+                                            {deleteLoading ? (
+                                                <>
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                    <span className="hidden sm:inline ml-2 ">Deleting...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 className="w-3 h-3" />
+                                                    <span className="hidden sm:inline ml-2">Delete A/B Test</span>
+                                                </>
+                                            )}
+                                        </Button>
+
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-[#1a1a1a] border-[#3d3d3d]">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle className="text-white">Delete A/B Test</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-gray-300">
+                                                Are you sure you want to delete this A/B test? This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel className="bg-transparent border-[#3d3d3d] text-gray-300 hover:bg-[#3d3d3d] hover:text-white">
+                                                Cancel
+                                            </AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={handleDeleteAbAd}
+                                                className="bg-red-600 hover:bg-red-700 text-white"
+                                                disabled={deleteLoading}
+                                            >
+                                                {deleteLoading ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        Deleting...
+                                                    </>
+                                                ) : (
+                                                    'Delete'
+                                                )}
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                             {/* Enhanced AI Commentary Section */}
                             <div className="bg-black rounded-3xl shadow-lg shadow-white/5 border border-[#2b2b2b] mb-4">
                                 <div className="p-4">
@@ -553,7 +835,8 @@ export default function ABTestResults() {
 
 
                             {/* Tab Navigation with Action Buttons */}
-                            <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 flex-wrap">
+                                {/* Tabs */}
                                 <div className="bg-black rounded-2xl p-2 border border-[#2b2b2b] inline-flex">
                                     <button
                                         onClick={() => setActiveTab("A")}
@@ -574,397 +857,326 @@ export default function ABTestResults() {
                                         Ad B Details
                                     </button>
                                 </div>
-
-                                {/* Action Buttons - View Target and Delete */}
-                                <div className="flex gap-2">
-                                    {/* View Target Button */}
-                                    <Dialog open={activeTab === "A" ? viewTargetOpenA : viewTargetOpenB} onOpenChange={activeTab === "A" ? setViewTargetOpenA : setViewTargetOpenB}>
-                                        <DialogTrigger asChild>
-                                            <Button
-                                                size="sm"
-                                                className="bg-[#db4900] hover:bg-[#db4900]/90"
-                                                aria-label="View target details"
-                                            >
-                                                <Target className="w-3 h-3 mr-2" />
-                                                View Target
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="bg-black max-w-md">
-                                            <DialogHeader>
-                                                <DialogTitle className="text-white text-xl flex items-center gap-2">
-                                                    <Target className="w-5 h-5 text-[#db4900]" />
-                                                    Target Details (Ad {activeTab})
-                                                </DialogTitle>
-                                            </DialogHeader>
-                                            
-                                            <div className="space-y-4 mt-6">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <p className="text-white/80 text-xs mb-1">Title</p>
-                                                        <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.title || 'N/A'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-white/80 text-xs mb-1">Ad Type</p>
-                                                        <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.ad_type || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="border-t border-[#3d3d3d] pt-4">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <p className="text-white/80 text-xs mb-1">Industry</p>
-                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.industry || 'N/A'}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-white/80 text-xs mb-1">Platform</p>
-                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.platform || 'N/A'}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="border-t border-[#3d3d3d] pt-4">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <p className="text-white/80 text-xs mb-1">Gender</p>
-                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.gender || 'N/A'}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-white/80 text-xs mb-1">Age Range</p>
-                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.age || 'N/A'}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="border-t border-[#3d3d3d] pt-4">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <p className="text-white/80 text-xs mb-1">Country</p>
-                                                            <p className="text-white text-sm font-medium">{(activeTab === "A" ? adDataA : adDataB)?.country || 'N/A'}</p>
-                                                        </div>
-                                                        {(() => {
-                                                            const currentData = activeTab === "A" ? adDataA : adDataB;
-                                                            return currentData?.state && currentData.state.trim() !== '' ? (
-                                                                <div>
-                                                                    <p className="text-white/80 text-xs mb-1">State</p>
-                                                                    <p className="text-white text-sm font-medium">{currentData.state}</p>
-                                                                </div>
-                                                            ) : null;
-                                                        })()}
-                                                    </div>
-                                                </div>
-
-                                                {(() => {
-                                                    const currentData = activeTab === "A" ? adDataA : adDataB;
-                                                    return currentData?.video && currentData.video.trim() !== '' ? (
-                                                        <div className="border-t border-[#3d3d3d] pt-4">
-                                                            <p className="text-white/80 text-xs mb-1">Video</p>
-                                                            <p className="text-white text-sm font-medium break-all">{currentData.video}</p>
-                                                        </div>
-                                                    ) : null;
-                                                })()}
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
-
-                                    {/* Delete Button */}
-                                    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                                        <AlertDialogTrigger asChild>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                aria-label="Delete A/B test"
-                                                className="border-red-600 bg-red-600/20 text-red-400 hover:text-white hover:bg-red-600 hover:border-red-600 transition-colors"
-                                                disabled={deleteLoading}
-                                            >
-                                                {deleteLoading ? (
-                                                    <>
-                                                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                                                        Deleting...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Trash2 className="w-3 h-3 mr-2" />
-                                                        Delete A/B Test
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent className="bg-[#1a1a1a] border-[#3d3d3d]">
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle className="text-white">Delete A/B Test</AlertDialogTitle>
-                                                <AlertDialogDescription className="text-gray-300">
-                                                    Are you sure you want to delete this A/B test? This action cannot be undone.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel className="bg-transparent border-[#3d3d3d] text-gray-300 hover:bg-[#3d3d3d] hover:text-white">
-                                                    Cancel
-                                                </AlertDialogCancel>
-                                                <AlertDialogAction
-                                                    onClick={handleDeleteAbAd}
-                                                    className="bg-red-600 hover:bg-red-700 text-white"
-                                                    disabled={deleteLoading}
-                                                >
-                                                    {deleteLoading ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                            Deleting...
-                                                        </>
-                                                    ) : (
-                                                        'Delete'
-                                                    )}
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
                             </div>
-                            {/* Key Metrics Overview - Ad Specific */}
-                            {/* Key Metrics Overview - Ad Specific */}
+                            {/* Row 3 */}
                             <div className="col-span-4 grid grid-cols-1 lg:grid-cols-6 gap-6 auto-rows-fr">
-                                {/* Go/No-Go Only - takes 2 columns */}
-                                <div className="lg:col-span-2 h-full">
+                                {/* Issues Detected - takes 2 columns */}
+                                <div className=" lg:col-span-2 h-full">
                                     <div
-                                        className="relative bg-black rounded-2xl p-6 h-full flex flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
+                                        className="relative bg-black rounded-2xl p-4 sm:p-6 h-full flex flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
                                         style={{ transition: "all 0.3s" }}
                                         onMouseEnter={e => {
-                                            e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
+                                            e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                                         }}
                                         onMouseLeave={e => {
                                             e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
                                         }}
                                     >
-                                        {/* Header - top aligned */}
-                                        <div className="flex flex-col w-full mb-6">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-white font-semibold text-xl">Go / No Go</h3>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                        <p>AI assessment determining if your ad meets quality standards and is ready for deployment. "Go" means the ad is optimized for performance, while "No Go" indicates areas needing improvement before launch.</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between w-full mb-4">
+                                            <div className="flex flex-col">
+                                                {/* Icon + Tooltip */}
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <AlertTriangle className="w-12 h-12 text-primary" />
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="w-52 bg-[#2b2b2b] text-xs text-gray-200">
+                                                            <p>
+                                                                AI-powered analysis highlighting issues that may reduce ad performance and engagement before launch.
+                                                            </p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+
+                                                {/* Title + Description */}
+                                                <div className="space-y-1">
+                                                    <h3 className="text-white font-semibold text-xl tracking-wide leading-tight">
+                                                        Issues Detected
+                                                    </h3>
+                                                    <p className="text-white/50 text-sm leading-snug">
+                                                        Ad readiness summary and potential loss estimate
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <p className="text-white/50 text-sm">Indicates if your ad is ready to run or needs improvement</p>
                                         </div>
 
-                                        {/* Decision Text - center */}
-                                        <div className="flex-1 flex justify-center items-center">
-                                            <p
-                                                className={`text-8xl font-bold z-10 ${safeArray(currentAd?.go_no_go)[0] === "Go"
-                                                    ? "text-green-400"
-                                                    : "text-red-400"
-                                                    }`}
+
+                                        {/* Body */}
+                                        <div className="text-left w-full space-y-4 pt-2">
+                                            {/* Issue Counters */}
+                                            <div className="grid grid-cols-2 gap-3 w-full items-stretch">
+                                                {/* Critical Issues */}
+                                                <div className="relative bg-[#171717] border border-[#2a2a2a] rounded-xl py-4 px-2 text-center flex flex-col justify-center group hover:border-red-500 transition-all duration-300">
+                                                    <p className="text-red-300 text-sm font-semibold mb-1 flex items-center justify-center gap-1">
+                                                        Critical Issues
+                                                    </p>
+                                                    <div className="text-3xl font-bold text-red-400 tracking-wide">
+                                                        {criticalIssues.length.toString().padStart(2, "0")}
+                                                    </div>
+                                                    {criticalIssues.length > 0 && (
+                                                        <p className="text-[10px] text-gray-400 mt-1">
+                                                            {criticalIssues.length === 1 ? "Needs immediate attention" : "Multiple areas need fix"}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Minor Issues */}
+                                                <div className="relative bg-[#171717] border border-[#2a2a2a] rounded-xl py-4 py-2 text-center flex flex-col justify-center group hover:border-[#F99244]/60 transition-all duration-300">
+                                                    <p className="text-[#F99244] text-sm font-semibold mb-1 flex items-center justify-center gap-1">
+                                                        Minor Issues
+                                                    </p>
+                                                    <div className="text-3xl font-bold text-[#F99244] tracking-wide">
+                                                        {minorIssues.length.toString().padStart(2, "0")}
+                                                    </div>
+                                                    {minorIssues.length > 0 && (
+                                                        <p className="text-[10px] text-gray-400 mt-1">
+                                                            {minorIssues.length === 1 ? "Minor adjustment suggested" : "Minor improvements possible"}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* CTR Loss */}
+                                            <div className="relative bg-[#141414] rounded-xl border border-[#2a2a2a] p-4 mt-3 flex items-center justify-between hover:border-[#DB4900] transition-all duration-300">
+                                                <div className="flex items-center gap-3">
+                                                    <TrendingDown className="w-5 h-5 text-red-400 mt-[2px]" />
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-white">
+                                                            Estimated CTR Loss
+                                                        </p>
+                                                        <p className="text-xs text-white/70 mt-1">
+                                                            If issues remain unfixed
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-3xl font-bold text-red-400">
+                                                    {estimatedCtrLoss || "25.66%"}
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Readability, Best Days & Time, Uniqueness, Ad Fatigue arranged by rows */}
+                                <div className="lg:col-span-4 h-full">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                                        {/* Row 1 - Col 1: Readability (hidden on small to preserve previous behavior) */}
+                                        <div className="hidden lg:block">
+                                            <div
+                                                className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
+                                                style={{ transition: "all 0.3s" }}
+                                                onMouseEnter={e => {
+                                                    e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                                }}
                                             >
-                                                {safeArray(currentAd?.go_no_go)[0] || ""}
-                                            </p>
-                                        </div>
-
-                                        {/* Icon from bottom - full width */}
-                                        {safeArray(currentAd?.go_no_go)[0] === "Go" ? (
-                                            <TrendingUp className="left-1 w-full h-40 text-green-500" />
-                                        ) : (
-                                            <TrendingDown className="left-1 w-full h-40 text-red-500" />
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Readability & Uniqueness - takes 2 columns */}
-                                <div className="lg:col-span-2 h-full">
-                                    <div className="space-y-6 h-full flex flex-col">
-                                        {/* Readability */}
-                                        <div
-                                            className="bg-black px-4 py-4 rounded-2xl flex-1 hover:scale-[1.01] transition-all duration-300"
-                                            style={{ transition: "all 0.3s" }}
-                                            onMouseEnter={e => {
-                                                e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                                            }}
-                                            onMouseLeave={e => {
-                                                e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                            }}
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <h3 className="text-white font-semibold text-xl">Readability</h3>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                        <p>Measures how easily your audience can read and understand your ad content. Factors include text size, contrast, font choice, and visual hierarchy. Higher scores indicate better user comprehension.</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                            <p className="text-white/50 text-sm mb-4">Clarity of your ad content.</p>
-                                            <div className="flex items-center justify-between">
-                                                <div
-                                                    className={`text-6xl font-bold ${Number(currentAd?.readability_clarity_meter || 0) >= 70
-                                                        ? "text-green-400"
-                                                        : Number(currentAd?.readability_clarity_meter || 0) >= 50
-                                                            ? "text-yellow-400"
-                                                            : "text-red-400"
-                                                        }`}
-                                                >
-                                                    {currentAd?.readability_clarity_meter || 0}/100
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="text-white font-semibold text-xl">Readability</h3>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                                                            <p>Measures how easy it is for your target audience to read and understand your ad content. Higher scores indicate clearer messaging, better font choices, and optimal text structure.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
                                                 </div>
-                                                <div className="w-16 h-16 flex items-center justify-center">
-                                                    <FileText className="w-full h-full text-primary" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Uniqueness */}
-                                        <div
-                                            className="bg-black px-4 py-4 rounded-2xl flex-1 hover:scale-[1.01] transition-all duration-300"
-                                            style={{ transition: "all 0.3s" }}
-                                            onMouseEnter={e => {
-                                                e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                                            }}
-                                            onMouseLeave={e => {
-                                                e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                            }}
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <h3 className="text-white font-semibold text-xl">Uniqueness</h3>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                        <p>Analyzes how distinctive your ad is compared to competitor content. Evaluates visual elements, messaging, and creative approach to ensure your ad stands out in the market.</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                            <p className="text-white/50 text-sm mb-4">How different your ad is.</p>
-                                            <div className="flex items-center justify-between">
-                                                <div
-                                                    className={`text-6xl font-bold ${Number(currentAd?.competitor_uniqueness_meter || 0) >= 70
-                                                        ? "text-green-400"
-                                                        : Number(currentAd?.competitor_uniqueness_meter || 0) >= 50
-                                                            ? "text-yellow-400"
-                                                            : "text-red-400"
-                                                        }`}
-                                                >
-                                                    {currentAd?.competitor_uniqueness_meter || 0}/100
-                                                </div>
-                                                <div className="w-16 h-16 flex items-center justify-center">
-                                                    <Sparkles className="w-full h-full text-primary" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Best Days & Time + Ad Fatigue - takes 2 columns */}
-                                <div className="lg:col-span-2 h-full">
-                                    <div className="space-y-6 h-full flex flex-col">
-                                        {/* Best Days & Time */}
-                                        <div
-                                            className="bg-black px-4 py-4 rounded-2xl flex-1 hover:scale-[1.01] transition-all duration-300"
-                                            style={{ transition: "all 0.3s" }}
-                                            onMouseEnter={e => {
-                                                e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                                            }}
-                                            onMouseLeave={e => {
-                                                e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                            }}
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <h3 className="text-white font-semibold text-xl">Best Posting Time</h3>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                        <p>AI-powered analysis of optimal posting schedules based on your target audience behavior, platform algorithms, and industry trends. Maximizes visibility and engagement potential.</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                            <p className="text-white/50 text-sm mb-4">Recommended days and times for posting your ads to maximize reach.</p>
-
-                                            <div className="flex items-center gap-x-4">
-                                                {/* Best Days */}
-                                                <div>
-                                                    <h4 className="text-white text-sm mb-2 font-medium">Days</h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {safeArray(currentAd?.best_day_time_to_post).map((item, index) => {
-                                                            const isDays = item.toLowerCase().includes('weekday') ||
-                                                                item.toLowerCase().includes('weekend') ||
-                                                                ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].some(day =>
-                                                                    item.toLowerCase().includes(day)
-                                                                );
-
-                                                            if (isDays) {
-                                                                return (
-                                                                    <Badge
-                                                                        key={index}
-                                                                        className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-xs"
-                                                                    >
-                                                                        {item}
-                                                                    </Badge>
-                                                                );
-                                                            }
-                                                            return null;
-                                                        })}
+                                                <p className="text-white/50 text-sm mb-4">Clarity of your ad content.</p>
+                                                <div className="flex items-center justify-between">
+                                                    <div
+                                                        className={`text-3xl sm:text-5xl md:text-6xl font-bold ${(currentAd?.readability_clarity_meter || 0) >= 70
+                                                            ? "text-green-400"
+                                                            : (currentAd?.readability_clarity_meter || 0) >= 50
+                                                                ? "text-[#F99244]"
+                                                                : "text-red-400"
+                                                            }`}
+                                                    >
+                                                        {currentAd?.readability_clarity_meter || 0}%
                                                     </div>
-                                                </div>
-
-                                                {/* Best Times */}
-                                                <div>
-                                                    <h4 className="text-white text-sm mb-2 font-medium">Times</h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {safeArray(currentAd?.best_day_time_to_post).map((item, index) => {
-                                                            const isTime = item.toLowerCase().includes('am') ||
-                                                                item.toLowerCase().includes('pm') ||
-                                                                /\d+:\d+/.test(item) ||
-                                                                item.toLowerCase().includes('morning') ||
-                                                                item.toLowerCase().includes('afternoon') ||
-                                                                item.toLowerCase().includes('evening');
-
-                                                            if (isTime) {
-                                                                return (
-                                                                    <Badge
-                                                                        key={index}
-                                                                        className="bg-green-600/20 text-green-400 border-green-600/30 text-xs"
-                                                                    >
-                                                                        {item}
-                                                                    </Badge>
-                                                                );
-                                                            }
-                                                            return null;
-                                                        })}
+                                                    <div className="w-8  h-8 sm:w-10 md:w-14 sm:h-10 md:h-14 flex items-center justify-center">
+                                                        <FileText className="w-full h-full text-primary" />
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Ad Fatigue */}
-                                        <div
-                                            className="bg-black px-4 py-4 rounded-2xl flex-1 hover:scale-[1.01] transition-all duration-300"
-                                            style={{ transition: "all 0.3s" }}
-                                            onMouseEnter={e => {
-                                                e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                                            }}
-                                            onMouseLeave={e => {
-                                                e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                            }}
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <h3 className="text-white font-semibold text-xl">Ad Fatigue</h3>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                        <p>Predicts how quickly your audience will become tired of seeing your ad. Lower scores indicate longer-lasting appeal, while higher scores suggest the need for creative refreshes to maintain engagement.</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
+                                        {/* Row 1 - Col 2: Best Days & Time */}
+                                        <div>
+                                            <div
+                                                className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
+                                                style={{ transition: "all 0.3s" }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                                }}
+                                            >
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="text-white font-semibold text-xl">Best Posting Time</h3>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                                                            <p>
+                                                                AI-analyzed optimal timing for posting your ad based on your target
+                                                                audience's online behavior patterns, platform algorithms, and
+                                                                industry best practices to maximize reach and engagement.
+                                                            </p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+
+                                                <p className="text-white/50 text-sm mb-4">
+                                                    Best days and times to post your ads.
+                                                </p>
+
+                                                {/* ✅ Days & Times Logic */}
+                                                {(() => {
+                                                    let text = currentAd?.best_day_time_to_post || "";
+
+                                                    let dayPart = "";
+                                                    let timePart = "";
+
+                                                    if (text.includes(",")) {
+                                                        // Format: "Monday, 10 AM - 2 PM"
+                                                        [dayPart, timePart] = text.split(",");
+                                                    } else if (text.includes("between")) {
+                                                        // Format: "Weekdays between 10 AM - 2 PM"
+                                                        const [days, times] = text.split("between");
+                                                        dayPart = days.trim();
+                                                        timePart = times.trim();
+                                                    } else {
+                                                        // Only one string, no comma or between
+                                                        dayPart = text.trim();
+                                                    }
+
+                                                    return (
+                                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                                                            {/* Days */}
+                                                            <div>
+                                                                <h4 className="text-white text-sm mb-2 font-medium">Days</h4>
+                                                                <div className="flex flex-wrap gap-2 max-w-full overflow-hidden">
+                                                                    {dayPart && (
+                                                                        <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-xs whitespace-nowrap">
+                                                                            {dayPart}
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Times */}
+                                                            <div>
+                                                                <h4 className="text-white text-sm mb-2 font-medium">Times</h4>
+                                                                <div className="flex flex-wrap gap-2 max-w-full overflow-hidden">
+                                                                    {timePart ? (
+                                                                        <Badge className="bg-green-600/20 text-green-400 border-green-600/30 text-xs whitespace-nowrap">
+                                                                            {timePart}
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge className="bg-green-600/20 text-green-400 border-green-600/30 text-xs whitespace-nowrap">
+                                                                            ---
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
-                                            <p className="text-white/50 text-sm mb-4">Estimates how quickly your audience may get tired of seeing your ad.</p>
-                                            <div className="flex items-center justify-center">
-                                                <div className="text-4xl font-bold text-amber-400">
-                                                    {safeArray(currentAd?.ad_fatigue_score)[0] || "N/A"}
+
+                                        </div>
+
+                                        {/* Row 2 - Col 1: Uniqueness (hidden on small to preserve previous behavior) */}
+                                        <div className="hidden lg:block">
+                                            <div
+                                                className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
+                                                style={{ transition: "all 0.3s" }}
+                                                onMouseEnter={e => {
+                                                    e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                                }}
+                                            >
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="text-white font-semibold text-xl">Uniqueness</h3>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                                                            <p>Analyzes how distinctive your ad is compared to competitors in your industry. Higher scores indicate more original content, creative approaches, and unique value propositions that help you stand out.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+                                                <p className="text-white/50 text-sm mb-4">How different your ad is.</p>
+                                                <div className="flex items-center justify-between">
+                                                    <div
+                                                        className={`text-3xl sm:text-4xl md:text-5xl mb-1 font-bold ${(currentAd?.competitor_uniqueness_meter || 0) >= 70
+                                                            ? "text-green-400"
+                                                            : (currentAd?.competitor_uniqueness_meter || 0) >= 50
+                                                                ? "text-[#F99244]"
+                                                                : "text-red-400"
+                                                            }`}
+                                                    >
+                                                        {currentAd?.competitor_uniqueness_meter || 0}%
+                                                    </div>
+                                                </div>
+                                                <div className="bg-[#171717] rounded-lg p-3 border border-[#2a2a2a] flex items-center gap-2">
+                                                    <TrendingUp className="w-4 h-4 text-green-500" />
+                                                    <p className="text-xs text-white/80">
+                                                        {currentAd?.competitor_uniqueness_text || "No Competitor Uniqueness"}
+                                                    </p>
+                                                </div>
+
+                                            </div>
+                                        </div>
+
+                                        {/* Row 2 - Col 2: Ad Fatigue */}
+                                        <div>
+                                            <div
+                                                className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
+                                                style={{ transition: "all 0.3s" }}
+                                                onMouseEnter={e => {
+                                                    e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                                }}
+                                            >
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="text-white font-semibold text-xl">Ad Fatigue</h3>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="w-50 bg-[#2b2b2b]">
+                                                            <p>Predicts how quickly your audience will become tired of seeing your ad. Lower scores indicate longer-lasting appeal, while higher scores suggest you may need to refresh or rotate your creative sooner.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+                                                <p className="text-white/50 text-sm mb-4">Estimates audience fatigue rate.</p>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-4xl font-bold text-[#F99244]">
+                                                            {currentAd?.ad_fatigue_score || "N/A"}
+                                                        </div>
+                                                        <div className="w-16 h-16 flex items-center justify-center">
+                                                            <Sparkles className="w-full h-full text-primary" />
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        className="border border-primary text-primary text-xs rounded-xl px-3 py-1.5 "
+                                                    >
+                                                        {currentAd?.prevention_tip_to_avoid_ad_fatigue || "No tips"}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -972,7 +1184,7 @@ export default function ABTestResults() {
                                 </div>
                             </div>
 
-                            {/* Engagement Insights - Pro Overlay */}
+                            {/* Engagement Insights - Pro Overlay (match Results) */}
                             <ProOverlay message=" Upgrade to Pro to see detailed engagement insights.">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                     {/* Traffic Prediction */}
@@ -997,26 +1209,38 @@ export default function ABTestResults() {
                                         </div>
                                         <div className="space-y-3 sm:space-y-4">
                                             <div className="flex justify-between items-center">
+                                                <span className="text-gray-300 text-sm sm:text-base">Traffic Efficiency Score</span>
+                                                {(() => {
+                                                    const value = Number((currentAd as any)?.traffic_efficiency_index) || 0;
+                                                    let label = "N/A";
+                                                    let colorClass = "text-gray-400";
+                                                    if (value >= 70) { label = "High"; colorClass = "text-green-400"; }
+                                                    else if (value >= 40) { label = "Moderate"; colorClass = "text-[#F99244]"; }
+                                                    else if (value > 0) { label = "Low"; colorClass = "text-red-400"; }
+                                                    return <span className={`font-bold text-sm sm:text-base ${colorClass}`}>{label} ({value})</span>;
+                                                })()}
+                                            </div>
+                                            <div className="flex justify-between items-center">
                                                 <span className="text-gray-300 text-sm sm:text-base">Scroll Stop Power</span>
-                                                <span className="font-bold text-green-400 text-sm sm:text-base">{currentAd?.scroll_stoppower || 'N/A'}</span>
+                                                <span className={`font-bold text-sm sm:text-base ${((currentAd as any)?.scroll_stoppower === 'High') ? 'text-green-400' : ((currentAd as any)?.scroll_stoppower === 'Moderate') ? 'text-[#F99244]' : ((currentAd as any)?.scroll_stoppower === 'Low') ? 'text-red-400' : 'text-white/70'}`}>{(currentAd as any)?.scroll_stoppower || 'N/A'}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-gray-300 text-sm sm:text-base">Estimated CTR</span>
-                                                <span className="font-bold text-green-400 text-sm sm:text-base">{currentAd?.estimated_ctr || 'N/A'}</span>
+                                                <span className={`font-bold text-sm sm:text-base ${parseFloat((currentAd as any)?.estimated_ctr) >= 5 ? 'text-green-400' : parseFloat((currentAd as any)?.estimated_ctr) >= 2 ? 'text-[#F99244]' : 'text-red-400'}`}>{(currentAd as any)?.estimated_ctr || 'N/A'}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-gray-300 text-sm sm:text-base">Conversion Probability</span>
-                                                <span className="font-bold text-green-400 text-sm sm:text-base">{currentAd?.conversion_probability || 'N/A'}</span>
+                                                <span className={`font-bold text-sm sm:text-base ${parseFloat((currentAd as any)?.conversion_probability) >= 50 ? 'text-green-400' : parseFloat((currentAd as any)?.conversion_probability) >= 20 ? 'text-[#F99244]' : 'text-red-400'}`}>{(currentAd as any)?.conversion_probability || 'N/A'}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-gray-300 text-sm sm:text-base">Predicted Reach</span>
-                                                <span className="font-bold text-blue-400 text-sm sm:text-base">{currentAd?.predicted_reach?.toLocaleString() || 'N/A'}</span>
+                                                <span className={`font-bold text-sm sm:text-base ${((currentAd as any)?.predicted_reach || 0) >= 10000 ? 'text-green-400' : ((currentAd as any)?.predicted_reach || 0) >= 5000 ? 'text-[#F99244]' : 'text-red-400'}`}>{(currentAd as any)?.predicted_reach?.toLocaleString() || 'N/A'}</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Budget & ROI */}
-                                    <div className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                                    {/* Merged Budget & Audience Strategy */}
+                                    <div className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300 lg:col-span-2"
                                         style={{ transition: "all 0.3s" }}
                                         onMouseEnter={e => {
                                             e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
@@ -1025,109 +1249,53 @@ export default function ABTestResults() {
                                             e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
                                         }}>
                                         <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                            <h4 className="text-base sm:text-lg font-semibold text-primary">Budget & ROI Insights</h4>
+                                            <h4 className="text-base sm:text-lg font-semibold text-primary">Budget & Audience Strategy</h4>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                                                 </TooltipTrigger>
-                                                <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                    <p>Financial optimization insights including recommended budget levels, expected costs, and return on investment projections.</p>
+                                                <TooltipContent className="w-60 bg-[#2b2b2b] space-y-2">
+                                                    <p>Comprehensive financial and targeting strategy — including expected CPM, ROI, and audience tips.</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>
-                                        <div className="space-y-2 sm:space-y-3">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-300 text-sm sm:text-base">Budget Level</span>
-                                                <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-xs sm:text-sm">
-                                                    {currentAd?.budget_level || 'N/A'}
-                                                </Badge>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-300 text-sm sm:text-base">Expected CPM</span>
-                                                <span className="font-bold text-yellow-400 text-sm sm:text-base">{currentAd?.expected_cpm || 'N/A'}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-300 text-sm sm:text-base">ROI Range</span>
-                                                <span className="font-bold text-green-400 text-sm sm:text-base">
-                                                    {currentAd?.roi_min || 0}x - {currentAd?.roi_max || 0}x
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-300 text-sm sm:text-base">Spend Efficiency</span>
-                                                <span className="font-bold text-purple-400 text-sm sm:text-base">{currentAd?.spend_efficiency || 'N/A'}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Audience */}
-                                    <div className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                                        style={{ transition: "all 0.3s" }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900";
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                        }}>
-                                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                            <h4 className="text-base sm:text-lg font-semibold text-primary">Target Audience & Colors</h4>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                </TooltipTrigger>
-                                                <TooltipContent className="w-50 bg-[#2b2b2b] space-y-2">
-                                                    <p>AI-identified primary audience segments and demographic targeting recommendations for maximum ad effectiveness.</p>
-                                                    <p>The primary colors detected in your ad that influence brand perception and emotional response.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
-
-                                        <div className="space-y-4 sm:space-y-5">
-                                            {/* Primary Audience */}
-                                            <div>
-                                                <span className="block text-gray-300 text-xs sm:text-sm mb-2">Primary Audience:</span>
-                                                <div className="flex flex-wrap gap-1 sm:gap-2">
-                                                    {safeArray(currentAd?.top_audience).map((audience, idx) => (
-                                                        <Badge
-                                                            key={idx}
-                                                            className="bg-green-600/20 text-green-400 border-green-600/30 text-xs"
-                                                        >
-                                                            {audience}
-                                                        </Badge>
-                                                    ))}
+                                        <div className="grid grid-cols-1 lg:grid-cols-[40%_60%] gap-4">
+                                            {/* Metrics */}
+                                            <div className="space-y-3">
+                                                <div className="bg-[#171717] p-4 rounded-xl space-y-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-gray-300 text-sm sm:text-base">Expected CPM</span>
+                                                        <span className={`font-bold text-sm sm:text-base ${Number((currentAd as any)?.expected_cpm) <= 5 ? 'text-green-400' : Number((currentAd as any)?.expected_cpm) <= 15 ? 'text-[#F99244]' : 'text-red-400'}`}>{(currentAd as any)?.expected_cpm || 'N/A'}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-gray-300 text-sm sm:text-base">ROI Range</span>
+                                                        <span className={`font-bold text-sm sm:text-base ${((currentAd as any)?.roi_max || 0) >= 5 ? 'text-green-400' : ((currentAd as any)?.roi_max || 0) >= 3 ? 'text-[#F99244]' : 'text-red-400'}`}>{(currentAd as any)?.roi_min || 0}x - {(currentAd as any)?.roi_max || 0}x</span>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="bg-[#171717] py-4 px-2 rounded-xl flex flex-col items-center justify-center text-center space-y-2">
+                                                        <span className="text-gray-300 text-sm sm:text-base">Test Budget</span>
+                                                        <span className="font-bold text-xl sm:text-2xl text-primary">${(currentAd as any)?.suggested_test_budget_in_usd || 'N/A'}</span>
+                                                    </div>
+                                                    <div className="bg-[#171717] py-4 px-2 rounded-xl flex flex-col items-center justify-center text-center space-y-2">
+                                                        <span className="text-gray-300 text-sm sm:text-base">Test Duration</span>
+                                                        <span className="font-bold text-xl sm:text-2xl text-primary">{(currentAd as any)?.suggested_test_duration_days ? `${(currentAd as any)?.suggested_test_duration_days} days` : 'N/A'}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            {/* Industry Focus */}
-                                            <div>
-                                                <span className="block text-gray-300 text-xs sm:text-sm mb-2">Industry Focus:</span>
-                                                <div className="flex flex-wrap gap-1 sm:gap-2">
-                                                    {safeArray(currentAd?.industry_audience).map((industry, idx) => (
-                                                        <Badge
-                                                            key={idx}
-                                                            className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-xs"
-                                                        >
-                                                            {industry}
-                                                        </Badge>
-                                                    ))}
+                                            {/* Audience & Strategy Tip */}
+                                            <div className="flex flex-col justify-between space-y-4 sm:space-y-5">
+                                                <div>
+                                                    <span className="block text-gray-300 text-xs sm:text-sm mb-2">Top Audience:</span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {safeArray((currentAd as any)?.top_5_audience || (currentAd as any)?.top_audience).map((aud: string, idx: number) => (
+                                                            <Badge key={idx} className="bg-green-600/20 text-green-400 border-green-600/30 text-xs whitespace-nowrap">{aud}</Badge>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-
-                                            {/* Dominant Colors */}
-                                            <div>
-                                                <h4 className="text-xs sm:text-sm font-medium text-gray-300 mb-2">Dominant Colors</h4>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {safeArray(currentAd?.dominant_colors).map((color, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-[#2b2b2b] bg-[#1a1a1a]"
-                                                        >
-                                                            <span
-                                                                className="w-3 h-3 rounded-full border border-gray-600 flex-shrink-0"
-                                                                style={{ backgroundColor: String(color).trim() }}
-                                                            />
-                                                            <span className="text-xs text-gray-200 truncate">{String(color).trim()}</span>
-                                                        </div>
-                                                    ))}
+                                                <div className="bg-[#171717] border border-[#2b2b2b] rounded-lg p-3 sm:p-4 max-w-[95%]">
+                                                    <p className="text-primary text-xs sm:text-sm mb-1 font-medium">Strategy Tip:</p>
+                                                    <p className="text-gray-100 text-xs sm:text-sm leading-relaxed">{(currentAd as any)?.spend_recommendation_strategy_tip || 'No recommendation available.'}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -1135,154 +1303,84 @@ export default function ABTestResults() {
                                 </div>
                             </ProOverlay>
 
-                            {/* Issues and Suggestions - Mobile Responsive */}
+                            {/* Issues and Digital Marketing Feedback - Mobile Responsive (match Results) */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                                {/* Issues Section - Mobile Optimized */}
+                                {/* Issues Section */}
                                 <div
                                     className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl hover:scale-[1.01] transition-all duration-300"
-                                    style={{ transition: "all 0.3s" }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                    }}
+                                    style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                                    onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900"; }}
+                                    onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)"; }}
                                 >
-                                    <div className="p-4 sm:p-6">
-                                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <div className="px-4 sm:px-6 py-2 sm:py-4 overflow-y-auto h-full">
+                                        {/* Critical Issues */}
+                                        <div className="flex items-center justify-between mb-1 sm:mb-2">
                                             <h3 className="flex items-center text-lg sm:text-xl font-semibold text-red-400">
                                                 <Search className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                                                Issues Detected
+                                                Critical Issues
                                             </h3>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                                                 </TooltipTrigger>
                                                 <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                    <p>AI-identified problems in your ad that could negatively impact performance or user engagement.</p>
+                                                    <p>Major problems in your ad that could greatly harm performance or user trust.</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>
-                                        <ul className="space-y-2 sm:space-y-3">
-                                            {safeArray(currentAd?.issues).map((issue, index) => (
-                                                <li key={index} className="flex items-start text-gray-300">
-                                                    <span className="mr-2 sm:mr-3 text-red-400 text-base sm:text-lg flex-shrink-0">•</span>
-                                                    <span className="text-sm sm:text-base leading-relaxed">{issue}</span>
+                                        <ul className="space-y-1">
+                                            {safeArray((currentAd as any)?.critical_issues).map((issue, index) => (
+                                                <li key={index} className="flex items-start text-white">
+                                                    <span className="mr-2 sm:mr-3 text-base sm:text-lg flex-shrink-0">•</span>
+                                                    <span className="text-xs sm:text-sm leading-relaxed">{issue}</span>
                                                 </li>
                                             ))}
                                         </ul>
-                                        {safeArray(currentAd?.issues).length === 0 && (
-                                            <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
-                                                No issues detected
-                                            </div>
+                                        {safeArray((currentAd as any)?.critical_issues).length === 0 && (
+                                            <div className="text-white/70 text-center py-6 sm:py-8 text-sm sm:text-base">No critical issues detected</div>
+                                        )}
+
+                                        {/* Minor Issues */}
+                                        <div className="flex items-center justify-between mt-3 mb-1 sm:mb-2">
+                                            <h3 className="flex items-center text-lg sm:text-xl font-semibold text-[#F99244]">
+                                                <Search className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                                                Minor Issues
+                                            </h3>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                </TooltipTrigger>
+                                                <TooltipContent className="w-50 bg-[#2b2b2b]">
+                                                    <p>Lesser problems in your ad that may impact engagement or usability.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                        <ul className="space-y-1">
+                                            {safeArray((currentAd as any)?.minor_issues).map((issue, index) => (
+                                                <li key={index} className="flex items-start text-white">
+                                                    <span className="mr-2 sm:mr-3 text-base sm:text-lg flex-shrink-0">•</span>
+                                                    <span className="text-xs sm:text-sm leading-relaxed">{issue}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        {safeArray((currentAd as any)?.minor_issues).length === 0 && (
+                                            <div className="text-white/70 text-center py-6 sm:py-8 text-sm sm:text-base">No minor issues detected</div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Suggestions Section - Mobile Optimized */}
+                                {/* Digital Marketing Feedback */}
                                 <div
                                     className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                                    style={{ transition: "all 0.3s" }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                    }}
+                                    style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                                    onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900"; }}
+                                    onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)"; }}
                                 >
-                                    <div className="p-4 sm:p-6">
-                                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                            <h3 className="flex items-center text-lg sm:text-xl font-semibold text-blue-400">
-                                                <Sparkles className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                                                Suggestions for Improvement
-                                            </h3>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                </TooltipTrigger>
-                                                <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                    <p>Actionable recommendations to optimize your ad's performance and increase engagement rates.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
-                                        <ol className="space-y-2 sm:space-y-3">
-                                            {safeArray(currentAd?.suggestions).length ? (
-                                                safeArray(currentAd?.suggestions).map((suggestion, index) => (
-                                                    <li key={index} className="flex items-start text-gray-300">
-                                                        <span className="mr-2 sm:mr-3 text-blue-400 font-semibold flex-shrink-0">•</span>
-                                                        <span className="text-sm sm:text-base leading-relaxed">{suggestion}</span>
-                                                    </li>
-                                                ))
-                                            ) : (
-                                                <li className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
-                                                    No suggestions available
-                                                </li>
-                                            )}
-                                        </ol>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Professional Feedback - Mobile Responsive */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                                {/* Designer Feedback - Mobile Optimized */}
-                                <div
-                                    className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                                    style={{ transition: "all 0.3s" }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                    }}
-                                >
-                                    <div className="p-4 sm:p-6">
-                                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                            <h3 className="flex items-center text-lg sm:text-xl font-semibold text-purple-400">
-                                                <Palette className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                                                Designer Feedback
-                                            </h3>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                </TooltipTrigger>
-                                                <TooltipContent className="w-50 bg-[#2b2b2b]">
-                                                    <p>Professional design insights focusing on visual elements, layout, typography, and overall aesthetic appeal.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
-                                        <ul className="space-y-2 sm:space-y-3">
-                                            {safeArray(currentAd?.feedback_designer).map((feedback, index) => (
-                                                <li key={index} className="flex items-start text-gray-300">
-                                                    <span className="mr-2 sm:mr-3 text-purple-400 text-base sm:text-lg flex-shrink-0">•</span>
-                                                    <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        {safeArray(currentAd?.feedback_designer).length === 0 && (
-                                            <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
-                                                No designer feedback available
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Digital Marketing Feedback - Mobile Optimized */}
-                                <div
-                                    className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                                    style={{ transition: "all 0.3s" }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                                    }}
-                                >
-                                    <div className="p-4 sm:p-6">
+                                    <div className="p-4 sm:p-6 overflow-y-auto h-full">
                                         <div className="flex items-center justify-between mb-3 sm:mb-4">
                                             <h3 className="flex items-center text-lg sm:text-xl font-semibold text-green-400">
                                                 <TrendingUp className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                                                Marketing Expert Feedback
+                                                For Marketing Experts
                                             </h3>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
@@ -1294,353 +1392,28 @@ export default function ABTestResults() {
                                             </Tooltip>
                                         </div>
                                         <ul className="space-y-2 sm:space-y-3">
-                                            {safeArray(currentAd?.feedback_digitalmark).map((feedback, index) => (
+                                            {safeArray((currentAd as any)?.feedback_digitalmark).map((feedback, index) => (
                                                 <li key={index} className="flex items-start text-gray-300">
                                                     <span className="mr-2 sm:mr-3 text-green-400 text-base sm:text-lg flex-shrink-0">•</span>
                                                     <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
                                                 </li>
                                             ))}
                                         </ul>
-                                        {safeArray(currentAd?.feedback_digitalmark).length === 0 && (
-                                            <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
-                                                No marketing feedback available
-                                            </div>
+                                        {safeArray((currentAd as any)?.feedback_digitalmark).length === 0 && (
+                                            <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">No marketing feedback available</div>
                                         )}
                                     </div>
                                 </div>
                             </div>
 
 
-                            {/* Engagement & Performance Metrics - Mobile Responsive A/B Test */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                                {/* Engagement Metrics - Mobile Optimized */}
-                                <ProOverlay message=" Upgrade to Pro to unlock advanced engagement analytics and performance insights.">
-                                    <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 p-4 sm:p-6 flex flex-col">
-                                        <div className="flex items-center justify-between mb-4 sm:mb-6">
-                                            <h3 className="text-xl sm:text-2xl font-bold flex items-center">
-                                                <Activity className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                                                Engagement Metrics - Ad {activeTab}
-                                            </h3>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                </TooltipTrigger>
-                                                <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
-                                                    <div>
-                                                        <strong>Engagement Score:</strong>
-                                                        <p className="text-gray-300 text-xs">Measures how actively users interact with your content, such as likes, comments, and shares.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Viral Potential:</strong>
-                                                        <p className="text-gray-300 text-xs">Assesses the likelihood of your content being widely shared across platforms.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Trust Signal Score:</strong>
-                                                        <p className="text-gray-300 text-xs">Indicates how credible and reliable your content appears to users.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>FOMO Score:</strong>
-                                                        <p className="text-gray-300 text-xs">Measures the extent to which your content creates fear of missing out or prompts immediate attention.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Urgency Trigger:</strong>
-                                                        <p className="text-gray-300 text-xs">Highlights time-sensitive or limited-availability cues that drive users to act quickly.</p>
-                                                    </div>
-
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
-
-                                        <div className="space-y-3 sm:space-y-4 flex-1">
-                                            {/* Engagement Score Full Row */}
-                                            <div
-                                                className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.boxShadow =
-                                                        (currentAd?.engagement_score || 0) <= 50
-                                                            ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                                            : (currentAd?.engagement_score || 0) <= 75
-                                                                ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                                                : "0 0 14px 4px rgba(34,197,94,0.7)";
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.boxShadow =
-                                                        "0 0 10px rgba(255,255,255,0.05)";
-                                                }}
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center">
-                                                        <Users
-                                                            className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0 ${(currentAd?.engagement_score || 0) <= 50
-                                                                ? "text-red-500"
-                                                                : (currentAd?.engagement_score || 0) <= 75
-                                                                    ? "text-yellow-500"
-                                                                    : "text-green-500"
-                                                                }`}
-                                                        />
-                                                        <span className="text-gray-300 font-medium text-sm sm:text-base">
-                                                            Engagement Score
-                                                        </span>
-                                                    </div>
-                                                    <span
-                                                        className={`font-semibold text-lg sm:text-xl ${(currentAd?.engagement_score || 0) <= 50
-                                                            ? "text-red-500"
-                                                            : (currentAd?.engagement_score || 0) <= 75
-                                                                ? "text-yellow-500"
-                                                                : "text-green-500"
-                                                            }`}
-                                                    >
-                                                        {Math.round(currentAd?.engagement_score || 0)}/100
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Other Engagement Metrics - Mobile Grid */}
-                                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                                                {[
-                                                    {
-                                                        label: "Viral Potential",
-                                                        value: currentAd?.viral_potential_score || 0,
-                                                        icon: TrendingUp,
-                                                    },
-                                                    {
-                                                        label: "FOMO Score",
-                                                        value: currentAd?.fomo_score || 0,
-                                                        icon: Zap,
-                                                    },
-                                                    {
-                                                        label: "Trust Signal Score",
-                                                        value: currentAd?.trust_signal_score || 0,
-                                                        icon: Shield,
-                                                    },
-                                                    {
-                                                        label: "Urgency Trigger",
-                                                        value: currentAd?.urgency_trigger_score || 0,
-                                                        icon: AlertTriangle,
-                                                    },
-                                                ].map((item, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
-                                                        onMouseEnter={(e) => {
-                                                            e.currentTarget.style.boxShadow =
-                                                                item.value <= 50
-                                                                    ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                                                    : item.value <= 75
-                                                                        ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                                                        : "0 0 14px 4px rgba(34,197,94,0.7)";
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            e.currentTarget.style.boxShadow =
-                                                                "0 0 10px rgba(255,255,255,0.05)";
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center gap-4">
-                                                            {/* Icon on the left, vertically centered */}
-                                                            <item.icon
-                                                                className={`w-5 h-5 sm:w-6 sm:h-6 ${item.value <= 50
-                                                                    ? "text-red-500"
-                                                                    : item.value <= 75
-                                                                        ? "text-yellow-500"
-                                                                        : "text-green-500"
-                                                                    }`}
-                                                            />
-
-                                                            {/* Text block on the right */}
-                                                            <div className="flex flex-col text-left">
-                                                                <span className="text-gray-300 font-medium text-xs sm:text-sm mb-1">
-                                                                    {item.label}
-                                                                </span>
-                                                                <span
-                                                                    className={`font-semibold text-sm sm:text-lg ${item.value <= 50
-                                                                        ? "text-red-500"
-                                                                        : item.value <= 75
-                                                                            ? "text-yellow-500"
-                                                                            : "text-green-500"
-                                                                        }`}
-                                                                >
-                                                                    {Math.round(item.value)}/100
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </ProOverlay>
-                                {/* Technical Analysis - Mobile Optimized */}
-                                <ProOverlay message=" Upgrade to Pro to access detailed technical analysis and optimization insights.">
-                                    <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 p-4 sm:p-6 flex flex-col">
-                                        <div className="flex items-center justify-between mb-4 sm:mb-6">
-                                            <h3 className="text-xl sm:text-2xl font-bold flex items-center">
-                                                <Activity className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                                                Technical Analysis - Ad {activeTab}
-                                            </h3>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                </TooltipTrigger>
-                                                <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
-                                                    <div>
-                                                        <strong>Budget Utilization:</strong>
-                                                        <p className="text-gray-300 text-xs">Tracks how efficiently your allocated budget is being spent on campaigns or content.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Faces Detected:</strong>
-                                                        <p className="text-gray-300 text-xs">Counts and identifies faces in images or videos to ensure people are clearly visible.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Logo Visibility:</strong>
-                                                        <p className="text-gray-300 text-xs">Assesses whether logos are clearly visible and prominent in your content.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Text Percentage:</strong>
-                                                        <p className="text-gray-300 text-xs">Measures the proportion of text relative to images to maintain visual balance and readability.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Layout Symmetry:</strong>
-                                                        <p className="text-gray-300 text-xs">Evaluates the visual balance and alignment of elements for a harmonious design.</p>
-                                                    </div>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
-
-                                        <div className="space-y-3 sm:space-y-4 flex-1">
-                                            {/* Budget Utilization Full Row */}
-                                            <div
-                                                className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.boxShadow =
-                                                        (currentAd?.budget_utilization_score || 0) <= 50
-                                                            ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                                            : (currentAd?.budget_utilization_score || 0) <= 75
-                                                                ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                                                : "0 0 14px 4px rgba(34,197,94,0.7)";
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.boxShadow =
-                                                        "0 0 10px rgba(255,255,255,0.05)";
-                                                }}
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center">
-                                                        <DollarSign
-                                                            className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 flex-shrink-0 ${(currentAd?.budget_utilization_score || 0) <= 50
-                                                                ? "text-red-500"
-                                                                : (currentAd?.budget_utilization_score || 0) <= 75
-                                                                    ? "text-yellow-500"
-                                                                    : "text-green-500"
-                                                                }`}
-                                                        />
-                                                        <span className="text-gray-300 font-medium text-sm sm:text-base">
-                                                            Budget Utilization
-                                                        </span>
-                                                    </div>
-                                                    <span
-                                                        className={`font-semibold text-lg sm:text-xl ${(currentAd?.budget_utilization_score || 0) <= 50
-                                                            ? "text-red-500"
-                                                            : (currentAd?.budget_utilization_score || 0) <= 75
-                                                                ? "text-yellow-500"
-                                                                : "text-green-500"
-                                                            }`}
-                                                    >
-                                                        {Math.round(currentAd?.budget_utilization_score || 0)}/100
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Other Technical Metrics - Mobile Grid */}
-                                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                                                {[
-                                                    {
-                                                        label: "Faces Detected",
-                                                        value: currentAd?.faces_detected || 0,
-                                                        icon: Camera,
-                                                        max: 10,
-                                                    },
-                                                    {
-                                                        label: "Logo Visibility",
-                                                        value: currentAd?.logo_visibility_score || 0,
-                                                        icon: Award,
-                                                        max: 100,
-                                                    },
-                                                    {
-                                                        label: "Text Percentage",
-                                                        value: currentAd?.text_percentage_score || 0,
-                                                        icon: Type,
-                                                        max: 100,
-                                                    },
-                                                    {
-                                                        label: "Layout Symmetry",
-                                                        value: currentAd?.layout_symmetry_score || 0,
-                                                        icon: Layout,
-                                                        max: 100,
-                                                    },
-                                                ].map((item, i) => {
-                                                    const getColorClass = () => {
-                                                        if (item.max === 10) {
-                                                            if (item.value <= 3) return "text-green-500";
-                                                            if (item.value <= 7) return "text-yellow-500";
-                                                            return "text-red-500";
-                                                        } else {
-                                                            if (item.value <= 50) return "text-red-500";
-                                                            if (item.value <= 75) return "text-yellow-500";
-                                                            return "text-green-500";
-                                                        }
-                                                    };
-
-                                                    const colorClass = getColorClass();
-
-                                                    return (
-                                                        <div
-                                                            key={i}
-                                                            className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
-                                                            onMouseEnter={(e) => {
-                                                                e.currentTarget.style.boxShadow =
-                                                                    colorClass.includes("red")
-                                                                        ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                                                        : colorClass.includes("yellow")
-                                                                            ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                                                            : "0 0 14px 4px rgba(34,197,94,0.7)";
-                                                            }}
-                                                            onMouseLeave={(e) => {
-                                                                e.currentTarget.style.boxShadow =
-                                                                    "0 0 10px rgba(255,255,255,0.05)";
-                                                            }}
-                                                        >
-                                                            <div className="flex items-center gap-4">
-                                                                {/* Icon on the left */}
-                                                                <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${colorClass}`} />
-
-                                                                {/* Text stacked on the right */}
-                                                                <div className="flex flex-col text-left">
-                                                                    <span className="text-gray-300 font-medium text-xs sm:text-sm mb-1">
-                                                                        {item.label}
-                                                                    </span>
-                                                                    <span className={`font-semibold text-sm sm:text-lg ${colorClass}`}>
-                                                                        {Math.round(item.value)}
-                                                                        {item.max === 100 ? "/100" : ""}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </ProOverlay>
-                            </div>
-
-                            {/* Quick Wins & Insights - Mobile Optimized */}
-                            {(currentAd?.quick_win_tip || currentAd?.shareability_comment) && (
+                            {/* Ad Creative Suggestions - Mobile Optimized */}
+                            {currentAd?.next_ad_idea_based_on_this_post && (
                                 <div
                                     className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]"
                                     style={{ transition: "all 0.3s" }}
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.boxShadow = "0 0 20px 4px #DB4900";
+                                        e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
@@ -1650,355 +1423,343 @@ export default function ABTestResults() {
                                         <div className="flex items-center justify-between mb-4 sm:mb-6">
                                             <h3 className="text-xl sm:text-2xl font-bold flex items-center">
                                                 <Sparkles className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                                                Quick Wins & Insights - Ad {activeTab}
+                                                Creative Variation Tip
                                             </h3>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                                                 </TooltipTrigger>
-                                                <TooltipContent className="w-50 bg-[#2b2b2b]">
+                                                <TooltipContent className="w-60 bg-[#2b2b2b] text-gray-200">
                                                     <p>
-                                                        Actionable insights and quick optimization tips for immediate
-                                                        performance improvements.
+                                                        AI-generated creative ideas based on your current ad — including
+                                                        headline, caption, and visual concept — to inspire your next
+                                                        campaign.
                                                     </p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>
 
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                                            {currentAd.quick_win_tip && (
+                                            {/* Left Column */}
+                                            <div className="space-y-4 sm:space-y-6">
+                                                {/* Headline Idea */}
                                                 <div className="bg-gradient-to-br from-green-600/10 to-green-800/10 rounded-xl p-4 sm:p-6 border border-green-600/20">
                                                     <h4 className="text-base sm:text-lg font-semibold text-green-400 mb-2 sm:mb-3 flex items-center">
-                                                        <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                                                        Quick Win Tip
+                                                        <Type className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                                                        Headline Idea
                                                     </h4>
                                                     <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                                                        {currentAd.quick_win_tip}
+                                                        {currentAd?.next_ad_idea_based_on_this_post?.headline}
                                                     </p>
                                                 </div>
-                                            )}
 
-                                            {currentAd.shareability_comment && (
+                                                {/* Short Caption */}
                                                 <div className="bg-gradient-to-br from-blue-600/10 to-blue-800/10 rounded-xl p-4 sm:p-6 border border-blue-600/20">
                                                     <h4 className="text-base sm:text-lg font-semibold text-blue-400 mb-2 sm:mb-3 flex items-center">
-                                                        <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                                                        Shareability Assessment
+                                                        <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                                                        Short Caption
                                                     </h4>
                                                     <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                                                        {currentAd.shareability_comment}
+                                                        {currentAd?.next_ad_idea_based_on_this_post?.short_caption}
                                                     </p>
                                                 </div>
-                                            )}
+                                            </div>
+
+                                            {/* Right Column - Visual Idea */}
+                                            <div className="bg-gradient-to-br from-purple-600/10 to-purple-800/10 rounded-xl p-4 sm:p-6 border border-purple-600/20 flex flex-col items-start text-left">
+                                                <Lightbulb className="w-10 h-10 sm:w-12 sm:h-12 text-purple-400 mb-3 sm:mb-4" />
+                                                <h4 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">
+                                                    Visual Idea
+                                                </h4>
+                                                <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                                                    {currentAd?.next_ad_idea_based_on_this_post?.visual_idea}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Emotional + Visual Analysis Combined Section - Mobile Responsive */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                                {/* Emotional & Color Analysis - Mobile Optimized */}
-                                <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]">
-                                    <div className="p-4 sm:p-6 lg:p-8">
-                                        <div className="flex items-center justify-between mb-4 sm:mb-6">
-                                            <h3 className="text-xl sm:text-2xl font-bold flex items-center">
-                                                <Heart className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                                                <span className="hidden sm:inline">Emotional, Color Analysis - Ad {activeTab}</span>
-                                                <span className="sm:hidden">Emotional Analysis</span>
-                                            </h3>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                </TooltipTrigger>
-                                                <TooltipContent className="w-60 bg-[#2b2b2b]">
-                                                    <p>
-                                                        Emotional impact analysis and color psychology insights including primary emotions, emotional alignment, and suggested color improvements for better audience connection.
-                                                    </p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
+                            {/* Engagement & Performance Metrics - Mobile Responsive */}
+                            <div className="grid grid-cols-1 lg:grid-cols-[28.5%_41%_28.5%] gap-2 sm:gap-4 w-full">
+                                {/* Technical Metrics (30%) */}
+                                <div
+                                    className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                                    style={{ transition: "all 0.3s" }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                    }}
+                                >
+                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                        <h4 className="text-base sm:text-lg font-semibold text-white">Technical Metrics</h4>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
+                                                <div>
+                                                    <strong>Budget Utilization:</strong>
+                                                    <p className="text-gray-300 text-xs">Tracks how efficiently your allocated budget is being spent.</p>
+                                                </div>
+                                                <div>
+                                                    <strong>Faces Detected:</strong>
+                                                    <p className="text-gray-300 text-xs">Ensures people are clearly visible in content.</p>
+                                                </div>
+                                                <div>
+                                                    <strong>Logo Visibility:</strong>
+                                                    <p className="text-gray-300 text-xs">Checks if your logo is prominent and clear.</p>
+                                                </div>
+                                                <div>
+                                                    <strong>Text Percentage:</strong>
+                                                    <p className="text-gray-300 text-xs">Measures the balance between visuals and text.</p>
+                                                </div>
+                                                <div>
+                                                    <strong>Layout Symmetry:</strong>
+                                                    <p className="text-gray-300 text-xs">Evaluates the visual alignment and balance.</p>
+                                                </div>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
 
-                                        <div className="space-y-4 sm:space-y-6">
-                                            {/* Emotional Insights */}
-                                            <div
-                                                className="bg-[#121212] rounded-xl p-3 sm:p-5 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
-                                                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900")}
-                                                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)")}
-                                            >
-                                                <h4 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">Emotional Insights</h4>
+                                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                                        <span className="text-gray-300 text-sm sm:text-base">Primary Emotion</span>
+                                        <span className="text-primary border border-primary rounded-lg px-3 py-1 text-xs sm:text-sm font-medium bg-[#1a1a1a]">
+                                            {currentAd?.primary_emotion || "—"}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-3 sm:space-y-4">
+                                        {[
+                                            { label: "Logo Visibility", value: currentAd?.logo_visibility_score || 0, max: 100 },
+                                            { label: "Text Percentage", value: currentAd?.text_percentage_score || 0, max: 100 },
+                                            { label: "Faces Detected", value: currentAd?.faces_detected || 0, max: 10 },
+                                            { label: "Layout Symmetry", value: currentAd?.layout_symmetry_score || 0, max: 100 },
+                                            { label: "Color Harmony", value: currentAd?.color_harmony || 0, max: 100 },
+                                        ].map((item, i) => {
+                                            const getColorClass = () => {
+                                                if (item.max === 10) {
+                                                    if (item.value <= 3) return "text-green-400";
+                                                    if (item.value <= 7) return "text-[#F99244]";
+                                                    return "text-red-400";
+                                                } else {
+                                                    if (item.value <= 50) return "text-red-400";
+                                                    if (item.value <= 75) return "text-[#F99244]";
+                                                    return "text-green-400";
+                                                }
+                                            };
 
-                                                <div className="space-y-2 sm:space-y-3">
-                                                    {/* Primary Emotion */}
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-gray-300 text-sm sm:text-base">Primary Emotion</span>
-                                                        <Badge className="bg-pink-600/20 text-pink-400 border-pink-600/30 text-xs sm:text-sm">
-                                                            {currentAd?.primary_emotion || "N/A"}
-                                                        </Badge>
+                                            const colorClass = getColorClass();
+
+                                            // Add leading zero for Faces Detected if single digit
+                                            const formattedValue =
+                                                item.label === "Faces Detected"
+                                                    ? String(item.value).padStart(2, "0")
+                                                    : Math.round(item.value);
+
+                                            return (
+                                                <div key={i} className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-gray-300 text-sm sm:text-base">{item.label}</span>
                                                     </div>
+                                                    <span className={`font-bold text-sm sm:text-base ${colorClass}`}>
+                                                        {formattedValue}
+                                                        {item.max === 100 ? "%" : ""}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
 
-                                                    {/* Emotional Alignment */}
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-gray-300 text-sm sm:text-base">Emotional Alignment</span>
-                                                        <Badge className="bg-purple-600/20 text-purple-400 border-purple-600/30 text-xs sm:text-sm">
-                                                            {currentAd?.emotional_alignment || "N/A"}
-                                                        </Badge>
-                                                    </div>
+                                </div>
 
-                                                    {/* Emotional Boost Suggestions */}
-                                                    {safeArray(currentAd?.emotional_boost_suggestions).length > 0 && (
-                                                        <div className="pt-2">
-                                                            <h5 className="text-xs sm:text-sm font-semibold text-gray-300 mb-2">
-                                                                Emotional Boost Suggestions
-                                                            </h5>
-                                                            <div className="space-y-1">
-                                                                {safeArray(currentAd?.emotional_boost_suggestions).map((suggestion, idx) => (
-                                                                    <div key={idx} className="flex items-start">
-                                                                        <span className="text-pink-400 mr-1 sm:mr-2 flex-shrink-0">•</span>
-                                                                        <span className="text-gray-300 text-xs sm:text-sm leading-relaxed">{suggestion}</span>
-                                                                    </div>
-                                                                ))}
+                                {/* Engagement Metrics - Centered (2 Columns Wide) */}
+                                <div className="lg:col-span-1 flex justify-center">
+                                    <div className="w-full">
+                                        <ProOverlay message="Upgrade to Pro to unlock advanced engagement analytics and performance insights.">
+                                            <div className="w-full bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 p-4 sm:p-6 flex flex-col hover:scale-[1.01] transition-all duration-300">
+                                                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                                                    <h3 className="text-xl sm:text-2xl font-bold flex items-center">
+                                                        <MousePointerClick className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                                                        Engagement Metrics
+                                                    </h3>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
+                                                            <div>
+                                                                <strong>Engagement Score:</strong>
+                                                                <p className="text-gray-300 text-xs">
+                                                                    Measures how actively users interact with your content (likes, comments, shares).
+                                                                </p>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+
+                                                <div className="space-y-3 sm:space-y-4 flex-1">
+                                                    {/* Engagement Score */}
+                                                    <div
+                                                        className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
+                                                        onMouseEnter={(e) => {
+                                                            const score = currentAd?.engagement_score || 0;
+                                                            const color =
+                                                                score <= 50
+                                                                    ? "rgba(239,68,68,0.7)" // red
+                                                                    : score <= 75
+                                                                        ? "rgba(249,146,68,0.7)" // orange
+                                                                        : "rgba(34,197,94,0.7)"; // green
+                                                            e.currentTarget.style.boxShadow = `0 0 8px 2px ${color}`;
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                                        }}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            {/* Icon */}
+                                                            <MousePointerClick
+                                                                className={`w-5 h-5 sm:w-6 sm:h-6 ${(currentAd?.engagement_score || 0) <= 50
+                                                                    ? "text-red-500"
+                                                                    : (currentAd?.engagement_score || 0) <= 75
+                                                                        ? "text-[#F99244]"
+                                                                        : "text-green-500"
+                                                                    }`}
+                                                            />
+
+                                                            {/* Text content */}
+                                                            <div className="flex justify-between items-center w-full">
+                                                                <span className="text-gray-300 font-medium text-sm sm:text-base">
+                                                                    Engagement Score
+                                                                </span>
+                                                                <span
+                                                                    className={`font-bold text-lg sm:text-xl ${(currentAd?.engagement_score || 0) <= 50
+                                                                        ? "text-red-500"
+                                                                        : (currentAd?.engagement_score || 0) <= 75
+                                                                            ? "text-[#F99244]"
+                                                                            : "text-green-500"
+                                                                        }`}
+                                                                >
+                                                                    {Math.round(currentAd?.engagement_score || 0)}%
+                                                                </span>
                                                             </div>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                    </div>
 
-                                            {/* Color Analysis */}
-                                            <div
-                                                className="bg-[#121212] rounded-xl p-3 sm:p-5 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
-                                                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900")}
-                                                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)")}
-                                            >
-                                                <h4 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">Color Analysis</h4>
 
-                                                <div className="space-y-3 sm:space-y-4">
-                                                    {/* Suggested Colors */}
-                                                    {safeArray(currentAd?.suggested_colors).length > 0 && (
-                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
-                                                            <h5 className="text-xs sm:text-sm font-semibold text-gray-300 min-w-0 sm:min-w-[140px]">
-                                                                Suggested Colors
-                                                            </h5>
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {safeArray(currentAd?.suggested_colors).map((color, idx) => (
-                                                                    <div
-                                                                        key={idx}
-                                                                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a]"
-                                                                    >
-                                                                        <span
-                                                                            className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border border-gray-600 flex-shrink-0"
-                                                                            style={{ backgroundColor: String(color).trim() }}
-                                                                        />
-                                                                        <span className="text-xs text-gray-200 truncate">{String(color).trim()}</span>
+                                                    {/* Other Engagement Metrics */}
+                                                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                                                        {[
+                                                            { label: "Viral Potential", value: currentAd?.viral_potential_score || 0, icon: TrendingUp },
+                                                            { label: "FOMO Score", value: currentAd?.fomo_score || 0, icon: Zap },
+                                                            { label: "Trust Signal", value: currentAd?.trust_signal_score || 0, icon: Shield },
+                                                            { label: "Urgency Trigger", value: currentAd?.urgency_trigger_score || 0, icon: AlertTriangle },
+                                                        ].map((item, i) => {
+                                                            const getColorClass = () => {
+                                                                if (item.value <= 50) return "text-red-500";
+                                                                if (item.value <= 75) return "text-[#F99244]";
+                                                                return "text-green-500";
+                                                            };
+                                                            const colorClass = getColorClass();
+
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
+                                                                    onMouseEnter={(e) => {
+                                                                        e.currentTarget.style.boxShadow =
+                                                                            colorClass.includes("red")
+                                                                                ? "0 0 8px 2px rgba(239,68,68,0.7)"
+                                                                                : colorClass.includes("F99244")
+                                                                                    ? "0 0 8px 2px rgba(249,146,68,0.7)"
+                                                                                    : "0 0 8px 2px rgba(34,197,94,0.7)";
+                                                                    }}
+                                                                    onMouseLeave={(e) => {
+                                                                        e.currentTarget.style.boxShadow =
+                                                                            "0 0 10px rgba(255,255,255,0.05)";
+                                                                    }}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${colorClass}`} />
+                                                                        <div className="flex flex-col text-left">
+                                                                            <span className="text-gray-300 font-medium text-xs sm:text-sm">
+                                                                                {item.label}
+                                                                            </span>
+                                                                            <span
+                                                                                className={`font-semibold text-sm sm:text-lg ${colorClass}`}
+                                                                            >
+                                                                                {Math.round(item.value)}%
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Font Feedback */}
-                                                    {currentAd?.font_feedback && (
-                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
-                                                            <h5 className="text-xs sm:text-sm font-semibold text-gray-300 min-w-0 sm:min-w-[140px]">
-                                                                Font Feedback
-                                                            </h5>
-                                                            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">{currentAd.font_feedback}</p>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Color Harmony Feedback */}
-                                                    {currentAd?.color_harmony_feedback && (
-                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
-                                                            <h5 className="text-xs sm:text-sm font-semibold text-gray-300 min-w-0 sm:min-w-[140px]">
-                                                                Color Harmony Feedback
-                                                            </h5>
-                                                            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">{currentAd.color_harmony_feedback}</p>
-                                                        </div>
-                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </ProOverlay>
                                     </div>
                                 </div>
 
-                                {/* Visual Analysis - Mobile Optimized */}
-                                <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]">
-                                    <div className="p-4 sm:p-6 lg:p-8">
-                                        <div className="flex items-center justify-between mb-4 sm:mb-6">
-                                            <h3 className="text-xl sm:text-2xl font-bold flex items-center">
-                                                <Heart className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                                                <span className="hidden sm:inline">Visual Analysis - Ad {activeTab}</span>
-                                                <span className="sm:hidden">Visual Analysis</span>
-                                            </h3>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                                                </TooltipTrigger>
-                                                <TooltipContent className="w-60 h-80 overflow-y-auto bg-[#2b2b2b] text-sm space-y-2">
-                                                    <div>
-                                                        <strong>Visual Clarity:</strong>
-                                                        <p className="text-gray-300 text-xs">Evaluates how clear and easily interpretable the visual elements are.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Emotional Appeal:</strong>
-                                                        <p className="text-gray-300 text-xs">Measures how effectively visuals evoke the intended emotional response from viewers.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Text-Visual:</strong>
-                                                        <p className="text-gray-300 text-xs">Assesses how well text and visuals are integrated, including alignment, spacing, and proportionality.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>CTA Visibility:</strong>
-                                                        <p className="text-gray-300 text-xs">Analyzes how prominent and noticeable call-to-action elements are within the content.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Color Harmony:</strong>
-                                                        <p className="text-gray-300 text-xs">Checks if colors are balanced and aesthetically pleasing, enhancing overall visual appeal.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Brand Alignment:</strong>
-                                                        <p className="text-gray-300 text-xs">Ensures design elements, colors, and visuals are consistent with the brand identity.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Text Readability:</strong>
-                                                        <p className="text-gray-300 text-xs">Evaluates font size, contrast, and clarity to ensure text is easy to read.</p>
-                                                    </div>
-                                                    <div>
-                                                        <strong>Image Quality:</strong>
-                                                        <p className="text-gray-300 text-xs">Assesses resolution, sharpness, and overall visual polish of images used.</p>
-                                                    </div>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
+                                {/* Performance Composition Chart */}
+                                <div className="bg-black rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 relative overflow-hidden h-full flex flex-col"
+                                    style={{ transition: "all 0.3s" }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                    }}
+                                >
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h2 className="text-base sm:text-lg font-semibold text-white ">
+                                            Performance Composition
+                                        </h2>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="w-64 bg-[#2b2b2b] text-sm">
+                                                <p>
+                                                    Creative strength across key performance areas including visual appeal,
+                                                    CTA effectiveness, emotional resonance, readability, and trust indicators.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
 
-                                        <div className="space-y-4 sm:space-y-6">
-                                            <h4 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">
-                                                Visual Quality Assessment
-                                            </h4>
+                                    <p className="text-sm text-white/70 text-left">
+                                        Core creative strengths
+                                    </p>
 
-                                            {/* Core Visual Metrics - Mobile Grid */}
-                                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                                                {[
-                                                    { label: "Visual Clarity", value: parseInt(String(currentAd?.visual_clarity)) || 0, icon: Eye, max: 100 },
-                                                    { label: "Emotional Appeal", value: parseInt(String(currentAd?.emotional_appeal)) || 0, icon: Heart, max: 100 },
-                                                    { label: "Text-Visual", value: parseInt(String(currentAd?.text_visual_balance)) || 0, icon: FileText, max: 100 },
-                                                    { label: "CTA Visibility", value: parseInt(String(currentAd?.cta_visibility)) || 0, icon: Target, max: 100 }
-                                                ].map((item, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
-                                                        onMouseEnter={(e) => {
-                                                            e.currentTarget.style.boxShadow =
-                                                                item.value <= 50
-                                                                    ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                                                    : item.value <= 75
-                                                                        ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                                                        : "0 0 14px 4px rgba(34,197,94,0.7)";
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            e.currentTarget.style.boxShadow =
-                                                                "0 0 10px rgba(255,255,255,0.05)";
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center gap-2 sm:gap-4">
-                                                            {/* Icon on the left */}
-                                                            <item.icon
-                                                                className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ${item.value <= 50
-                                                                    ? "text-red-500"
-                                                                    : item.value <= 75
-                                                                        ? "text-yellow-500"
-                                                                        : "text-green-500"
-                                                                    }`}
-                                                            />
-
-                                                            {/* Text content */}
-                                                            <div className="flex flex-col min-w-0">
-                                                                <span className="text-gray-300 text-xs sm:text-sm font-medium mb-1 leading-tight truncate">
-                                                                    {item.label}
-                                                                </span>
-                                                                <span
-                                                                    className={`font-semibold text-sm sm:text-base ${item.value <= 50
-                                                                        ? "text-red-500"
-                                                                        : item.value <= 75
-                                                                            ? "text-yellow-500"
-                                                                            : "text-green-500"
-                                                                        }`}
-                                                                >
-                                                                    {Math.round(item.value)}/100
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                    <div className="relative mx-auto h-[300px] w-[250px] sm:h-[250px] sm:w-[250px]" >
+                                        <canvas ref={chartRef} className="absolute top-5 left-0 w-full h-full p-4" />
+                                        <div className="absolute sm:top-[55%] top-[48%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                                            <div
+                                                className={`text-2xl sm:text-3xl font-bold leading-tight ${(currentAd?.score_out_of_100 || 0) <= 50
+                                                    ? "text-red-500"
+                                                    : (currentAd?.score_out_of_100 || 0) <= 75
+                                                        ? "text-[#F99244]"
+                                                        : "text-green-500"
+                                                    }`}
+                                            >
+                                                {currentAd?.score_out_of_100 || 0}
                                             </div>
-
-                                            {/* Design Quality */}
-                                            <h4 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">Design Quality</h4>
-                                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                                                {[
-                                                    { label: "Color Harmony", value: currentAd?.color_harmony || 0, icon: Palette, max: 100 },
-                                                    { label: "Brand Alignment", value: currentAd?.brand_alignment || 0, icon: Award, max: 100 },
-                                                    { label: "Text Readability", value: currentAd?.text_readability || 0, icon: FileText, max: 100 },
-                                                    { label: "Image Quality", value: currentAd?.image_quality || 0, icon: ImageIcon, max: 100 }
-                                                ].map((item, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className="bg-[#121212] rounded-xl p-2 sm:p-4 border border-[#121212] shadow-lg shadow-white/10 transition-all duration-300"
-                                                        onMouseEnter={(e) => {
-                                                            e.currentTarget.style.boxShadow =
-                                                                item.value <= 50
-                                                                    ? "0 0 14px 4px rgba(239,68,68,0.7)"
-                                                                    : item.value <= 75
-                                                                        ? "0 0 14px 4px rgba(250,204,21,0.7)"
-                                                                        : "0 0 14px 4px rgba(34,197,94,0.7)";
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            e.currentTarget.style.boxShadow =
-                                                                "0 0 10px rgba(255,255,255,0.05)";
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center gap-2 sm:gap-4">
-                                                            {/* Icon on the left */}
-                                                            <item.icon
-                                                                className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ${item.value <= 50
-                                                                    ? "text-red-500"
-                                                                    : item.value <= 75
-                                                                        ? "text-yellow-500"
-                                                                        : "text-green-500"
-                                                                    }`}
-                                                            />
-
-                                                            {/* Text content */}
-                                                            <div className="flex flex-col min-w-0">
-                                                                <span className="text-gray-300 text-xs sm:text-sm font-medium mb-1 leading-tight truncate">
-                                                                    {item.label}
-                                                                </span>
-                                                                <span
-                                                                    className={`font-semibold text-sm sm:text-base ${item.value <= 50
-                                                                        ? "text-red-500"
-                                                                        : item.value <= 75
-                                                                            ? "text-yellow-500"
-                                                                            : "text-green-500"
-                                                                        }`}
-                                                                >
-                                                                    {Math.round(item.value)}/100
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <div className="text-xs text-gray-400 tracking-wide">Overall Score</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
 
-
                             {/* AI-Written Ad Copy Generator */}
                             <div className="bg-black rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]">
-                                <div className="p-8 space-y-8">
+                                <div className="p-3 sm:p-8 space-y-8">
                                     <div className="flex flex-col md:flex-row justify-between gap-4">
                                         <div className="flex items-center justify-between w-full">
-                                            <h3 className="text-2xl font-bold flex items-center">
+                                            <h3 className="text-base sm:text-2xl  font-bold flex items-center">
                                                 <PenTool className="mr-3 h-6 w-6 text-primary" />
                                                 AI-Written Ad Copy for Ad {activeTab}
                                             </h3>
@@ -2031,7 +1792,21 @@ export default function ABTestResults() {
                                                         >
                                                             <div className="flex items-start justify-between mb-2">
                                                                 <span className="text-sm text-gray-300">{adCopy.platform || 'N/A'} | {adCopy.tone || 'N/A'}</span>
-                                                                <Sparkles className="w-4 h-4 text-green-400" />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        navigator.clipboard.writeText(adCopy.copy_text || "");
+                                                                        setCopiedAdCopyIndex(index);
+                                                                        setTimeout(() => setCopiedAdCopyIndex(null), 2000);
+                                                                    }}
+                                                                    className="p-1 rounded-md hover:bg-[#171717] transition"
+                                                                    title={copiedAdCopyIndex === index ? "Copied!" : "Copy text"}
+                                                                >
+                                                                    {copiedAdCopyIndex === index ? (
+                                                                        <CheckCircle className="w-4 h-4 text-green-500 cursor-pointer" />
+                                                                    ) : (
+                                                                        <Copy className="w-4 h-4 text-gray-300 hover:text-primary cursor-pointer" />
+                                                                    )}
+                                                                </button>
                                                             </div>
                                                             <p className="text-white font-medium">{adCopy.copy_text || 'No copy text available'}</p>
                                                         </div>

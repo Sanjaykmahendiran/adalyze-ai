@@ -1,6 +1,23 @@
 # *
 User-agent: *
 Allow: /
+Allow: /login
+Allow: /register
+Allow: /pricing
+Allow: /blog
+Allow: /case-study
+Allow: /affiliate-program
+Allow: /aboutus
+Allow: /cookie-policy
+Allow: /termsandconditions
+Allow: /returnpolicy
+Allow: /privacypolicy
+Allow: /agency
+Allow: /use-cases
+Allow: /features
+Allow: /roi-calculator
+Allow: /faq
+Disallow: /
 
 # Host
 Host: https://adalyze.app

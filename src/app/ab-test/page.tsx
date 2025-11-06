@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CustomSearchDropdown } from "@/components/ui/custom-search-dropdown"
 import { CountrySelector } from "@/components/ui/country-selector"
-import { X, Lock } from "lucide-react"
+import { X, Lock, ChevronDown, Search } from "lucide-react"
 import { AnalyzingOverlay } from "../../components/analyzing-overlay"
 import ABFileUploadCard from "./_components/file-uploader"
 import AdNameInput from "./_components/AdNameInput"
@@ -19,6 +20,41 @@ import { trackEvent } from "@/lib/eventTracker"
 import { Industry } from "../upload/type"
 import { generateAdToken } from "@/lib/tokenUtils"
 import Footer from "@/components/footer"
+
+// FreeTrailOverlay component - same pattern as upload page
+const FreeTrailOverlay = ({
+    children,
+    message,
+    showOverlay,
+    buttonText,
+    onUpgradeClick
+}: {
+    children: React.ReactNode
+    message: string
+    showOverlay: boolean
+    buttonText: string
+    onUpgradeClick: () => void
+}) => {
+    return (
+        <div className="relative">
+            <div className={showOverlay ? "blur-xs pointer-events-none select-none" : ""}>{children}</div>
+            {showOverlay && (
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-2xl z-10">
+                    <div className="text-center p-4">
+                        <Lock className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-[#db4900]" />
+                        <p className="text-white font-semibold mb-4 text-sm sm:text-base">{message}</p>
+                        <Button
+                            onClick={onUpgradeClick}
+                            className="bg-[#db4900] hover:bg-[#c44000] text-white rounded-lg text-sm sm:text-base px-4 py-2"
+                        >
+                            {buttonText}
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
 
 interface Country {
     id: string
@@ -38,6 +74,9 @@ interface TargetInfo {
     gender: string
     country: string[]
     countryName?: string
+    funnelStage?: string
+    objective?: string
+    language?: string
 }
 
 export default function AdComparisonUpload() {
@@ -59,6 +98,9 @@ export default function AdComparisonUpload() {
     const [minAge, setMinAge] = useState("")
     const [maxAge, setMaxAge] = useState("")
     const [industries, setIndustries] = useState<Industry[]>([])
+    const [industryModalOpen, setIndustryModalOpen] = useState(false)
+    const [industrySearch, setIndustrySearch] = useState("")
+    const [isMobile, setIsMobile] = useState(false)
 
 
     // File states
@@ -77,9 +119,9 @@ export default function AdComparisonUpload() {
     const [countries, setCountries] = useState<Country[]>([])
     const [loadingCountries, setLoadingCountries] = useState(false)
     const [countrySearch, setCountrySearch] = useState("")
-    const [industrySearch, setIndustrySearch] = useState("")
-    const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false)
-    const industrySearchInputRef = useRef<HTMLInputElement>(null)
+    const [language, setLanguage] = useState("")
+    const [objective, setObjective] = useState("")
+    const [funnelStage, setFunnelStage] = useState("")
 
 
     const userId = cookies.get("userId") || ""
@@ -99,10 +141,11 @@ export default function AdComparisonUpload() {
         }
     }
 
-    // Filter industries based on search
-    const filteredIndustries = industries.filter(industryItem =>
-        industryItem.name.toLowerCase().includes(industrySearch.toLowerCase())
-    )
+    // Handle industry search - no need for client-side filtering since we're fetching from API
+    const handleIndustrySearch = (searchTerm: string) => {
+        // Optional: You could implement debounced API search here if needed
+        // For now, the dropdown will filter the already-loaded industries
+    }
 
     // Modal scroll lock
     useEffect(() => {
@@ -116,16 +159,19 @@ export default function AdComparisonUpload() {
         }
     }, [sidePanelOpen])
 
-
-
-    // Auto-focus industry search when dropdown opens
+    // Detect mobile viewport
     useEffect(() => {
-        if (industryDropdownOpen) {
-            setTimeout(() => {
-                industrySearchInputRef.current?.focus()
-            }, 100)
+        const updateIsMobile = () => {
+            if (typeof window !== "undefined") {
+                const small = window.innerWidth <= 640
+                setIsMobile(small)
+            }
         }
-    }, [industryDropdownOpen])
+        updateIsMobile()
+        window.addEventListener('resize', updateIsMobile)
+        return () => window.removeEventListener('resize', updateIsMobile)
+    }, [])
+
 
     // Check if files are uploaded
     const hasUploadedFiles = useCallback(() => {
@@ -160,7 +206,7 @@ export default function AdComparisonUpload() {
     const getCountryIdsFromNames = (names: string[]) => {
         return Array.isArray(countries) ? names.map(name => countries.find(c => c.name === name)?.id).filter(Boolean) as string[] : []
     }
-    
+
     const getCountryNamesFromIds = (ids: string[]) => {
         return Array.isArray(countries) ? ids.map(id => countries.find(c => c.id === id)?.name).filter(Boolean) as string[] : []
     }
@@ -179,9 +225,9 @@ export default function AdComparisonUpload() {
     const fetchCountries = async (searchTerm: string = '') => {
         // Only fetch countries if search term has 2 or more characters
         if (searchTerm.length < 2) {
-          return  // Don't clear countries, just return
+            return  // Don't clear countries, just return
         }
-        
+
         setLoadingCountries(true)
         try {
             const response = await fetch(`https://techades.com/App/api.php?gofor=locationlist&search=${searchTerm}`)
@@ -189,17 +235,17 @@ export default function AdComparisonUpload() {
                 throw new Error('Failed to fetch countries')
             }
             const data = await response.json()
-            
+
             // Get currently selected country names to preserve them
             const selectedCountryNames = getCountryNamesFromIds(country)
-            
+
             // Merge new data with existing selected countries to ensure they remain available
             const existingCountries = countries || []
             const selectedCountries = existingCountries.filter(c => selectedCountryNames.includes(c.name))
-            const newCountries = data.filter((newCountry: any) => 
+            const newCountries = data.filter((newCountry: any) =>
                 !existingCountries.some(existing => existing.id === newCountry.id)
             )
-            
+
             // Combine selected countries with new search results
             setCountries([...selectedCountries, ...newCountries])
         } catch (error) {
@@ -320,7 +366,10 @@ export default function AdComparisonUpload() {
             age: `${minAge}-${maxAge}`,
             gender,
             country,
-            countryName: selectedCountries.map(c => c.name).join(", ")
+            countryName: selectedCountries.map(c => c.name).join(", "),
+            language,
+            objective,
+            funnelStage
         })
         setSidePanelOpen(false)
 
@@ -342,7 +391,7 @@ export default function AdComparisonUpload() {
 
         try {
             // Use targetInfo if available, otherwise use current form values
-            
+
             const analyzeData = {
                 user_id: userId,
                 ads_name: adName,
@@ -352,7 +401,10 @@ export default function AdComparisonUpload() {
                 gender: targetInfo?.gender || gender,
                 country: targetInfo?.countryName || "",
                 imagePathA: uploadedImagePathA,
-                imagePathB: uploadedImagePathB
+                imagePathB: uploadedImagePathB,
+                language: targetInfo?.language,
+                objective: targetInfo?.objective,
+                funnel_stage: targetInfo?.funnelStage,
             }
 
             const response = await fetch('https://adalyzeai.xyz/App/abanalyze.php', {
@@ -374,9 +426,9 @@ export default function AdComparisonUpload() {
                     localStorage.setItem('abAnalysisResults', JSON.stringify(result))
                 }
                 toast.success("A/B analysis completed successfully!", { id: "analyze" })
-                // Generate tokens for both ad IDs
-                const tokenA = generateAdToken(result.ad_upload_id_a);
-                const tokenB = generateAdToken(result.ad_upload_id_b);
+                // Generate tokens for both ad IDs with user_id
+                const tokenA = generateAdToken(result.ad_upload_id_a, userDetails?.user_id);
+                const tokenB = generateAdToken(result.ad_upload_id_b, userDetails?.user_id);
                 router.push(`/ab-results?ad-token-a=${tokenA}&ad-token-b=${tokenB}`)
                 trackEvent("A/B_Ad_Analyzed_Completed", window.location.href, userDetails?.email?.toString())
             } else {
@@ -408,7 +460,7 @@ export default function AdComparisonUpload() {
             setIndustry(targetInfo.industry)
             setGender(targetInfo.gender)
             setCountry(targetInfo.country)
-            
+
             // Parse age range from targetInfo.age (format: "min-max")
             if (targetInfo.age && targetInfo.age.includes('-')) {
                 const [min, max] = targetInfo.age.split('-')
@@ -418,13 +470,13 @@ export default function AdComparisonUpload() {
         }
     }
 
-    const isFreeTrailUser = userDetails && (userDetails.fretra_status === 1 || (userDetails.ads_limit ?? 0) < 3);
+    const isFreeTrailUser = userDetails && (userDetails.fretra_status === 1 || Number(userDetails.ads_limit ?? 0) < 3);
 
     let overlayText = "Upgrade to Pro to unlock A/B testing.";
     let buttonText = "Upgrade";
 
     // If not a free trial user, but ads_limit is less than 3
-    if (userDetails && (userDetails.ads_limit ?? 0) < 3 && userDetails.fretra_status !== 1) {
+    if (userDetails && Number(userDetails.ads_limit ?? 0) < 3 && userDetails.fretra_status !== 1) {
         overlayText = "You don't have sufficient credits. Upgrade to Pro to analyze more ads.";
         buttonText = "Add Credits";
     }
@@ -452,7 +504,7 @@ export default function AdComparisonUpload() {
 
                                     {/* Upload Cards Skeleton */}
                                     <div className="mt-6 sm:mt-8">
-                                        <div className="w-full max-w-4xl mx-auto">
+                                        <div className="w-full  mx-auto">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {/* Card A Skeleton */}
                                                 <div className="bg-[#0a0a0a] border border-[#2b2b2b] rounded-xl p-6 animate-pulse">
@@ -484,260 +536,404 @@ export default function AdComparisonUpload() {
 
     return (
         <UserLayout userDetails={userDetails}>
-            <div className="relative">
-                <div className={isFreeTrailUser ? "blur-sm pointer-events-none" : ""}>
-                    <div className="min-h-screen text-white relative">
-                        {isAnalyzing && <AnalyzingOverlay />}
+            <div className="min-h-screen text-white relative">
+                {isAnalyzing && <AnalyzingOverlay />}
 
-                        {sidePanelOpen && (
-                            <div
-                                onClick={() => setSidePanelOpen(false)}
-                                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                            >
-                                <div
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="bg-[#171717] rounded-xl shadow-xl shadow-white/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                                    <div className="p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h2 className="text-xl font-bold text-white/80">Set Target</h2>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setSidePanelOpen(false)}
-                                                className="text-gray-400 hover:text-white"
-                                            >
-                                                <X className="w-5 h-5" />
-                                            </Button>
+                {sidePanelOpen && (
+                    <div
+                        onClick={(e) => {
+                            // Don't close if clicking on Select dropdown elements
+                            const target = e.target as HTMLElement;
+                            const isSelectDropdown = target?.closest('[data-slot="select-content"]') ||
+                                target?.closest('[data-radix-select-content]') ||
+                                target?.closest('[role="listbox"]') ||
+                                target?.closest('[role="option"]');
+
+                            if (!isSelectDropdown) {
+                                setSidePanelOpen(false);
+                            }
+                        }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    >
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            className="bg-[#171717] rounded-xl shadow-xl shadow-white/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-white/80">Set Target</h2>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSidePanelOpen(false)}
+                                        className="text-gray-400 hover:text-white"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="modal-ad-name" className="text-white/70 font-semibold">Ad Name *</Label>
+                                        <Input
+                                            id="modal-ad-name"
+                                            placeholder="Enter ad name"
+                                            value={adName}
+                                            onChange={(e) => setAdName(e.target.value)}
+                                            className="bg-black border-[#3d3d3d] text-white"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Platform Target</Label>
+                                            <Select value={platform} onValueChange={setPlatform}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder="Select platform" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-black border-[#3d3d3d]">
+                                                    <SelectItem value="Instagram">Instagram</SelectItem>
+                                                    <SelectItem value="Facebook">Facebook</SelectItem>
+                                                    <SelectItem value="Meta(FB & IG)">Meta(FB & IG)</SelectItem>
+                                                    <SelectItem value="Twitter">Twitter</SelectItem>
+                                                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                                                    <SelectItem value="TikTok">TikTok</SelectItem>
+                                                    <SelectItem value="Pinterest">Pinterest</SelectItem>
+                                                    <SelectItem value="YouTube">YouTube</SelectItem>
+                                                    <SelectItem value="Other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
 
-                                        <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Industry Category</Label>
+                                            {isMobile ? (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIndustryModalOpen(true)}
+                                                        className="w-full bg-black border-[#3d3d3d] text-white py-2 px-4 rounded-md text-left flex items-center justify-between"
+                                                    >
+                                                        <span className={industry ? "text-white text-sm" : "text-white/60 text-sm"}>
+                                                            {industry || "Select industry"}
+                                                        </span>
+                                                        <ChevronDown className="w-4 h-4 text-white/60" />
+                                                    </button>
+                                                    {industryModalOpen && (
+                                                        <div
+                                                            className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-[100000]"
+                                                            onClick={() => setIndustryModalOpen(false)}
+                                                        >
+                                                            <div
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="bg-black rounded-xl w-full max-w-md h-[50vh] flex flex-col"
+                                                            >
+                                                                <div className="p-4 border-b border-white/50">
+                                                                    <div className="flex items-center justify-between mb-3">
+                                                                        <h3 className="text-white font-semibold">Select Industry</h3>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setIndustryModalOpen(false)}
+                                                                            className="text-white/80 hover:text-white"
+                                                                            aria-label="Close"
+                                                                        >
+                                                                            <X className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="relative">
+                                                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
+                                                                        <input
+                                                                            type="text"
+                                                                            value={industrySearch}
+                                                                            onChange={(e) => setIndustrySearch(e.target.value)}
+                                                                            placeholder="Search industries..."
+                                                                            className="w-full pl-9 pr-3 py-3 text-sm bg-[#171717]  text-white rounded-md placeholder-white/70 focus:outline-none focus:border-orange-500 transition-colors"
+                                                                            autoComplete="off"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex-1 overflow-y-auto p-2">
+                                                                    {(industries || []).filter((it) => it.name.toLowerCase().includes(industrySearch.toLowerCase())).map((it) => (
+                                                                        <button
+                                                                            key={it.industry_id}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setIndustry(it.name)
+                                                                                setIndustryModalOpen(false)
+                                                                                setIndustrySearch("")
+                                                                            }}
+                                                                            className={`w-full text-left p-3 rounded-lg transition-colors ${industry === it.name ? 'bg-orange-500/10 text-orange-500' : 'text-white hover:bg-[#2b2b2b]'}`}
+                                                                        >
+                                                                            {it.name}
+                                                                        </button>
+                                                                    ))}
+                                                                    {industries && industries.length === 0 && (
+                                                                        <div className="px-4 py-4 text-sm text-gray-400 text-center">No options available</div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <CustomSearchDropdown
+                                                    options={industries.map((industryItem) => ({
+                                                        id: industryItem.industry_id.toString(),
+                                                        name: industryItem.name,
+                                                    }))}
+                                                    value={industry}
+                                                    onValueChange={setIndustry}
+                                                    placeholder="Select industry"
+                                                    searchPlaceholder="Search industries..."
+                                                    onSearch={handleIndustrySearch}
+                                                    className="w-full"
+                                                    triggerClassName="w-full bg-black border-[#3d3d3d] text-white py-2"
+                                                    containerClassName="bg-black border-[#3d3d3d]"
+                                                />
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <Label htmlFor="modal-ad-name" className="text-white/70 font-semibold">Ad Name *</Label>
+                                                <Label className="text-white/70 font-semibold" htmlFor="min-age">
+                                                    Min Age
+                                                </Label>
                                                 <Input
-                                                    id="modal-ad-name"
-                                                    placeholder="Enter ad name"
-                                                    value={adName}
-                                                    onChange={(e) => setAdName(e.target.value)}
+                                                    id="min-age"
+                                                    type="number"
+                                                    placeholder="Min Age"
+                                                    value={minAge}
+                                                    onChange={(e) => setMinAge(e.target.value)}
                                                     className="bg-black border-[#3d3d3d] text-white"
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label className="text-white/70 font-semibold">Platform Target</Label>
-                                                    <Select value={platform} onValueChange={setPlatform}>
-                                                        <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
-                                                            <SelectValue placeholder="Select platform" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-black border-[#3d3d3d]">
-                                                            <SelectItem value="Instagram">Instagram</SelectItem>
-                                                            <SelectItem value="Facebook">Facebook</SelectItem>
-                                                            <SelectItem value="Meta(FB & IG)">Meta(FB & IG)</SelectItem>
-                                                            <SelectItem value="Twitter">Twitter</SelectItem>
-                                                            <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                                                            <SelectItem value="TikTok">TikTok</SelectItem>
-                                                            <SelectItem value="Pinterest">Pinterest</SelectItem>
-                                                            <SelectItem value="YouTube">YouTube</SelectItem>
-                                                            <SelectItem value="Other">Other</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-white/70 font-semibold">Industry Category</Label>
-                                                    <Select value={industry} onValueChange={setIndustry} onOpenChange={setIndustryDropdownOpen}>
-                                                        <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
-                                                            <SelectValue placeholder="Select industry" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="w-full bg-[#1a1a1a] border-[#2b2b2b] max-h-60">
-                                                            <div className="p-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                                                                <Input
-                                                                    ref={industrySearchInputRef}
-                                                                    placeholder="Search industries..."
-                                                                    value={industrySearch}
-                                                                    onChange={(e) => setIndustrySearch(e.target.value)}
-                                                                    onKeyDown={(e) => e.stopPropagation()}
-                                                                    className="bg-black border-[#3d3d3d] text-white placeholder-gray-500 h-8"
-                                                                    autoComplete="off"
-                                                                />
-                                                            </div>
-                                                            <div className="max-h-48 overflow-y-auto">
-                                                                {filteredIndustries.map((industryItem: Industry) => (
-                                                                    <SelectItem key={industryItem.industry_id} value={industryItem.name}>
-                                                                        {industryItem.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </div>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label className="text-white/70 font-semibold" htmlFor="min-age">
-                                                            Min Age
-                                                        </Label>
-                                                        <Input
-                                                            id="min-age"
-                                                            type="number"
-                                                            placeholder="Min Age"
-                                                            value={minAge}
-                                                            onChange={(e) => setMinAge(e.target.value)}
-                                                            className="bg-black border-[#3d3d3d] text-white"
-                                                        />
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        <Label className="text-white/70 font-semibold" htmlFor="max-age">
-                                                            Max Age
-                                                        </Label>
-                                                        <Input
-                                                            id="max-age"
-                                                            type="number"
-                                                            placeholder="Max Age"
-                                                            value={maxAge}
-                                                            onChange={(e) => setMaxAge(e.target.value)}
-                                                            className="bg-black border-[#3d3d3d] text-white"
-                                                        />
-                                                    </div>
-                                                </div>
-
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-white/70 font-semibold">Gender</Label>
-                                                    <Select value={gender} onValueChange={setGender}>
-                                                        <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
-                                                            <SelectValue placeholder="Select gender" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
-                                                            <SelectItem value="male">Male</SelectItem>
-                                                            <SelectItem value="female">Female</SelectItem>
-                                                            <SelectItem value="non-binary">Non-binary</SelectItem>
-                                                            <SelectItem value="all">All Genders</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-white/70 font-semibold">Cities and Countries to Advertise</Label>
-                                                    <CountrySelector
-                                                        options={countryOptions}
-                                                        selectedValues={availableSelectedNames}
-                                                        onValueChange={(selectedNames) => {
-                                                            const selectedIds = getCountryIdsFromNames(selectedNames)
-                                                            setCountry(selectedIds)
-                                                        }}
-                                                        placeholder="Select cities and countries..."
-                                                        className="bg-black border-[#3d3d3d] text-white"
-                                                        onSearchChange={(searchValue) => {
-                                                            setCountrySearch(searchValue)
-                                                            // Only fetch if we have a search term
-                                                            if (searchValue.length >= 2) {
-                                                                fetchCountries(searchValue)
-                                                            }
-                                                        }}
-                                                        loading={loadingCountries}
-                                                    />
-                                                </div>
-
-                                            </div>
-
-                                            <div className="pt-4 flex flex-col sm:flex-row gap-3">
-                                                <Button
-                                                    onClick={() => setSidePanelOpen(false)}
-                                                    variant="outline"
-                                                    className="flex-1 border-[#2b2b2b] text-gray-300 hover:bg-[#2b2b2b] hover:text-white"
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <Button
-                                                    onClick={handleSaveTarget}
-                                                    className="flex-1 bg-[#db4900] hover:bg-[#c44000] text-white"
-                                                >
-                                                    Save & Analyze
-                                                </Button>
+                                            <div className="space-y-2">
+                                                <Label className="text-white/70 font-semibold" htmlFor="max-age">
+                                                    Max Age
+                                                </Label>
+                                                <Input
+                                                    id="max-age"
+                                                    type="number"
+                                                    placeholder="Max Age"
+                                                    value={maxAge}
+                                                    onChange={(e) => setMaxAge(e.target.value)}
+                                                    className="bg-black border-[#3d3d3d] text-white"
+                                                />
                                             </div>
                                         </div>
+
+
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Gender</Label>
+                                            <Select value={gender} onValueChange={setGender}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder="Select gender" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
+                                                    <SelectItem value="male">Male</SelectItem>
+                                                    <SelectItem value="female">Female</SelectItem>
+                                                    <SelectItem value="non-binary">Non-binary</SelectItem>
+                                                    <SelectItem value="all">All Genders</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Language */}
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Language</Label>
+                                            <Select value={language} onValueChange={setLanguage}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder="Select language" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-[300px] overflow-y-auto">
+                                                    {/* English */}
+                                                    <SelectItem value="en-US">English (United States)</SelectItem>
+                                                    <SelectItem value="en-GB">English (United Kingdom)</SelectItem>
+                                                    <SelectItem value="en-IN">English (India)</SelectItem>
+
+                                                    {/* Spanish */}
+                                                    <SelectItem value="es-ES">Spanish (Spain)</SelectItem>
+                                                    <SelectItem value="es-MX">Spanish (Mexico)</SelectItem>
+
+                                                    {/* French */}
+                                                    <SelectItem value="fr-FR">French (France)</SelectItem>
+                                                    <SelectItem value="fr-CA">French (Canada)</SelectItem>
+
+                                                    {/* German / Italian */}
+                                                    <SelectItem value="de-DE">German (Germany)</SelectItem>
+                                                    <SelectItem value="it-IT">Italian (Italy)</SelectItem>
+
+                                                    {/* Portuguese */}
+                                                    <SelectItem value="pt-PT">Portuguese (Portugal)</SelectItem>
+                                                    <SelectItem value="pt-BR">Portuguese (Brazil)</SelectItem>
+
+                                                    {/* Arabic */}
+                                                    <SelectItem value="ar-SA">Arabic (Saudi Arabia)</SelectItem>
+                                                    <SelectItem value="ar-EG">Arabic (Egypt)</SelectItem>
+
+                                                    {/* Turkish / Russian */}
+                                                    <SelectItem value="tr-TR">Turkish (Turkey)</SelectItem>
+                                                    <SelectItem value="ru-RU">Russian (Russia)</SelectItem>
+
+                                                    {/* Chinese / Japanese / Korean */}
+                                                    <SelectItem value="zh-CN">Chinese (Simplified, China)</SelectItem>
+                                                    <SelectItem value="zh-TW">Chinese (Traditional, Taiwan)</SelectItem>
+                                                    <SelectItem value="ja-JP">Japanese</SelectItem>
+                                                    <SelectItem value="ko-KR">Korean</SelectItem>
+
+                                                    {/* Indian Regional */}
+                                                    <SelectItem value="hi-IN">Hindi (India)</SelectItem>
+                                                    <SelectItem value="ta-IN">Tamil (India)</SelectItem>
+                                                    <SelectItem value="te-IN">Telugu (India)</SelectItem>
+                                                    <SelectItem value="ml-IN">Malayalam (India)</SelectItem>
+                                                    <SelectItem value="kn-IN">Kannada (India)</SelectItem>
+                                                </SelectContent>
+
+                                            </Select>
+                                        </div>
+
+                                        {/* Objective */}
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Objective</Label>
+                                            <Select value={objective} onValueChange={setObjective}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder="Select objective" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
+                                                    <SelectItem value="Awareness">Awareness</SelectItem>
+                                                    <SelectItem value="Engagement">Engagement</SelectItem>
+                                                    <SelectItem value="Traffic">Traffic</SelectItem>
+                                                    <SelectItem value="Leads">Leads</SelectItem>
+                                                    <SelectItem value="Sales">Sales</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Funnel Stage */}
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Funnel Stage</Label>
+                                            <Select value={funnelStage} onValueChange={setFunnelStage}>
+                                                <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
+                                                    <SelectValue placeholder="Select funnel stage" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b]">
+                                                    <SelectItem value="cold-audience">Cold Audience </SelectItem>
+                                                    <SelectItem value="warm-audience">Warm Audience</SelectItem>
+                                                    <SelectItem value="Retargeting / Hot">Retargeting / Hot</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-white/70 font-semibold">Cities and Countries to Advertise</Label>
+                                            <CountrySelector
+                                                options={countryOptions}
+                                                selectedValues={availableSelectedNames}
+                                                onValueChange={(selectedNames) => {
+                                                    const selectedIds = getCountryIdsFromNames(selectedNames)
+                                                    setCountry(selectedIds)
+                                                }}
+                                                placeholder="Select cities and countries..."
+                                                className="bg-black border-[#3d3d3d] text-white"
+                                                onSearchChange={(searchValue) => {
+                                                    setCountrySearch(searchValue)
+                                                    // Only fetch if we have a search term
+                                                    if (searchValue.length >= 2) {
+                                                        fetchCountries(searchValue)
+                                                    }
+                                                }}
+                                                loading={loadingCountries}
+                                            />
+                                        </div>
+
+                                    </div>
+
+                                    <div className="pt-4 flex flex-col sm:flex-row gap-3">
+                                        <Button
+                                            onClick={() => setSidePanelOpen(false)}
+                                            variant="outline"
+                                            className="flex-1 border-[#2b2b2b] text-gray-300 hover:bg-[#2b2b2b] hover:text-white"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleSaveTarget}
+                                            className="flex-1 bg-[#db4900] hover:bg-[#c44000] text-white"
+                                        >
+                                            Save & Analyze
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
-                        )}
-
-                        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-6 pb-20">
-                            <div className="max-w-6xl mx-auto">
-                                <div className="bg-[#000000] border-none rounded-2xl sm:rounded-3xl shadow-2xl">
-                                    <div className="py-2 lg:py-8 px-4 sm:px-6 lg:px-8">
-
-
-                                        <AdNameInput
-                                            value={adName}
-                                            onChange={handleAdNameChange}
-                                        />
-
-                                        <div className="mt-6 sm:mt-8">
-                                            <div className="w-full max-w-4xl mx-auto">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <ABFileUploadCard
-                                                        title="Upload Ad A"
-                                                        file={fileA}
-                                                        onFileChange={(file) => handleFileUpload(file, "A")}
-                                                        type="A"
-                                                        imageUrl={uploadedImagePathA}
-                                                        isUploading={isUploadingA}
-                                                        uploadProgress={uploadProgressA}
-                                                        onCancelUpload={() => handleCancelUpload("A")}
-                                                    />
-                                                    <ABFileUploadCard
-                                                        title="Upload Ad B"
-                                                        file={fileB}
-                                                        onFileChange={(file) => handleFileUpload(file, "B")}
-                                                        type="B"
-                                                        imageUrl={uploadedImagePathB}
-                                                        isUploading={isUploadingB}
-                                                        uploadProgress={uploadProgressB}
-                                                        onCancelUpload={() => handleCancelUpload("B")}
-                                                    />
-                                                </div>
-
-                                                <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                                                    <Button
-                                                        onClick={() => handleCompare()}
-                                                        disabled={isAnalyzing || !hasUploadedFiles()}
-                                                        variant="outline"
-                                                        className="flex-1 text-lg py-6 border-[#2b2b2b] text-gray-300 hover:bg-[#2b2b2b] hover:text-white"
-                                                    >
-                                                        {isAnalyzing ? "Analyzing..." : "Continue Without Target"}
-                                                    </Button>
-                                                    <Button
-                                                        onClick={handleContinueWithTarget}
-                                                        disabled={!hasUploadedFiles()}
-                                                        className="flex-1 text-lg bg-[#db4900] hover:bg-[#c44000] text-white py-6"
-                                                    >
-                                                        Continue With Target
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </main>
-                    </div>
-                </div>
-                {isFreeTrailUser && (
-                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl z-50">
-                        <div className="text-center p-4">
-                            <Lock className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-primary" />
-                            <p className="text-white font-semibold mb-4 text-sm sm:text-base px-2">{overlayText}</p>
-                            <Button
-                                onClick={() => router.push("/pro")}
-                                className="text-white rounded-lg text-sm sm:text-base px-4 py-2"
-                            >
-                                {buttonText}
-                            </Button>
                         </div>
                     </div>
                 )}
+
+                <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-6 pb-20">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="bg-[#000000] border-none rounded-2xl sm:rounded-3xl shadow-2xl">
+                            <div className="py-2 lg:py-8 px-4 sm:px-6 lg:px-8">
+                                <FreeTrailOverlay
+                                    showOverlay={isFreeTrailUser || false}
+                                    message={overlayText}
+                                    buttonText={buttonText}
+                                    onUpgradeClick={() => router.push("/pro")}
+                                >
+                                    <AdNameInput
+                                        value={adName}
+                                        onChange={handleAdNameChange}
+                                    />
+
+                                    <div className="mt-6 sm:mt-8">
+                                        <div className="w-full mx-auto">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <ABFileUploadCard
+                                                    title="Upload Ad A"
+                                                    file={fileA}
+                                                    onFileChange={(file) => handleFileUpload(file, "A")}
+                                                    type="A"
+                                                    imageUrl={uploadedImagePathA}
+                                                    isUploading={isUploadingA}
+                                                    uploadProgress={uploadProgressA}
+                                                    onCancelUpload={() => handleCancelUpload("A")}
+                                                />
+                                                <ABFileUploadCard
+                                                    title="Upload Ad B"
+                                                    file={fileB}
+                                                    onFileChange={(file) => handleFileUpload(file, "B")}
+                                                    type="B"
+                                                    imageUrl={uploadedImagePathB}
+                                                    isUploading={isUploadingB}
+                                                    uploadProgress={uploadProgressB}
+                                                    onCancelUpload={() => handleCancelUpload("B")}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                                        <Button
+                                            onClick={() => handleCompare()}
+                                            disabled={isAnalyzing || !hasUploadedFiles()}
+                                            variant="outline"
+                                            className="flex-1 text-lg py-6 border-[#2b2b2b] text-gray-300 hover:bg-[#2b2b2b] hover:text-white"
+                                        >
+                                            {isAnalyzing ? "Analyzing..." : "Continue Without Target"}
+                                        </Button>
+                                        <Button
+                                            onClick={handleContinueWithTarget}
+                                            disabled={!hasUploadedFiles()}
+                                            className="flex-1 text-lg bg-[#db4900] hover:bg-[#c44000] text-white py-6"
+                                        >
+                                            Continue With Target
+                                        </Button>
+                                    </div>
+                                </FreeTrailOverlay>
+                            </div>
+                        </div>
+                    </div>
+                </main>
             </div>
             <Footer />
         </UserLayout>

@@ -105,12 +105,43 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
                   BILLED TO
                 </h3>
                 <div className="text-sm space-y-1" style={{ color: "#374151" }}>
-                  <p className="font-medium">{userDetails?.name || userDetails?.username || "N/A"}</p>
-                  <p>{userDetails?.email || "N/A"}</p>
-                  {userDetails?.phone && <p>{userDetails.phone}</p>}
-                  {userDetails?.city && <p>{userDetails.city}</p>}
+                  {userDetails?.type === "2" ? (
+                    <>
+                      <p className="font-medium">{userDetails?.agency?.agency_name || "N/A"}</p>
+                      <p>{userDetails?.agency?.business_email || "N/A"}</p>
+                      {userDetails?.agency?.business_phone && <p>{userDetails.agency.business_phone}</p>}
+                      {userDetails?.agency?.address && <p>{userDetails.agency.address}</p>}
+                      <p>
+                        {[
+                          userDetails?.agency?.city,
+                          userDetails?.agency?.state,
+                          userDetails?.agency?.country,
+                          userDetails?.agency?.pincode,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                      {userDetails?.agency?.gst_no && <p>GSTIN: {userDetails.agency.gst_no}</p>}
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium">{userDetails?.name || "N/A"}</p>
+                      <p>{userDetails?.email || "N/A"}</p>
+                      <p>
+                        {[
+                          userDetails?.city,
+                          userDetails?.state,
+                          userDetails?.country,
+                          userDetails?.pincode,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
+
               <div className="text-right">
                 <h2 className="text-2xl font-bold mb-4" style={{ color: "#111827" }}>
                   INVOICE
@@ -214,8 +245,8 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
                   rel="noopener noreferrer"
                   style={{ color: "#db4900", textDecoration: "underline" }}
                 >
-                  https://adalyze.app
-                </a>
+                  www.adalyze.app
+                </a>  
               </p>
             </div>
           </div>

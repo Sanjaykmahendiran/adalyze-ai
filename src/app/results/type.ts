@@ -3,12 +3,29 @@ export interface AdCopy {
   tone: string
   copy_text: string
 }
-
+ 
   export interface ApiResponse {
+    targeting_compare_json: any;
+    suggested_interests: any;
+    target_match_score: any;
+    prevention_tip_to_avoid_ad_fatigue: string;
+    emotional_connection_score: number;
+    cta_strength_score: number;
+    visual_appeal_score: number;
+    traffic_comment: string;
+    top_5_audience(top_5_audience: any): unknown;
+    competitor_uniqueness_text: string;
+    suggested_test_budget_in_usd: string;
+    suggested_test_duration_days: any;
+    top_3_audience: string[];
+    spend_recommendation_strategy_tip: string;
     ad_id: number;
     title: string;
     ad_type: string;
     video?: string;
+    agency_logo?: string;
+    agency_website?: string;
+    agency_mail?: string;
     images: string[];
     uploaded_on: string;
     updated_on?: string;
@@ -23,9 +40,13 @@ export interface AdCopy {
     country?: string;
     state?: string;
     score_out_of_100: number;
+    why_overall_score_out_of_100?: string[];
+    estimated_ctr_loss_if_issues_unfixed?: string[];
     platform_suits: string[];
     platform_notsuits: string[];
     issues: string[];
+    critical_issues?: string[];
+    minor_issues?: string[];
     suggestions: string[];
     feedback_designer: string[];
     feedback_digitalmark: string[];
@@ -62,7 +83,9 @@ export interface AdCopy {
     viral_potential_score: number;
     budget_utilization_score: number;
     confidence_score: number;
+    why_confidence_score?: string;
     match_score: number;
+    why_match_score?: string[];
     quick_win_tip: string;
     shareability_comment: string;
     emotional_boost_suggestions: string[];
@@ -70,11 +93,12 @@ export interface AdCopy {
     top_audience: string[];
     industry_audience: string[];
     mismatch_warnings: string[];
-    go_no_go: string[];
+    go_no_go: string;
     ad_fatigue_score: string[];
-    best_day_time_to_post: string[];
+    best_day_time_to_post: string;
     readability_clarity_meter: number;
     competitor_uniqueness_meter: number;
+    traffic_efficiency_index: number;
     created_date: string;
     ad_copies: Array<{
       platform: string;
@@ -82,5 +106,10 @@ export interface AdCopy {
       copy_text: string;
       created_on: string;
     }>;
+    next_ad_idea_based_on_this_post?: {
+      headline: string;
+      visual_idea: string;
+      short_caption: string;
+    };
     "10_trending_tags_relatedto_ad": string[];
   }

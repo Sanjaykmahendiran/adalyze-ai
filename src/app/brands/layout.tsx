@@ -1,14 +1,29 @@
-"use client"
+import type { Metadata } from "next";
+import { Poppins } from "next/font/google";
 
-import UserLayout from "@/components/layouts/user-layout"
-import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 
-export default function BrandsLayout({
+// Import Poppins
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+export const metadata: Metadata = {
+  title: "Adalyze AI – Smart Ad Analysis for Agencies & Marketers",
+  description: "Adalyze AI helps marketers and agencies analyze, optimize, and improve ad performance with smart AI insights to boost ROI and creative quality.",
+};
+
+export default function Layout({
   children,
-}: {
-  children: React.ReactNode
-}) {
-  const { userDetails } = useFetchUserDetails()
-  
-  return <UserLayout userDetails={userDetails}>{children}</UserLayout>
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className={`${poppins.variable} antialiased`}>
+          {children}
+      </body>
+    </html>
+  );
 }

@@ -10,18 +10,48 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "Adalyze AI – Smart Ad Analysis for Agencies & Marketers",
-  description: "Adalyze AI helps marketers and agencies analyze, optimize, and improve ad performance with smart AI insights to boost ROI and creative quality.",
-};
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  // Convert slug to title case with fallback
+  const slug = params?.slug || 'blog-post';
+  const title = slug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
+  return {
+    title: `${title} | Adalyze Blog`,
+    description: `Learn how ${title.toLowerCase()} is transforming digital ad campaigns with AI-powered insights, real-time optimization, and smarter creative decisions.`,
+  };
+}
 
 export default function Layout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: { slug: string };
 }>) {
+  // Convert slug to title case with fallback
+  const slug = params?.slug || 'blog-post';
+  const title = slug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
   return (
     <html lang="en">
+      <head>
+        <title>{title} | Adalyze Blog</title>
+        <meta
+          name="description"
+          content={`Learn how ${title.toLowerCase()} is transforming digital ad campaigns with AI-powered insights, real-time optimization, and smarter creative decisions.`}
+        />
+
+        <meta
+          name="keywords"
+          content="ai ad campaigns, ai transforms advertising, digital ad optimization, campaign performance analytics, ai marketing impact, adalyze blog"
+        />
+      </head>
       <body className={`${poppins.variable} antialiased`}>
         <div className="bg-[#171717]">
           <Suspense>

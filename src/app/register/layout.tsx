@@ -1,9 +1,6 @@
-import { Poppins } from "next/font/google";
+
 import { Suspense } from "react";
 import Spinner from "@/components/overlay";
-import { Toaster } from "react-hot-toast";
-
-const poppins = Poppins({ subsets: ["latin"], weight: ["400", "600"] });
 
 export const metadata = {
   title: "Adalyze AI- Nextgen AI Tool for your Creativity",

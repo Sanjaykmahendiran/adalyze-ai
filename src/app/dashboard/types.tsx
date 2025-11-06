@@ -32,7 +32,7 @@ export interface RecentAd {
   ads_type: string;
   estimated_ctr: number
   ad_id: number;
-  ads_name: string;
+  ads_name: string | null;
   image_path: string;
   industry: string;
   score: number;
@@ -91,7 +91,7 @@ export interface BlogPost {
 
 export interface Top10Ad {
   ad_id: number
-  ads_name: string
+  ads_name: string | null
   ads_type: string
   image_path: string
   industry: string
@@ -106,7 +106,7 @@ export interface Top10Ad {
 
 export interface TrendingAd {
   ad_id: number
-  ads_name: string
+  ads_name: string | null
   ads_type: string
   image_path: string
   industry: string

@@ -20,12 +20,31 @@ interface Brand {
   modified_date: string | null;
 }
 
+interface Agency {
+  agency_id: number;
+  user_id: number;
+  agency_name: string;
+  agency_logo: string;
+  contact_person: string;
+  designation: string;
+  business_email: string;
+  business_phone: string;
+  website_url: string;
+  gst_no: string;
+  address: string;
+  city: string;
+  country: string;
+  team_members: number;
+}
+
+
 interface UserDetails {
   user_id: number;
   mobileno: string;
   password: string;
   otp: string | null;
   otp_status: string;
+  brands_count: number;
   email: string;
   name: string;
   city: string;
@@ -46,16 +65,17 @@ interface UserDetails {
   ads_limit: number;
   valid_till: string;
   brand: Brand | false;
+  agency: Agency | false;
 }
 
 const useFetchUserDetails = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
-  
+
   const pathname = usePathname();
   const logout = useLogout();
   const userId = Cookies.get("userId");
-  
+
   // Use refs to track if we've already fetched for this userId
   const fetchedUserIdRef = useRef<string | null>(null);
   const isFetchingRef = useRef<boolean>(false);

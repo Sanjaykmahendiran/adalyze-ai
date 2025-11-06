@@ -7,6 +7,7 @@ import { CircularProgressbar, buildStyles } from "react-circular-progressbar"
 import "react-circular-progressbar/dist/styles.css"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { useAdNavigation } from "@/hooks/useAdNavigation"
 
 interface AdData {
   ad_id: number
@@ -28,8 +29,12 @@ export default function Top10AdsWall() {
   const [adsData, setAdsData] = useState<AdData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
+  // Use the new ad navigation hook
+  const { navigateToAdResults } = useAdNavigation()
   const handleBack = () => router.back()
+  const handleTop10ViewReport = useCallback((adId: string , aduserId: string) => {
+    navigateToAdResults(adId, aduserId)
+  }, [navigateToAdResults])
 
   useEffect(() => {
     const fetchAdsData = async () => {
@@ -192,7 +197,7 @@ export default function Top10AdsWall() {
             return (
               <div
                 key={position}
-                onClick={() => router.push(`/results?ad_id=${ad.ad_id}`)}
+                onClick={() => handleTop10ViewReport(String(ad.ad_id), String((ad as any).user_id))}
                 className="flex flex-col items-center text-center"
               >
                 {isFirst && (
@@ -250,7 +255,7 @@ export default function Top10AdsWall() {
               <motion.div
                 key={ad.ad_id}
                 whileHover={{ scale: 1.02 }}
-                onClick={() => router.push(`/results?ad_id=${ad.ad_id}`)}
+                onClick={() => handleTop10ViewReport(String(ad.ad_id), String((ad as any).user_id))}
                 className="bg-[#171717] rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group cursor-pointer"
               >
                 {/* Rank Number */}

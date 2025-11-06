@@ -35,6 +35,7 @@ interface AdsApiResponse {
 }
 
 const FeedbackForm: React.FC = () => {
+  const userId = Cookies.get('userId')
   const [loading, setLoading] = useState(false);
   const [ads, setAds] = useState<Ad[]>([])
   const [feedbackData, setFeedbackData] = useState({
@@ -49,30 +50,27 @@ const FeedbackForm: React.FC = () => {
 
   const fetchAds = async () => {
     try {
-      const userId = Cookies.get('userId')
-      if (!userId) return
+      if (!userId) return;
 
-      const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&offset=0&limit=1000`
-      )
+      const url = `https://adalyzeai.xyz/App/api.php?gofor=fulladsnamelist&user_id=${userId}`;
+      const response = await fetch(url);
+      const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch ads')
+      if (result.status && Array.isArray(result.data)) {
+        setAds(result.data);
+      } else {
+        setAds([]);
       }
-
-      const data: AdsApiResponse = await response.json()
-      setAds(data.ads || [])
     } catch (error) {
-      console.error("Error fetching ads:", error)
-      setAds([])
+      console.error("Error fetching ads:", error);
+      setAds([]);
     }
-  }
+  };
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const userId = Cookies.get("userId");
 
       const response = await fetch("https://adalyzeai.xyz/App/api.php", {
         method: "POST",
@@ -101,7 +99,7 @@ const FeedbackForm: React.FC = () => {
   };
 
   return (
-    <Card className="rounded-2xl bg-black lg:mt-10 w-full p-6 mx-auto flex flex-col items-left justify-left overflow-hidden">
+    <Card className="rounded-2xl bg-black lg:mt-14 w-full p-6 mx-auto flex flex-col items-left justify-left overflow-hidden">
       <h2 className="text-2xl font-bold mb-6 text-white text-left">
         Submit Your Feedback
       </h2>

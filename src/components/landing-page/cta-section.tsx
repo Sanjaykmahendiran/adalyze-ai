@@ -4,15 +4,13 @@ import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 import PromoImg from "@/assets/Landing-page/above-cta.webp"
-import { useRouter } from "next/navigation"
 import { Button } from "../ui/button"
 import { trackEvent } from "@/lib/eventTracker"
 
 export default function CTASection({ ButtonText }: { ButtonText: string }) {
-  const router = useRouter()
 
   return (
-    <div className="relative w-full  overflow-hidden text-white" id="promo-section">
+    <div className="relative w-full overflow-hidden text-white md:overflow-x-hidden" id="promo-section">
       {/* ✨ Background Glow */}
       <div className="absolute inset-0 z-0 bg-[#0f0a07]">
         <div className="absolute -top-20 sm:-top-40 -left-20 sm:-left-40 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-[#db4900] opacity-30 rounded-full blur-[90px] sm:blur-[180px] pointer-events-none" />
@@ -80,7 +78,7 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
         </motion.div>
 
         {/* Right Content – Image */}
-        <div className="w-full md:w-1/2 overflow-visible">
+        <div className="w-full md:w-1/2 md:overflow-x-hidden">
           <motion.div
             className="relative flex justify-center"
             initial={{ opacity: 0, y: 30 }}

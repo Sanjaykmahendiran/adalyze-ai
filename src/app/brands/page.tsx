@@ -2,106 +2,76 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, AlertTriangle, X } from "lucide-react"
+  Plus,
+  Edit,
+  TrendingUp,
+  UploadCloud,
+  Phone,
+  Activity,
+  ThumbsUp,
+  ThumbsDown,
+  ArrowRight,
+  Mail,
+} from "lucide-react"
 import toast from "react-hot-toast"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import BrandsLoadingSkeleton from "@/components/Skeleton-loading/brands-loading"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
+import { useRouter } from "next/navigation"
+import UserLayout from "@/components/layouts/user-layout"
 
 interface Brand {
   brand_id: number
   user_id: number
   brand_name: string
+  website: string
   email: string
   mobile: string
   logo_url: string
-  logo_hash: string
   verified: number
-  locked: number
-  status: number
   created_date: string
-  modified_date: string
+  upload_count: number
+  average_score: number
+  latest_score: number
+  last_analysis_date: string
+  go_count: number
+  no_go_count: number
 }
 
 export default function BrandsPage() {
-  const { userDetails } = useFetchUserDetails()
+  const { userDetails,  } = useFetchUserDetails()
+  const router = useRouter()
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+
+
+  const formatTwoDigits = (value: number) => (value < 10 ? `0${value}` : `${value}`)
+
+  const getBrandLimit = () => {
+    return userDetails?.brands_count ?? 0
+  }
+
+  const brandLimit = getBrandLimit()
+  const isAtBrandLimit = brands.length >= brandLimit
 
   const fetchBrands = async () => {
     try {
       setLoading(true)
       const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userDetails?.user_id || 1}`
+        `https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`
       )
       const data = await response.json()
-      if (Array.isArray(data)) {
-        setBrands(data)
-      } else {
-        console.error("Invalid response format:", data)
-        setBrands([])
-      }
+      if (Array.isArray(data)) setBrands(data)
+      else setBrands([])
     } catch (error) {
-      console.error("Error fetching brands:", error)
       toast.error("Failed to fetch brands")
-      setBrands([])
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleDeleteClick = (brand: Brand) => {
-    setBrandToDelete(brand)
-    setShowDeleteModal(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!brandToDelete) return
-
-    setIsDeleting(true)
-    try {
-      const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=deletebrand&brand_id=${brandToDelete.brand_id}`,
-        {
-          method: "DELETE",
-        }
-      )
-      const result = await response.json()
-
-      if (result?.response === "Brand deleted successfully") {
-        toast.success("Brand deleted successfully!")
-        await fetchBrands() // Refresh the brands list
-        setShowDeleteModal(false)
-        setBrandToDelete(null)
-      } else {
-        toast.error("Failed to delete brand")
-      }
-    } catch (error) {
-      console.error("Error deleting brand:", error)
-      toast.error("Failed to delete brand. Please try again.")
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleDeleteCancel = () => {
-    setShowDeleteModal(false)
-    setBrandToDelete(null)
   }
 
   const handleEditBrand = (brand: Brand) => {
@@ -109,16 +79,7 @@ export default function BrandsPage() {
     setShowForm(true)
   }
 
-  const handleFormCancel = () => {
-    setShowForm(false)
-    setEditingBrand(null)
-  }
 
-  const handleFormSuccess = async () => {
-    await fetchBrands()
-    setShowForm(false)
-    setEditingBrand(null)
-  }
 
   useEffect(() => {
     if (userDetails?.user_id) {
@@ -126,187 +87,199 @@ export default function BrandsPage() {
     }
   }, [userDetails?.user_id])
 
-  if (loading) {
-    return <BrandsLoadingSkeleton />
-  }
+  if (loading) return <BrandsLoadingSkeleton />
 
   return (
-    <div className="container max-w-7xl mx-auto p-6">
+    <UserLayout userDetails={userDetails}>
+    <div className="container max-w-7xl mx-auto p-4 sm:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">Brands Management</h1>
-          <p className="text-white/70 mt-2">Manage your brand profiles and information</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Brands Management</h1>
+          <p className="text-sm sm:text-base text-white/70 mt-2">
+            Manage your brand profiles and detailed ad performance insights
+          </p>
         </div>
 
-        <Button className="flex items-center gap-2" onClick={() => setShowForm(true)}>
+        <Button
+          className="flex items-center gap-2 w-full sm:w-auto"
+          onClick={() => setShowForm(true)}
+          disabled={isAtBrandLimit}
+        >
           <Plus className="h-4 w-4" />
-          Add Brand
+          {isAtBrandLimit
+            ? `Brand Limit Reached (${brands.length}/${brandLimit})`
+            : `Add Brand (${brands.length}/${brandLimit})`}
         </Button>
       </div>
 
-      {/* Custom Popup Overlay */}
+      {/* Add/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowForm(false)}
           />
-          {/* Popup Content */}
           <div className="relative z-10 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <AddBrandForm
-              onCancel={handleFormCancel}
-              onAdded={handleFormSuccess}
-              editingBrand={editingBrand}
+              onCancel={() => setShowForm(false)}
+              onAdded={async () => {
+                await fetchBrands()
+                setShowForm(false)
+              }}
+              editingBrand={(editingBrand ?? undefined) as any}
+              userDetails={userDetails}
+              currentBrandCount={brands.length}
             />
           </div>
         </div>
       )}
 
-      {/* Brands Table */}
-      <Card className="border-none bg-black">
-        <CardContent>
-          {brands.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-gray-400 mb-4">
-                <Plus className="h-12 w-12 mx-auto" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No brands found</h3>
-              <p className="text-gray-500 mb-4">Get started by adding your first brand.</p>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Your First Brand
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader className="bg-[#171717]">
-                <TableRow>
-                  <TableHead className="text-white text-left">#</TableHead>
-                  <TableHead className="text-white text-left">Logo</TableHead>
-                  <TableHead className="text-white text-left">Brand Name</TableHead>
-                  <TableHead className="text-white text-left">Email</TableHead>
-                  <TableHead className="text-white text-left">Mobile</TableHead>
-                  <TableHead className="text-white text-left">Status</TableHead>
-                  <TableHead className="text-white text-left">Created On</TableHead>
-                  <TableHead className="text-white text-left">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {brands.map((brand, index) => (
-                  <TableRow key={brand.brand_id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>
-                      <img
-                        src={brand.logo_url}
-                        alt={brand.brand_name}
-                        className="h-16 w-16 object-contain bg-[#171717] rounded-full"
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">{brand.brand_name}</TableCell>
-                    <TableCell>{brand.email}</TableCell>
-                    <TableCell>{brand.mobile}</TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-500/10 text-green-500">
-                        Verified
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(brand.created_date).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditBrand(brand)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteClick(brand)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Brand Cards Grid */}
+      {brands.length === 0 ? (
+        <div className="text-center py-10">
+          <p className="text-white/70 mb-4">No brands found. Add your first brand.</p>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Add Your First Brand
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:pb-0 pb-24">
+          {brands.map((brand) => (
+            <Card
+              key={brand.brand_id}
+              onClick={() => {
+                router.push(
+                  `/brands/brand-detail?brand-token=${String(brand.brand_id)}&brand_name=${brand.brand_name}`
+                )
+              }}
+              className="bg-black border-none rounded-2xl hover:shadow-lg cursor-pointer transition-all gap-2"
+            >
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={handleDeleteCancel}
-          />
-
-          {/* Modal Content */}
-          <div className="relative z-10 w-full max-w-md mx-4">
-            <div className="rounded-lg bg-[#171717] p-6 shadow-xl">
-              {/* Header */}
-              <div className="flex items-start gap-4 mb-4">
-                <div className="flex-shrink-0">
-                  <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                    <AlertTriangle className="h-6 w-6 text-red-500" />
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Delete Brand
-                  </h3>
-                  <p className="text-white/70 text-sm">
-                    Are you sure you want to delete <span className="font-medium text-white">"{brandToDelete?.brand_name}"</span>?
-                    This action cannot be undone and will permanently remove the brand and all its data.
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDeleteCancel}
-                  disabled={isDeleting}
-                  className="text-white/60 hover:text-white hover:bg-white/10 p-1 h-8 w-8"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-3">
+              <CardHeader className="flex flex-row items-center gap-4 pb-2 pt-4  relative overflow-hidden">
+                {/* Edit Button */}
                 <Button
                   variant="outline"
-                  onClick={handleDeleteCancel}
-                  disabled={isDeleting}
-                  className="border-white/20 text-white hover:bg-white/10"
+                  size="icon"
+                  aria-label="Edit brand"
+                  onClick={(e) => { e.stopPropagation(); handleEditBrand(brand); }}
+                  className="absolute top-0 right-2  h-7 w-7 rounded-full text-white hover:bg-white/10"
                 >
-                  Cancel
+                  <Edit className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteConfirm}
-                  disabled={isDeleting}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  {isDeleting ? "Deleting..." : "Delete Brand"}
-                </Button>
-              </div>
-            </div>
-          </div>
+
+                {/* Logo */}
+                <img
+                  src={brand.logo_url}
+                  alt={brand.brand_name}
+                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-contain bg-white flex-shrink-0"
+                />
+
+                {/* Text Info */}
+                <div className="flex-1 min-w-0 ">
+                  <CardTitle className="text-white text-lg truncate block">
+                    {brand.brand_name.length > 30
+                      ? `${brand.brand_name.slice(0, 30)}...`
+                      : brand.brand_name}
+                  </CardTitle>
+                  <p className="text-xs sm:text-sm text-white/80 truncate" title={brand.website}>
+                    {brand.website}
+                  </p>
+                </div>
+              </CardHeader>
+
+
+              <CardContent className="space-y-6 text-base text-white/80 px-4 ">
+
+                {/* Row 1: Key Stats */}
+                <div className="flex bg-black border border-primary rounded-xl p-3 divide-x divide-white/10">
+                  {/* Uploads */}
+                  <div className="flex-1 px-2 text-center shadow-sm">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <UploadCloud className="h-4 w-4 text-primary" />
+                      <h4 className="text-xs font-medium text-white/80">Uploads</h4>
+                    </div>
+                    <div className="text-xl font-semibold text-white">
+                      {formatTwoDigits(brand.upload_count)}
+                    </div>
+                  </div>
+                  {/* Latest Score */}
+                  <div className="flex-1 px-2 text-center shadow-sm">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <Activity className="h-4 w-4 text-primary" />
+                      <h4 className="text-xs font-medium text-white/80">Latest Score</h4>
+                    </div>
+                    <div className="text-xl font-semibold text-white">
+                      {formatTwoDigits(Math.floor(brand.latest_score))}
+                    </div>
+                  </div>
+                  {/* Avg Score */}
+                  <div className="flex-1 px-2 text-center shadow-sm">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      <h4 className="text-xs font-medium text-white/80">Avg Score</h4>
+                    </div>
+                    <div className="text-xl font-semibold text-white">
+                      {brand.average_score.toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 2: Go vs No-Go Ads */}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Go Ads */}
+                  <div className="bg-[#0f1f0f] border border-green-700/40 rounded-xl p-3 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <ThumbsUp className="h-4 w-4 text-green-500" />
+                      <h4 className="text-xs font-medium text-white/80">Go Ads</h4>
+                    </div>
+                    <div className="text-xl font-semibold text-green-400">
+                      {formatTwoDigits(brand.go_count)}
+                    </div>
+                  </div>
+
+                  {/* No-Go Ads */}
+                  <div className="bg-[#1f0f0f] border border-red-700/40 rounded-xl p-3 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <ThumbsDown className="h-4 w-4 text-red-500" />
+                      <h4 className="text-xs font-medium text-white/80">No-Go Ads</h4>
+                    </div>
+                    <div className="text-xl font-semibold text-red-400">
+                      {formatTwoDigits(brand.no_go_count)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                  <div className="flex flex-col items-start text-left space-y-1">
+                    <p className="text-xs text-white/80 flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-primary" /> {brand.email}
+                    </p>
+                    <p className="text-xs text-white/80 flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-primary" /> {brand.mobile}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(
+                        `/brands/brand-detail?brand-token=${String(brand.brand_id)}&brand_name=${brand.brand_name}`
+                      )
+                    }}
+                    className="text-white/80 hover:text-white hover:bg-white/10"
+                  >
+                    <ArrowRight className="h-4 w-4 " />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
+
+
     </div>
+    </UserLayout>
   )
 }

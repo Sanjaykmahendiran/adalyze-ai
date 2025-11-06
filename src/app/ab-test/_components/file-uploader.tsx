@@ -106,11 +106,11 @@ export default function ABFileUploadCard({
             {(file.size / (1024 * 1024)).toFixed(2)} MB
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 items-start">
             <Button
               onClick={handleClick}
               disabled={isUploading}
-              className="bg-[#db4900] hover:bg-[#ff5a1f] text-white w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="bg-[#db4900] hover:bg-[#ff5a1f] text-white w-auto disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               Replace
             </Button>
@@ -118,7 +118,7 @@ export default function ABFileUploadCard({
               variant="outline"
               onClick={handleRemove}
               disabled={isUploading}
-              className="text-gray-300 hover:bg-[#3d3d3d] hover:text-white w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="text-gray-300 hover:bg-[#3d3d3d] hover:text-white w-auto disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               Remove
             </Button>

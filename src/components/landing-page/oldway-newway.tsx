@@ -94,7 +94,7 @@ const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
                       src={isMobile ? step.mobileImage : step.desktopImage}
                       alt={step.alt}
                       fill
-                      className="object-cover"
+                      className="object-contain rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden"
                       sizes="(max-width: 768px) 100vw, 1200px"
                       priority={index === 0}
                     />
@@ -142,7 +142,8 @@ const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
             transition={{ type: "spring", stiffness: 300 }}
           >
             <Button
-              onClick={() => {window.open("/register", "_blank", "noopener,noreferrer");
+              onClick={() => {
+                window.open("/register", "_blank", "noopener,noreferrer");
                 trackEvent("LP_Old_Way_New_Way_RB", window.location.href);
               }}
               className="flex items-center cursor-pointer gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 lg:py-6 text-white text-sm sm:text-base md:text-lg font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[180px] sm:min-w-[200px]"

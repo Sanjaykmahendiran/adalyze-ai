@@ -7,6 +7,7 @@ import { CircularProgressbar, buildStyles } from "react-circular-progressbar"
 import "react-circular-progressbar/dist/styles.css"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { useAdNavigation } from "@/hooks/useAdNavigation"
 
 interface TrendingAdData {
   ad_id: number
@@ -30,12 +31,17 @@ interface TrendingAdsResponse {
 }
 
 export default function Top10TrendingAdsWall() {
+  // Use the new ad navigation hook
+  const { navigateToAdResults } = useAdNavigation()
   const router = useRouter()
   const [adsData, setAdsData] = useState<TrendingAdData[]>([])
   const [timeFrame, setTimeFrame] = useState<string>("")
   const [totalAdsConsidered, setTotalAdsConsidered] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const handleTrendingViewReport = useCallback((adId: string, aduserId: string) => {
+    navigateToAdResults(adId, aduserId)
+  }, [navigateToAdResults])
 
   const handleBack = () => router.back()
 
@@ -101,8 +107,8 @@ export default function Top10TrendingAdsWall() {
               <div key={pos} className="flex flex-col items-center text-center">
                 <div
                   className={`${pos === 1
-                      ? "w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28"
-                      : "w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24"
+                    ? "w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28"
+                    : "w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24"
                     } mb-4 rounded-xl bg-[#171717]`}
                 />
                 <div className="w-20 sm:w-24 h-4 bg-[#171717] rounded mb-2" />
@@ -210,7 +216,7 @@ export default function Top10TrendingAdsWall() {
             return (
               <div
                 key={position}
-                onClick={() => router.push(`/results?ad_id=${ad.ad_id}`)}
+                onClick={() => handleTrendingViewReport(String(ad.ad_id), String((ad as any).user_id))}
                 className="flex flex-col items-center text-center"
               >
                 {isFirst && (
@@ -268,7 +274,7 @@ export default function Top10TrendingAdsWall() {
               <motion.div
                 key={ad.ad_id}
                 whileHover={{ scale: 1.02 }}
-                onClick={() => router.push(`/results?ad_id=${ad.ad_id}`)}
+                onClick={() => handleTrendingViewReport(String(ad.ad_id), String((ad as any).user_id))}
                 className="bg-[#171717] rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group cursor-pointer"
               >
                 {/* Rank Number */}
@@ -338,13 +344,13 @@ export default function Top10TrendingAdsWall() {
         </div>
       </div>
       <div className="w-full flex justify-center mt-6 pb-10">
-      <Button
-        onClick={() => router.push("/upload")}
-        className="bg-[#db4900] hover:bg-[#ff5722] text-lg text-white px-4 sm:px-6 py-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
-      >
-        <Upload className="w-6 h-6 mr-2" />
-        Upload Ad
-      </Button>
+        <Button
+          onClick={() => router.push("/upload")}
+          className="bg-[#db4900] hover:bg-[#ff5722] text-lg text-white px-4 sm:px-6 py-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
+        >
+          <Upload className="w-6 h-6 mr-2" />
+          Upload Ad
+        </Button>
       </div>
     </div>
   )

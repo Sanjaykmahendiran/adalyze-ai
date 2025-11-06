@@ -37,7 +37,7 @@ export function Providers() {
       pageview(url);
 
       // also call our events API for Page_View
-      trackEvent("Page_View", url, Cookies.get("email") || null);
+      // trackEvent("Page_View", url, Cookies.get("email") || null);
     }
   }, [pathname, searchParams]);
 

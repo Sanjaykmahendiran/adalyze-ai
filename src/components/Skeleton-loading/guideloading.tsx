@@ -12,7 +12,7 @@ const GuideLoadingSkeleton = () => (
       </div>
 
       {/* Tab-like platform selector skeleton */}
-      <div className="grid grid-cols-4 gap-2 bg-[#121212] rounded-lg p-1">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#121212] rounded-lg p-1">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-10 flex items-center justify-center rounded-md bg-[#2b2b2b] animate-pulse" />
         ))}

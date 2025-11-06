@@ -10,7 +10,7 @@ interface FAQItem {
   created_date: string;
 }
 
-const FAQSection: React.FC<{ ButtonText: string }> = ({ ButtonText }) => {
+const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ ButtonText, category = "General" }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [visibleItems, setVisibleItems] = useState<number[]>([]);
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
@@ -23,7 +23,7 @@ const FAQSection: React.FC<{ ButtonText: string }> = ({ ButtonText }) => {
     const fetchFAQs = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=prefaqlist');
+        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=prefaqlist&category=${category}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch FAQs');

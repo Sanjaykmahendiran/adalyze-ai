@@ -76,7 +76,7 @@ export const CounterSection: React.FC = () => {
     return (
         <section
             ref={sectionRef}
-            className="py-16 bg-gradient-to-r from-[#0d0d0d] to-[#1a1a1a] mb-16"
+            className="py-16 bg-black"
         >
             <div className="container mx-auto px-4">
                 <div className="relative flex flex-col sm:flex-row sm:flex-wrap xl:flex-nowrap items-center justify-center gap-8 sm:gap-12 xl:gap-0">
@@ -86,14 +86,14 @@ export const CounterSection: React.FC = () => {
                             className="relative flex-1 text-center min-w-0 max-w-xs xl:max-w-none"
                         >
                             {index < counterItems.length - 1 && (
-                                <div className="hidden xl:block absolute top-1/2 -right-12 w-24 h-px bg-gray-700 transform -translate-y-1/2 z-0" />
+                                <div className="hidden xl:block absolute top-1/2 -right-12 w-24 h-px bg-white/20 transform -translate-y-1/2 z-0" />
                             )}
 
                             <div className="relative z-10 px-4">
                                 <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary leading-none mb-2">
                                     {animatedValues[index]}{item.suffix}
                                 </div>
-                                <div className="text-gray-300 text-sm sm:text-base lg:text-lg">
+                                <div className="text-white/80 text-sm sm:text-base lg:text-lg">
                                     {item.title}
                                 </div>
                             </div>

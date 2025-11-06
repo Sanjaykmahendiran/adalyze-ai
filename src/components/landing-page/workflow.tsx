@@ -39,7 +39,7 @@ const WorkflowSection = () => {
   ]
 
   return (
-    <section id="workflow" className="relative py-8 sm:py-10 mt-4 sm:mt-6 mb-8 sm:mb-10">
+    <section id="workflow" className="relative py-8 sm:py-10 mt-4 sm:mt-6 mb-8 sm:mb-10 ">
       <div className="container mx-auto px-2 sm:px-4 max-w-7xl">
         {/* Section Title */}
         <motion.div
@@ -59,15 +59,15 @@ const WorkflowSection = () => {
         </motion.div>
 
         {/* Steps Container */}
-        <div className="relative mt-8 sm:mt-10">
+        <div className="relative mt-8 sm:mt-10 ">
           {steps.map((step, index) => (
             <div
               key={index}
-              className="sticky top-30 gap-6 sm:gap-10 flex items-center justify-center"
+              className="sticky top-24 gap-6 sm:gap-10 flex items-center justify-center"
               style={{ zIndex: index + 1 }}
             >
               <div
-                className={`relative rounded-xl sm:rounded-2xl overflow-visible mt-8 sm:mt-10 bg-[#121212] border border-[#db4900]/50 p-4 sm:p-6 md:p-8 lg:p-12 w-full max-w-5xl mx-auto ${index === 1 ? "md:flex-row-reverse" : ""
+                className={`relative rounded-xl sm:rounded-2xl overflow-visible  mt-8 sm:mt-10 bg-[#121212] border border-[#db4900]/50 p-4 sm:p-6 md:p-8 lg:p-12 w-full max-w-5xl mx-auto ${index === 1 ? "md:flex-row-reverse" : ""
                   }`}
               >
                 <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8">

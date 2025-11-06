@@ -32,7 +32,7 @@ return (
       <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 aspect-square overflow-hidden flex-shrink-0">
         <img
           src={ad.image_path || "/api/placeholder/300/200"}
-          alt={ad.ads_name}
+          alt={ad.ads_name || "Ad"}
           className="w-full h-full object-cover rounded-lg sm:rounded-xl"
           onError={handleImageError}
           loading="lazy"
@@ -43,7 +43,7 @@ return (
       <div className="flex-1 flex flex-col justify-center gap-0.5 sm:gap-1 min-w-0">
         <p className="text-xs sm:text-sm lg:text-md text-[#db4900]">{ad.ads_type || "Unknown Type"}</p>
         <h3 className="text-white font-semibold text-sm sm:text-base line-clamp-1">
-          {ad.ads_name.length > 15 ? ad.ads_name.slice(0, 15) + "..." : ad.ads_name}
+          {ad.ads_name ? (ad.ads_name.length > 15 ? ad.ads_name.slice(0, 15) + "..." : ad.ads_name) : "Untitled Ad"}
         </h3>
         <div className="flex gap-1 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
           {(ad.platforms ? JSON.parse(ad.platforms) : []).map((platform: string, index: number) => (

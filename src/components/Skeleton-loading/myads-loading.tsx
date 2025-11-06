@@ -1,11 +1,11 @@
 const MyAdsSkeleton = () => (
   <div className="w-full min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 text-white">
-    <div className="flex items-center justify-between mb-8">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
       <div>
         <div className="h-8 w-48 bg-[#2b2b2b] rounded animate-pulse mb-2" />
         <div className="h-4 w-64 bg-[#2b2b2b] rounded animate-pulse" />
       </div>
-      <div className="h-10 w-40 bg-[#db4900]/80 rounded animate-pulse" />
+      <div className="h-10 w-full sm:w-40 bg-[#db4900]/80 rounded animate-pulse" />
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

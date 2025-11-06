@@ -5,6 +5,16 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
+const TooltipContext = React.createContext<{
+  isMobile: boolean
+  open: boolean
+  setOpen: (open: boolean) => void
+}>({
+  isMobile: false,
+  open: false,
+  setOpen: () => {},
+})
+
 function TooltipProvider({
   delayDuration = 0,
   ...props
@@ -21,18 +31,72 @@ function TooltipProvider({
 function Tooltip({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  const [open, setOpen] = React.useState(false)
+  const [isMobile, setIsMobile] = React.useState(false)
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Close tooltip when clicking outside on mobile
+  React.useEffect(() => {
+    if (isMobile && open) {
+      const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+        const target = e.target as HTMLElement
+        if (!target.closest('[data-slot="tooltip"]')) {
+          setOpen(false)
+        }
+      }
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('touchstart', handleClickOutside)
+      }
+    }
+  }, [isMobile, open])
+
   return (
-    <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
-    </TooltipProvider>
+    <TooltipContext.Provider value={{ isMobile, open, setOpen }}>
+      <TooltipProvider>
+        <TooltipPrimitive.Root 
+          data-slot="tooltip" 
+          {...(isMobile ? { open, onOpenChange: setOpen } : {})}
+          {...props} 
+        />
+      </TooltipProvider>
+    </TooltipContext.Provider>
   )
 }
 
-function TooltipTrigger({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
-}
+const TooltipTrigger = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
+>(({ onClick, ...props }, ref) => {
+  const context = React.useContext(TooltipContext)
+
+  return (
+    <TooltipPrimitive.Trigger
+      ref={ref}
+      data-slot="tooltip-trigger"
+      onClick={(e) => {
+        if (context.isMobile && context.setOpen) {
+          // On mobile, toggle on click instead of hover
+          context.setOpen(!context.open)
+          e.stopPropagation()
+        }
+        onClick?.(e)
+      }}
+      {...props}
+    />
+  )
+})
+TooltipTrigger.displayName = TooltipPrimitive.Trigger.displayName
 
 function TooltipContent({
   className,

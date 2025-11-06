@@ -24,14 +24,8 @@ interface FAQ {
 }
 
 interface Ad {
-  ads_type: string
   ad_id: number
   ads_name: string
-  image_path: string
-  industry: string
-  score: number
-  platforms: string
-  uploaded_on: string 
 }
 
 export default function SupportPage() {
@@ -41,10 +35,21 @@ export default function SupportPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("General");
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
+  // Separate loading states
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showExpertDialog, setShowExpertDialog] = useState(false)
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false)
-  const [categories, setCategories] = useState<string[]>([])
+  const staticCategories = [
+    "General",
+    "Uploads",
+    "Credits",
+    "Technical",
+    "Subscription",
+    "Scoring",
+    "Pricing"
+  ];
+  const [categories] = useState<string[]>(staticCategories);
   // Check if user is pro
   const isProUser = userDetails?.payment_status === 1
 
@@ -68,17 +73,23 @@ export default function SupportPage() {
     comments: ""
   })
 
-  // Fetch categories on mount
+  // On first load, fetch FAQs (default category, possibly empty search)
   useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  // Fetch FAQs
-  useEffect(() => {
-    if (selectedCategory) {
-      fetchFAQs()
+    if (selectedCategory && (searchTerm.length === 0 || searchTerm.length >= 3)) {
+      // If the search term is cleared (empty) or sufficiently long, fetch
+      // Use initialLoading flag if this was a category change or at mount
+      if (searchTerm === "") {
+        setInitialLoading(true);
+        fetchFAQs(true);
+      } else {
+        setLoading(true);
+        fetchFAQs(false);
+      }
+    } else if (searchTerm.length > 0 && searchTerm.length < 3) {
+      setFaqs([]); // Reset FAQ list if typing under 3 chars
     }
-  }, [selectedCategory])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, searchTerm]);
 
   // Fetch ads when feedback dialog opens
   useEffect(() => {
@@ -87,60 +98,45 @@ export default function SupportPage() {
     }
   }, [showFeedbackDialog])
 
-  const fetchCategories = async () => {
+  // fetchFAQs: now takes an argument for isInitial
+  const fetchFAQs = async (isInitialLoad = false) => {
     try {
-      const url = 'https://adalyzeai.xyz/App/api.php?gofor=faqlist'
-      const response = await fetch(url)
-      const data = await response.json()
-      
-      if (data && Array.isArray(data)) {
-        // Extract unique categories from the FAQ list
-        const uniqueCategories = Array.from(
-          new Set(data.map((faq: FAQ) => faq.category))
-        ) as string[]
-        setCategories(uniqueCategories)
-        
-        // Set the first category as default if not already set
-        if (uniqueCategories.length > 0 && !selectedCategory) {
-          setSelectedCategory(uniqueCategories[0])
-        }
-      }
+      const url = `https://adalyzeai.xyz/App/api.php?gofor=faqlist&category=${selectedCategory}&search=${searchTerm}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      setFaqs(data || []);
     } catch (error) {
-      console.error("Error fetching categories:", error)
-      setCategories([])
-    }
-  }
-
-  const fetchFAQs = async () => {
-    try {
-      setLoading(true)
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=faqlist&category=${selectedCategory}`;
-
-      const response = await fetch(url)
-      const data = await response.json()
-      setFaqs(data || [])
-    } catch (error) {
-      console.error("Error fetching FAQs:", error)
-      setFaqs([])
+      console.error("Error fetching FAQs:", error);
+      setFaqs([]);
     } finally {
-      setLoading(false)
+      if (isInitialLoad) {
+        setInitialLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
-  }
+  };
 
   const fetchAds = async () => {
     try {
-      const userId = Cookies.get('userId')
-      if (!userId) return
+      const userId = Cookies.get('userId');
+      if (!userId) return;
 
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}`;
-      const response = await fetch(url)
-      const data = await response.json()
-      setAds(data || [])
+      const url = `https://adalyzeai.xyz/App/api.php?gofor=fulladsnamelist&user_id=${userId}`;
+      const response = await fetch(url);
+      const result = await response.json();
+
+      if (result.status && Array.isArray(result.data)) {
+        setAds(result.data);
+      } else {
+        setAds([]);
+      }
     } catch (error) {
-      console.error("Error fetching ads:", error)
-      setAds([])
+      console.error("Error fetching ads:", error);
+      setAds([]);
     }
-  }
+  };
+
 
   const filteredFaqs = faqs.filter((faq) => {
     const matchesSearch =
@@ -164,6 +160,7 @@ export default function SupportPage() {
           gofor: "needhelp",
           user_id: userId,
           description: formData.message,
+          email: formData.email,
           category: formData.category,
           imgname: formData.imgname || ""
         })
@@ -249,7 +246,7 @@ export default function SupportPage() {
 
   return (
     <UserLayout userDetails={userDetails}>
-      {loading ? <SupportPageSkeleton /> : (
+      {initialLoading ? <SupportPageSkeleton /> : (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -303,6 +300,7 @@ export default function SupportPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8 sm:pl-10 bg-[#171717]  focus:border-primary outline-none text-white placeholder:text-gray-300 text-sm sm:text-base"
+              // Always enabled, never disabled by loading
               />
             </div>
 

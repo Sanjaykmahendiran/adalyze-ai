@@ -81,7 +81,7 @@ export default function ChangePasswordForm({ email }: ChangePasswordFormProps) {
 
   if (showSuccess) {
     return (
-      <div className="lg:mt-10 w-full p-4 sm:p-6 flex flex-col items-center justify-center space-y-4 text-center">
+      <div className=" w-full p-4 sm:p-6 flex flex-col items-center justify-center space-y-4 text-center">
         <div className="rounded-full bg-green-100 p-3">
           <Check className="h-6 w-6 text-green-600" />
         </div>
@@ -92,7 +92,7 @@ export default function ChangePasswordForm({ email }: ChangePasswordFormProps) {
   }
 
   return (
-    <Card className="rounded-2xl bg-black lg:mt-10 w-full p-4 sm:p-6 flex flex-col items-center justify-center overflow-hidden">
+    <Card className="rounded-2xl bg-black w-full p-4 sm:p-6 flex flex-col items-center justify-center overflow-hidden">
       <div className="space-y-6 w-full max-w-md">
         <h1 className="text-2xl font-semibold text-center">Change Your Password</h1>
         <div className="space-y-8 w-full">

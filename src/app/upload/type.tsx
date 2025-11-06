@@ -37,6 +37,9 @@ export interface TargetInfo {
     gender: string
     country: string[]
     countryName?: string
+    funnelStage?: string
+    objective?: string
+    language?: string
 }
 
 export interface Industry {

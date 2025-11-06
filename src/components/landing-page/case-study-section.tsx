@@ -8,7 +8,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { trackEvent } from "@/lib/eventTracker"
 
-export default function CaseStudySection() {
+export default function CaseStudySection({ category }: { category: string }) {
     const router = useRouter()
     const [caseStudies, setCaseStudies] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -17,7 +17,10 @@ export default function CaseStudySection() {
     useEffect(() => {
         const fetchCaseStudies = async () => {
             try {
-                const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=casestudylist')
+                const url = category
+                    ? `https://adalyzeai.xyz/App/api.php?gofor=casestudylist&category=${encodeURIComponent(category)}`
+                    : `https://adalyzeai.xyz/App/api.php?gofor=casestudylist`;
+                const response = await fetch(url)
                 if (!response.ok) {
                     throw new Error('Failed to fetch case studies')
                 }
@@ -79,7 +82,8 @@ export default function CaseStudySection() {
                         }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                         whileHover={{ y: -8, scale: 1.02 }}
-                        onClick={() => {router.push(`/case-study-detail?slug=${caseStudy.slug}`);
+                        onClick={() => {
+                            router.push(`/case-study-detail?slug=${caseStudy.slug}`);
                             trackEvent("LP_Case_Study_button_clicked", window.location.href);
                         }}
                     >
@@ -154,7 +158,8 @@ export default function CaseStudySection() {
                 <Link
                     href="/case-study"
                     className="px-6 py-3 rounded-lg bg-primary/90 hover:bg-primary text-white font-medium transition-all flex items-center gap-2 shadow-md"
-                    onClick={() => {router.push("/case-study");
+                    onClick={() => {
+                        router.push("/case-study");
                         trackEvent("LP_Case_Study_button_clicked", window.location.href);
                     }}
                 >

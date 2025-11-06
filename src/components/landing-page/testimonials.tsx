@@ -13,7 +13,7 @@ type TestimonialType = {
   category: string
 }
 
-export default function Testimonials() {
+export default function Testimonials({ category }: { category: string }) {
   const [testimonials, setTestimonials] = useState<TestimonialType[]>([])
   const [filteredTestimonials, setFilteredTestimonials] = useState<TestimonialType[]>([])
   const [activeCategory, setActiveCategory] = useState<string>("All")
@@ -22,8 +22,11 @@ export default function Testimonials() {
   useEffect(() => {
     const fetchTestimonials = async () => {
       try {
-        const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=testilist")
-        const data = await res.json()
+        const url = category
+          ? `https://adalyzeai.xyz/App/api.php?gofor=testilist&category=${encodeURIComponent(category)}`
+          : `https://adalyzeai.xyz/App/api.php?gofor=testilist`;
+        const response = await fetch(url)
+        const data = await response.json()
 
         const formatted: TestimonialType[] = data
           .filter((item: any) => item.status === 1)
@@ -78,27 +81,29 @@ export default function Testimonials() {
       </motion.div>
 
       {/* Category Filter */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-4"
-      >
-        {categories.map((category) => (
-          <button
-            key={category}
-            onClick={() => setActiveCategory(category)}
-            className={cn(
-              "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
-              activeCategory === category
-                ? "bg-primary text-white shadow-lg"
-                : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
-            )}
-          >
-            {category}
-          </button>
-        ))}
-      </motion.div>
+      {!category && categories.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-4"
+        >
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={cn(
+                "px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+                activeCategory === category
+                  ? "bg-primary text-white shadow-lg"
+                  : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+              )}
+            >
+              {category}
+            </button>
+          ))}
+        </motion.div>
+      )}
 
       {/* Testimonials */}
       <AnimatedTestimonials testimonials={filteredTestimonials} />

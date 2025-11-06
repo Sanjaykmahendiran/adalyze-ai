@@ -7,8 +7,9 @@ import { ChevronUp } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import LoginChatCard from "@/components/landing-page/login-chat-card";
 import ChatIcon from "@/assets/Chat-icon-suggesto.png";
-import Counter from "@/components/landing-page/counter";
 import { useSearchParams } from "next/navigation";
+import EcommBanner from "@/components/landing-page/banner-varient1";
+import BannerVarient2 from "@/components/landing-page/banner-varient2";
 
 // Shared type for banner data (same shape as before)
 interface BannerData {
@@ -23,14 +24,21 @@ interface BannerData {
   typeword2: string;
   typeword3: string;
   typeword4: string;
+  counter_content: string;
+  metric_content1: string;
+  metric_value1: number;
+  metric_content2: string;
+  metric_value2: number;
+  metric_content3: string;
+  metric_value3: number;
+  metric_content4: string;
+  metric_value4: number;
+  counter: number;
 }
 
 // Dynamic sections
 // Header continues to SSR; it now accepts props but UI/behavior remain unchanged
-const LandingPageHeader = dynamic(
-  () => import("@/components/landing-page/landing-header-section"),
-  { ssr: true }
-);
+const LandingPageHeader = dynamic(() => import("@/components/landing-page/landing-header-section"),{ ssr: true });
 const ClientSection = dynamic(() => import("@/components/landing-page/client-section"), { ssr: false });
 const OldWayNewWay = dynamic(() => import("@/components/landing-page/oldway-newway"), { ssr: false });
 const FeaturesSection = dynamic(() => import("@/components/landing-page/features"), { ssr: false });
@@ -44,12 +52,15 @@ const CaseStudySection = dynamic(() => import("@/components/landing-page/case-st
 const ForWhom = dynamic(() => import("@/components/landing-page/for-whom"), { ssr: false });
 const AiAdMistakes = dynamic(() => import("@/components/landing-page/ai-ad-mistakes"), { ssr: false });
 const PartnerLogos = dynamic(() => import("@/components/landing-page/PartnerLogos"), { ssr: false });
+const Counter = dynamic(() => import("@/components/landing-page/lp-counter"), { ssr: false });
+
+
 const LandingPage = () => {
   const prefersReducedMotion = useReducedMotion();
 
   // Banner data lifted here
   const searchParams = useSearchParams();
-  const variant = searchParams.get("variant") || "default";
+  const variant = searchParams.get("variant") || "";
 
   const [bannerData, setBannerData] = useState<BannerData | null>(null);
   const [isLoadingBanner, setIsLoadingBanner] = useState(true);
@@ -155,27 +166,59 @@ const LandingPage = () => {
     };
   }, [isChatOpen]);
 
+  // Prevent horizontal scroll on medium screens without changing layout
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+
+    const applyOverflowRule = () => {
+      const width = window.innerWidth;
+      // Tailwind md: 768px, lg: 1024px. Apply for >=768 and <1024
+      const isMediumViewport = width >= 768 && width < 1024;
+      if (isMediumViewport) {
+        root.style.overflowX = "hidden";
+        body.style.overflowX = "hidden";
+      } else {
+        root.style.overflowX = "";
+        body.style.overflowX = "";
+      }
+    };
+
+    applyOverflowRule();
+    window.addEventListener("resize", applyOverflowRule, { passive: true });
+    return () => {
+      window.removeEventListener("resize", applyOverflowRule);
+      // Cleanup: remove any style overrides
+      root.style.overflowX = "";
+      body.style.overflowX = "";
+    };
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden lg:overflow-x-visible">
-      {/* Header receives lifted data */}
-      <LandingPageHeader bannerData={bannerData} isLoading={isLoadingBanner} />
+      {variant === "Ecomm" ? (
+        <EcommBanner />
+      ) : (
+        <LandingPageHeader bannerData={bannerData} isLoading={isLoadingBanner} />
+      )}
+      {/* <BannerVarient2 /> */}
       <PartnerLogos />
       {/* Sections (unchanged) */}
-      <ClientSection />
-      <OldWayNewWay ButtonText={bannerData?.pcta || ""} />
-      <ForWhom />
+      <ClientSection category={variant} counter={bannerData?.counter || 0} CounterText={bannerData?.counter_content || ""} />
+      <OldWayNewWay ButtonText={buttonText} />
+      {!(variant) && <ForWhom />}
       <FeaturesSection />
-      <Counter ButtonText={buttonText} />
+      <Counter ButtonText={buttonText} metriccon1Description={bannerData?.metric_content1 || ""} metriccon1Value={bannerData?.metric_value1 || 0} metriccon2Description={bannerData?.metric_content2 || ""} metriccon2Value={bannerData?.metric_value2 || 0} metriccon3Description={bannerData?.metric_content3 || ""} metriccon3Value={bannerData?.metric_value3 || 0} metriccon4Description={bannerData?.metric_content4 || ""} metriccon4Value={bannerData?.metric_value4 || 0} />
       {/* <CounterSection /> */}
       <WorkflowSection />
-      <AiAdMistakes ButtonText={buttonText} />
-      <Testimonials />
-      <CaseStudySection />
-      <FAQSection ButtonText={buttonText} />
+      <AiAdMistakes category={variant} />
+      <Testimonials category={variant} />
+      <CaseStudySection category={variant} />
+      <FAQSection ButtonText={buttonText} category={variant || "general"} />
       {/* <BlogSection /> */}
       <CTASection ButtonText={buttonText} />
       <LandingPageFooter />
@@ -192,7 +235,7 @@ const LandingPage = () => {
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 8 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               onClick={toggleChat}
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg hover:shadow-xl transition-all bg-white touch-manipulation"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg hover:shadow-xl transition-all bg-white touch-manipulation cursor-pointer"
               aria-label="Open Info Assistant chat"
             >
               <Image src={ChatIcon} alt="Chat" width={56} height={56} className="w-full h-full" priority />
@@ -206,7 +249,7 @@ const LandingPage = () => {
             <motion.div
               key="chat-panel"
               ref={chatRef}
-              className="fixed bottom-20 right-2 w-[92vw] sm:w-[360px] md:w-[400px] max-w-sm z-50"
+              className="fixed bottom-1 right-2 w-[92vw] sm:w-[360px] md:w-[400px] max-w-sm z-50"
               initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
               animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}

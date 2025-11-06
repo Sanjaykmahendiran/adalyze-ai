@@ -32,7 +32,7 @@ declare global {
 // Updated interface to include original prices and type
 interface PricingPlan {
     package_id: number
-    type: string  // Added type field
+    type: number  // Added type field
     plan_name: string
     price_inr: number
     ori_price_inr: number  // Added original INR price
@@ -75,7 +75,7 @@ interface RazorpayResponse {
 }
 
 type Currency = "INR" | "USD"
-type PackageType = "Single" | "Multi"
+type PackageType = 1 | 2  // 1 = Single, 2 = Multi
 type BillingPeriod = "monthly" | "half-yearly" | "yearly"
 
 
@@ -92,11 +92,10 @@ const parseFeatures = (featuresStr: string): Feature[] => {
 
 const ProPage: React.FC = () => {
     const router = useRouter()
-    const searchParams = useSearchParams()
     const { userDetails } = useFetchUserDetails()
 
     // Check if page parameter is "dashboard"
-    const isDashboardPage = searchParams.get('page') === 'dashboard'
+    const isDashboardPage = !userDetails?.user_id
 
     const [pricingData, setPricingData] = useState<PricingPlan[]>([])
     const [faqData, setFaqData] = useState<FAQ[]>([])
@@ -108,7 +107,7 @@ const ProPage: React.FC = () => {
     const [razorpayLoaded, setRazorpayLoaded] = useState<boolean>(false)
     const [userCurrency, setUserCurrency] = useState<Currency>("INR")
     const [currencyLoading, setCurrencyLoading] = useState<boolean>(true)
-    const [selectedPackageType, setSelectedPackageType] = useState<PackageType>("Single")
+    const [selectedPackageType, setSelectedPackageType] = useState<PackageType>(1)  // Default to Single (1)
     const [billingPeriods, setBillingPeriods] = useState<{ [key: number]: BillingPeriod }>({})
     const userId = Cookies.get("userId");
 
@@ -217,11 +216,26 @@ const ProPage: React.FC = () => {
         }
     }, [])
 
-    // Get filtered active plans by type
-    const activePlans = useMemo(
-        () => pricingData.filter((plan) => plan.status === 1 && plan.type === selectedPackageType),
-        [pricingData, selectedPackageType]
-    )
+    // Get filtered active plans by type based on userDetails.type
+    const activePlans = useMemo(() => {
+        if (!userDetails?.type) {
+            // If no user details, show all plans based on selectedPackageType
+            return pricingData.filter((plan) => plan.status === 1 && plan.type === selectedPackageType)
+        }
+
+        // If userDetails.type is 1, show both types (respect selectedPackageType)
+        if (userDetails.type === "1") {
+            return pricingData.filter((plan) => plan.status === 1 && plan.type === selectedPackageType)
+        }
+
+        // If userDetails.type is 2, show only type 2 plans
+        if (userDetails.type === "2") {
+            return pricingData.filter((plan) => plan.status === 1 && plan.type === 2)
+        }
+
+        // Default fallback
+        return pricingData.filter((plan) => plan.status === 1 && plan.type === selectedPackageType)
+    }, [pricingData, selectedPackageType, userDetails?.type])
 
     // Helper function to get features for any plan
     const getPlanFeatures = (plan: PricingPlan) => parseFeatures(plan.features)
@@ -429,7 +443,8 @@ const ProPage: React.FC = () => {
                     user_id: userDetails.user_id.toString(),
                     package_id: selectedPlan.package_id.toString(),
                     ctype: currency,
-                    period: getBillingPeriod(selectedPlan.package_id), // Add billing period to the request
+                    period: getBillingPeriod(selectedPlan.package_id),
+                    order_type: "new"
                 }),
             });
 
@@ -522,11 +537,12 @@ const ProPage: React.FC = () => {
                         )}
                         {isDashboardPage && (
                             <>
-                                <h1 className="font-bold mb-4 sm:mb-6 leading-tight px-2 sm:px-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">
-                                    Smarter Ad Insights with Adalyze AI
+                                <h1 className="font-bold mb-2 sm:mb-4 leading-tight px-2 sm:px-4 text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">
+                                    Choose Your Perfect Plan
                                 </h1>
-                                <p className="text-sm sm:text-base lg:text-lg text-gray-300 max-w-2xl mx-auto px-4">
-                                    Boost your ad performance with AI-powered analysis and detailed reports.
+                                <p className="text-sm sm:text-base lg:text-lg text-white/80 max-w-2xl mx-auto px-4">
+                                    Join top brands using Adalyze AI to create smarter, high-performing ads - faster and at lower cost.
+                                    More features. Better insights. Higher efficiency.
                                 </p>
                             </>
 
@@ -595,31 +611,33 @@ const ProPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Package Type Tabs */}
-                        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-14">
-                            <div className="flex justify-center">
-                                <div className="bg-black rounded-lg p-1 ">
-                                    <button
-                                        onClick={() => setSelectedPackageType("Single")}
-                                        className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === "Single"
-                                            ? "bg-primary text-white shadow-lg"
-                                            : "text-white hover:text-white hover:bg-[#171717]"
-                                            }`}
-                                    >
-                                        Single Brand
-                                    </button>
-                                    <button
-                                        onClick={() => setSelectedPackageType("Multi")}
-                                        className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === "Multi"
-                                            ? "bg-primary text-white shadow-lg"
-                                            : "text-white hover:text-white hover:bg-[#171717]"
-                                            }`}
-                                    >
-                                        Multi Brand
-                                    </button>
+                        {/* Package Type Tabs - Only show if userDetails.type is 1 or not set */}
+                        {(!userDetails?.type || userDetails.type === "1") && (
+                            <div className="max-w-5xl mx-auto  mb-14">
+                                <div className="flex justify-center">
+                                    <div className="bg-black rounded-lg p-1 ">
+                                        <button
+                                            onClick={() => setSelectedPackageType(1)}
+                                            className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === 1
+                                                ? "bg-primary text-white shadow-lg"
+                                                : "text-white hover:text-white hover:bg-[#171717]"
+                                                }`}
+                                        >
+                                            Single Brand
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedPackageType(2)}
+                                            className={`px-6 py-3 rounded-md text-base font-medium transition-all duration-200 ${selectedPackageType === 2
+                                                ? "bg-primary text-white shadow-lg"
+                                                : "text-white hover:text-white hover:bg-[#171717]"
+                                                }`}
+                                        >
+                                            Multi Brand
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
 
                         {/* Paid Plans - Dynamic Grid Layout */}
@@ -650,7 +668,7 @@ const ProPage: React.FC = () => {
 
                                             <div className="flex-1">
                                                 {/* Plan name with One Time text or billing dropdown in justify-between */}
-                                                {selectedPackageType === "Single" && plan.package_id === 1 ? (
+                                                {plan.package_id === 1 ? (
                                                     <div className="flex justify-between items-center mb-3">
                                                         <h3 className="text-lg sm:text-xl font-semibold">
                                                             {plan.plan_name}
@@ -659,7 +677,7 @@ const ProPage: React.FC = () => {
                                                             One Time
                                                         </div>
                                                     </div>
-                                                ) : (selectedPackageType === "Single" && plan.package_id === 3) || (selectedPackageType === "Multi" && plan.package_id !== 1) ? (
+                                                ) : (
                                                     <div className="flex justify-between items-center mb-3">
                                                         <h3 className="text-lg sm:text-xl font-semibold">
                                                             {plan.plan_name}
@@ -684,10 +702,6 @@ const ProPage: React.FC = () => {
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
-                                                ) : (
-                                                    <h3 className="text-lg sm:text-xl font-semibold mb-3">
-                                                        {plan.plan_name}
-                                                    </h3>
                                                 )}
 
                                                 {/* Price Display with Strikethrough */}
@@ -738,14 +752,6 @@ const ProPage: React.FC = () => {
                                                         })()}
                                                     </div>
                                                 )}
-
-                                                <div className=" mb-6">
-                                                    {plan.type === "Multi" && plan.brands_count > 0 && (
-                                                        <span className="bg-primary/90 text-white px-3 sm:px-4 py-1 text-xs sm:text-sm rounded-lg">
-                                                            {plan.brands_count} brands included
-                                                        </span>
-                                                    )}
-                                                </div>
 
                                                 <div className="mt-auto">
                                                     <Button

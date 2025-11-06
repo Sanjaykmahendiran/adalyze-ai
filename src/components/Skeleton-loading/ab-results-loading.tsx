@@ -6,8 +6,8 @@ const AbResultsLoadingSkeleton = () => {
             <div className="max-w-6xl mx-auto space-y-8">
                 {/* Header Skeleton */}
                 <div className="text-center mb-8 space-y-2">
-                    <div className="mx-auto h-8 w-64 rounded-md bg-[#2b2b2b] animate-pulse" />
-                    <div className="mx-auto mt-2 h-4 w-96 rounded-md bg-gray-600 animate-pulse" />
+                    <div className="mx-auto h-8 w-48 sm:w-64 rounded-md bg-[#2b2b2b] animate-pulse" />
+                    <div className="mx-auto mt-2 h-4 w-full max-w-xs sm:max-w-md rounded-md bg-gray-600 animate-pulse" />
                 </div>
 
                 {/* Comparison Header Skeleton */}
@@ -49,7 +49,7 @@ const AbResultsLoadingSkeleton = () => {
                 </div>
 
                 {/* Tabs Skeleton */}
-                <div className="bg-black rounded-2xl p-2 mb-8 border border-[#121212] inline-flex">
+                <div className="bg-black rounded-2xl p-2 mb-8 border border-[#121212] inline-flex flex-wrap gap-2">
                     <div className="px-6 py-3 rounded-xl bg-primary text-white shadow-lg w-32 h-10 animate-pulse" />
                     <div className="px-6 py-3 rounded-xl text-gray-300 w-32 h-10 ml-2 animate-pulse" />
                 </div>

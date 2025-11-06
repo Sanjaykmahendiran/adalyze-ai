@@ -61,8 +61,8 @@ export default function PolicyComponent() {
   }, []);
 
   return (
-    <div className="w-full  shadow  rounded-2xl">
-      <div className="max-w-full sm:max-w-4xl px-4 sm:px-12 py-8">
+    <div className="w-full  shadow  rounded-2xl lg:mt-6">
+      <div className="w-full px-0 sm:px-12 py-8">
         <Tabs defaultValue="privacy" className="w-full rounded-[20px]">
           <TabsList className="flex bg-black h-12 text-black w-full sm:w-[40rem] justify-start rounded-full overflow-x-auto">
             <TabsTrigger value="privacy"

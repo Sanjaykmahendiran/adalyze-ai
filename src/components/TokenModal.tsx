@@ -11,16 +11,17 @@ import toast from 'react-hot-toast';
 
 interface TokenModalProps {
   adId: string;
+  userId?: string | number;
   children: React.ReactNode;
   onShare?: (shareUrl: string) => void;
 }
 
-export default function TokenModal({ adId, children, onShare }: TokenModalProps) {
+export default function TokenModal({ adId, userId, children, onShare }: TokenModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   
-  const shareUrl = generateShareUrl(adId);
-  const shareText = generateShareText(adId);
+  const shareUrl = generateShareUrl(adId, userId);
+  const shareText = generateShareText(adId, userId);
   
   const handleCopyUrl = async () => {
     try {

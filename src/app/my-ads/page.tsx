@@ -1,19 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Search, Eye, Facebook, Instagram, MessageCircle, FileImage, Upload, Loader2, Linkedin, TrendingUp, TrendingDown, Share } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
-import Cookies from "js-cookie"
 import toast from "react-hot-toast"
 import NoDataFoundImage from "@/assets/no-data-found.webp";
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import MyAdsSkeleton from "@/components/Skeleton-loading/myads-loading"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
+import Cookies from "js-cookie";
+
 
 // Define the API response interface
 interface AdsApiResponse {
@@ -102,6 +103,7 @@ function formatDate(dateString: string) {
 
 export default function MyAdsPage() {
     const { userDetails } = useFetchUserDetails()
+    const userId = Cookies.get('userId')
     const router = useRouter()
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedPlatform, setSelectedPlatform] = useState("all")
@@ -112,43 +114,142 @@ export default function MyAdsPage() {
     const [abLoading, setAbLoading] = useState(false)
     const [scoreFilter, setScoreFilter] = useState("all")
     const [adTypeFilter, setAdTypeFilter] = useState("all")
+    const [clientBrands, setClientBrands] = useState<Array<{ brand_id: number; brand_name: string }>>([])
+    const [clientBrandsLoading, setClientBrandsLoading] = useState(false)
+    const [selectedBrandId, setSelectedBrandId] = useState<string>("")
+    const handleBrandChange = useCallback((val: string) => {
+        setSelectedBrandId(val)
+    }, [])
 
-    // Initialize activeTab from session storage or default to "ads"
-    const [activeTab, setActiveTab] = useState<"ads" | "ab-ads">(() => {
-        if (typeof window !== 'undefined') {
-            const savedTab = sessionStorage.getItem('my-ads-active-tab')
-            return (savedTab === "ab-ads" || savedTab === "ads") ? savedTab : "ads"
+    // Initialize with default safe values
+    const [activeTab, setActiveTab] = useState<"ads" | "ab-ads">("ads");
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Hydrate from sessionStorage after mount
+    useEffect(() => {
+      if (typeof window !== "undefined") {
+        // Restore tab
+        const savedTab = sessionStorage.getItem('my-ads-active-tab');
+        if (savedTab === "ab-ads" || savedTab === "ads") {
+          setActiveTab(savedTab);
         }
-        return "ads"
-    })
+        // Restore page for the tab
+        const storageKey = savedTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
+        const savedPage = sessionStorage.getItem(storageKey);
+        if (savedPage) setCurrentPage(parseInt(savedPage, 10));
+      }
+    }, []);
 
     // Use the new ad navigation hook
     const { navigateToAdResults, navigateToABResults } = useAdNavigation()
 
     // Function to handle tab switching with session storage
     const handleTabChange = (tab: "ads" | "ab-ads") => {
-        setActiveTab(tab)
-        // Save to session storage
         if (typeof window !== 'undefined') {
-            sessionStorage.setItem('my-ads-active-tab', tab)
-        }
-    }
+            const currentStorageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
+            sessionStorage.setItem(currentStorageKey, currentPage.toString());
 
-    // Pagination states
-    const [currentPage, setCurrentPage] = useState(1);
+            sessionStorage.setItem('my-ads-active-tab', tab);
+            const newStorageKey = tab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
+            const savedPage = sessionStorage.getItem(newStorageKey);
+            const pageToRestore = savedPage ? parseInt(savedPage, 10) : 1;
+
+            setActiveTab(tab);
+            setCurrentPage(pageToRestore);
+        } else {
+            setActiveTab(tab);
+            setCurrentPage(1);
+        }
+    };
+
+    // Pagination states - initialize from sessionStorage to preserve page when navigating back
     const itemsPerPage = 12;
     const [totalAds, setTotalAds] = useState(0);
     const [totalAbAds, setTotalAbAds] = useState(0);
 
+    // On mount, fetch abAds count so it shows early in the tab
+    useEffect(() => {
+        const fetchAbAdsCount = async () => {
+            try {
+                if (!userId) return;
+                const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=abadslist&user_id=${userId}`);
+                if (!response.ok) return;
+                const rawAbAds = await response.json();
+                setTotalAbAds(Array.isArray(rawAbAds) ? rawAbAds.length : 0);
+            } catch (e) {
+                setTotalAbAds(0);
+            }
+        };
+        fetchAbAdsCount();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId]);
+
+    useEffect(() => {
+        const shouldFetch = userId && userDetails?.type === "2"
+        if (!shouldFetch) return
+
+        const fetchBrands = async () => {
+            try {
+                setClientBrandsLoading(true)
+                const resp = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`)
+                if (!resp.ok) throw new Error('Failed to fetch brands list')
+                const data = await resp.json()
+                const normalized = Array.isArray(data)
+                    ? data.map((b: any) => ({ brand_id: Number(b.brand_id), brand_name: String(b.brand_name || 'Unnamed') }))
+                    : []
+                setClientBrands(normalized)
+            } catch (e) {
+                console.error('Error fetching brands list:', e)
+            } finally {
+                setClientBrandsLoading(false)
+            }
+        }
+
+        fetchBrands()
+    }, [userId, userDetails?.type])
+
+    // Helper function to build API URL with filters
+    // Only sends filter parameters to API when a specific filter is selected (not "all" or empty)
+    const buildAdsListUrl = (offset: number, limit: number) => {
+        if (!userId) return ''
+
+        const baseUrl = `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&offset=${offset}&limit=${limit}`
+        const params: string[] = []
+
+        // Only add brand_id parameter if a specific brand is selected (not empty and not "All Brands")
+        if (selectedBrandId && selectedBrandId.trim() !== "" && selectedBrandId !== "All Brands") {
+            params.push(`brand_id=${encodeURIComponent(selectedBrandId)}`)
+        }
+
+        // Only add platform parameter if a specific platform is selected (not "all")
+        if (selectedPlatform && selectedPlatform.trim() !== "" && selectedPlatform !== "all") {
+            params.push(`platform=${encodeURIComponent(selectedPlatform)}`)
+        }
+
+        // Only add score parameter if a specific score range is selected (not "all")
+        if (scoreFilter && scoreFilter.trim() !== "" && scoreFilter !== "all") {
+            params.push(`score=${encodeURIComponent(scoreFilter)}`)
+        }
+
+        // Only add ad_type parameter if a specific ad type is selected (not "all")
+        if (adTypeFilter && adTypeFilter.trim() !== "" && adTypeFilter !== "all") {
+            params.push(`ad_type=${encodeURIComponent(adTypeFilter)}`)
+        }
+
+        // Only append filter parameters if any filters are selected
+        return params.length > 0 ? `${baseUrl}&${params.join('&')}` : baseUrl
+    }
+
     // Fetch all ads for filtering (no pagination)
     const fetchAllAds = async () => {
         try {
-            const userId = Cookies.get('userId')
             if (!userId) return
 
-            const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&offset=0&limit=12`
-            )
+            // Fetch all user's ads with a high limit (replace 1000 with larger value if needed)
+            const url = buildAdsListUrl(0, 1000)
+            if (!url) return
+
+            const response = await fetch(url)
 
             if (!response.ok) {
                 throw new Error('Failed to fetch all ads')
@@ -166,7 +267,6 @@ export default function MyAdsPage() {
     const fetchAds = async () => {
         setLoading(true)
         try {
-            const userId = Cookies.get('userId')
 
             if (!userId) {
                 toast.error('Please login to view your ads')
@@ -175,9 +275,13 @@ export default function MyAdsPage() {
             }
 
             const offset = (currentPage - 1) * itemsPerPage
-            const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&offset=${offset}&limit=${itemsPerPage}`
-            )
+            const url = buildAdsListUrl(offset, itemsPerPage)
+            if (!url) {
+                setLoading(false)
+                return
+            }
+
+            const response = await fetch(url)
 
             if (!response.ok) {
                 throw new Error('Failed to fetch ads')
@@ -186,12 +290,7 @@ export default function MyAdsPage() {
             const data: AdsApiResponse = await response.json()
             setAds(data.ads)
             setTotalAds(data.total)
-
-            // Fetch all ads if we don't have them yet (for filtering)
-            if (allAds.length === 0) {
-                fetchAllAds()
-            }
-
+            // Removed fetchAllAds() from here to prevent double API call
         } catch (error) {
             console.error('Error fetching ads:', error)
             toast.error('Failed to load ads. Please try again.')
@@ -200,11 +299,17 @@ export default function MyAdsPage() {
         }
     }
 
-    // Fetch ads when page loads or pagination changes
+    // Fetch ads when page loads, pagination changes, or filters change
     useEffect(() => {
-        fetchAds()
+        if (activeTab === "ads") {
+            fetchAds();
+            // Only fetch all ads for client filtering if a filter or search is active, and we haven't fetched them yet
+            if (hasActiveFilters && allAds.length === 0) {
+                fetchAllAds();
+            }
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage])
+    }, [currentPage, selectedPlatform, scoreFilter, adTypeFilter, selectedBrandId, activeTab]);
 
     // Fetch A/B ads from API
     const fetchAbAds = async () => {
@@ -212,8 +317,6 @@ export default function MyAdsPage() {
 
         setAbLoading(true)
         try {
-            const userId = Cookies.get('userId')
-
             if (!userId) {
                 toast.error('Please login to view your A/B ads')
                 return
@@ -225,9 +328,24 @@ export default function MyAdsPage() {
                 throw new Error('Failed to fetch A/B ads')
             }
 
-            const apiAbAds: ABAdPair[] = await response.json()
-            setAbAds(apiAbAds)
-            setTotalAbAds(apiAbAds.length)
+            const rawAbAds: any = await response.json()
+            const normalizedAbAds: ABAdPair[] = (rawAbAds || []).map((pair: any) => {
+                const adA = pair?.ad_a || {}
+                const adB = pair?.ad_b || {}
+                return {
+                    ad_a: {
+                        ...adA,
+                        go_nogo: adA.go_nogo ?? adA.go_nogoA ?? "",
+                    },
+                    ad_b: {
+                        ...adB,
+                        go_nogo: adB.go_nogo ?? adB.go_nogoB ?? "",
+                    },
+                }
+            })
+
+            setAbAds(normalizedAbAds)
+            setTotalAbAds(normalizedAbAds.length)
 
         } catch (error) {
             console.error('Error fetching A/B ads:', error)
@@ -307,27 +425,27 @@ export default function MyAdsPage() {
         return (
             <div
                 key={ad.ad_id}
-                className="bg-black border border-[#3d3d3d] rounded-lg overflow-hidden hover:border-[#db4900]/50 group hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300"
+                className="bg-black border border-[#3d3d3d] rounded-lg overflow-hidden hover:border-[#db4900]/50 group md:hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300"
             >
                 <div
-                    onClick={() => navigateToAdResults(ad.ad_id.toString())}
+                    onClick={() => navigateToAdResults(ad.ad_id.toString(), userDetails?.user_id)}
                     className="relative cursor-pointer">
                     <img
                         src={ad.image_path}
                         alt={ad.ads_name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full aspect-square object-cover transform group-hover:scale-105 transition-all duration-300"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder.svg";
-                        }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
                     />
+
                 </div>
 
                 <div className="p-3 sm:p-4">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2 min-w-0">
                         <h3
-                            className="font-medium text-xs sm:text-sm truncate text-white"
+                            className="font-medium text-xs sm:text-sm truncate text-white max-w-[70%]"
                             title={ad.ads_name}
-                            style={{ maxWidth: "70%" }}
                         >
                             {ad.ads_name}
                         </h3>
@@ -379,13 +497,13 @@ export default function MyAdsPage() {
                         </div>
                         <div className="flex-shrink-0 flex gap-2">
                             <Button
-                                onClick={() => navigateToAdResults(ad.ad_id.toString())}
+                                onClick={() => navigateToAdResults(ad.ad_id.toString(), userDetails?.user_id)}
                                 size="sm"
                                 variant="outline"
                                 className="text-white bg-[#db4900] border-[#db4900] hover:bg-white hover:text-[#db4900] transition-colors sm:w-auto sm:h-auto sm:px-3 py-2"
                             >
                                 <Eye className="w-3 h-3" />
-                                <span className="hidden sm:inline ml-1">View</span>
+                                <span className=" sm:inline ml-1">View</span>
                             </Button>
                         </div>
                     </div>
@@ -404,12 +522,12 @@ export default function MyAdsPage() {
         return (
             <div
                 key={index}
-                className="bg-black border border-[#3d3d3d] rounded-lg overflow-hidden hover:border-[#db4900]/50 group hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300"
+                className="bg-black border border-[#3d3d3d] rounded-lg overflow-hidden hover:border-[#db4900]/50 group md:hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300"
             >
                 <div className="p-3 sm:p-4">
                     <h3 className="font-medium text-white mb-3 sm:mb-4 text-center text-sm sm:text-base">A/B Test Pair</h3>
 
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         {/* Ad A */}
                         <div className="space-y-2">
                             <div
@@ -417,18 +535,20 @@ export default function MyAdsPage() {
                                 onClick={() =>
                                     navigateToABResults(
                                         abAdPair.ad_a.ad_id.toString(),
-                                        abAdPair.ad_b.ad_id.toString()
+                                        abAdPair.ad_b.ad_id.toString(),
+                                        userDetails?.user_id
                                     )
                                 }
                             >
                                 <img
                                     src={abAdPair.ad_a.image_path}
                                     alt={abAdPair.ad_a.ads_name}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full aspect-square object-cover rounded-md transform group-hover:scale-105 transition-all duration-300"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                    }}
+                                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
                                 />
+
                                 <div className="absolute top-1 left-1">
                                     <Badge className="bg-blue-600 text-white text-xs">A</Badge>
                                 </div>
@@ -436,11 +556,10 @@ export default function MyAdsPage() {
 
                             {/* Ad A Details */}
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between min-w-0">
                                     <p
-                                        className="text-xs text-gray-300 truncate flex-1"
+                                        className="text-xs text-gray-300 truncate flex-1 max-w-[70%]"
                                         title={abAdPair.ad_a.ads_name}
-                                        style={{ maxWidth: "70%" }}
                                     >
                                         {abAdPair.ad_a.ads_name}
                                     </p>
@@ -488,18 +607,20 @@ export default function MyAdsPage() {
                                 onClick={() =>
                                     navigateToABResults(
                                         abAdPair.ad_a.ad_id.toString(),
-                                        abAdPair.ad_b.ad_id.toString()
+                                        abAdPair.ad_b.ad_id.toString(),
+                                        userDetails?.user_id
                                     )
                                 }
                             >
                                 <img
-                                    src={abAdPair.ad_b.image_path}
-                                    alt={abAdPair.ad_b.ads_name}
+                                    src={abAdPair.ad_a.image_path}
+                                    alt={abAdPair.ad_a.ads_name}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full aspect-square object-cover rounded-md transform group-hover:scale-105 transition-all duration-300"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                    }}
+                                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
                                 />
+
                                 <div className="absolute top-1 left-1">
                                     <Badge className="bg-green-600 text-white text-xs">B</Badge>
                                 </div>
@@ -507,11 +628,10 @@ export default function MyAdsPage() {
 
                             {/* Ad B Details */}
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between min-w-0">
                                     <p
-                                        className="text-xs text-gray-300 truncate flex-1"
+                                        className="text-xs text-gray-300 truncate flex-1 max-w-[70%]"
                                         title={abAdPair.ad_b.ads_name}
-                                        style={{ maxWidth: "70%" }}
                                     >
                                         {abAdPair.ad_b.ads_name}
                                     </p>
@@ -554,7 +674,7 @@ export default function MyAdsPage() {
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-[#3d3d3d]">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-3 min-w-0">
                             <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30">
                                 {abAdPair.ad_a.industry ? abAdPair.ad_a.industry : "General"}
                             </Badge>
@@ -565,7 +685,8 @@ export default function MyAdsPage() {
                             onClick={() =>
                                 navigateToABResults(
                                     abAdPair.ad_a.ad_id.toString(),
-                                    abAdPair.ad_b.ad_id.toString()
+                                    abAdPair.ad_b.ad_id.toString(),
+                                    userDetails?.user_id
                                 )
                             }
                             size="sm"
@@ -601,16 +722,29 @@ export default function MyAdsPage() {
         ? filteredAbAds.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
         : abAds
 
+    // Save current page to sessionStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads'
+            sessionStorage.setItem(storageKey, currentPage.toString())
+        }
+    }, [currentPage, activeTab])
+
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
+        // Save the reset to sessionStorage
+        if (typeof window !== 'undefined') {
+            const storageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads'
+            sessionStorage.setItem(storageKey, '1')
+        }
     }, [searchTerm, selectedPlatform, scoreFilter, adTypeFilter, activeTab]);
 
 
     return (
         <UserLayout userDetails={userDetails}>
             {loading ? <MyAdsSkeleton /> : (
-                <div className="w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-28">
+                <div className="w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-28 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
                     <div className="mb-6 sm:mb-8">
                         <div>
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -649,53 +783,95 @@ export default function MyAdsPage() {
 
                             {/* Filters */}
                             {activeTab === "ads" && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                                    <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                                        <SelectTrigger className="w-full bg-[#171717] border-[#3d3d3d] text-white">
-                                            <SelectValue placeholder="Platform" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#1a1a1a] border-[#3d3d3d]">
-                                            <SelectItem value="all">All Platforms</SelectItem>
-                                            <SelectItem value="facebook">Facebook</SelectItem>
-                                            <SelectItem value="instagram">Instagram</SelectItem>
-                                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                                            <SelectItem value="linkedin">LinkedIn</SelectItem>
-                                            <SelectItem value="flyer">Flyer</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                <>
+                                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${userDetails?.type === "2" ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3 sm:gap-4`}>
+                                        <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                                            <SelectTrigger className="w-full bg-[#171717] border-[#3d3d3d] text-white">
+                                                <SelectValue placeholder="Platform" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#1a1a1a] border-[#3d3d3d] max-h-60 overflow-auto">
+                                                <SelectItem value="all">All Platforms</SelectItem>
+                                                <SelectItem value="facebook">Facebook</SelectItem>
+                                                <SelectItem value="instagram">Instagram</SelectItem>
+                                                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                                                <SelectItem value="linkedin">LinkedIn</SelectItem>
+                                                <SelectItem value="flyer">Flyer</SelectItem>
+                                            </SelectContent>
+                                        </Select>
 
-                                    <Select value={scoreFilter} onValueChange={setScoreFilter}>
-                                        <SelectTrigger className="w-full bg-[#171717] border-[#3d3d3d] text-white">
-                                            <SelectValue placeholder="Score Range" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#171717] border-[#3d3d3d]">
-                                            <SelectItem value="all">All Scores</SelectItem>
-                                            <SelectItem value="90-100">90-100 (Excellent)</SelectItem>
-                                            <SelectItem value="80-89">80-89 (Good)</SelectItem>
-                                            <SelectItem value="70-79">70-79 (Fair)</SelectItem>
-                                            <SelectItem value="0-69">Below 70 (Needs Improvement)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                        <Select value={scoreFilter} onValueChange={setScoreFilter}>
+                                            <SelectTrigger className="w-full bg-[#171717] border-[#3d3d3d] text-white">
+                                                <SelectValue placeholder="Score Range" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#171717] border-[#3d3d3d] max-h-60 overflow-auto">
+                                                <SelectItem value="all">All Scores</SelectItem>
+                                                <SelectItem value="90-100">90-100 (Excellent)</SelectItem>
+                                                <SelectItem value="80-89">80-89 (Good)</SelectItem>
+                                                <SelectItem value="70-79">70-79 (Fair)</SelectItem>
+                                                <SelectItem value="0-69">Below 70 (Needs Improvement)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
 
-                                    <Select value={adTypeFilter} onValueChange={setAdTypeFilter}>
-                                        <SelectTrigger className="w-full bg-[#171717] border-[#3d3d3d] text-white">
-                                            <SelectValue placeholder="Ad Type" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#171717] border-[#3d3d3d]">
-                                            <SelectItem value="all">All Types</SelectItem>
-                                            <SelectItem value="single">Single</SelectItem>
-                                            <SelectItem value="carousel">Carousel</SelectItem>
-                                            <SelectItem value="video">Video</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                        <Select value={adTypeFilter} onValueChange={setAdTypeFilter}>
+                                            <SelectTrigger className="w-full bg-[#171717] border-[#3d3d3d] text-white">
+                                                <SelectValue placeholder="Ad Type" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#171717] border-[#3d3d3d] max-h-60 overflow-auto">
+                                                <SelectItem value="all">All Types</SelectItem>
+                                                <SelectItem value="single">Single</SelectItem>
+                                                <SelectItem value="carousel">Carousel</SelectItem>
+                                                <SelectItem value="video">Video</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+
+                                        {userDetails?.type === "2" && (
+                                            <Select
+                                                value={selectedBrandId}
+                                                onValueChange={handleBrandChange}
+                                                disabled={clientBrandsLoading}
+                                            >
+                                                <SelectTrigger className="w-full bg-[#171717] border-[#3d3d3d] text-white">
+                                                    <SelectValue
+                                                        placeholder={
+                                                            clientBrandsLoading
+                                                                ? "Loading..."
+                                                                : clientBrands.length === 0
+                                                                    ? "No Brands"
+                                                                    : "Select Brand"
+                                                        }
+                                                    />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#171717] border-[#3d3d3d] max-h-60 overflow-auto">
+                                                    <SelectItem value="All Brands">All Brands</SelectItem>
+                                                    {clientBrandsLoading && (
+                                                        <SelectItem value="__loading" disabled>
+                                                            Loading...
+                                                        </SelectItem>
+                                                    )}
+                                                    {!clientBrandsLoading && clientBrands.length === 0 && (
+                                                        <SelectItem value="__no_brands" disabled>
+                                                            No brands
+                                                        </SelectItem>
+                                                    )}
+                                                    {!clientBrandsLoading &&
+                                                        clientBrands.map((b) => (
+                                                            <SelectItem key={b.brand_id} value={String(b.brand_id)}>
+                                                                {b.brand_name}
+                                                            </SelectItem>
+                                                        ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+                                </>
                             )}
                         </div>
 
                         {/* Filter summary */}
                         {(searchTerm ||
                             (activeTab === "ads" &&
-                                (selectedPlatform !== "all" || scoreFilter !== "all" || adTypeFilter !== "all"))) && (
+                                (selectedPlatform !== "all" || scoreFilter !== "all" || adTypeFilter !== "all" ||
+                                    (selectedBrandId && selectedBrandId !== "" && selectedBrandId !== "All Brands")))) && (
                                 <div className="flex flex-wrap gap-2 pt-4 border-t border-[#3d3d3d]">
                                     <span className="text-sm text-gray-300">Active filters:</span>
                                     {searchTerm && (
@@ -718,6 +894,11 @@ export default function MyAdsPage() {
                                             Type: {adTypeFilter}
                                         </Badge>
                                     )}
+                                    {activeTab === "ads" && selectedBrandId && selectedBrandId !== "" && selectedBrandId !== "All Brands" && (
+                                        <Badge variant="secondary" className="bg-[#3d3d3d] text-gray-300">
+                                            Brand: {clientBrands.find(b => String(b.brand_id) === selectedBrandId)?.brand_name || selectedBrandId}
+                                        </Badge>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -726,6 +907,7 @@ export default function MyAdsPage() {
                                             setSelectedPlatform("all");
                                             setScoreFilter("all");
                                             setAdTypeFilter("all");
+                                            setSelectedBrandId("");
                                         }}
                                         className="text-xs h-6 px-2 text-gray-300 hover:text-white"
                                     >
@@ -736,10 +918,10 @@ export default function MyAdsPage() {
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex space-x-1 mb-6 bg-[#171717] p-1 rounded-lg border border-[#3d3d3d]">
+                    <div className="flex space-x-1 mb-6 bg-[#171717] p-1 rounded-lg border border-[#3d3d3d] overflow-x-auto">
                         <button
                             onClick={() => handleTabChange("ads")}
-                            className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${activeTab === "ads"
+                            className={`flex-1 shrink-0 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${activeTab === "ads"
                                 ? "bg-[#db4900] text-white"
                                 : "text-gray-300 hover:text-white hover:bg-[#3d3d3d]"
                                 }`}
@@ -749,7 +931,7 @@ export default function MyAdsPage() {
                         </button>
                         <button
                             onClick={() => handleTabChange("ab-ads")}
-                            className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${activeTab === "ab-ads"
+                            className={`flex-1 shrink-0 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${activeTab === "ab-ads"
                                 ? "bg-[#db4900] text-white"
                                 : "text-gray-300 hover:text-white hover:bg-[#3d3d3d]"
                                 }`}
@@ -806,7 +988,7 @@ export default function MyAdsPage() {
                             )}
 
                             {/* Ads Grid */}
-                            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-24">
                                 {displayAds.map(renderAdCard)}
                             </div>
                         </>
@@ -879,7 +1061,7 @@ export default function MyAdsPage() {
                                             )}
 
                                             {/* A/B Ads Grid */}
-                                            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                                            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 pb-24">
                                                 {displayAbAds.map(renderAbAdCard)}
                                             </div>
                                         </>
@@ -908,7 +1090,7 @@ export default function MyAdsPage() {
                                         <Button
                                             key={i}
                                             variant={currentPage === i + 1 ? "default" : "outline"}
-                                            className={`border-[#3d3d3d] min-w-[40px] ${currentPage === i + 1 ? "bg-[#db4900] text-white" : "bg-transparent hover:bg-[#3d3d3d] text-white"}`}
+                                            className={`border-[#3d3d3d] min-w-[36px] sm:min-w-[40px] ${currentPage === i + 1 ? "bg-[#db4900] text-white" : "bg-transparent hover:bg-[#3d3d3d] text-white"}`}
                                             onClick={() => setCurrentPage(i + 1)}
                                         >
                                             {i + 1}

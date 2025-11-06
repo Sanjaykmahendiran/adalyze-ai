@@ -27,7 +27,6 @@ const LoginPage = () => {
 
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
-
     try {
       let loginData;
 
@@ -49,17 +48,25 @@ const LoginPage = () => {
         else if (data.nouptoken) eventName = "email_confirmation_login_completed";
 
         trackEvent(eventName, window.location.href, user.email);
-
         toast.success("Login successful!");
 
+        // ✅ Get redirect page param (if exists)
+        const redirectPage = searchParams.get("page");
+
+        if (redirectPage) {
+          router.push(`/${redirectPage}`);
+          return; // ✅ stop further routing logic
+        }
+
+        // ✅ Default logic (as before)
         if (user.payment_status === 0) {
           if (user.fretra_status === 1) {
-            router.push("/dashboard"); // Allowed even if unpaid
+            router.push("/dashboard");
           } else {
-            router.push("/pricing"); // Unpaid and fretra_status not 1
+            router.push("/pricing");
           }
         } else {
-          router.push("/dashboard"); // Paid users
+          router.push("/dashboard");
         }
       } else {
         toast.error(loginData.message || "Login failed. Please check your credentials.");
@@ -80,7 +87,7 @@ const LoginPage = () => {
         onSubmit({ nouptoken: getToken });
       }
     }
-  }, [searchParams]);
+  }, []);
 
 
   return (

@@ -77,7 +77,7 @@ export default function TransactionTable({ userDetails }: TransactionTableProps)
   };
 
   return (
-    <Card className="rounded-2xl bg-black lg:mt-10 w-full p-4 sm:p-6 relative overflow-hidden">
+    <Card className="rounded-2xl bg-black lg:mt-14 w-full p-4 sm:p-6 relative overflow-hidden">
       {!selectedTransaction ? (
         <>
           {/* Header */}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, Bell, X, Copy, Check, FileImage } from "lucide-react";
+import { Menu, Bell, X, Copy, Check, FileImage, Infinity } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +29,7 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
   const [copied, setCopied] = useState(false);
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
 
-  const referralLink = `https://adalyzeai.top/register?referral_code=${userDetails?.referral_code || ""}`;
+  const referralLink = `https://adalyze.app/register?referral_code=${userDetails?.referral_code || ""}`;
 
   const handleCopy = async () => {
     try {
@@ -43,7 +43,7 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
 
   const handleLogoutClick = () => {
     // Check if user should see upgrade popup
-    if (userDetails?.fretra_status === 1 || userDetails?.ads_limit === 0) {
+    if (userDetails?.fretra_status === 1 || Number(userDetails?.ads_limit) === 0) {
       setShowUpgradePopup(true);
     } else {
       logout();
@@ -72,29 +72,39 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
             {/* Ads Credits */}
             <div
               onClick={() => {
-                if (userDetails?.ads_limit === 0) {
+                if (Number(userDetails?.ads_limit) === 0) {
                   router.push("/pro")
                 }
               }}
               className={`border border-[#db4900] px-2 py-1 flex items-center gap-1 rounded-full transition-all duration-300 group max-w-[160px] sm:max-w-none 
-                       ${userDetails?.ads_limit === 0 ? "hover:bg-[#db4900]/10 cursor-pointer" : ""}
+                       ${Number(userDetails?.ads_limit) === 0 ? "hover:bg-[#db4900]/10 cursor-pointer" : ""}
                         `}
             >
               <FileImage className="w-4 h-4 text-[#db4900] group-hover:text-[#ff5722] transition-colors" />
-              <span className="truncate text-xs sm:text-sm text-[#db4900] font-medium group-hover:text-[#ff5722]">
-                {userDetails?.ads_limit === 0 ? (
+              <span className="truncate whitespace-nowrap text-xs sm:text-sm text-[#db4900] font-medium group-hover:text-[#ff5722] flex items-center gap-1">
+                {Number(userDetails?.ads_limit) === 0 ? (
                   <span className="text-white font-semibold">Add Credits</span>
                 ) : (
                   <>
-                    Ads Credits:{" "}
-                    <span className="text-white font-semibold">
-                      {userDetails?.fretra_status === 1
-                        ? "01"
-                        : String(userDetails?.ads_limit ?? "").padStart(2, "0")}
+                    <span>Ads Credits:</span>
+                    <span className="text-white font-semibold flex items-center gap-1">
+                      {userDetails?.ads_limit === "unlimited" ? (
+                        <>
+                          {/* Mobile - Infinity Icon */}
+                          <Infinity className="w-4 h-4 sm:hidden" />
+                          {/* Desktop - Text */}
+                          <span className="hidden sm:inline">Unlimited</span>
+                        </>
+                      ) : (
+                        userDetails?.fretra_status === 1
+                          ? "01"
+                          : String(userDetails?.ads_limit ?? "").padStart(2, "0")
+                      )}
                     </span>
                   </>
                 )}
               </span>
+
             </div>
 
 
@@ -113,6 +123,10 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" className="w-48 bg-black">
+                <div className="md:hidden">
+                  <DropdownMenuItem onClick={() => router.push("/brands")}>Brands</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </div>
                 <DropdownMenuItem onClick={() => router.push("/myaccount")}>Account</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="md:hidden">

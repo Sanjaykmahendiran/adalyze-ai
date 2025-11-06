@@ -167,7 +167,7 @@ export default function FeaturesSection() {
         <div className="flex justify-center mt-18">
           <Button
             onClick={() => {
-              window.open("/features", "_blank", "noopener,noreferrer");
+              router.push("/features");
               trackEvent("LP_Features_button_clicked", window.location.href);
             }}
             className="text-white cursor-pointer  text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"

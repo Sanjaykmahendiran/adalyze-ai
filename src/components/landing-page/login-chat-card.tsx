@@ -62,11 +62,10 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch("/api/needhelp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          gofor: "needhelp",
           email,
           category,
           description,

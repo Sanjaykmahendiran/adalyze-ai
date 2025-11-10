@@ -13,9 +13,6 @@ import Cookies from "js-cookie"
 import { Camera } from "lucide-react"
 import Image from "next/image"
 
-// Base URL configuration
-export const BASE_URL = "https://adalyzeai.xyz/App/api.php"
-
 interface BrandData {
   brand_id: number
   user_id: number
@@ -69,7 +66,7 @@ export default function YourBrand({
   const fetchBrandData = async (brandId: number) => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${BASE_URL}?gofor=getbrand&brand_id=${brandId}`)
+      const response = await fetch(`/api/getbrand?brand_id=${brandId}`)
       const data = await response.json()
       
       if (data.brand_id) {
@@ -95,13 +92,12 @@ export default function YourBrand({
   const uploadImageToServer = async (base64Data: string) => {
     setIsUploadingImage(true)
     const payload = {
-      gofor: "image_upload",
       imgname: base64Data,
       type: "brand",
     }
 
     try {
-      const response = await fetch(BASE_URL, {
+      const response = await fetch("/api/image_upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -173,7 +169,6 @@ export default function YourBrand({
     }
 
     const payload = {
-      gofor: "editbrands",
       brand_id: brandData.brand_id.toString(),
       user_id: brandData.user_id.toString(),
       brand_name: brandName,
@@ -184,7 +179,7 @@ export default function YourBrand({
     }
 
     try {
-      const response = await fetch(BASE_URL, {
+      const response = await fetch("/api/editbrands", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

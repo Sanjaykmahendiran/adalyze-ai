@@ -172,7 +172,7 @@ export default function MyAdsPage() {
         const fetchAbAdsCount = async () => {
             try {
                 if (!userId) return;
-                const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=abadslist&user_id=${userId}`);
+                const response = await fetch(`/api/abadslist?user_id=${userId}`);
                 if (!response.ok) return;
                 const rawAbAds = await response.json();
                 setTotalAbAds(Array.isArray(rawAbAds) ? rawAbAds.length : 0);
@@ -191,7 +191,7 @@ export default function MyAdsPage() {
         const fetchBrands = async () => {
             try {
                 setClientBrandsLoading(true)
-                const resp = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`)
+                const resp = await fetch(`/api/brandslist?user_id=${userDetails?.user_id}`)
                 if (!resp.ok) throw new Error('Failed to fetch brands list')
                 const data = await resp.json()
                 const normalized = Array.isArray(data)
@@ -213,7 +213,7 @@ export default function MyAdsPage() {
     const buildAdsListUrl = (offset: number, limit: number) => {
         if (!userId) return ''
 
-        const baseUrl = `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&offset=${offset}&limit=${limit}`
+        const baseUrl = `/api/adslist?user_id=${userId}&offset=${offset}&limit=${limit}`
         const params: string[] = []
 
         // Only add brand_id parameter if a specific brand is selected (not empty and not "All Brands")
@@ -322,7 +322,7 @@ export default function MyAdsPage() {
                 return
             }
 
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=abadslist&user_id=${userId}`)
+            const response = await fetch(`/api/abadslist?user_id=${userId}`)
 
             if (!response.ok) {
                 throw new Error('Failed to fetch A/B ads')

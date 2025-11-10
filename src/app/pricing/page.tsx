@@ -181,9 +181,9 @@ const ProPage: React.FC = () => {
         const fetchData = async () => {
             try {
                 const [pricingRes, faqRes, testiRes] = await Promise.all([
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=packages"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=faqlist"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=testimonialslist"),
+                    fetch("/api/packages"),
+                    fetch("/api/faqlist"),
+                    fetch("/api/testimonialslist"),
                 ])
 
                 if (!pricingRes.ok || !faqRes.ok || !testiRes.ok) {
@@ -345,7 +345,7 @@ const ProPage: React.FC = () => {
         setFreeTrialLoading(true)
 
         try {
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=fretra&user_id=${userDetails.user_id}`)
+            const response = await fetch(`/api/fretrial?user_id=${userDetails.user_id}`)
 
             if (!response.ok) {
                 throw new Error('Failed to activate free trial')
@@ -372,7 +372,7 @@ const ProPage: React.FC = () => {
     // Payment verification function
     const verifyPayment = async (paymentData: RazorpayResponse, selectedPlan: PricingPlan) => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/verify.php', {
+            const response = await fetch('/api/verify-payment', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -428,7 +428,7 @@ const ProPage: React.FC = () => {
 
         try {
             // Fetch Razorpay key from API
-            const configResponse = await fetch('https://adalyzeai.xyz/App/api.php?gofor=config');
+            const configResponse = await fetch('/api/config');
             const configData = await configResponse.json();
 
             if (!configResponse.ok || !configData.rzpaykey) {
@@ -438,7 +438,7 @@ const ProPage: React.FC = () => {
             const rzpKey = configData.rzpaykey;
 
             // Create order
-            const orderResponse = await fetch('https://adalyzeai.xyz/App/razorpay.php', {
+            const orderResponse = await fetch('/api/initiate-payment', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

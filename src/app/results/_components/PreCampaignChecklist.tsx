@@ -246,7 +246,7 @@ export default function PreCampaignChecklist({
         try {
             setLoading(true);
             setErr(null);
-            const url = `https://adalyzeai.xyz/App/api.php?gofor=prechecklistlist&ad_upload_id=${adUploadId}`;
+            const url = `/api/prechecklistlist?ad_upload_id=${adUploadId}`;
             const res = await fetch(url, { method: "GET", cache: "no-store" });
             const data = await res.json();
             if (data?.status && Array.isArray(data?.data)) {
@@ -282,7 +282,6 @@ export default function PreCampaignChecklist({
     //   if (!addTaskChecklistId) return;
     //
     //   const payload = {
-    //     gofor: "addadtask",
     //     ad_upload_id: String(adUploadId),
     //     checklist_id: String(addTaskChecklistId),
     //     title: addTaskForm.title,
@@ -294,7 +293,7 @@ export default function PreCampaignChecklist({
     //   };
     //
     //   try {
-    //     const res = await fetch("https://adalyzeai.xyz/App/api.php", {
+    //     const res = await fetch("/api/addadtask", {
     //       method: "POST",
     //       headers: { "Content-Type": "application/json" },
     //       body: JSON.stringify(payload),
@@ -365,12 +364,11 @@ export default function PreCampaignChecklist({
         });
 
         const payload = {
-            gofor: "image_upload",
             imgname: base64, // raw base64 (no data: prefix)
             type: "checklist-evidence",
         };
 
-        const res = await fetch("https://adalyzeai.xyz/App/api.php", {
+        const res = await fetch("/api/image_upload", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -413,7 +411,6 @@ export default function PreCampaignChecklist({
             }
 
             const payload = {
-                gofor: "markchecklistdone",
                 ad_upload_id: String(adUploadId),
                 checklist_id: String(markDoneItem.checklist_id),
                 status: "done",
@@ -421,7 +418,7 @@ export default function PreCampaignChecklist({
                 evidence_url: finalEvidence,
             };
 
-            const res = await fetch("https://adalyzeai.xyz/App/api.php", {
+            const res = await fetch("/api/markchecklistdone", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

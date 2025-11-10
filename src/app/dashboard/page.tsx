@@ -120,7 +120,7 @@ export default function Dashboard() {
   const fetchDashboardData = async (userId: string, brandId?: string) => {
     try {
       const brandParam = brandId && brandId.length > 0 && brandId !== "All Clients" ? `&brand_id=${encodeURIComponent(brandId)}` : ""
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard1&user_id=${userId}${brandParam}`)
+      const response = await fetch(`/api/dashboard1?user_id=${userId}${brandParam}`)
       if (!response.ok) throw new Error('Failed to fetch dashboard data')
       return await response.json()
     } catch (error) {
@@ -133,7 +133,7 @@ export default function Dashboard() {
     try {
       const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }).toUpperCase()
       const brandParam = brandId && brandId.length > 0 && brandId !== "All Clients" ? `&brand_id=${encodeURIComponent(brandId)}` : ""
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard2&user_id=${userId}&month=${currentMonth}${brandParam}`)
+      const response = await fetch(`/api/dashboard2?user_id=${userId}&month=${currentMonth}${brandParam}`)
       if (!response.ok) throw new Error('Failed to fetch dashboard2 data')
       return await response.json()
     } catch (error) {
@@ -144,7 +144,7 @@ export default function Dashboard() {
 
   const fetchCaseStudies = async () => {
     try {
-      const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=recentcslist')
+      const response = await fetch('/api/recentcslist')
       if (!response.ok) throw new Error('Failed to fetch case studies')
       return await response.json()
     } catch (error) {
@@ -156,14 +156,13 @@ export default function Dashboard() {
   const submitExpertRequest = async (formData: any) => {
     try {
       const payload = {
-        gofor: "exptalkrequest",
         user_id: parseInt(userId || ""),
         prefdate: formData.prefdate,
         preftime: formData.preftime,
         comments: formData.comments
       }
 
-      const response = await fetch('https://adalyzeai.xyz/App/api.php', {
+      const response = await fetch('/api/exptalkrequest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +184,7 @@ export default function Dashboard() {
 
   const fetchTop10Ads = async () => {
     try {
-      const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=top10ads')
+      const response = await fetch('/api/top10ads')
       if (!response.ok) throw new Error('Failed to fetch top 10 ads')
       return await response.json()
     } catch (error) {
@@ -196,7 +195,7 @@ export default function Dashboard() {
 
   const fetchTrendingAds = async () => {
     try {
-      const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=trendingads')
+      const response = await fetch('/api/trendingads')
       if (!response.ok) throw new Error('Failed to fetch trending ads')
       return await response.json()
     } catch (error) {
@@ -302,7 +301,7 @@ export default function Dashboard() {
     const fetchBrands = async () => {
       try {
         setClientBrandsLoading(true)
-        const resp = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`)
+        const resp = await fetch(`/api/brandslist?user_id=${userId}`)
         if (!resp.ok) throw new Error('Failed to fetch brands list')
         const data = await resp.json()
         const normalized = Array.isArray(data)

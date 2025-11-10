@@ -30,6 +30,7 @@ interface Transaction {
   date: string;
   order_status: number;
   plan_name: string;
+  tax: string;
 }
 
 interface TransactionTableProps {
@@ -46,7 +47,7 @@ export default function TransactionTable({ userDetails }: TransactionTableProps)
       if (!userId) return;
       try {
         const response = await fetch(
-          `https://adalyzeai.xyz/App/api.php?gofor=paymenthistory&user_id=${userId}`
+          `/api/paymenthistory?user_id=${userId}`
         );
         const data = await response.json();
         setTransactions(data || []);

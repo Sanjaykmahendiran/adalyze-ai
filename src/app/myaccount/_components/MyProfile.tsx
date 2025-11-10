@@ -18,9 +18,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Check, ChevronsUpDown, Search, ChevronDown, X } from "lucide-react"
 
-// Base URL configuration
-export const BASE_URL = "https://adalyzeai.xyz/App/api.php"
-
 interface ProfileProps {
   name?: string
   mobileno?: string
@@ -408,13 +405,12 @@ export default function MyProfile({
     }
 
     const payload = {
-      gofor: "image_upload",
       imgname: base64Data,
       type: type,
     }
 
     try {
-      const response = await fetch(BASE_URL, {
+      const response = await fetch("/api/image_upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -531,7 +527,6 @@ export default function MyProfile({
     const selectedCityName = cities.find((c) => c.id === selectedCityId)?.name || userCity || userDetails?.city || ""
 
     const payload: any = {
-      gofor: "editprofile",
       user_id: userId || "",
       mobileno: userMobileno,
       name: userName,
@@ -553,7 +548,7 @@ export default function MyProfile({
     }
 
     try {
-      const response = await fetch(BASE_URL, {
+      const response = await fetch("/api/editprofile", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -592,7 +587,6 @@ export default function MyProfile({
     const isEdit = agencyData.agency_id && agencyData.agency_id > 0;
 
     const payload = {
-      gofor: isEdit ? "edituseragency" : "adduseragency",
       ...(isEdit && { agency_id: agencyData.agency_id }),
       user_id: userId || "",
       agency_name: agencyData.agency_name,
@@ -612,7 +606,8 @@ export default function MyProfile({
     };
 
     try {
-      const response = await fetch(BASE_URL, {
+       const endpoint = isEdit ? "/api/edituseragency" : "/api/adduseragency"
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

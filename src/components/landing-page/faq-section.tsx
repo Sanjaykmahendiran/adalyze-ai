@@ -23,7 +23,7 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
     const fetchFAQs = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=prefaqlist&category=${category}`);
+        const response = await fetch(`/api/prefaqlist?category=${category}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch FAQs');

@@ -52,7 +52,7 @@ const FeedbackForm: React.FC = () => {
     try {
       if (!userId) return;
 
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=fulladsnamelist&user_id=${userId}`;
+      const url = `/api/fulladsnamelist?user_id=${userId}`;
       const response = await fetch(url);
       const result = await response.json();
 
@@ -72,11 +72,10 @@ const FeedbackForm: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          gofor: "feedback",
           user_id: userId,
           ad_upload_id: feedbackData.ad_upload_id,
           rating: feedbackData.rating,

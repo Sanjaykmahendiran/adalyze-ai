@@ -27,7 +27,7 @@ interface BlogPost {
 
 async function getBlogPostById(slug: string): Promise<BlogPost | null> {
     try {
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=getblog&slug=${slug}`, {
+        const response = await fetch(`/api/getblog?slug=${slug}`, {
             cache: 'no-store'
         })
         if (!response.ok) throw new Error("Failed to fetch blog post")
@@ -40,7 +40,7 @@ async function getBlogPostById(slug: string): Promise<BlogPost | null> {
 
 async function getAllBlogPosts(): Promise<BlogPost[]> {
     try {
-        const response = await fetch("https://adalyzeai.xyz/App/api.php?gofor=blogslist", {
+        const response = await fetch("/api/blogslist", {
             cache: 'no-store'
         })
         if (!response.ok) throw new Error("Failed to fetch blog posts")

@@ -88,8 +88,8 @@ export default function ABTestResults() {
                 }
                 if (!adIdA || !adIdB) throw new Error("Missing ad IDs for comparison");
                 const [responseA, responseB] = await Promise.all([
-                    fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdA}${userIdParam}`),
-                    fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdB}${userIdParam}`),
+                    fetch(`/api/addetail?ad_upload_id=${adIdA}${userIdParam}`),
+                    fetch(`/api/addetail?ad_upload_id=${adIdB}${userIdParam}`),
                 ]);
                 if (!responseA.ok || !responseB.ok) throw new Error("Failed to fetch ad details");
                 const [resultA, resultB] = await Promise.all([responseA.json(), responseB.json()]);
@@ -179,7 +179,7 @@ export default function ABTestResults() {
             }
 
             const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=abaddetail&ad_upload_id1=${adIdA}&ad_upload_id2=${adIdB}`
+                `/api/ab-analyze?ad_upload_id1=${adIdA}&ad_upload_id2=${adIdB}`
             );
 
             if (!response.ok) {
@@ -215,7 +215,7 @@ export default function ABTestResults() {
         setDeleteLoading(true);
 
         try {
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=deleteabad&ad_upload_id_a=${adIdA}&ad_upload_id_b=${adIdB}`);
+            const response = await fetch(`/api/delete-ab-ad?ad_upload_id_a=${adIdA}&ad_upload_id_b=${adIdB}`);
 
             if (!response.ok) {
                 throw new Error('Failed to delete A/B ad');

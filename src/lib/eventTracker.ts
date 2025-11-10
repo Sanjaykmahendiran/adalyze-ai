@@ -4,7 +4,6 @@ import Cookies from "js-cookie";
 import debounce from "lodash.debounce";
 
 interface EventPayload {
-    gofor: "addevents";
     user_id: string | null;
     event_name: string;
     page_url: string;
@@ -20,7 +19,7 @@ interface EventPayload {
     };
 }
 
-const EVENT_API_URL = "https://adalyzeai.xyz/App/api.php";
+const EVENT_API_URL = "/api/addevents";
 const EVENT_QUEUE_KEY = "adalyze_event_queue_v1"; // versionable
 
 // == Utility function to extract metadata from URL ==
@@ -133,7 +132,6 @@ export function trackEvent(eventName: string, pageUrl: string, email?: string | 
     const metadata = extractMetadataFromUrl();
     
     const payload: EventPayload = {
-        gofor: "addevents",
         user_id: Cookies.get("userId") || null,
         event_name: eventName,
         page_url: pageUrl,

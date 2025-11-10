@@ -401,7 +401,7 @@ export default function ResultsPage() {
     setDeleteLoading(true)
 
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=deletead&ad_upload_id=${adId}`)
+      const response = await fetch(`/api/deletead?ad_upload_id=${adId}`)
 
       if (!response.ok) {
         throw new Error('Failed to delete ad')
@@ -446,7 +446,7 @@ export default function ResultsPage() {
             userIdParam = `&user_id=${userIdFromToken}`;
           }
         }
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
+        const response = await fetch(`/api/addetail?ad_upload_id=${adUploadId}${userIdParam}`);
         if (!response.ok) throw new Error('Failed to fetch ad details');
         const result = await response.json();
         if (!result.success) throw new Error(result.message || 'API returned error');
@@ -482,7 +482,7 @@ export default function ResultsPage() {
         if (userDetails?.user_id) {
           userIdParam = `&user_id=${userDetails.user_id}`;
         }
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
+        const response = await fetch(`/api/addetail?ad_upload_id=${adUploadId}${userIdParam}`);
         if (!response.ok) throw new Error('Failed to fetch ad details');
         const result = await response.json();
         if (!result.success) throw new Error(result.message || 'API returned error');

@@ -44,7 +44,7 @@ export default function ChangePasswordForm({ email }: ChangePasswordFormProps) {
     }
 
     try {
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=loggedupdatepassword&email=${encodeURIComponent(email)}&oldpassword=${encodeURIComponent(formData.oldPassword)}&password=${encodeURIComponent(formData.newPassword)}&confirmpassword=${encodeURIComponent(formData.confirmPassword)}`;
+      const url = `/api/loggedupdatepassword?email=${encodeURIComponent(email)}&oldpassword=${encodeURIComponent(formData.oldPassword)}&password=${encodeURIComponent(formData.newPassword)}&confirmpassword=${encodeURIComponent(formData.confirmPassword)}`;
 
       const response = await fetch(url, {
         method: "GET",

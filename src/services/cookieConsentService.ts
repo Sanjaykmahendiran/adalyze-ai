@@ -1,4 +1,3 @@
-import { axiosInstance } from "@/configs/axios";
 import { getSessionId } from "@/lib/sessionManager";
 import Cookies from "js-cookie";
 
@@ -98,13 +97,19 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
 
     console.log("Sending cookie consent:", payload);
 
-    const response = await axiosInstance.post("", payload, {
+    const response = await fetch("/api/consent", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify(payload),
     });
 
-    const result: AddConsentResponse = response.data;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: AddConsentResponse = await response.json();
     
     // If successful, save the cookie_id from response to cookies
     if (result.status === "success" && result.cookie_id) {
@@ -127,14 +132,18 @@ export async function getCookieConsent(cookieId?: string): Promise<GetConsentRes
     // Use provided cookieId, or get from cookies, or generate new one
     const id = cookieId || getCookieId();
     
-    const response = await axiosInstance.get("", {
-      params: {
-        gofor: "getconsent",
-        cookie_id: id,
-      },
+    const params = new URLSearchParams({
+      gofor: "getconsent",
+      cookie_id: id,
     });
 
-    return response.data;
+    const response = await fetch(`/api/consent?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error("Get cookie consent API error:", error);
     return null;

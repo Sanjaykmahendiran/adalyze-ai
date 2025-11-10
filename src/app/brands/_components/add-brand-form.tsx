@@ -106,12 +106,11 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
         try {
             const base64String = await readFileAsBase64(file)
             const imageUploadPayload = {
-                gofor: "image_upload",
                 imgname: base64String,
                 type: "Brand",
             }
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+            const response = await fetch("/api/image_upload", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(imageUploadPayload),
@@ -177,28 +176,22 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
         setIsSubmitting(true)
         try {
             const isEditing = !!editingBrand
-            const payload = isEditing
-                ? {
-                    gofor: "editbrands",
-                    brand_id: editingBrand.brand_id.toString(),
-                    user_id: userId,
-                    brand_name: brandName.trim(),
-                    email: brandEmail.trim(),
-                    mobile: brandMobile.trim(),
-                    website: website,
-                    logo_url: logoUrl,
-                }
-                : {
-                    gofor: "addbrand",
-                    user_id: userId,
-                    brand_name: brandName.trim(),
-                    email: brandEmail.trim(),
-                    mobile: brandMobile.trim(),
-                    website: website,
-                    logo_url: logoUrl,
-                }
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+            // ✅ No 'gofor' in payload - handled by dynamic route
+            const payload = {
+                ...(isEditing && { brand_id: editingBrand.brand_id.toString() }),
+                user_id: userId,
+                brand_name: brandName.trim(),
+                email: brandEmail.trim(),
+                mobile: brandMobile.trim(),
+                website: website,
+                logo_url: logoUrl,
+            }
+
+            // ✅ Dynamic route: /api/editbrands or /api/addbrand (gofor hidden)
+            const endpoint = isEditing ? "/api/editbrands" : "/api/addbrand"
+
+            const response = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

@@ -261,7 +261,7 @@ export default function RegistrationForm() {
     setIsCheckingReferral(true);
     try {
       const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=usergetbyref&referral_code=${code}`
+        `/api/usergetbyref?referral_code=${code}`
       );
 
       if (response.ok) {
@@ -320,7 +320,7 @@ export default function RegistrationForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -346,13 +346,12 @@ export default function RegistrationForm() {
         // Call addidentifier API after step 1 completion
         try {
           const cookieId = Cookies.get('cookie_id') || '';
-          const addIdentifierResponse = await fetch("https://adalyzeai.xyz/App/api.php", {
+          const addIdentifierResponse = await fetch("/api/addidentifier", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              gofor: "addidentifier",
               cookie_id: cookieId,
               user_id: data.user_id,
               email: values.email,
@@ -438,7 +437,7 @@ export default function RegistrationForm() {
         payload.utm_term = utmTerm;
       }
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

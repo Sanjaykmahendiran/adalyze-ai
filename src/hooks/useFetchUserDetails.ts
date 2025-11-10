@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import Cookies from "js-cookie";
 import { usePathname } from "next/navigation";
 import useLogout from "@/hooks/useLogout";
-import { axiosInstance } from "@/configs/axios";
 
 interface Brand {
   brand_id: number;
@@ -113,21 +112,18 @@ const useFetchUserDetails = () => {
         isFetchingRef.current = true;
         setLoading(true);
 
-        const params = {
-          gofor: "userget",
-          user_id: userId,
-        };
-
         try {
-          const response = await axiosInstance.get<UserDetails>("", { params });
+          const response = await fetch(`/api/userget?user_id=${userId}`);
 
-          if (!response.data || response.status !== 200) {
+          if (!response.ok || response.status !== 200) {
             logout();
             fetchedUserIdRef.current = null;
             return;
           }
 
-          setUserDetails(response.data);
+          const data: UserDetails = await response.json();
+
+          setUserDetails(data);
           fetchedUserIdRef.current = userId;
         } catch (err) {
           console.error("Error fetching user details:", err);

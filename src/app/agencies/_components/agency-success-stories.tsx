@@ -89,7 +89,7 @@ export default function AgencySuccessStories() {
       try {
         setIsLoading(true)
         setIsError(false)
-        const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=agusecaselist", { cache: "no-store" })
+        const res = await fetch("/api/agusecaselist", { cache: "no-store" })
         const data: CaseStudyApiResponse[] = await res.json()
         if (!Array.isArray(data)) throw new Error("Invalid response")
 

@@ -14,7 +14,7 @@ const nextConfig = {
   images: { 
     unoptimized: true,
   },
-  output: 'export',
+  // output: 'export', // ⚠️ Commented out: API routes require a Node.js server and cannot work with static export
   typescript: {
     ignoreBuildErrors: true,
   },

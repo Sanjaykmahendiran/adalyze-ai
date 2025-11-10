@@ -125,7 +125,7 @@ export default function RegistrationStep2Form({
     setIsCheckingReferral(true);
     try {
       const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=usergetbyref&referral_code=${code}`
+        `/api/usergetbyref?referral_code=${code}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -175,7 +175,6 @@ export default function RegistrationStep2Form({
     setIsLoading(true);
     try {
       const payload: any = {
-        gofor: "register",
         user_id: userId,
         name: values.name,
         password: values.password,
@@ -191,7 +190,7 @@ export default function RegistrationStep2Form({
       if (utmCampaign) payload.utm_campaign = utmCampaign;
       if (utmContent) payload.utm_content = utmContent;
       if (utmTerm) payload.utm_term = utmTerm;
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

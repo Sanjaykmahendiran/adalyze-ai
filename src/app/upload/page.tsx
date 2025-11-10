@@ -312,7 +312,7 @@ export default function UploadPage() {
 
     const fetchIndustries = async () => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=industrylist')
+            const response = await fetch('/api/industrylist')
             if (!response.ok) {
                 throw new Error('Failed to fetch industries')
             }
@@ -329,7 +329,7 @@ export default function UploadPage() {
     const fetchBrands = async () => {
         setLoadingBrands(true)
         try {
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`)
+            const response = await fetch(`/api/brandslist?user_id=${userId}`)
             if (!response.ok) {
                 throw new Error('Failed to fetch brands')
             }
@@ -392,7 +392,7 @@ export default function UploadPage() {
                 })
             }, 200)
 
-            const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
+            const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData,
             })
@@ -503,7 +503,7 @@ export default function UploadPage() {
                 formData.append('file', file)
                 formData.append('user_id', userId)
 
-                const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
+                const response = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData,
                 })
@@ -587,7 +587,7 @@ export default function UploadPage() {
             formData.append('user_id', userId)
             formData.append('file', fileToUpload)
 
-            const response = await fetch('https://adalyzeai.xyz/App/vidadupl.php', {
+            const response = await fetch('/api/video-upload', {
                 method: 'POST',
                 body: formData,
             })
@@ -716,7 +716,7 @@ export default function UploadPage() {
             if (activeTab === "video") analyzeData.duration = videoDuration
             if (activeTab === "video") analyzeData.transcript = videoTranscript
 
-            const response = await fetch('https://adalyzeai.xyz/App/analyze.php', {
+            const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(analyzeData),

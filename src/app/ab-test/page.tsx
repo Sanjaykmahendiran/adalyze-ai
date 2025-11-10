@@ -128,7 +128,7 @@ export default function AdComparisonUpload() {
 
     const fetchIndustries = async () => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=industrylist')
+            const response = await fetch('/api/industrylist')
             if (!response.ok) {
                 throw new Error('Failed to fetch industries')
             }
@@ -283,7 +283,7 @@ export default function AdComparisonUpload() {
                 })
             }, 200)
 
-            const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
+            const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData,
             })
@@ -407,7 +407,7 @@ export default function AdComparisonUpload() {
                 funnel_stage: targetInfo?.funnelStage,
             }
 
-            const response = await fetch('https://adalyzeai.xyz/App/abanalyze.php', {
+            const response = await fetch('/api/ab-analyze', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

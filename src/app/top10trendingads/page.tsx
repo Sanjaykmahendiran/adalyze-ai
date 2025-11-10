@@ -51,7 +51,7 @@ export default function Top10TrendingAdsWall() {
       try {
         setLoading(true)
         const response = await fetch(
-          "https://adalyzeai.xyz/App/api.php?gofor=trendingads"
+          "/api/trendingads"
         )
 
         if (!response.ok) {

@@ -82,13 +82,12 @@ const PricingHelp: React.FC = () => {
         try {
             setIsSubmitting(true);
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+            const response = await fetch("/api/needhelp", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    gofor: "needhelp",
                     user_id: userId || null,
                     email: userId ? null : email,
                     category,

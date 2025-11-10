@@ -13,6 +13,7 @@ import toast from "react-hot-toast"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import SupportPageSkeleton from "@/components/Skeleton-loading/SupportPageSkeleton"
+import ExpertConsultationPopup from "@/components/expert-form"
 
 interface FAQ {
   faq_id: number
@@ -59,12 +60,6 @@ export default function SupportPage() {
     category: "",
     message: "",
     imgname: ""
-  })
-
-  const [expertCallData, setExpertCallData] = useState({
-    prefdate: "",
-    preftime: "",
-    comments: ""
   })
 
   const [feedbackData, setFeedbackData] = useState({
@@ -178,8 +173,7 @@ export default function SupportPage() {
     }
   }
 
-  const handleExpertCallSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleExpertCallSubmit = async (data: { prefdate: string; preftime: string; comments: string }) => {
     try {
       setLoading(true)
       const userId = Cookies.get('userId')
@@ -192,20 +186,22 @@ export default function SupportPage() {
         body: JSON.stringify({
           gofor: "exptalkrequest",
           user_id: userId,
-          prefdate: expertCallData.prefdate,
-          preftime: expertCallData.preftime,
-          comments: expertCallData.comments
+          prefdate: data.prefdate,
+          preftime: data.preftime,
+          comments: data.comments
         })
       })
 
       if (response.ok) {
         toast.success('Expert call request submitted successfully!')
-        setExpertCallData({ prefdate: "", preftime: "", comments: "" })
         setShowExpertDialog(false)
+      } else {
+        throw new Error('Failed to submit request')
       }
     } catch (error) {
       console.error("Error submitting expert call request:", error)
       toast.error('Failed to submit expert call request. Please try again.')
+      throw error
     } finally {
       setLoading(false)
     }
@@ -443,76 +439,16 @@ export default function SupportPage() {
           </div>
 
           {/* Expert Call Dialog */}
-          {showExpertDialog && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-black border border-[#2b2b2b] rounded-lg p-4 sm:p-6 w-full max-w-md">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base sm:text-lg font-semibold">Schedule Expert Call</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowExpertDialog(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <form onSubmit={handleExpertCallSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Preferred Date</label>
-                    <Input
-                      type="date"
-                      value={expertCallData.prefdate}
-                      onChange={(e) => setExpertCallData({ ...expertCallData, prefdate: e.target.value })}
-                      className="bg-[#171717] border-[#2b2b2b] text-sm sm:text-base"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Preferred Time</label>
-                    <Input
-                      type="time"
-                      value={expertCallData.preftime}
-                      onChange={(e) => setExpertCallData({ ...expertCallData, preftime: e.target.value })}
-                      className="bg-[#171717] border-[#2b2b2b] text-sm sm:text-base"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Comments</label>
-                    <Textarea
-                      value={expertCallData.comments}
-                      onChange={(e) => setExpertCallData({ ...expertCallData, comments: e.target.value })}
-                      className="bg-[#171717] border-[#2b2b2b] min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
-                      placeholder="What would you like to discuss?"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1 text-sm sm:text-base"
-                      onClick={() => setShowExpertDialog(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="flex-1 text-sm sm:text-base" disabled={loading}>
-                      {loading ? "Scheduling..." : "Schedule Call"}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
+          <ExpertConsultationPopup
+            isOpen={showExpertDialog}
+            onClose={() => setShowExpertDialog(false)}
+            onSubmit={handleExpertCallSubmit}
+          />
 
           {/* Feedback Dialog */}
           {showFeedbackDialog && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-black border border-[#2b2b2b] rounded-lg p-4 sm:p-6 w-full max-w-md">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-black border border-primary rounded-lg p-4 sm:p-6 w-full max-w-md backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base sm:text-lg font-semibold">Share Your Feedback</h3>
                   <Button

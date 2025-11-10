@@ -10,6 +10,7 @@ import loginlogo from "@/assets/ad-logo.webp"
 import AuthLoginForm from "@/app/login/_components/auth-login-form"
 import { login } from "@/services/authService"
 import { trackEvent } from "@/lib/eventTracker"
+import RegistrationStep2Form from "../register/_components/RegistrationStep2Form";
 
 interface LoginFormData {
   token?: string;
@@ -23,61 +24,78 @@ const LoginPage = () => {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const searchParams = useSearchParams()
+  const [showStep2, setShowStep2] = useState(false);
+  const [userIdStep2, setUserIdStep2] = useState("");
+  const [emailStep2, setEmailStep2] = useState("");
+  const [sourceFromParams, setSourceFromParams] = useState("");
+  const [referralCode, setReferralCode] = useState("");
 
 
-  const onSubmit = async (data: LoginFormData) => {
-    setLoading(true);
-    try {
-      let loginData;
+    const onSubmit = async (data: LoginFormData) => {
+      setLoading(true);
+      try {
+        let loginData;
 
-      if (data.token) {
-        loginData = await login({ google_token: data.token });
-      } else if (data.nouptoken) {
-        loginData = await login({ nouptoken: data.nouptoken });
-      } else {
-        loginData = await login(data);
-      }
-
-      if (loginData.status === "success" && loginData.user) {
-        const user = loginData.user;
-        Cookies.set("userId", user.user_id.toString(), { expires: 7 });
-        Cookies.set("email", user.email, { expires: 7 });
-
-        let eventName = "Login_completed";
-        if (data.token) eventName = "google_login_completed";
-        else if (data.nouptoken) eventName = "email_confirmation_login_completed";
-
-        trackEvent(eventName, window.location.href, user.email);
-        toast.success("Login successful!");
-
-        // ✅ Get redirect page param (if exists)
-        const redirectPage = searchParams.get("page");
-
-        if (redirectPage) {
-          router.push(`/${redirectPage}`);
-          return; // ✅ stop further routing logic
+        if (data.token) {
+          loginData = await login({ google_token: data.token });
+        } else if (data.nouptoken) {
+          loginData = await login({ nouptoken: data.nouptoken });
+        } else {
+          loginData = await login(data);
         }
 
-        // ✅ Default logic (as before)
-        if (user.payment_status === 0) {
-          if (user.fretra_status === 1) {
-            router.push("/dashboard");
+        if (loginData.status === "success" && loginData.user) {
+          const user = loginData.user;
+          
+          // Check if registration is incomplete (customize fields as needed)
+          if ((!user.name || !user.type || !user.city) && (data.token || data.nouptoken)) {
+            setShowStep2(true);
+            setEmailStep2(user.email);
+            setUserIdStep2(user.user_id.toString());
+            setSourceFromParams(""); // pass/derive if you need more context from params or response
+            setReferralCode(""); // pass from URL if needed (optionally set from searchParams)
+            setLoading(false);
+            return;
+          }
+
+          Cookies.set("userId", user.user_id.toString(), { expires: 7 });
+          Cookies.set("email", user.email, { expires: 7 });
+
+          let eventName = "Login_completed";
+          if (data.token) eventName = "google_login_completed"; 
+          else if (data.nouptoken) eventName = "email_confirmation_login_completed";
+
+          trackEvent(eventName, window.location.href, user.email);
+          toast.success("Login successful!");
+
+          // ✅ Get redirect page param (if exists)
+          const redirectPage = searchParams.get("page");
+
+          if (redirectPage) {
+            router.push(`/${redirectPage}`);
+            return; // ✅ stop further routing logic
+          }
+
+          // ✅ Default logic (as before)
+          if (user.payment_status === 0) {
+            if (user.fretra_status === 1) {
+              router.push("/dashboard");
+            } else {
+              router.push("/pricing");
+            }
           } else {
-            router.push("/pricing");
+            router.push("/dashboard");
           }
         } else {
-          router.push("/dashboard");
+          toast.error(loginData.message || "Login failed. Please check your credentials.");
         }
-      } else {
-        toast.error(loginData.message || "Login failed. Please check your credentials.");
+      } catch (error) {
+        console.error("Login error:", error);
+        toast.error("Something went wrong. Please try again.");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
 
   useEffect(() => {
@@ -115,8 +133,21 @@ const LoginPage = () => {
                 <p className="text-gray-300 text-sm">Turn every ad into an opportunity</p>
               </div>
               <div className="mt-8">
-                {/* Auth form with API integration */}
-                <AuthLoginForm onSubmit={onSubmit} loading={loading} />
+                {showStep2 ? (
+                  <RegistrationStep2Form
+                    email={emailStep2}
+                    userId={userIdStep2}
+                    sourceFromParams={sourceFromParams}
+                    referralCode={referralCode}
+                    onComplete={() => {
+                      setShowStep2(false);
+                      toast.success("Registration completed!");
+                      setTimeout(() => router.push("/emailconfrimation"), 1500);
+                    }}
+                  />
+                ) : (
+                  <AuthLoginForm onSubmit={onSubmit} loading={loading} />
+                )}
               </div>
 
               <div className="text-xs text-center mt-4 mb-4">

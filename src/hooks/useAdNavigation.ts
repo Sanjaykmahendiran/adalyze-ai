@@ -6,7 +6,7 @@ import { generateAdToken } from '@/lib/tokenUtils';
  */
 export function useAdNavigation() {
   const router = useRouter();
-  
+
   /**
    * Navigate to results page with token instead of direct ad_id
    */
@@ -14,7 +14,17 @@ export function useAdNavigation() {
     const token = generateAdToken(adId, userId);
     router.push(`/results?ad-token=${token}`);
   };
-  
+
+  const navigateToTrendingAdResults = (adId: string, userId?: string | number) => {
+    const token = generateAdToken(adId, userId);
+    router.push(`/results?trending-token=${token}`);
+  };
+
+  const navigateToTop10AdResults = (adId: string, userId?: string | number) => {
+    const token = generateAdToken(adId, userId);
+    router.push(`/results?top10-token=${token}`);
+  };
+
   /**
    * Navigate to AB results page with tokens
    */
@@ -23,9 +33,11 @@ export function useAdNavigation() {
     const tokenB = generateAdToken(adIdB, userId);
     router.push(`/ab-results?ad-token-a=${tokenA}&ad-token-b=${tokenB}`);
   };
-  
+
   return {
     navigateToAdResults,
     navigateToABResults,
+    navigateToTrendingAdResults,
+    navigateToTop10AdResults,
   };
 }

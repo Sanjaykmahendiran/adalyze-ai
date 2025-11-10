@@ -746,7 +746,7 @@ export default function AdComparisonUpload() {
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder="Select language" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-[300px] overflow-y-auto">
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-[60vh] overflow-y-auto overscroll-contain [touch-action:pan-y] z-[1000]">
                                                     {/* English */}
                                                     <SelectItem value="en-US">English (United States)</SelectItem>
                                                     <SelectItem value="en-GB">English (United Kingdom)</SelectItem>

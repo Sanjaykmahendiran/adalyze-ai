@@ -423,6 +423,10 @@ export function getAdIdFromUrlParams(searchParams: URLSearchParams): string {
   const shareToken = searchParams.get('token');
   // Check for internal navigation token
   const adToken = searchParams.get('ad-token');
+  // Check for top10-token
+  const top10Token = searchParams.get('top10-token');
+  // Check for trending-token
+  const trendingToken = searchParams.get('trending-token');
   const directAdId = searchParams.get('ad_id');
 
   if (shareToken && isTokenParam(shareToken)) {
@@ -431,6 +435,14 @@ export function getAdIdFromUrlParams(searchParams: URLSearchParams): string {
 
   if (adToken && isTokenParam(adToken)) {
     return parseAdIdFromToken(adToken);
+  }
+
+  if (top10Token && isTokenParam(top10Token)) {
+    return parseAdIdFromToken(top10Token);
+  }
+
+  if (trendingToken && isTokenParam(trendingToken)) {
+    return parseAdIdFromToken(trendingToken);
   }
 
   return directAdId || '';

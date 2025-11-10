@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import Image from "next/image";
-import { Download } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import AdalyzeLogo from "@/assets/adlyze-black-logo.png";
+import { motion } from "framer-motion";
 
 interface Transaction {
+  tax: number;
   id: string;
   order_id: string;
   payment_id: string;
@@ -26,9 +28,11 @@ interface InvoicePdfProps {
 
 export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleDownload = async () => {
     if (!invoiceRef.current) return;
+    setLoading(true);
     try {
       const html2canvas = (await import("html2canvas")).default;
       const jsPDF = (await import("jspdf")).default;
@@ -61,6 +65,8 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Error generating PDF. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,6 +82,20 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
 
   return (
     <div className="space-y-4">
+      {/* Loading overlay for PDF generation */}
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
+          <motion.div
+            className="bg-[#1f1f21] text-white px-4 py-3 rounded-xl shadow-xl border border-white/10 flex items-center gap-3"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+          >
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span className="text-sm">Generating PDF...</span>
+          </motion.div>
+        </div>
+      )}
       {/* A4-width screen wrapper: 794px ≈ A4 width at 96 PPI */}
       <div className="overflow-x-auto">
         <div className="mx-auto" style={{ width: "794px" }}>
@@ -93,7 +113,11 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
                   <p className="font-medium">Techades eBiz Arena</p>
                   <p>9A, 1st Floor, Chinnakannara Street, Mayiladuthurai</p>
                   <p>TamilNadu, India, 609001</p>
-                  <p>GSTIN : 33AZTPK2721N1ZZ</p>
+                  {transaction.currency?.toUpperCase() === "USD" ? (
+                    <p>LUT No : 33AZTPK2721N1ZZ</p>
+                  ) : (
+                    <p>GSTIN No : 33AZTPK2721N1ZZ</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -121,12 +145,17 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
                           .filter(Boolean)
                           .join(", ")}
                       </p>
-                      {userDetails?.agency?.gst_no && <p>GSTIN: {userDetails.agency.gst_no}</p>}
+                      {userDetails?.agency?.gst_no && (
+                        <p>
+                          {transaction.currency?.toUpperCase() === "USD" ? "LUT No" : "GSTIN No"}: {userDetails.agency.gst_no}
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>
                       <p className="font-medium">{userDetails?.name || "N/A"}</p>
                       <p>{userDetails?.email || "N/A"}</p>
+                      {userDetails?.address && <p>{userDetails.address}</p>}
                       <p>
                         {[
                           userDetails?.city,
@@ -137,6 +166,11 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
                           .filter(Boolean)
                           .join(", ")}
                       </p>
+                      {userDetails?.gst_no && (
+                        <p>
+                          {transaction.currency?.toUpperCase() === "USD" ? "LUT No" : "GSTIN No"}: {userDetails.gst_no}
+                        </p>
+                      )}
                     </>
                   )}
                 </div>
@@ -205,7 +239,7 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
               <div className="flex justify-between items-center">
                 <span style={{ color: "#374151" }}>Tax</span>
                 <span style={{ color: "#374151" }}>
-                  {transaction.currency} 0.00
+                  {transaction.currency} {transaction.tax}
                 </span>
               </div>
               <div
@@ -246,7 +280,7 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
                   style={{ color: "#db4900", textDecoration: "underline" }}
                 >
                   www.adalyze.app
-                </a>  
+                </a>
               </p>
             </div>
           </div>

@@ -34,7 +34,19 @@ const ExpertConsultationPopup = ({ isOpen, onClose, onSubmit }: {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-black border border-[#db4900]/30 rounded-2xl max-w-md w-full p-6 space-y-4 relative">
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          cursor: pointer;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        input[type="time"]::-webkit-calendar-picker-indicator:hover {
+          opacity: 0.8;
+        }
+      `}} />
+      <div className="bg-black border border-primary rounded-2xl max-w-md w-full p-6 space-y-4 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
@@ -70,28 +82,16 @@ const ExpertConsultationPopup = ({ isOpen, onClose, onSubmit }: {
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Preferred Time
             </label>
-            <Select
+            <input
+              type="time"
               value={formData.preftime}
-              onValueChange={(value) =>
-                setFormData({ ...formData, preftime: value })
+              onChange={(e) =>
+                setFormData({ ...formData, preftime: e.target.value })
               }
-            >
-              <SelectTrigger className="w-full bg-[#171717] border border-[#3d3d3d] rounded-lg text-white focus:outline-none focus:border-[#db4900]">
-                <SelectValue placeholder="Select time" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#171717] border border-[#3d3d3d] text-white">
-                <SelectItem value="09:00 AM">09:00 AM</SelectItem>
-                <SelectItem value="10:00 AM">10:00 AM</SelectItem>
-                <SelectItem value="11:00 AM">11:00 AM</SelectItem>
-                <SelectItem value="12:00 PM">12:00 PM</SelectItem>
-                <SelectItem value="01:00 PM">01:00 PM</SelectItem>
-                <SelectItem value="02:00 PM">02:00 PM</SelectItem>
-                <SelectItem value="03:00 PM">03:00 PM</SelectItem>
-                <SelectItem value="04:00 PM">04:00 PM</SelectItem>
-                <SelectItem value="05:00 PM">05:00 PM</SelectItem>
-              </SelectContent>
-            </Select>
+              className="w-full bg-[#171717] border border-[#3d3d3d] rounded-lg text-white px-3 py-2 focus:outline-none focus:border-[#db4900]"
+            />
           </div>
+
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">

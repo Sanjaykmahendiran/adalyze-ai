@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation"
 import { User, MessageSquare, HelpCircle, Users, Shield, X, ReceiptText, Building2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import ProfileTabs from "./_components/MyProfile"
-import FeedbackForm from "./_components/feedback-form"
 import PolicyComponent from "./_components/policies"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
@@ -119,20 +118,13 @@ export default function MyAccount() {
     },
     {
       id: 3,
-      title: "Feedback",
-      description: "Share your experience with us.",
-      icon: (isActive: boolean) => <MessageSquare className={`w-8 h-8 ${isActive ? "text-white" : "text-primary"}`} />,
-      component: <FeedbackForm />,
-    },
-    {
-      id: 4,
       title: "Policies",
       description: "Read our policies and terms of use.",
       icon: (isActive: boolean) => <Shield className={`w-8 h-8 ${isActive ? "text-white" : "text-primary"}`} />,
       component: <PolicyComponent />,
     },
     {
-      id: 5,
+      id: 4,
       title: "Interact",
       description: "share your thoughts.",
       icon: (isActive: boolean) => (
@@ -141,7 +133,7 @@ export default function MyAccount() {
       component: <Interact />,
     },
   ];
-  
+
   const cards = allCards.filter(card => {
     if (card.title === "Your Brand") {
       return userDetails?.type === "1" && userDetails?.payment_status === 1;

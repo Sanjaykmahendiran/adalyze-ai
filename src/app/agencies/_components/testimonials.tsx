@@ -255,15 +255,6 @@ export default function AgenciesTestimonials() {
                                                     />
                                                 </div>
 
-                                                {/* Floating ring animation */}
-                                                <motion.div
-                                                    className="absolute inset-0 border-2  rounded-full"
-                                                    animate={{
-                                                        scale: [1, 1.4, 1],
-                                                        opacity: [0.5, 0, 0.5]
-                                                    }}
-                                                    transition={{ duration: 2, repeat: Infinity }}
-                                                />
                                             </motion.div>
 
                                             <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1 sm:mb-2">
@@ -294,7 +285,7 @@ export default function AgenciesTestimonials() {
                                         {/* Content */}
                                         <div className="flex-1 w-full">
                                             <motion.blockquote
-                                                className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-white/90 leading-relaxed mb-4 sm:mb-6 md:mb-8 font-light italic"
+                                                className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-white/90 leading-relaxed mb-4 sm:mb-6 md:mb-8 font-light italic"
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 transition={{ delay: 0.3, duration: 0.8 }}
@@ -313,7 +304,7 @@ export default function AgenciesTestimonials() {
                                                         transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
                                                         whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
                                                     >
-                                                        <span className="text-xs sm:text-sm md:text-base text-white/70 font-medium leading-tight">
+                                                        <span className="text-xs sm:text-sm text-white/70 font-medium leading-tight">
                                                             {result}
                                                         </span>
                                                     </motion.div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Eye, Facebook, Instagram, MessageCircle, FileImage, Upload, Linkedin, TrendingUp, TrendingDown, ArrowLeft, AlertTriangle, X, Trash2 } from "lucide-react"
+import { Search, Eye, Facebook, Instagram, MessageCircle, FileImage, Upload, Linkedin, TrendingUp, TrendingDown, ArrowLeft, AlertTriangle, X, Trash2, MoreVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -18,6 +18,7 @@ import TotalAdsAnalyzed from "@/assets/dashboard/total-analyze.png"
 import AverageScore from "@/assets/dashboard/average-score.png"
 import TotalSuggestions from "@/assets/dashboard/total-suggestion.png"
 import UserLayout from "@/components/layouts/user-layout"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Define the API response interface
 interface AdsApiResponse {
@@ -403,33 +404,66 @@ export default function MyAdsPage() {
     return (
         <UserLayout userDetails={userDetails}>
             {loading ? <BrandDetailSkeleton /> : (
-                <div className="w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-28 pt-0">
+                <div className="w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-28 pt-4">
                     <div className="mb-6 sm:mb-8">
                         <div>
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="bg-black p-2 rounded-full cursor-pointer flex-shrink-0" onClick={() => router.back()}>
-                                        <ArrowLeft className="cursor-pointer" />
+
+                                {/* Left Section - Title + Mobile Menu */}
+                                <div className="flex items-center justify-between w-full sm:w-auto">
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className="bg-black p-2 rounded-full cursor-pointer flex-shrink-0"
+                                            onClick={() => router.back()}
+                                        >
+                                            <ArrowLeft className="cursor-pointer" />
+                                        </div>
+                                        <div className="flex flex-col text-left">
+                                            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{brandName}</h1>
+                                            <p className="text-gray-300 text-sm">
+                                                Manage and analyze {brandName}'s creative assets here
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col text-left">
-                                        <h1 className="text-2xl sm:text-3xl font-bold mb-2">{brandName}</h1>
-                                        <p className="text-gray-300 text-sm">
-                                            Manage and analyze {brandName}'s creative assets here
-                                        </p>
+
+                                    {/* Mobile 3-dot menu */}
+                                    <div className="sm:hidden">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger>
+                                                <MoreVertical className="w-6 h-6 text-white" />
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="bg-[#171717] border border-[#3d3d3d] text-white p-2 space-y-2">
+                                                <DropdownMenuItem
+                                                    onClick={() => setShowDeleteModal(true)}
+                                                    className="text-red-400 border border-red-500/40 bg-red-500/10"
+                                                >
+                                                    <Trash2 className="w-4 h-4 mr-2" /> Delete Brand
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => router.push("/upload")}
+                                                    className="text-white border border-[#db4900]/40 bg-[#db4900]"
+                                                >
+                                                    <Upload className="w-4 h-4 mr-2" /> Upload New Ad
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
-                                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+
+                                {/* Desktop Buttons */}
+                                <div className="hidden sm:flex gap-2">
                                     <Button
-                                        variant="destructive"
+                                        variant="ghost"
                                         onClick={() => setShowDeleteModal(true)}
-                                        className="flex items-center justify-center w-full sm:w-auto"
+                                        className="flex items-center border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20"
                                     >
                                         <Trash2 className="h-4 w-4" />
                                         <span className="ml-2">Delete Brand</span>
                                     </Button>
+
                                     <Button
                                         onClick={() => router.push("/upload")}
-                                        className="bg-[#db4900] hover:bg-[#db4900]/90 flex items-center justify-center w-full sm:w-auto"
+                                        className="bg-[#db4900] hover:bg-[#db4900]/90 flex items-center"
                                     >
                                         <Upload className="h-4 w-4" />
                                         <span className="ml-2">Upload New Ad</span>
@@ -462,7 +496,7 @@ export default function MyAdsPage() {
                                 subtitle="last analyzed score for this brand"
                                 imageSrc={TotalSuggestions.src}
                             />
-                        </div>      
+                        </div>
                         <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
                             <MainStatCard
                                 title="Total Go Ads"
@@ -723,7 +757,7 @@ export default function MyAdsPage() {
                                                     )
                                                     const result = await response.json()
                                                     if (result?.response === "Brand deleted successfully") {
-                                                        toast.success("Brand deleted successfully!")    
+                                                        toast.success("Brand deleted successfully!")
                                                         setShowDeleteModal(false)
                                                         router.push("/brands")
                                                     } else {
@@ -746,7 +780,7 @@ export default function MyAdsPage() {
                     )}
                 </div>
             )}
-           </UserLayout>
+        </UserLayout>
     )
 
 }

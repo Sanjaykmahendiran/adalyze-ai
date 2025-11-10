@@ -803,11 +803,11 @@ export default function UploadPage() {
                 {errorModalOpen && (
                     <div
                         onClick={() => setErrorModalOpen(false)}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4 animate-fadeIn"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
                     >
                         <div
                             onClick={e => e.stopPropagation()}
-                            className="relative bg-[#171717] rounded-xl w-full max-w-md shadow-2xl border border-[#282828] max-h-[90vh] flex flex-col"
+                            className="relative bg-[#171717] rounded-xl w-full max-w-md shadow-2xl border border-primary max-h-[90vh] flex flex-col"
                         >
                             {/* Header */}
                             <div className="flex items-center gap-3 p-5 border-b border-[#282828] rounded-t-2xl">
@@ -1087,7 +1087,7 @@ export default function UploadPage() {
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder="Select language" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-[300px] overflow-y-auto">
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-[60vh] overflow-y-auto overscroll-contain [touch-action:pan-y] z-[1000]">
                                                     {/* English */}
                                                     <SelectItem value="en-US">English (United States)</SelectItem>
                                                     <SelectItem value="en-GB">English (United Kingdom)</SelectItem>

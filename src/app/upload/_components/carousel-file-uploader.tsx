@@ -222,6 +222,78 @@ export function CarouselFileUploader({
     setDragOverIndex(null)
   }, [])
 
+  // Touch-based long-press drag and drop (mobile)
+  const longPressTimeoutRef = useRef<number | null>(null)
+  const isLongPressActiveRef = useRef(false)
+
+  const clearLongPress = () => {
+    if (longPressTimeoutRef.current !== null) {
+      window.clearTimeout(longPressTimeoutRef.current)
+      longPressTimeoutRef.current = null
+    }
+    isLongPressActiveRef.current = false
+  }
+
+  const handleTouchStart = useCallback((index: number) => (e: React.TouchEvent) => {
+    if (isUploading) return
+    // Schedule long-press to initiate drag
+    clearLongPress()
+    longPressTimeoutRef.current = window.setTimeout(() => {
+      isLongPressActiveRef.current = true
+      setDraggedIndex(index)
+    }, 250)
+  }, [isUploading])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isLongPressActiveRef.current) return
+    const touch = e.touches[0]
+    if (!touch) return
+    // Prevent scrolling while dragging
+    e.preventDefault()
+    const el = document.elementFromPoint(touch.clientX, touch.clientY)
+    if (!el) return
+    const target = el.closest('[data-carousel-index]') as HTMLElement | null
+    if (!target) return
+    const indexAttr = target.getAttribute('data-carousel-index')
+    if (indexAttr == null) return
+    const overIndex = parseInt(indexAttr, 10)
+    if (!Number.isNaN(overIndex)) {
+      setDragOverIndex(prev => (prev !== overIndex ? overIndex : prev))
+    }
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    const dropIndex = dragOverIndex
+    const dragIndex = draggedIndex
+    clearLongPress()
+    if (dragIndex === null) {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+    if (dropIndex == null || dropIndex === dragIndex || isUploading) {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+
+    const newFiles = [...files]
+    const [draggedFile] = newFiles.splice(dragIndex, 1)
+    newFiles.splice(dropIndex, 0, draggedFile)
+
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+    requestAnimationFrame(() => {
+      onFilesChange(newFiles)
+    })
+  }, [dragOverIndex, draggedIndex, files, onFilesChange, isUploading])
+
+  const handleTouchCancel = useCallback(() => {
+    clearLongPress()
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }, [])
+
   return (
 <div className="flex flex-col space-y-4 sm:space-y-6 rounded-2xl bg-[#171717] border border-primary p-4 sm:p-6 lg:p-8 text-white">
   {files.length > 0 ? (
@@ -243,12 +315,17 @@ export function CarouselFileUploader({
               } ${
                 isDraggedOver ? 'scale-105 ring-2 ring-primary' : ''
               }`}
+              data-carousel-index={index}
               draggable={!isUploading}
               onDragStart={handleDragStart(index)}
               onDragOver={handleDragOverItem(index)}
               onDragLeave={handleDragLeaveItem}
               onDrop={handleDropItem(index)}
               onDragEnd={handleDragEnd}
+              onTouchStart={handleTouchStart(index)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchCancel}
             >
               <div className="relative w-full h-24 sm:h-28 xl:h-32 rounded-lg overflow-hidden">
                 <Image src={imageSource} alt={`Upload preview ${index + 1}`} fill className="object-cover" />

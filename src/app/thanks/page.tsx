@@ -29,7 +29,7 @@ export default function ThanksPage() {
       spread: 90,
       angle: 90,
       origin: { x: 0.5, y: 0.5 },
-      colors: ["#ff6347", "#ffd700", "#32cd32"],
+      colors: ["#db4900"],
     });
 
     // Start countdown timer
@@ -68,9 +68,6 @@ export default function ThanksPage() {
               <p className="text-gray-300 mb-4">
                 Your free trial has been activated successfully.
               </p>
-              <p className="text-sm mb-6 font-bold text-white">Trial ID: {order_id}</p>
-
-
               <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-6 ">
                 <p className="text-green-400 text-sm font-medium">
                   Your free trial expires in 5 days. Make the most of it!

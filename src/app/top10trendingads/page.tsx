@@ -22,6 +22,7 @@ interface TrendingAdData {
   platforms: string
   uploaded_on: string
   weighted_rank: number
+  user_id: number
 }
 
 interface TrendingAdsResponse {
@@ -32,7 +33,7 @@ interface TrendingAdsResponse {
 
 export default function Top10TrendingAdsWall() {
   // Use the new ad navigation hook
-  const { navigateToAdResults } = useAdNavigation()
+  const { navigateToTrendingAdResults } = useAdNavigation()
   const router = useRouter()
   const [adsData, setAdsData] = useState<TrendingAdData[]>([])
   const [timeFrame, setTimeFrame] = useState<string>("")
@@ -40,8 +41,8 @@ export default function Top10TrendingAdsWall() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const handleTrendingViewReport = useCallback((adId: string, aduserId: string) => {
-    navigateToAdResults(adId, aduserId)
-  }, [navigateToAdResults])
+    navigateToTrendingAdResults(adId, aduserId)
+  }, [navigateToTrendingAdResults])
 
   const handleBack = () => router.back()
 
@@ -216,7 +217,7 @@ export default function Top10TrendingAdsWall() {
             return (
               <div
                 key={position}
-                onClick={() => handleTrendingViewReport(String(ad.ad_id), String((ad as any).user_id))}
+                onClick={() => handleTrendingViewReport(String(ad.ad_id), String(ad.user_id))}
                 className="flex flex-col items-center text-center"
               >
                 {isFirst && (
@@ -274,7 +275,7 @@ export default function Top10TrendingAdsWall() {
               <motion.div
                 key={ad.ad_id}
                 whileHover={{ scale: 1.02 }}
-                onClick={() => handleTrendingViewReport(String(ad.ad_id), String((ad as any).user_id))}
+                onClick={() => handleTrendingViewReport(String(ad.ad_id), String(ad.user_id))}
                 className="bg-[#171717] rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group cursor-pointer"
               >
                 {/* Rank Number */}

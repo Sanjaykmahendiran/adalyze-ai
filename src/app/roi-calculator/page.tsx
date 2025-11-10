@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Info, Star, X, Loader, ChevronLeft, ChevronRight, Search, Check, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+import { Info, Star, X, Loader, ChevronLeft, ChevronRight } from "lucide-react"
 import FAQSection from "@/components/landing-page/faq-section"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import Header from "@/components/landing-page/header"
@@ -33,20 +33,7 @@ interface FormState {
     description: string
 }
 
-interface Country {
-    id: string
-    name: string
-    iso3: string
-    numeric_code: string
-    iso2: string
-    phonecode: string
-    region_id: string
-    subregion_id: string
-    created_at: string
-    updated_at: string
-    flag: string
-    name_lc: string
-}
+// removed Country interface as we now use a static list
 
 interface Testimonial {
     testi_id: number
@@ -345,16 +332,7 @@ export default function ROICalculator() {
     const [loading, setLoading] = useState(false)
     const [showContactForm, setShowContactForm] = useState(false)
 
-    // Country search states
-    const [countries, setCountries] = useState<Country[]>([])
-    const [filteredCountries, setFilteredCountries] = useState<Country[]>([])
-    const [countrySearch, setCountrySearch] = useState("")
-    const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false)
-    const [selectedCountry, setSelectedCountry] = useState<Country | null>(null)
-    const [isLoadingCountries, setIsLoadingCountries] = useState(false)
-    const [highlightedIndex, setHighlightedIndex] = useState(-1)
-    const countryDropdownRef = useRef<HTMLDivElement>(null)
-    const searchInputRef = useRef<HTMLInputElement>(null)
+    // Using static country list now; no search/dropdown states needed
 
     const getWeeklyRangeMidpoint = (range: string): string => {
         const rangeMap: Record<string, string> = {
@@ -378,114 +356,7 @@ export default function ROICalculator() {
         return userMap[range] || ""
     }
 
-    // Fetch countries from API
-    useEffect(() => {
-        const fetchCountries = async () => {
-            setIsLoadingCountries(true)
-            try {
-                const response = await fetch('https://techades.com/App/api.php?gofor=countrieslist')
-                const data = await response.json()
-                if (Array.isArray(data)) {
-                    setCountries(data)
-                    setFilteredCountries(data)
-                }
-            } catch (error) {
-                console.error('Error fetching countries:', error)
-            } finally {
-                setIsLoadingCountries(false)
-            }
-        }
-
-        fetchCountries()
-    }, [])
-
-    // Filter countries based on search
-    useEffect(() => {
-        if (countrySearch.trim() === "") {
-            setFilteredCountries(countries)
-        } else {
-            const filtered = countries.filter(country =>
-                country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-                country.name_lc.toLowerCase().includes(countrySearch.toLowerCase())
-            )
-            setFilteredCountries(filtered)
-        }
-    }, [countrySearch, countries])
-
-    // Handle country selection
-    const handleCountrySelect = (selectedCountry: Country) => {
-        setSelectedCountry(selectedCountry)
-        setCountry(selectedCountry.name)
-        setCountrySearch(selectedCountry.name)
-        setIsCountryDropdownOpen(false)
-        setHighlightedIndex(-1)
-    }
-
-    // Handle search input change
-    const handleCountrySearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setCountrySearch(e.target.value)
-        setIsCountryDropdownOpen(true)
-        setHighlightedIndex(-1)
-    }
-
-    // Handle dropdown toggle
-    const handleDropdownToggle = () => {
-        setIsCountryDropdownOpen(!isCountryDropdownOpen)
-        if (!isCountryDropdownOpen) {
-            setCountrySearch("")
-            setFilteredCountries(countries)
-            setHighlightedIndex(-1)
-        } else {
-            // Focus the search input when opening
-            setTimeout(() => {
-                searchInputRef.current?.focus()
-            }, 0)
-        }
-    }
-
-    // Handle keyboard navigation
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (!isCountryDropdownOpen) return
-
-        switch (e.key) {
-            case 'ArrowDown':
-                e.preventDefault()
-                setHighlightedIndex(prev =>
-                    prev < filteredCountries.length - 1 ? prev + 1 : 0
-                )
-                break
-            case 'ArrowUp':
-                e.preventDefault()
-                setHighlightedIndex(prev =>
-                    prev > 0 ? prev - 1 : filteredCountries.length - 1
-                )
-                break
-            case 'Enter':
-                e.preventDefault()
-                if (highlightedIndex >= 0 && filteredCountries[highlightedIndex]) {
-                    handleCountrySelect(filteredCountries[highlightedIndex])
-                }
-                break
-            case 'Escape':
-                setIsCountryDropdownOpen(false)
-                setHighlightedIndex(-1)
-                break
-        }
-    }
-
-    // Handle click outside to close dropdown
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
-                setIsCountryDropdownOpen(false)
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
-    }, [])
+    // Removed countries API, search, and custom dropdown handlers
 
     useEffect(() => {
         const fetchROI = async () => {
@@ -595,194 +466,145 @@ export default function ROICalculator() {
 
 
             {/* ROI Calculator */}
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 md:pt-16 lg:pt-20 pb-12 sm:pb-16">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto items-start">
-                        <div className="space-y-4">
-                            <Card className="bg-black border-none">
-                                <CardContent className="p-4 sm:p-6 md:p-8">
-                                    <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-white">Calculate your Return on Investment</h2>
-
-                                    <div className="space-y-4 sm:space-y-6">
-                                        <div>
-                                            <label className="flex items-center gap-2 text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-white/80">
-                                                Country of operation
-                                                <Info className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                                            </label>
-                                            <div className="relative" ref={countryDropdownRef}>
-                                                <div
-                                                    className="bg-[#171717] w-full text-white text-sm sm:text-base rounded-md px-3 py-2 sm:py-2.5 cursor-pointer flex items-center justify-between min-h-[40px] sm:min-h-[44px]"
-                                                    onClick={handleDropdownToggle}
-                                                    onKeyDown={handleKeyDown}
-                                                    tabIndex={0}
-                                                    role="combobox"
-                                                    aria-expanded={isCountryDropdownOpen}
-                                                    aria-haspopup="listbox"
-                                                >
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <Search className="w-4 h-4 text-white flex-shrink-0" />
-                                                        <span className={`truncate ${selectedCountry ? "text-white" : "text-gray-400"}`}>
-                                                            {selectedCountry ? selectedCountry.name : "Search and select country..."}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-gray-300 flex-shrink-0 ml-2">
-                                                        {isCountryDropdownOpen ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
-                                                    </div>
-                                                </div>
-
-                                                {isCountryDropdownOpen && (
-                                                    <div className="absolute z-50 w-full mt-1 bg-[#171717] border border-[#171717] rounded-md shadow-lg max-h-[280px] sm:max-h-80 overflow-y-auto">
-                                                        <div className="p-2 sticky top-0 bg-[#171717] border-b border-[#171717]">
-                                                            <Input
-                                                                ref={searchInputRef}
-                                                                type="text"
-                                                                placeholder="Search countries..."
-                                                                value={countrySearch}
-                                                                onChange={handleCountrySearchChange}
-                                                                onKeyDown={handleKeyDown}
-                                                                className="bg-[#171717] text-white border-none text-sm"
-                                                                autoFocus
-                                                            />
-                                                        </div>
-                                                        <div className="max-h-[200px] sm:max-h-[240px] overflow-y-auto">
-                                                            {isLoadingCountries ? (
-                                                                <div className="p-4 text-center text-gray-400 text-sm">
-                                                                    <Loader className="w-4 h-4 animate-spin mx-auto mb-2" />
-                                                                    Loading countries...
-                                                                </div>
-                                                            ) : filteredCountries.length > 0 ? (
-                                                                filteredCountries.map((country, index) => (
-                                                                    <div
-                                                                        key={country.id}
-                                                                        className={`px-3 py-2 sm:py-2.5 cursor-pointer flex items-center justify-between text-white text-sm sm:text-base ${index === highlightedIndex
-                                                                            ? 'bg-primary/20'
-                                                                            : 'hover:bg-[#2a2a2a]'
-                                                                            }`}
-                                                                        onClick={() => handleCountrySelect(country)}
-                                                                        onMouseEnter={() => setHighlightedIndex(index)}
-                                                                        role="option"
-                                                                        aria-selected={selectedCountry?.id === country.id}
-                                                                    >
-                                                                        <span className="truncate flex-1">{country.name}</span>
-                                                                        {selectedCountry?.id === country.id && (
-                                                                            <Check className="w-4 h-4 text-primary flex-shrink-0 ml-2" />
-                                                                        )}
-                                                                    </div>
-                                                                ))
-                                                            ) : (
-                                                                <div className="p-4 text-center text-gray-400 text-sm">
-                                                                    No countries found
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="flex items-center gap-2 text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-white/80">
-                                                <span className="line-clamp-2">Number of team members who will use adalyze.app</span>
-                                                <Info className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                                            </label>
-                                            <Select value={teamMembers} onValueChange={setTeamMembers}>
-                                                <SelectTrigger className="bg-[#171717] w-full text-white text-sm sm:text-base min-h-[40px] sm:min-h-[44px]">
-                                                    <SelectValue placeholder="Please select" />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-[#171717]">
-                                                    <SelectItem value="1-5" className="text-sm sm:text-base">1-5 members</SelectItem>
-                                                    <SelectItem value="6-10" className="text-sm sm:text-base">6-10 members</SelectItem>
-                                                    <SelectItem value="11-25" className="text-sm sm:text-base">11-25 members</SelectItem>
-                                                    <SelectItem value="26-50" className="text-sm sm:text-base">26-50 members</SelectItem>
-                                                    <SelectItem value="50+" className="text-sm sm:text-base">50+ members</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div>
-                                            <label className="flex items-center gap-2 text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-white/80">
-                                                <span className="line-clamp-2">How many creatives do you need per week on average?</span>
-                                                <Info className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                                            </label>
-                                            <Select value={creativesPerWeek} onValueChange={setCreativesPerWeek}>
-                                                <SelectTrigger className="bg-[#171717] w-full text-white text-sm sm:text-base min-h-[40px] sm:min-h-[44px]">
-                                                    <SelectValue placeholder="Please select" />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-[#171717]">
-                                                    <SelectItem value="1-10" className="text-sm sm:text-base">1-10 creatives</SelectItem>
-                                                    <SelectItem value="11-25" className="text-sm sm:text-base">11-25 creatives</SelectItem>
-                                                    <SelectItem value="26-50" className="text-sm sm:text-base">26-50 creatives</SelectItem>
-                                                    <SelectItem value="51-100" className="text-sm sm:text-base">51-100 creatives</SelectItem>
-                                                    <SelectItem value="100+" className="text-sm sm:text-base">100+ creatives</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <div>
-                                <a href="#" className="text-primary text-xs sm:text-sm underline">
-                                    Disclaimer
-                                </a>
-                            </div>
-                        </div>
-
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 md:pt-16 lg:pt-20 pb-12 sm:pb-16">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto items-start">
+                    <div className="space-y-4">
                         <Card className="bg-black border-none">
                             <CardContent className="p-4 sm:p-6 md:p-8">
-                                <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-white">
-                                    Your Return on Investment with
-                                    <br />
-                                    Adalyze.app
-                                </h2>
+                                <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-white">Calculate your Return on Investment</h2>
 
-                                <div className="flex justify-center mb-6 sm:mb-8">
-                                    {roiData && roiData.Return_on_Investment ? (
-                                        <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary break-words text-center">{roiData.Return_on_Investment}</div>
-                                    ) : (
-                                        <div className="flex gap-2">
-                                            <div className="w-6 h-1 sm:w-8 sm:h-1 bg-primary rounded"></div>
-                                            <div className="w-6 h-1 sm:w-8 sm:h-1 bg-primary rounded"></div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
-                                    <div className="text-center bg-[#171717] rounded-lg p-3 sm:p-4 md:p-6 flex flex-col items-center gap-2">
-                                        <div className="text-xs sm:text-sm text-white/80 mb-1">Cost Savings</div>
-                                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">{costSavings}</div>
+                                <div className="space-y-4 sm:space-y-6">
+                                    <div>
+                                        <label className="flex items-center gap-2 text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-white/80">
+                                            Country of operation
+                                            <Info className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                                        </label>
+                                        <Select value={country} onValueChange={setCountry}>
+                                            <SelectTrigger className="bg-[#171717] w-full text-white text-sm sm:text-base py-5.5">
+                                                <SelectValue placeholder="Please select" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#171717] max-h-50">
+                                                <SelectItem value="USA" className="text-sm sm:text-base">USA</SelectItem>
+                                                <SelectItem value="UK" className="text-sm sm:text-base">UK</SelectItem>
+                                                <SelectItem value="Canada" className="text-sm sm:text-base">Canada</SelectItem>
+                                                <SelectItem value="Australia" className="text-sm sm:text-base">Australia</SelectItem>
+                                                <SelectItem value="Germany" className="text-sm sm:text-base">Germany</SelectItem>
+                                                <SelectItem value="France" className="text-sm sm:text-base">France</SelectItem>
+                                                <SelectItem value="India" className="text-sm sm:text-base">India</SelectItem>
+                                                <SelectItem value="Brazil" className="text-sm sm:text-base">Brazil</SelectItem>
+                                                <SelectItem value="Mexico" className="text-sm sm:text-base">Mexico</SelectItem>
+                                                <SelectItem value="Singapore" className="text-sm sm:text-base">Singapore</SelectItem>
+                                                <SelectItem value="UAE" className="text-sm sm:text-base">UAE</SelectItem>
+                                                <SelectItem value="South Africa" className="text-sm sm:text-base">South Africa</SelectItem>
+                                                <SelectItem value="Other" className="text-sm sm:text-base">Other</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                    <div className="text-center bg-[#171717] rounded-lg p-3 sm:p-4 md:p-6 flex flex-col items-center gap-2">
-                                        <div className="text-xs sm:text-sm text-white/80 mb-1">Time Saved</div>
-                                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">{timeSaved}</div>
-                                    </div>
-                                    <div className="text-center bg-[#171717] rounded-lg p-3 sm:p-4 md:p-6 flex flex-col items-center gap-2 sm:col-span-2 lg:col-span-1">
-                                        <div className="text-xs sm:text-sm text-white/80 mb-1">ROI</div>
-                                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">{roi}</div>
-                                    </div>
-                                </div>
 
-                                <div className="text-center text-xs sm:text-sm text-white/80 mb-4 sm:mb-6 space-y-1">
-                                    <div>Currency in $USD</div>
-                                    <div>Annual Estimates</div>
-                                </div>
+                                    <div>
+                                        <label className="flex items-center gap-2 text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-white/80">
+                                            <span className="line-clamp-2">Number of team members who will use adalyze.app</span>
+                                            <Info className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                                        </label>
+                                        <Select value={teamMembers} onValueChange={setTeamMembers}>
+                                            <SelectTrigger className="bg-[#171717] w-full text-white text-sm sm:text-base min-h-[40px] sm:min-h-[44px]">
+                                                <SelectValue placeholder="Please select" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#171717]">
+                                                <SelectItem value="1-5" className="text-sm sm:text-base">1-5 members</SelectItem>
+                                                <SelectItem value="6-10" className="text-sm sm:text-base">6-10 members</SelectItem>
+                                                <SelectItem value="11-25" className="text-sm sm:text-base">11-25 members</SelectItem>
+                                                <SelectItem value="26-50" className="text-sm sm:text-base">26-50 members</SelectItem>
+                                                <SelectItem value="50+" className="text-sm sm:text-base">50+ members</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                                <div className="bg-[#171717] rounded-lg p-4 sm:p-6 text-center">
-                                    <p className="text-xs sm:text-sm text-white/80">
-                                        {roiData ? (
-                                            <>Your ROI has been calculated based on your selections!</>
-                                        ) : (
-                                            <>
-                                                Complete the details in left side to unlock your
-                                                <br className="hidden sm:block" />
-                                                <span className="sm:hidden"> </span>recommended plan.
-                                            </>
-                                        )}
-                                    </p>
+                                    <div>
+                                        <label className="flex items-center gap-2 text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-white/80">
+                                            <span className="line-clamp-2">How many creatives do you need per week on average?</span>
+                                            <Info className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                                        </label>
+                                        <Select value={creativesPerWeek} onValueChange={setCreativesPerWeek}>
+                                            <SelectTrigger className="bg-[#171717] w-full text-white text-sm sm:text-base min-h-[40px] sm:min-h-[44px]">
+                                                <SelectValue placeholder="Please select" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#171717]">
+                                                <SelectItem value="1-10" className="text-sm sm:text-base">1-10 creatives</SelectItem>
+                                                <SelectItem value="11-25" className="text-sm sm:text-base">11-25 creatives</SelectItem>
+                                                <SelectItem value="26-50" className="text-sm sm:text-base">26-50 creatives</SelectItem>
+                                                <SelectItem value="51-100" className="text-sm sm:text-base">51-100 creatives</SelectItem>
+                                                <SelectItem value="100+" className="text-sm sm:text-base">100+ creatives</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <div>
+                            <a href="#" className="text-primary text-xs sm:text-sm underline">
+                                Disclaimer
+                            </a>
+                        </div>
                     </div>
+
+                    <Card className="bg-black border-none">
+                        <CardContent className="p-4 sm:p-6 md:p-8">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-white">
+                                Your Return on Investment with
+                                <br />
+                                Adalyze.app
+                            </h2>
+
+                            <div className="flex justify-center mb-6 sm:mb-8">
+                                {roiData && roiData.Return_on_Investment ? (
+                                    <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary break-words text-center">{roiData.Return_on_Investment}</div>
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <div className="w-6 h-1 sm:w-8 sm:h-1 bg-primary rounded"></div>
+                                        <div className="w-6 h-1 sm:w-8 sm:h-1 bg-primary rounded"></div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+                                <div className="text-center bg-[#171717] rounded-lg p-3 sm:p-4 md:p-6 flex flex-col items-center gap-2">
+                                    <div className="text-xs sm:text-sm text-white/80 mb-1">Cost Savings</div>
+                                    <div className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">{costSavings}</div>
+                                </div>
+                                <div className="text-center bg-[#171717] rounded-lg p-3 sm:p-4 md:p-6 flex flex-col items-center gap-2">
+                                    <div className="text-xs sm:text-sm text-white/80 mb-1">Time Saved</div>
+                                    <div className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">{timeSaved}</div>
+                                </div>
+                                <div className="text-center bg-[#171717] rounded-lg p-3 sm:p-4 md:p-6 flex flex-col items-center gap-2 sm:col-span-2 lg:col-span-1">
+                                    <div className="text-xs sm:text-sm text-white/80 mb-1">ROI</div>
+                                    <div className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">{roi}</div>
+                                </div>
+                            </div>
+
+                            <div className="text-center text-xs sm:text-sm text-white/80 mb-4 sm:mb-6 space-y-1">
+                                <div>Currency in $USD</div>
+                                <div>Annual Estimates</div>
+                            </div>
+
+                            <div className="bg-[#171717] rounded-lg p-4 sm:p-6 text-center">
+                                <p className="text-xs sm:text-sm text-white/80">
+                                    {roiData ? (
+                                        <>Your ROI has been calculated based on your selections!</>
+                                    ) : (
+                                        <>
+                                            Complete the details in left side to unlock your
+                                            <br className="hidden sm:block" />
+                                            <span className="sm:hidden"> </span>recommended plan.
+                                        </>
+                                    )}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
+            </div>
 
             {/* How it works */}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">

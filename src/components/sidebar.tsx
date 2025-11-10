@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  UploadCloud,
   Split,
   MonitorPlay,
   Zap,
@@ -23,9 +22,8 @@ type MenuItem = {
 
 const Type1MenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: UploadCloud, label: "Upload", href: "/upload" },
-  { icon: Split, label: "A/B Test", href: "/ab-test" },
   { icon: MonitorPlay, label: "MyAds", href: "/my-ads" },
+  { icon: Split, label: "A/B Test", href: "/ab-test" },
   { icon: Zap, label: "Pro", href: "/pro" },
   { icon: BookOpen, label: "Guide", href: "/guide" },
   { icon: LifeBuoy, label: "Support", href: "/support" },
@@ -34,10 +32,9 @@ const Type1MenuItems: MenuItem[] = [
 
 const Type2MenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: Building2, label: "Brands", href: "/brands" },
-  { icon: UploadCloud, label: "Upload", href: "/upload" },
-  { icon: Split, label: "A/B Test", href: "/ab-test" },
   { icon: MonitorPlay, label: "MyAds", href: "/my-ads" },
+  { icon: Split, label: "A/B Test", href: "/ab-test" },
+  { icon: Building2, label: "Brands", href: "/brands" },
   { icon: Zap, label: "Pro", href: "/pro" },
   { icon: BookOpen, label: "Guide", href: "/guide" },
   { icon: LifeBuoy, label: "Support", href: "/support" },
@@ -59,13 +56,22 @@ export function Sidebar({ userDetails }: SidebarProps) {
     return pathname === baseHref || pathname.startsWith(`${baseHref}/`);
   };
 
+  const getMenus = () => {
+    if (
+      userDetails?.type === "2" && userDetails?.payment_status === 1) {
+      return Type2MenuItems
+    }
+    else {
+      return Type1MenuItems
+    }
+  }
   return (
     <aside
       ref={asideRef}
       className="flex flex-col items-center relative overflow-y-auto w-full px-1 py-1 bg-black"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
-      {(userDetails?.type === "2" ? Type2MenuItems : Type1MenuItems).map(({ href, icon: Icon, label }) => {
+      {userDetails && getMenus().map(({ href, icon: Icon, label }) => {
         const active = isActive(href);
         return (
           <Link

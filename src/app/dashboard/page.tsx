@@ -103,7 +103,7 @@ export default function Dashboard() {
   }, [])
 
   // Use the new ad navigation hook
-  const { navigateToAdResults } = useAdNavigation()
+  const { navigateToAdResults, navigateToTop10AdResults } = useAdNavigation()
 
   // Memoized navigation handlers
   const handleUploadClick = useCallback(() => router.push('/upload'), [router])
@@ -112,9 +112,9 @@ export default function Dashboard() {
   const handleViewReport = useCallback((adId: string) => {
     navigateToAdResults(adId, userDetails?.user_id)
   }, [navigateToAdResults, userDetails?.user_id])
-  const handleTop10ViewReport = useCallback((adId: string , aduserId: string) => {
-    navigateToAdResults(adId, aduserId)
-  }, [navigateToAdResults])
+  const handleTop10AdViewReport = useCallback((adId: string, aduserId: string) => {
+    navigateToTop10AdResults(adId, aduserId)
+  }, [navigateToTop10AdResults])
 
   // API fetch functions (keeping original implementations)
   const fetchDashboardData = async (userId: string, brandId?: string) => {
@@ -278,7 +278,7 @@ export default function Dashboard() {
           <div className="flex gap-2 items-center">
             <div className="flex-1 min-w-0">
               <Button
-                onClick={() => handleTop10ViewReport(String(ad.ad_id), String((ad as any).user_id))}
+                onClick={() => handleTop10AdViewReport(String(ad.ad_id), String(ad.user_id))}
                 size="sm"
                 variant="outline"
                 className="w-full text-[#db4900] border-[#db4900] hover:bg-[#db4900] hover:text-white transition-colors text-xs sm:text-sm"
@@ -1050,7 +1050,7 @@ export default function Dashboard() {
                     {/* Global Insights Items */}
                     <div className="space-y-3 sm:space-y-4 flex-1">
                       {dashboard2Data?.global_insights && dashboard2Data.global_insights.length > 0 ? (
-                        dashboard2Data.global_insights.slice(0, 3).map((insight, index) => {
+                        dashboard2Data.global_insights.slice(0, 2).map((insight, index) => {
                           return (
                             <div
                               key={insight.id}

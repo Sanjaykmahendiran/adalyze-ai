@@ -8,15 +8,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import toast from "react-hot-toast"
 import {
-  Download, Search, Sparkles, AlertTriangle, CheckCircle, XCircle, Lock, PenTool, GitCompareArrows, Eye, Heart, Target,
-  TrendingUp, Palette, Image as ImageIcon, FileText, Award, ChevronLeft, ChevronRight, Info, Users, Zap, Shield, BarChart3,
-  Camera, Type, Layout, DollarSign, Upload, ArrowLeft, ShieldCheck, ChartNoAxesCombined, Settings, MousePointerClick, TrendingDown,
+  Download, Search, Sparkles, AlertTriangle, CheckCircle, Lock, PenTool, GitCompareArrows, Target,
+  TrendingUp, FileText, ChevronLeft, ChevronRight, Info, Zap, Shield, BarChart3,
+  Type, ArrowLeft, ShieldCheck, ChartNoAxesCombined, MousePointerClick, TrendingDown,
   Copy, Share2, Trash2, Loader2, Gift, ChevronUp,
-  Check,
-  X,
-  Lightbulb,
-  MessageSquare,
-  ArrowRight,
+  Check, X, Lightbulb, MessageSquare, ArrowRight,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -35,6 +31,9 @@ import Footer from "@/components/footer"
 import UpgradePopup from "@/components/UpgradePopup"
 import Chart from 'chart.js/auto'
 import PreCampaignChecklist from "./_components/PreCampaignChecklist"
+import GoIcon from "@/assets/go-icon.png"
+import NoGoIcon from "@/assets/nogo-icon.png"
+import AdPerformancePost from "@/components/share-result"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -50,7 +49,7 @@ export default function ResultsPage() {
   const [tagsCopied, setTagsCopied] = useState(false);
   const [copiedAdCopyIndex, setCopiedAdCopyIndex] = useState<number | null>(null);
   const [isExpired, setIsExpired] = useState(false);
-  const [showIssuesPopup, setShowIssuesPopup] = useState(false)
+  const [isShareImageGenerating, setIsShareImageGenerating] = useState(false)
 
   // Delete functionality states
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -85,11 +84,17 @@ export default function ResultsPage() {
   }, [])
 
   // Check if ad_id came from token (shared link)
-  const isFromToken = !!searchParams.get('token')
+  const token = searchParams.get('ad-token')
+  const top10Token = searchParams.get('top10-token')
+  const trendingToken = searchParams.get('trending-token')
+  const isFromToken = searchParams.get('token')
+  const isFromTop10Token = !!top10Token
+  const isFromTrendingToken = !!trendingToken
+  const isSpecialToken = isFromTop10Token || isFromTrendingToken
   const isProUser = isFromToken || userDetails?.payment_status === 1
-  // If token/ad-token is older than 7 days, redirect to 404 and do not load results
+  // If token/ad-token/top10-token/trending-token is older than 7 days, redirect to 404 and do not load results
   useEffect(() => {
-    const token = searchParams.get('token');
+    const token = searchParams.get('token') || searchParams.get('ad-token') || searchParams.get('top10-token') || searchParams.get('trending-token');
     if (token && isTokenExpired(token, 7)) {
       setIsExpired(true);
       // Redirect to 404 page
@@ -271,38 +276,117 @@ export default function ResultsPage() {
   };
 
 
-  const handleShare = () => {
-    // Get ad_id from either URL param or token
-    const adId = getAdIdFromUrl();
+  const handleShare = async () => {
+    if (!apiData) return;
+    
+    setIsShareImageGenerating(true);
+    
+    try {
+      // Get ad_id from either URL param or token
+      const adId = getAdIdFromUrl();
 
-    // Get user_id from userDetails or from token if viewing shared link
-    const userId = userDetails?.user_id || null;
+      // Get user_id from userDetails or from token if viewing shared link
+      const userId = userDetails?.user_id || null;
 
-    // Generate share URL with ad_id and user_id
-    const shareUrl = generateShareUrl(adId, userId || undefined);
-    const shareText = generateShareText(adId, userId || undefined);
+      // Generate share URL and text using tokenUtils
+      const shareUrl = generateShareUrl(adId, userId || undefined);
+      const shareText = generateShareText(adId, userId || undefined);
 
-    // Trigger native share if available
-    if (navigator.share) {
-      navigator.share({
-        title: 'Ad Analysis Results',
-        text: shareText,
-        url: shareUrl,
-      }).catch(console.error);
-    } else {
-      // Fallback to clipboard
-      navigator.clipboard.writeText(shareText).then(() => {
-        alert('Share link copied to clipboard!');
-      }).catch(() => {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = shareText;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('Share link copied to clipboard!');
+      // Generate image from share card
+      const shareCard = document.getElementById('ad-performance-card');
+      if (!shareCard) {
+        throw new Error('Share card element not found');
+      }
+
+      // Convert to blob
+      const dataUrl = await htmlToImage.toPng(shareCard, {
+        quality: 1,
+        pixelRatio: 2,
       });
+
+      // Convert data URL to blob
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], 'ad-performance.png', { type: 'image/png' });
+
+      // Check if Web Share API is available (works on iOS, Android, and some desktop browsers)
+      if (navigator.share) {
+        try {
+          // Pre-copy text to clipboard as backup
+          // This helps when apps like WhatsApp/Instagram ignore the text parameter
+          try {
+            await navigator.clipboard.writeText(shareText);
+          } catch (clipboardError) {
+            console.log('Clipboard write failed (might need user permission):', clipboardError);
+          }
+
+          // Check if we can share files
+          const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+          
+          if (canShareFiles) {
+            // Share with image file (works on iOS Safari, Android Chrome, etc.)
+            // This opens the native share sheet with all available apps:
+            // WhatsApp, Instagram, LinkedIn, Twitter/X, Facebook, etc.
+            await navigator.share({
+              title: 'Ad Analysis Results',
+              text: shareText,
+              files: [file],
+            });
+            
+            toast.success('Shared successfully! Text was also copied to clipboard if needed.');
+          } else {
+            // Fallback: Share text/URL only (some browsers don't support file sharing)
+            await navigator.share({
+              title: 'Ad Analysis Results',
+              text: shareText,
+              url: shareUrl,
+            });
+            
+            // Download the image for manual attachment
+            const link = document.createElement('a');
+            link.download = 'ad-performance.png';
+            link.href = dataUrl;
+            link.click();
+            
+            toast.success('Text shared and image downloaded! Attach the image manually.');
+          }
+        } catch (shareError: any) {
+          // User cancelled the share dialog
+          if (shareError.name === 'AbortError') {
+            toast('Share cancelled', { icon: 'ℹ️' });
+            return;
+          }
+          // Some other error occurred
+          throw shareError;
+        }
+      } else {
+        // Fallback for browsers without Web Share API (older desktop browsers)
+        // Download the image
+        const link = document.createElement('a');
+        link.download = 'ad-performance.png';
+        link.href = dataUrl;
+        link.click();
+        
+        // Copy text with URL to clipboard
+        await navigator.clipboard.writeText(shareText);
+        
+        toast.success('Image downloaded and text copied! Open your social media app and paste the text, then attach the downloaded image.');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      
+      // Final fallback: Just copy text to clipboard
+      try {
+        const adId = getAdIdFromUrl();
+        const userId = userDetails?.user_id || null;
+        const shareText = generateShareText(adId, userId || undefined);
+        
+        await navigator.clipboard.writeText(shareText);
+        toast.error('Sharing failed. Text copied to clipboard!');
+      } catch (clipboardError) {
+        toast.error('Sharing failed. Please try again.');
+      }
+    } finally {
+      setIsShareImageGenerating(false);
     }
   };
 
@@ -343,7 +427,7 @@ export default function ResultsPage() {
 
   // Rule: If from token, fetch details immediately using token, userDetails NOT needed
   useEffect(() => {
-    if (!isFromToken) return;
+    if (!isFromToken && !isSpecialToken) return;
     if (isExpired) return;
     const adUploadId = getAdIdFromUrlParams(searchParams);
     if (!adUploadId) {
@@ -354,7 +438,7 @@ export default function ResultsPage() {
     let didCancel = false;
     const fetchAdDetails = async () => {
       try {
-        const shareToken = searchParams.get('token') || searchParams.get('ad-token');
+        const shareToken = searchParams.get('token') || searchParams.get('ad-token') || searchParams.get('top10-token') || searchParams.get('trending-token');
         let userIdParam = '';
         if (shareToken) {
           const userIdFromToken = parseUserIdFromToken(shareToken);
@@ -378,11 +462,11 @@ export default function ResultsPage() {
     fetchAdDetails();
     return () => { didCancel = true; };
     // Runs once per token
-  }, [isFromToken, searchParams, isExpired]);
+  }, [isFromToken, isSpecialToken, searchParams, isExpired]);
 
   // Rule: If NOT from token, only fetch when userDetails is loaded
   useEffect(() => {
-    if (isFromToken) return;
+    if (isFromToken || isSpecialToken) return;
     if (isExpired) return;
     if (!userDetails) return;
     const adUploadId = getAdIdFromUrlParams(searchParams);
@@ -596,8 +680,8 @@ export default function ResultsPage() {
           <div className="flex items-center justify-between mb-6 sm:mb-8 gap-4">
             {/* Left: Back + Title + Subtitle */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-              {/* Back Button - Hidden when viewing via shared token */}
-              {!isFromToken && (
+              {/* Back Button - Hidden when viewing via shared token or special tokens */}
+              {!isFromToken && !isSpecialToken && (
                 <button
                   onClick={() => {
                     // Show upgrade popup if user is free trial user OR has 0 ads limit
@@ -615,19 +699,25 @@ export default function ResultsPage() {
 
               {/* Title + Subtitle */}
               <div className="text-left min-w-0 flex-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 truncate">Analysis Results</h1>
-                <p className="text-gray-300 text-sm sm:text-base hidden sm:block">AI-powered insights for your ad creative</p>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 truncate">
+                  {isFromTop10Token ? "Top 10 Ads" : isFromTrendingToken ? "Trending Ads" : "Analysis Results"}
+                </h1>
+                <p className="text-gray-300 text-sm sm:text-base hidden sm:block">
+                  {isFromTop10Token ? "Top performing ad creatives" : isFromTrendingToken ? "Trending ad creatives" : "AI-powered insights for your ad creative"}
+                </p>
               </div>
             </div>
 
-            {/* Right: Logo */}
-            <div className="flex-shrink-0">
-              {apiData?.agency_logo && apiData.agency_logo.trim() !== "" ? (
-                <Image src={apiData.agency_logo} alt="Logo" className="h-10 sm:h-14 w-auto" width={56} height={56} />
-              ) : (
-                <Image src={logo} alt="Logo" className="h-10 sm:h-14 w-auto" />
-              )}
-            </div>
+            {/* Right: Logo - Hidden for special tokens */}
+            {!isSpecialToken && (
+              <div className="flex-shrink-0">
+                {apiData?.agency_logo && apiData.agency_logo.trim() !== "" ? (
+                  <Image src={apiData.agency_logo} alt="Logo" className="h-10 sm:h-14 w-auto" width={56} height={56} />
+                ) : (
+                  <Image src={logo} alt="Logo" className="h-10 sm:h-14 w-auto" />
+                )}
+              </div>
+            )}
           </div>
 
           <div className="w-full mx-auto space-y-6 sm:space-y-8 ">
@@ -645,8 +735,8 @@ export default function ResultsPage() {
                         : apiData.title
                       : "Untitled Ad"}
                   </h2>
-                  {/* Delete Button - Only for non-token users */}
-                  {!isFromToken && (
+                  {/* Delete Button - Only for non-token users and non-special tokens */}
+                  {!isFromToken && !isSpecialToken && (
                     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                       <AlertDialogTrigger asChild>
                         <Button
@@ -928,7 +1018,7 @@ export default function ResultsPage() {
                   {/* View Target Button */}
                   <Dialog open={viewTargetOpen} onOpenChange={setViewTargetOpen}>
                     <DialogTrigger asChild>
-                    <Button
+                      <Button
                         size="sm"
                         aria-label="View target details"
                         className={`
@@ -936,7 +1026,7 @@ export default function ResultsPage() {
                                   ${apiData?.target_match_score >= 80
                             ? "bg-green-700/20 text-green-400 border border-green-700/40 hover:bg-green-700/30"
                             : apiData?.target_match_score >= 60
-                              ? "bg-yellow-700/20 text-yellow-400 border border-yellow-700/40 hover:bg-yellow-700/30"
+                              ? "bg-[#F99244]/20 text-[#F99244] border border-[#F99244]/40 hover:bg-[#F99244]/30"
                               : "bg-red-700/20 text-red-400 border border-red-700/40 hover:bg-red-700/30"}
                             `}
                       >
@@ -951,55 +1041,57 @@ export default function ResultsPage() {
                       </Button>
                     </DialogTrigger>
 
-                    <DialogContent className="bg-black border border-[#2b2b2b] rounded-2xl w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-4 sm:p-6">
+                    <DialogContent className="bg-[#171717] border border-primary rounded-2xl w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto  p-4 sm:p-6">
                       <DialogHeader>
-                        <DialogTitle className="text-white text-lg sm:text-xl flex items-center gap-2">
-                          <Target className="w-5 h-5 text-[#db4900]" />
-                          Target Details
+                        <DialogTitle className="text-white text-lg sm:text-xl mt-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+                            {/* --- Left (Title + Subtitle) --- */}
+                            <div className="flex flex-col gap-1">
+                              <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-2">
+                                <BarChart3 className="w-5 h-5 text-primary shrink-0" />
+                                Targeting Comparison
+                              </h3>
+                              <p className="text-xs text-white/60">
+                                How well your targeting aligns with the suggested setup
+                              </p>
+                            </div>
+
+                            {/* --- Right (Score Badge) --- */}
+                            <div
+                              className={`
+                                    px-3 py-1 text-sm sm:text-base font-semibold rounded-full border
+                                    self-center sm:self-auto
+                                    ${apiData.target_match_score >= 80
+                                  ? "bg-green-700/20 text-green-400 border-green-700/40"
+                                  : apiData.target_match_score >= 60
+                                    ? "bg-[#F99244]/20 text-[#F99244] border-[#F99244]/40"
+                                    : "bg-red-700/20 text-red-400 border-red-700/40"
+                                }
+                                `}
+                            >
+                              {apiData.target_match_score}% Match
+                            </div>
+                          </div>
                         </DialogTitle>
                       </DialogHeader>
+
 
                       <div className="space-y-6">
                         {/* --- Target Insights Unified Section --- */}
                         {apiData?.target_match_score && (
-                          <div className="bg-[#171717] rounded-2xl p-4 sm:p-5 shadow-md space-y-6">
-
-                            {/* --- Header with Score --- */}
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                              {/* Left section - title and subtitle */}
-                              <div className="flex flex-col gap-1">
-                                <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-2">
-                                  <BarChart3 className="w-5 h-5 text-primary shrink-0" />
-                                  Targeting Comparison
-                                </h3>
-                                <p className="text-xs text-white/60">
-                                  How well your targeting aligns with the suggested setup
-                                </p>
-                              </div>
-
-                              {/* Right section - badge */}
-                              <div
-                                className={`px-3 py-1 text-sm sm:text-base font-semibold rounded-full border self-start sm:self-auto ${apiData.target_match_score >= 80
-                                  ? "bg-green-700/20 text-green-400 border-green-700/40"
-                                  : apiData.target_match_score >= 60
-                                    ? "bg-yellow-700/20 text-yellow-400 border-yellow-700/40"
-                                    : "bg-red-700/20 text-red-400 border-red-700/40"
-                                  }`}
-                              >
-                                {apiData.target_match_score}% Match
-                              </div>
-                            </div>
+                          <div className=" space-y-6">
 
                             {/* --- Targeting Comparison Cards --- */}
                             {apiData?.targeting_compare_json?.length > 0 && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {apiData.targeting_compare_json.map((item: any, index: number) => (
                                   <div
                                     key={index}
-                                    className={`rounded-lg p-3 border relative overflow-hidden transition-all ${item.match === "match"
+                                    className={`rounded-lg px-2  py-2 border relative overflow-hidden transition-all ${item.match === "match"
                                       ? "border-green-700/40 bg-green-900/10"
                                       : item.match === "partial"
-                                        ? "border-yellow-700/40 bg-yellow-900/10"
+                                        ? "border-[#F99244]/40 bg-[#F99244]/10"
                                         : "border-red-700/40 bg-red-900/10"
                                       }`}
                                   >
@@ -1008,7 +1100,7 @@ export default function ResultsPage() {
                                       className={`absolute top-0 left-0 h-1 w-full ${item.match === "match"
                                         ? "bg-green-500/70"
                                         : item.match === "partial"
-                                          ? "bg-yellow-500/70"
+                                          ? "bg-[#F99244]/70"
                                           : "bg-red-500/70"
                                         }`}
                                     />
@@ -1020,7 +1112,7 @@ export default function ResultsPage() {
                                         className={`text-xs font-bold uppercase ${item.match === "match"
                                           ? "text-green-400"
                                           : item.match === "partial"
-                                            ? "text-yellow-400"
+                                            ? "text-[#F99244]"
                                             : "text-red-400"
                                           }`}
                                       >
@@ -1031,13 +1123,19 @@ export default function ResultsPage() {
                                     {/* Comparison Details */}
                                     <div className="text-xs space-y-1">
                                       <p className="text-white/60">
-                                        You:{" "}
                                         <span className="text-white font-medium">{item.user}</span>
                                       </p>
                                       <p className="text-white/60">
-                                        Suggested:{" "}
-                                        <span className="text-white font-medium">
-                                          {item.suggested}
+                                        <span
+                                          className={`flex items-center justify-between w-full px-2 py-1 rounded-md border ${item.match === "match"
+                                            ? "bg-green-700/20 text-green-400 border-green-700/40"
+                                            : item.match === "partial"
+                                              ? "bg-[#F99244]/20 text-[#F99244] border-[#F99244]/40"
+                                              : "bg-red-700/20 text-red-400 border-red-700/40"
+                                            }`}
+                                        >
+                                          <span className="mr-3">AI Recommendation</span>
+                                          <span className="font-bold">{item.suggested}</span>
                                         </span>
                                       </p>
                                     </div>
@@ -1048,13 +1146,13 @@ export default function ResultsPage() {
 
                             {/* --- Divider Line --- */}
                             {apiData?.suggested_interests?.length > 0 && (
-                              <div className="border-t border-[#2b2b2b]" />
+                              <div className="border-t border-[#2b2b2b] mb-2" />
                             )}
 
                             {/* --- Suggested Interests Section --- */}
                             {apiData?.suggested_interests?.length > 0 && (
                               <div>
-                                <h3 className="text-white font-semibold flex items-center gap-2 mb-3 text-base sm:text-lg">
+                                <h3 className="text-white font-semibold flex items-center gap-2 mb-2 text-base sm:text-lg">
                                   <Lightbulb className="w-5 h-5 text-primary shrink-0" />
                                   Suggested Interests
                                 </h3>
@@ -1076,19 +1174,6 @@ export default function ResultsPage() {
 
                     </DialogContent>
                   </Dialog>
-
-                  {/* Download Button */}
-                  <button
-                    onClick={handleDownloadPDF}
-                    disabled={isPdfGenerating || !apiData}
-                    className={`flex items-center justify-center rounded-lg p-2 sm:p-3 transition-all duration-300
-                           ${isPdfGenerating || !apiData
-                        ? "bg-[#2a2a2a] text-gray-500 cursor-not-allowed"
-                        : "bg-[#db4900]/20 text-[#db4900] hover:bg-[#db4900]/30 hover:scale-110"
-                      }`}
-                  >
-                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
 
                 </div>
               </div>
@@ -1244,7 +1329,7 @@ export default function ResultsPage() {
                                   ${apiData?.target_match_score >= 80
                             ? "bg-green-700/20 text-green-400 border border-green-700/40 hover:bg-green-700/30"
                             : apiData?.target_match_score >= 60
-                              ? "bg-yellow-700/20 text-yellow-400 border border-yellow-700/40 hover:bg-yellow-700/30"
+                              ? "bg-[#F99244]/20 text-[#F99244] border border-[#F99244]/40 hover:bg-[#F99244]/30"
                               : "bg-red-700/20 text-red-400 border border-red-700/40 hover:bg-red-700/30"}
                             `}
                       >
@@ -1259,55 +1344,57 @@ export default function ResultsPage() {
                       </Button>
                     </DialogTrigger>
 
-                    <DialogContent className="bg-black border border-[#2b2b2b] rounded-2xl w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-4 sm:p-6">
+                    <DialogContent className="bg-[#171717] border border-primary rounded-2xl w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-4 sm:p-6">
                       <DialogHeader>
-                        <DialogTitle className="text-white text-lg sm:text-xl flex items-center gap-2">
-                          <Target className="w-5 h-5 text-[#db4900]" />
-                          Target Details
+                        <DialogTitle className="text-white text-lg sm:text-xl mt-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+                            {/* --- Left (Title + Subtitle) --- */}
+                            <div className="flex flex-col gap-1">
+                              <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-2">
+                                <BarChart3 className="w-5 h-5 text-primary shrink-0" />
+                                Targeting Comparison
+                              </h3>
+                              <p className="text-xs text-white/60">
+                                How well your targeting aligns with the suggested setup
+                              </p>
+                            </div>
+
+                            {/* --- Right (Score Badge) --- */}
+                            <div
+                              className={`
+                                    px-3 py-1 text-sm sm:text-base font-semibold rounded-full border
+                                    self-center sm:self-auto
+                                    ${apiData.target_match_score >= 80
+                                  ? "bg-green-700/20 text-green-400 border-green-700/40"
+                                  : apiData.target_match_score >= 60
+                                    ? "bg-[#F99244]/20 text-[#F99244] border-[#F99244]/40"
+                                    : "bg-red-700/20 text-red-400 border-red-700/40"
+                                }
+                                `}
+                            >
+                              {apiData.target_match_score}% Match
+                            </div>
+                          </div>
                         </DialogTitle>
                       </DialogHeader>
+
 
                       <div className="space-y-6">
                         {/* --- Target Insights Unified Section --- */}
                         {apiData?.target_match_score && (
-                          <div className="bg-[#171717] rounded-2xl p-4 sm:p-5 shadow-md space-y-6">
-
-                            {/* --- Header with Score --- */}
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                              {/* Left section - title and subtitle */}
-                              <div className="flex flex-col gap-1">
-                                <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-2">
-                                  <BarChart3 className="w-5 h-5 text-primary shrink-0" />
-                                  Targeting Comparison
-                                </h3>
-                                <p className="text-xs text-white/60">
-                                  How well your targeting aligns with the suggested setup
-                                </p>
-                              </div>
-
-                              {/* Right section - badge */}
-                              <div
-                                className={`px-3 py-1 text-sm sm:text-base font-semibold rounded-full border self-start sm:self-auto ${apiData.target_match_score >= 80
-                                  ? "bg-green-700/20 text-green-400 border-green-700/40"
-                                  : apiData.target_match_score >= 60
-                                    ? "bg-yellow-700/20 text-yellow-400 border-yellow-700/40"
-                                    : "bg-red-700/20 text-red-400 border-red-700/40"
-                                  }`}
-                              >
-                                {apiData.target_match_score}% Match
-                              </div>
-                            </div>
+                          <div className=" space-y-6">
 
                             {/* --- Targeting Comparison Cards --- */}
                             {apiData?.targeting_compare_json?.length > 0 && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {apiData.targeting_compare_json.map((item: any, index: number) => (
                                   <div
                                     key={index}
-                                    className={`rounded-lg p-3 border relative overflow-hidden transition-all ${item.match === "match"
+                                    className={`rounded-lg px-2  py-2 border relative overflow-hidden transition-all ${item.match === "match"
                                       ? "border-green-700/40 bg-green-900/10"
                                       : item.match === "partial"
-                                        ? "border-yellow-700/40 bg-yellow-900/10"
+                                        ? "border-[#F99244]/40 bg-[#F99244]/10"
                                         : "border-red-700/40 bg-red-900/10"
                                       }`}
                                   >
@@ -1316,7 +1403,7 @@ export default function ResultsPage() {
                                       className={`absolute top-0 left-0 h-1 w-full ${item.match === "match"
                                         ? "bg-green-500/70"
                                         : item.match === "partial"
-                                          ? "bg-yellow-500/70"
+                                          ? "bg-[#F99244]/70"
                                           : "bg-red-500/70"
                                         }`}
                                     />
@@ -1328,7 +1415,7 @@ export default function ResultsPage() {
                                         className={`text-xs font-bold uppercase ${item.match === "match"
                                           ? "text-green-400"
                                           : item.match === "partial"
-                                            ? "text-yellow-400"
+                                            ? "text-[#F99244]"
                                             : "text-red-400"
                                           }`}
                                       >
@@ -1339,13 +1426,19 @@ export default function ResultsPage() {
                                     {/* Comparison Details */}
                                     <div className="text-xs space-y-1">
                                       <p className="text-white/60">
-                                        You:{" "}
                                         <span className="text-white font-medium">{item.user}</span>
                                       </p>
                                       <p className="text-white/60">
-                                        Suggested:{" "}
-                                        <span className="text-white font-medium">
-                                          {item.suggested}
+                                        <span
+                                          className={`flex items-center justify-between w-full px-2 py-1 rounded-md border ${item.match === "match"
+                                            ? "bg-green-700/20 text-green-400 border-green-700/40"
+                                            : item.match === "partial"
+                                              ? "bg-[#F99244]/20 text-[#F99244] border-[#F99244]/40"
+                                              : "bg-red-700/20 text-red-400 border-red-700/40"
+                                            }`}
+                                        >
+                                          <span className="mr-3">AI Recommendation</span>
+                                          <span className="font-bold">{item.suggested}</span>
                                         </span>
                                       </p>
                                     </div>
@@ -1356,13 +1449,13 @@ export default function ResultsPage() {
 
                             {/* --- Divider Line --- */}
                             {apiData?.suggested_interests?.length > 0 && (
-                              <div className="border-t border-[#2b2b2b]" />
+                              <div className="border-t border-[#2b2b2b] mb-2" />
                             )}
 
                             {/* --- Suggested Interests Section --- */}
                             {apiData?.suggested_interests?.length > 0 && (
                               <div>
-                                <h3 className="text-white font-semibold flex items-center gap-2 mb-3 text-base sm:text-lg">
+                                <h3 className="text-white font-semibold flex items-center gap-2 mb-2 text-base sm:text-lg">
                                   <Lightbulb className="w-5 h-5 text-primary shrink-0" />
                                   Suggested Interests
                                 </h3>
@@ -1401,7 +1494,7 @@ export default function ResultsPage() {
                         : "Untitled Ad"}
                     </h2>
                     <div className="text-gray-300 flex items-center text-xs sm:text-sm gap-2 flex-shrink-0 skip-block">
-                      {!isFromToken && (
+                      {!isFromToken && !isSpecialToken && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -1482,15 +1575,15 @@ export default function ResultsPage() {
                             <h3
                               className={`font-bold ${isGo
                                 ? "text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl"
-                                : "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
+                                : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl"
                                 } ${colorClass}`}
                             >
                               {status || ""}
                             </h3>
                             {isGo ? (
-                              <Check className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 text-white/50" />
+                              <Image src={GoIcon} alt="Go" className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 " />
                             ) : (
-                              <X className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 text-white/50" />
+                              <Image src={NoGoIcon} alt="No Go" className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24" />
                             )}
                           </>
                         );
@@ -1520,7 +1613,7 @@ export default function ResultsPage() {
                     </div>
                     {/* Modal dialog for full reasons */}
                     <Dialog open={showMoreGoReasons} onOpenChange={setShowMoreGoReasons}>
-                      <DialogContent className="bg-black min-w-2xl border border-gray-800">
+                      <DialogContent className="bg-black min-w-2xl border border-primary">
                         <DialogHeader className="border-b border-white/50 pb-2">
                           <DialogTitle className="text-white text-2xl">
                             Go / No-Go Decision — Detailed Analysis
@@ -1687,8 +1780,8 @@ export default function ResultsPage() {
 
                 {/* Unified Actions Row - inside the card, bottom full width */}
                 <div className="hidden lg:flex lg:col-span-3 mt-4 justify-end gap-2 skip-block">
-                  {/* CTAs */}
-                  {isProUser && (
+                  {/* CTAs - Hidden for special tokens */}
+                  {isProUser && !isSpecialToken && !isFromToken && (
                     <>
                       <Button
                         variant="link"
@@ -1715,11 +1808,11 @@ export default function ResultsPage() {
             </div>
 
             {/* Row 3 */}
-            <div className="col-span-4 grid grid-cols-1 lg:grid-cols-6 gap-6 auto-rows-fr">
+            <div className="col-span-4 grid grid-cols-1 lg:grid-cols-6 gap-6 lg:gap-6 lg:auto-rows-fr items-start lg:items-stretch mt-2 sm:mt-6">
               {/* Issues Detected - takes 2 columns */}
-              <div className=" lg:col-span-2 h-full">
+              <div className="lg:col-span-2 mb-0 lg:h-full lg:flex lg:flex-col">
                 <div
-                  className="relative bg-black rounded-2xl p-4 sm:p-6 h-full flex flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
+                  className="relative bg-black rounded-2xl p-4 sm:p-6 lg:h-full lg:flex lg:flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
                   style={{ transition: "all 0.3s" }}
                   onMouseEnter={e => {
                     e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -1760,7 +1853,7 @@ export default function ResultsPage() {
 
 
                   {/* Body */}
-                  <div className="text-left w-full space-y-4 pt-2">
+                  <div className="text-left w-full space-y-2 sm:space-y-4 pt-1 sm:pt-2">
                     {/* Issue Counters */}
                     <div className="grid grid-cols-2 gap-3 w-full items-stretch">
                       {/* Critical Issues */}
@@ -1795,30 +1888,26 @@ export default function ResultsPage() {
                     </div>
 
                     {/* CTR Loss */}
-                    <div className="relative bg-[#141414] rounded-xl border border-[#2a2a2a] p-4 mt-3 flex items-center justify-between hover:border-[#DB4900] transition-all duration-300">
+                    <div className="relative bg-[#141414] rounded-xl border border-[#2a2a2a] p-4 mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:border-[#DB4900] transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <TrendingDown className="w-5 h-5 text-red-400 mt-[2px]" />
                         <div>
-                          <p className="text-sm font-semibold text-white">
-                            Estimated CTR Loss
-                          </p>
-                          <p className="text-xs text-white/70 mt-1">
-                            If issues remain unfixed
-                          </p>
+                          <p className="text-sm font-semibold text-white">Estimated CTR Loss</p>
+                          <p className="text-xs text-white/70 mt-1">If issues remain unfixed</p>
                         </div>
                       </div>
-                      <div className="text-3xl font-bold text-red-400">
-                        {estimatedCtrLoss || "25.66%"}
+
+                      <div className="text-3xl font-bold text-red-400 mt-3 sm:mt-0 self-center sm:self-auto">
+                        {estimatedCtrLoss || "0%"}
                       </div>
                     </div>
-
                   </div>
                 </div>
               </div>
 
               {/* Readability, Best Days & Time, Uniqueness, Ad Fatigue arranged by rows */}
-              <div className="lg:col-span-4 h-full">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+              <div className="lg:col-span-4 lg:flex lg:flex-col lg:h-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:h-full">
                   {/* Row 1 - Col 1: Readability (hidden on small to preserve previous behavior) */}
                   <div className="hidden lg:block">
                     <div
@@ -1914,7 +2003,7 @@ export default function ResultsPage() {
                         }
 
                         return (
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                          <div className="flex flex-row items-start sm:items-center gap-6">
                             {/* Days */}
                             <div>
                               <h4 className="text-white text-sm mb-2 font-medium">Days</h4>
@@ -2042,7 +2131,7 @@ export default function ResultsPage() {
 
             {/* Engagement Insights - Mobile Optimized */}
             <ProOverlay message=" Upgrade to Pro to see detailed engagement insights.">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-6 mt-2 sm:mt-6">
                 {/* Traffic Prediction */}
                 <div
                   className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
@@ -2264,7 +2353,7 @@ export default function ResultsPage() {
                       </div>
                       {/* Spend Recommendation */}
 
-                      <div className="bg-[#171717] border border-[#2b2b2b] rounded-lg p-3 sm:p-4 max-w-[95%]">
+                      <div className="bg-[#171717] border border-[#2b2b2b] rounded-lg p-3 sm:p-4">
                         <p className="text-primary text-xs sm:text-sm mb-1 font-medium">Strategy Tip:</p>
                         <p className="text-gray-100 text-xs sm:text-sm leading-relaxed">
                           {apiData.spend_recommendation_strategy_tip || "No recommendation available."}
@@ -2931,7 +3020,7 @@ export default function ResultsPage() {
             </div>
 
             <div className="skip-block">
-              {apiData?.go_no_go?.trim()?.toLowerCase() === 'go' && (
+              {apiData?.go_no_go?.trim()?.toLowerCase() === 'go' && !isFromToken && !isSpecialToken && (
                 <PreCampaignChecklist
                   adUploadId={apiData.ad_upload_id}
                   userId={String(userDetails?.user_id)}
@@ -2949,7 +3038,7 @@ export default function ResultsPage() {
                 </span>
               </div>
               <div className="flex items-center justify-center gap-2">
-                {!isFromToken && (
+                {!isFromToken && !isSpecialToken && (
                   <>
                     <Button
                       className="text-white border border-primary bg-[#171717] font-semibold rounded-lg py-3 transition duration-200 text-base"
@@ -2987,7 +3076,7 @@ export default function ResultsPage() {
 
         {showIntro && (
           <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-2xl border border-[#171717] bg-black p-6 shadow-xl">
+            <div className="w-full max-w-md rounded-2xl border border-primary bg-black p-6 shadow-xl">
               <h3 className="text-xl font-semibold mb-2">Pre-run check</h3>
 
               <div className="text-sm text-gray-400 mb-1">Go / No Go</div>
@@ -3013,7 +3102,7 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {isProUser && !isFromToken && (
+        {isProUser && !isFromToken && !isSpecialToken && (
           <motion.button
             className="fixed bottom-4 right-4 w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg sm:hidden"
             whileHover={{ scale: 1.05 }}
@@ -3037,8 +3126,8 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {/* Fixed button for shared token views */}
-        {isFromToken && (
+        {/* Fixed button for shared token views - Hidden for special tokens */}
+        {isFromToken && !isSpecialToken && (
           <motion.div
             className="fixed bottom-22 right-4 z-50 skip-block"
             initial={{ opacity: 0, y: 20 }}
@@ -3095,6 +3184,35 @@ export default function ResultsPage() {
             onMaybeLater={() => { setShowUpgradePopup(false); router.back() }}
           />
         }
+
+        {/* Hidden Share Card for Image Generation */}
+        <div className="fixed -left-[9999px] top-0 pointer-events-none">
+          <AdPerformancePost
+            logo={apiData?.agency_logo || logo.src}
+            confidenceScore={apiData?.confidence_score || 0}
+            performanceScore={apiData?.score_out_of_100 || 0}
+            goStatus={(apiData?.go_no_go as "Go" | "No Go") || "No Go"}
+            industry={apiData?.industry || "N/A"}
+            bestSuit={platformSuitability.map(p => p.platform)}
+            website={apiData?.agency_website || "adalyze.app"}
+            adImage={images.length > 0 ? images[0] : logo.src}
+          />
+        </div>
+
+        {/* Share Image Generation Loading */}
+        {isShareImageGenerating && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm skip-block">
+            <motion.div
+              className="bg-[#1f1f21] text-white px-4 py-3 rounded-xl shadow-xl border border-white/10 flex items-center gap-3"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Generating share image...</span>
+            </motion.div>
+          </div>
+        )}
       </div>
 
       {!isFromToken && (

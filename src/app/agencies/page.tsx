@@ -247,7 +247,7 @@ export default function AgenciesPage() {
                         viewport={{ once: true }}
                     >
                         <motion.div
-                            className="group relative bg-black rounded-md lg:col-span-3 p-2 sm:p-4 flex justify-between flex-col h-[250px] sm:h-[280px] lg:h-[310px] overflow-hidden shadow-md border border-zinc-800 hover:border-orange-500/40 transition-all duration-300"
+                            className="group relative bg-black rounded-2xl lg:col-span-3 p-2 sm:p-4 flex justify-between flex-col h-[250px] sm:h-[280px] lg:h-[310px] overflow-hidden shadow-md border border-zinc-800 hover:border-orange-500/40 transition-all duration-300"
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
@@ -269,7 +269,7 @@ export default function AgenciesPage() {
                                     fill
                                     className="object-cover opacity-20 transition-transform duration-500 group-hover:scale-110"
                                 />
-                                <div className="absolute inset-0 bg-black/40" />
+                                <div className="absolute inset-0 bg-black/20" />
                             </div>
 
                             {/* Content */}
@@ -286,7 +286,7 @@ export default function AgenciesPage() {
                             </div>
                         </motion.div>
                         <motion.div
-                            className="group relative bg-black rounded-md lg:col-span-2 p-2 sm:p-4 flex justify-between flex-col h-[250px] sm:h-[280px] lg:h-[310px] overflow-hidden shadow-md border border-zinc-800 hover:border-orange-500/40 transition-all duration-300"
+                            className="group relative bg-black rounded-2xl lg:col-span-2 p-2 sm:p-4 flex justify-between flex-col h-[250px] sm:h-[280px] lg:h-[310px] overflow-hidden shadow-md border border-zinc-800 hover:border-orange-500/40 transition-all duration-300"
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
@@ -308,7 +308,7 @@ export default function AgenciesPage() {
                                     fill
                                     className="object-cover opacity-20 transition-transform duration-500 group-hover:scale-110"
                                 />
-                                <div className="absolute inset-0 bg-black/40" />
+                                <div className="absolute inset-0 bg-black/20" />
                             </div>
 
                             {/* Content */}
@@ -327,7 +327,7 @@ export default function AgenciesPage() {
                         </motion.div>
 
                         <motion.div
-                            className="group relative bg-black rounded-md lg:col-span-2 p-2 sm:p-4 flex justify-between flex-col h-[250px] sm:h-[280px] lg:h-[310px] overflow-hidden shadow-md border border-zinc-800 hover:border-orange-500/40 transition-all duration-300"
+                            className="group relative bg-black rounded-2xl lg:col-span-2 p-2 sm:p-4 flex justify-between flex-col h-[250px] sm:h-[280px] lg:h-[310px] overflow-hidden shadow-md border border-zinc-800 hover:border-orange-500/40 transition-all duration-300"
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
@@ -349,7 +349,7 @@ export default function AgenciesPage() {
                                     fill
                                     className="object-cover opacity-20 transition-transform duration-500 group-hover:scale-110"
                                 />
-                                <div className="absolute inset-0 bg-black/40" />
+                                <div className="absolute inset-0 bg-black/20" />
                             </div>
 
                             {/* Content */}
@@ -367,7 +367,7 @@ export default function AgenciesPage() {
                             </div>
                         </motion.div>
                         <motion.div
-                            className="group relative bg-black rounded-md lg:col-span-3 p-2 sm:p-4 flex justify-between flex-col h-[250px] sm:h-[280px] lg:h-[310px] overflow-hidden shadow-md border border-zinc-800 hover:border-orange-500/40 transition-all duration-300"
+                            className="group relative bg-black rounded-2xl lg:col-span-3 p-2 sm:p-4 flex justify-between flex-col h-[250px] sm:h-[280px] lg:h-[310px] overflow-hidden shadow-md border border-zinc-800 hover:border-orange-500/40 transition-all duration-300"
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
@@ -389,7 +389,7 @@ export default function AgenciesPage() {
                                     fill
                                     className="object-cover opacity-20 transition-transform duration-500 group-hover:scale-110"
                                 />
-                                <div className="absolute inset-0 bg-black/40" />
+                                <div className="absolute inset-0 bg-black/20" />
                             </div>
 
                             {/* Content */}
@@ -609,7 +609,7 @@ export default function AgenciesPage() {
                                 viewport={{ once: true }}
                                 className="block"
                             >
-                                Agency-Only Edge
+                                Agency-Only Benefits
                             </motion.span>
 
                         </motion.h2>
@@ -667,15 +667,9 @@ export default function AgenciesPage() {
                                                 <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#db4900] to-[#b71c1c] rounded-lg flex items-center justify-center">
                                                     <step.icon className="w-6 h-6 text-white" />
                                                 </div>
-                                                <h3 className="text-lg font-medium opacity-80">Benefit: {step.stepNumber}</h3>
                                             </div>
 
-                                            {/* Desktop Step Layout */}
-                                            <h3 className="hidden md:block text-lg sm:text-xl font-medium opacity-80 mb-6 sm:mb-8">
-                                                Benefit: {step.stepNumber}
-                                            </h3>
-
-                                            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-[#db4900] to-[#b71c1c] bg-clip-text text-transparent leading-tight">
+                                            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-[#db4900] to-[#b71c1c] bg-clip-text text-transparent leading-tight">
                                                 {step.title}
                                             </h2>
                                             <p className="text-base sm:text-lg opacity-90 leading-relaxed mb-4 sm:mb-6">{step.description}</p>

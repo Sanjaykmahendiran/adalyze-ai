@@ -95,7 +95,7 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
             toast.error("Only JPG or JPEG images are allowed")
             return
         }
-        
+
         // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             toast.error("Image size should be less than 5MB")
@@ -143,8 +143,28 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
     }
 
     const handleAddBrand = async () => {
-        if (!brandName.trim() || !brandEmail.trim() || !brandMobile.trim()) {
-            toast.error("Please fill in all required fields")
+        // Validate all required fields
+        if (!brandName.trim()) {
+            toast.error("Brand Name is required")
+            return
+        }
+        if (!brandEmail.trim()) {
+            toast.error("Brand Email is required")
+            return
+        }
+        if (!brandMobile.trim()) {
+            toast.error("Brand Mobile Number is required")
+            return
+        }
+        if (!logoUrl.trim()) {
+            toast.error("Logo is required. Please upload a logo.")
+            return
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(brandEmail.trim())) {
+            toast.error("Please enter a valid email address")
             return
         }
 
@@ -219,7 +239,7 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
             />
             {/* Popup Content */}
             <div className="relative z-10 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-                <div className="rounded-lg border border-white/10 bg-black px-4 py-3 max-h-[90vh] w-full overflow-y-auto">
+                <div className="rounded-lg border border-primary bg-black px-4 py-3 max-h-[90vh] w-full overflow-y-auto">
                     <div className="mb-4 flex justify-between items-start border-b border-white/10 pb-4">
                         <div >
                             <h2 className="text-xl font-semibold text-white">
@@ -246,9 +266,9 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                         </Button>
                     </div>
 
-                    <div className="grid gap-6">
+                    <div className="grid gap-4">
                         {/* Logo Upload and Brand Tip */}
-                        <div className="flex flex-col sm:flex-row gap-6">
+                        <div className="flex flex-col sm:flex-row gap-4">
                             {/* Logo Upload Section */}
                             <div className="flex-1 space-y-2">
                                 <Label htmlFor="logo" className="text-white font-semibold text-base">Logo *</Label>
@@ -304,9 +324,9 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
 
                             {/* Brand Tip Section */}
                             <div className="flex-1">
-                                <div className="p-4 bg-[#171717] rounded-lg border border-white/5 h-full">
+                                <div className="p-2 bg-[#171717] rounded-lg border border-white/5 h-full">
                                     <h3 className="text-white font-semibold text-sm mb-2">Brand Tip:</h3>
-                                    <p className="text-white/70 text-sm leading-relaxed">
+                                    <p className="text-white/70 text-xs leading-relaxed">
                                         The details you add here help Adalyze understand, verify your brand identity and Analysis better.
                                         Use your official logo (clean, high-resolution, square & JPG or JPEG format if possible) and the same name, mobile number, and email that you use across your social media pages.
                                     </p>
@@ -389,6 +409,7 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                                     !brandEmail.trim() ||
                                     !brandMobile.trim() ||
                                     !website.trim() ||
+                                    !logoUrl.trim() ||
                                     isAtBrandLimit
                                 }
                                 className="flex-1"

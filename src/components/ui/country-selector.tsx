@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState, useRef, useEffect } from "react"
-import { CheckIcon, ChevronDown, X } from "lucide-react"
+import { CheckIcon, ChevronDown, X, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -47,8 +47,23 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
     const [isPopoverOpen, setIsPopoverOpen] = useState(false)
     const [searchInput, setSearchInput] = useState("")
     const [isSearching, setIsSearching] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
+    const [isModalOpen, setIsModalOpen] = useState(false)
     const isPopoverOpenRef = useRef(isPopoverOpen)
     const isSearchingRef = useRef(isSearching)
+    const searchInputRef = useRef<HTMLInputElement>(null)
+
+    // Detect mobile viewport
+    useEffect(() => {
+      const updateIsMobile = () => {
+        if (typeof window !== "undefined") {
+          setIsMobile(window.innerWidth <= 640)
+        }
+      }
+      updateIsMobile()
+      window.addEventListener('resize', updateIsMobile)
+      return () => window.removeEventListener('resize', updateIsMobile)
+    }, [])
 
     // Update refs when state changes
     useEffect(() => {
@@ -75,10 +90,34 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
         ? selectedValues.filter((value) => value !== optionValue)
         : [...selectedValues, optionValue]
       onValueChange(newSelectedValues)
+      // Reset search after selection
+      setSearchInput("")
+      setIsSearching(false)
+      if (onSearchChange) {
+        onSearchChange("")
+      }
+      // Refocus the search input after reset
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 0)
     }
 
-    const handleClear = () => {
+    const handleCloseModal = () => {
       onValueChange([])
+      setIsModalOpen(false)
+    }
+    const handleAdd = () => {
+      setIsModalOpen(false)
+      onValueChange(selectedValues)
+      setSearchInput("")
+      setIsSearching(false)
+      if (onSearchChange) {
+        onSearchChange("")
+      }
+      // Refocus the search input after reset
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 0)
     }
 
     const handleTogglePopover = () => {
@@ -102,206 +141,399 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
     }
 
     return (
-      <Popover open={isPopoverOpen} onOpenChange={handleOpenChange} modal={false}>
-        <PopoverTrigger asChild>
-          <button
-            ref={ref}
-            {...props}
-            onClick={(e) => {
-              if (!(e.target as HTMLElement).closest(".x-circle-icon")) {
-                handleTogglePopover()
-              }
-            }}
-            className={cn(
-              "flex w-full p-1 rounded-md border min-h-10 h-auto items-center justify-between",
-              className,
-            )}
-          >
-            {selectedValues.length > 0 ? (
-              <div className="flex justify-between items-center w-full gap-1">
-                <div className="flex flex-wrap items-center gap-1">
-                  {getSelectedLabels().slice(0, 6).map((label, index) => (
-                    <Badge
-                      key={selectedValues[index]}
-                      className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] flex items-center gap-1")}
-                    >
-                      {label}
-                      <X
-                        className="h-3 w-3 cursor-pointer hover:text-red-500 x-circle-icon"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const newSelectedValues = selectedValues.filter((_, i) => i !== index)
-                          onValueChange(newSelectedValues)
+      <>
+        {/* Mobile Modal */}
+        {isMobile ? (
+          <>
+            <button
+              ref={ref}
+              {...props}
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className={cn(
+                "flex w-full p-1 rounded-md border min-h-10 h-auto items-center justify-between",
+                className,
+              )}
+            >
+              {selectedValues.length > 0 ? (
+                <div className="flex justify-between items-center w-full gap-1">
+                  <div className="flex flex-wrap items-center gap-1">
+                    {getSelectedLabels().slice(0, 6).map((label, index) => (
+                      <Badge
+                        key={selectedValues[index]}
+                        className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] flex items-center gap-1")}
+                      >
+                        {label}
+                        <X
+                          className="h-3 w-3 cursor-pointer hover:text-red-500 x-circle-icon"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const newSelectedValues = selectedValues.filter((_, i) => i !== index)
+                            onValueChange(newSelectedValues)
+                          }}
+                        />
+                      </Badge>
+                    ))}
+                    {selectedValues.length > 6 && (
+                      <Badge className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] ml-2")}>
+                        {`+ ${selectedValues.length - 6} more`}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <ChevronDown className="h-4 mx-2 cursor-pointer text-muted-foreground" />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between w-full mx-auto">
+                  <span className="text-sm text-muted-foreground mx-3">{placeholder}</span>
+                  <ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2" />
+                </div>
+              )}
+            </button>
+
+            {isModalOpen && (
+              <div
+                className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-[100000]"
+                onClick={() => {
+                  setIsModalOpen(false)
+                  setSearchInput("")
+                  setIsSearching(false)
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-black rounded-xl w-full max-w-md h-[60vh] flex flex-col"
+                >
+                  <div className="p-4 border-b border-white/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-white font-semibold">Select Countries</h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsModalOpen(false)
+                          setSearchInput("")
+                          setIsSearching(false)
                         }}
+                        className="text-white/80 hover:text-white"
+                        aria-label="Close"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={searchInput}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setSearchInput(value)
+                          setIsSearching(value.length > 0)
+                          if (onSearchChange) {
+                            onSearchChange(value)
+                          }
+                        }}
+                        placeholder="Search countries..."
+                        className="w-full pl-9 pr-3 py-3 text-sm bg-[#171717] text-white rounded-md placeholder-white/70 focus:outline-none focus:border-orange-500 transition-colors"
+                        autoComplete="off"
+                        autoFocus
                       />
-                    </Badge>
-                  ))}
-                  {selectedValues.length > 6 && (
-                    <Badge className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] ml-2")}>
-                      {`+ ${selectedValues.length - 6} more`}
-                    </Badge>
-                  )}
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-2">
+                    {loading ? (
+                      <div className="px-4 py-4 text-sm text-gray-400 text-center">Loading...</div>
+                    ) : options.length === 0 ? (
+                      <div className="px-4 py-4 text-sm text-gray-400 text-center">No countries found.</div>
+                    ) : (
+                      <>
+                        {/* Show selected items first */}
+                        {selectedValues
+                          .map(selectedValue => {
+                            let option = options.find(opt => opt.value === selectedValue)
+                            if (!option) {
+                              option = {
+                                value: selectedValue,
+                                label: selectedValue,
+                                id: `placeholder-${selectedValue}`,
+                                type: 'selected'
+                              }
+                            }
+                            return { ...option, isSelected: true }
+                          })
+                          .map((option) => (
+                            <button
+                              key={`selected-${option.id}-${option.type}`}
+                              type="button"
+                              onClick={() => toggleOption(option.value)}
+                              className="w-full text-left text-white flex items-center gap-2 mb-1"
+                            >
+                              <div className="flex h-4 w-4 items-center justify-center rounded-sm border border-primary bg-primary text-primary-foreground">
+                                <CheckIcon className="h-4 w-4" />
+                              </div>
+                              <span className="font-medium">{option.label}</span>
+                            </button>
+                          ))
+                        }
+
+                        {/* Show unselected options */}
+                        {options
+                          .filter(option => !selectedValues.includes(option.value))
+                          .map((option) => (
+                            <button
+                              key={`${option.id}-${option.type}`}
+                              type="button"
+                              onClick={() => toggleOption(option.value)}
+                              className="w-full text-left py-1 rounded-lg transition-colors text-white hover:bg-[#2b2b2b] flex items-center gap-2 mb-1"
+                            >
+                              <div className="flex h-4 w-4 items-center justify-center rounded-sm border border-primary opacity-50">
+                                <CheckIcon className="h-4 w-4 invisible" />
+                              </div>
+                              <span>{option.label}</span>
+                            </button>
+                          ))
+                        }
+                      </>
+                    )}
+                  </div>
+                  {/* Footer with actions */}
+                  <div className="border-t border-white/50">
+                    <div className="flex items-center justify-between">
+                      {selectedValues.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsModalOpen(false)
+                            handleCloseModal()
+                          }}
+                          className="flex-1 py-3 text-sm cursor-pointer hover:bg-[#2b2b2b] text-white"
+                        >
+                          close
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleAdd()
+                        }}
+                        className="flex-1 py-3 text-sm cursor-pointer hover:bg-[#2b2b2b] max-w-full text-white"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <ChevronDown className="h-4 mx-2 cursor-pointer text-muted-foreground" />
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between w-full mx-auto">
-                <span className="text-sm text-muted-foreground mx-3">{placeholder}</span>
-                <ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2" />
               </div>
             )}
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-full md:w-[380px] p-0"
-          align="start"
-          onEscapeKeyDown={() => setIsPopoverOpen(false)}
-          onInteractOutside={(e) => {
-            // Prevent closing when clicking on search input or interacting with dropdown content
-            if (e.target instanceof Element && e.target.closest('[data-radix-popper-content-wrapper]')) {
-              e.preventDefault()
-            }
-          }}
-        >
-          <Command shouldFilter={false} className="flex flex-col">
-            <CommandInput
-              placeholder="Search countries..."
-              onKeyDown={(e) => {
-                handleInputKeyDown(e)
-                // Prevent focus issues and dropdown closing
-                e.stopPropagation()
-                // Only prevent default for specific keys that might close dropdown
-                if (e.key === 'Escape') {
+          </>
+        ) : (
+          /* Desktop Popover */
+          <Popover open={isPopoverOpen} onOpenChange={handleOpenChange} modal={false}>
+            <PopoverTrigger asChild>
+              <button
+                ref={ref}
+                {...props}
+                onClick={(e) => {
+                  if (!(e.target as HTMLElement).closest(".x-circle-icon")) {
+                    handleTogglePopover()
+                  }
+                }}
+                className={cn(
+                  "flex w-full p-1 rounded-md border min-h-10 h-auto items-center justify-between",
+                  className,
+                )}
+              >
+                {selectedValues.length > 0 ? (
+                  <div className="flex justify-between items-center w-full gap-1">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {getSelectedLabels().slice(0, 6).map((label, index) => (
+                        <Badge
+                          key={selectedValues[index]}
+                          className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] flex items-center gap-1")}
+                        >
+                          {label}
+                          <X
+                            className="h-3 w-3 cursor-pointer hover:text-red-500 x-circle-icon"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const newSelectedValues = selectedValues.filter((_, i) => i !== index)
+                              onValueChange(newSelectedValues)
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                      {selectedValues.length > 6 && (
+                        <Badge className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] ml-2")}>
+                          {`+ ${selectedValues.length - 6} more`}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <ChevronDown className="h-4 mx-2 cursor-pointer text-muted-foreground" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between w-full mx-auto">
+                    <span className="text-sm text-muted-foreground mx-3">{placeholder}</span>
+                    <ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2" />
+                  </div>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-full md:w-[380px] p-0"
+              align="start"
+              onEscapeKeyDown={() => setIsPopoverOpen(false)}
+              onInteractOutside={(e) => {
+                // Prevent closing when clicking on search input or interacting with dropdown content
+                if (e.target instanceof Element && e.target.closest('[data-radix-popper-content-wrapper]')) {
                   e.preventDefault()
                 }
               }}
-              onKeyUp={(e) => {
-                // Prevent dropdown from closing on key up
-                e.stopPropagation()
-              }}
-              value={searchInput}
-              onValueChange={(value) => {
-                setSearchInput(value)
-                // Track when we're searching
-                setIsSearching(value.length > 0)
-                // Call external search callback if provided
-                if (onSearchChange) {
-                  onSearchChange(value)
-                }
-              }}
-            />
-            <div className="flex flex-col max-h-[360px]">
-            <CommandList className="flex-1 overflow-auto">
-              <CommandEmpty>
-                {loading ? "Loading..." : "No countries found."}
-              </CommandEmpty>
-              <CommandGroup>
-                {options.length === 0 ? (
-                  <CommandItem disabled className="cursor-not-allowed">
-                    <span className="text-muted-foreground">No countries available</span>
-                  </CommandItem>
-                ) : (
-                  <>
-                    {/* Show selected items first, even if they don't match search */}
-                    {selectedValues
-                      .map(selectedValue => {
-                        // First try to find in current options
-                        let option = options.find(opt => opt.value === selectedValue)
-                        
-                        // If not found in current options, create a placeholder option
-                        if (!option) {
-                          option = {
-                            value: selectedValue,
-                            label: selectedValue,
-                            id: `placeholder-${selectedValue}`,
-                            type: 'selected'
-                          }
-                        }
-                        
-                        return { ...option, isSelected: true }
-                      })
-                      .map((option) => (
-                        <CommandItem 
-                          key={`selected-${option.id}-${option.type}`} 
-                          onSelect={() => {
-                            toggleOption(option.value)
-                          }}
-                          className="cursor-pointer bg-primary/10"
-                        >
-                          <div
-                            className={cn(
-                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                              "bg-primary text-primary-foreground"
-                            )}
-                          >
-                            <CheckIcon className="h-4 w-4" />
-                          </div>
-                          <span className="font-medium">{option.label}</span>
-                        </CommandItem>
-                      ))
+            >
+              <Command shouldFilter={false} className="flex flex-col">
+                <CommandInput
+                  placeholder="Search countries..."
+                  onKeyDown={(e) => {
+                    handleInputKeyDown(e)
+                    // Prevent focus issues and dropdown closing
+                    e.stopPropagation()
+                    // Only prevent default for specific keys that might close dropdown
+                    if (e.key === 'Escape') {
+                      e.preventDefault()
                     }
-                    
-                    {/* Show unselected options that match the search */}
-                    {options
-                      .filter(option => !selectedValues.includes(option.value))
-                      .map((option) => {
-                        const isSelected = selectedValues.includes(option.value)
-                        return (
-                          <CommandItem 
-                            key={`${option.id}-${option.type}`} 
-                            onSelect={() => {
-                              toggleOption(option.value)
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <div
-                              className={cn(
-                                "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible",
-                              )}
-                            >
-                              <CheckIcon className="h-4 w-4" />
-                            </div>
-                            <span>{option.label}</span>
-                          </CommandItem>
-                        )
-                      })
-                    }
-                  </>
-                )}
-              </CommandGroup>
-            </CommandList>
-            {/* Sticky footer with actions */}
-            <div className="sticky bottom-0 bg-background border-t">
-              <div className="flex items-center justify-between">
-                {selectedValues.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleClear()
-                    }}
-                    className="flex-1 py-2 text-sm cursor-pointer hover:bg-accent"
-                  >
-                    Clear
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsPopoverOpen(false)
                   }}
-                  className="flex-1 py-2 text-sm cursor-pointer hover:bg-accent max-w-full"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-            </div>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                  onKeyUp={(e) => {
+                    // Prevent dropdown from closing on key up
+                    e.stopPropagation()
+                  }}
+                  value={searchInput}
+                  onValueChange={(value) => {
+                    setSearchInput(value)
+                    // Track when we're searching
+                    setIsSearching(value.length > 0)
+                    // Call external search callback if provided
+                    if (onSearchChange) {
+                      onSearchChange(value)
+                    }
+                  }}
+                />
+                <div className="flex flex-col max-h-[260px]">
+                  <CommandList className="flex-1 overflow-auto">
+                    <CommandEmpty>
+                      {loading ? "Loading..." : "No countries found."}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {options.length === 0 ? (
+                        <CommandItem disabled className="cursor-not-allowed">
+                          <span className="text-muted-foreground">No countries available</span>
+                        </CommandItem>
+                      ) : (
+                        <>
+                          {/* Show selected items first, even if they don't match search */}
+                          {selectedValues
+                            .map(selectedValue => {
+                              // First try to find in current options
+                              let option = options.find(opt => opt.value === selectedValue)
+
+                              // If not found in current options, create a placeholder option
+                              if (!option) {
+                                option = {
+                                  value: selectedValue,
+                                  label: selectedValue,
+                                  id: `placeholder-${selectedValue}`,
+                                  type: 'selected'
+                                }
+                              }
+
+                              return { ...option, isSelected: true }
+                            })
+                            .map((option) => (
+                              <CommandItem
+                                key={`selected-${option.id}-${option.type}`}
+                                onSelect={() => {
+                                  toggleOption(option.value)
+                                }}
+                                className="cursor-pointer bg-primary/10"
+                              >
+                                <div
+                                  className={cn(
+                                    "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                    "bg-primary text-primary-foreground"
+                                  )}
+                                >
+                                  <CheckIcon className="h-4 w-4" />
+                                </div>
+                                <span className="font-medium">{option.label}</span>
+                              </CommandItem>
+                            ))
+                          }
+
+                          {/* Show unselected options that match the search */}
+                          {options
+                            .filter(option => !selectedValues.includes(option.value))
+                            .map((option) => {
+                              const isSelected = selectedValues.includes(option.value)
+                              return (
+                                <CommandItem
+                                  key={`${option.id}-${option.type}`}
+                                  onSelect={() => {
+                                    toggleOption(option.value)
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <div
+                                    className={cn(
+                                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                      isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible",
+                                    )}
+                                  >
+                                    <CheckIcon className="h-4 w-4" />
+                                  </div>
+                                  <span>{option.label}</span>
+                                </CommandItem>
+                              )
+                            })
+                          }
+                        </>
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                  {/* Sticky footer with actions */}
+                  <div className="sticky bottom-0 bg-background border-t">
+                    <div className="flex items-center justify-between">
+                      {selectedValues.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsPopoverOpen(false)
+                            handleCloseModal()
+                          }}
+                          className="flex-1 py-2 text-sm cursor-pointer hover:bg-accent"
+                        >
+                          close
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPopoverOpen(false)
+                          handleAdd()
+                        }}
+                        className="flex-1 py-2 text-sm cursor-pointer hover:bg-accent max-w-full"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        )}
+      </>
     )
   },
 )

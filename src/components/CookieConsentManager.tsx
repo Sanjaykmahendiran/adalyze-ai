@@ -65,7 +65,7 @@ export default function CookieConsentManager() {
   const handleConsentChange = async (status: string, chosenBefore: boolean) => {
     try {
       let consentData;
-      
+
       if (status === "allow") {
         // User accepted all cookies
         consentData = createConsentData(true, true, true);
@@ -80,12 +80,17 @@ export default function CookieConsentManager() {
       // Send consent data to API
       await sendCookieConsent(consentData);
       console.log("Cookie consent sent to API successfully");
-      
+
       // Hide the cookie banner after user makes a choice
       if (typeof window !== "undefined" && (window as any).cookieconsent) {
         (window as any).cookieconsent.eraseCookies();
       }
-      
+
+      // Reload the page to apply consent changes immediately
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
+
     } catch (error) {
       console.error("Failed to send cookie consent to API:", error);
       // Still save the consent locally even if API call fails
@@ -94,10 +99,15 @@ export default function CookieConsentManager() {
       } else {
         localStorage.setItem("cookieConsent", "rejected");
       }
-      
+
       // Hide the cookie banner even if API call fails
       if (typeof window !== "undefined" && (window as any).cookieconsent) {
         (window as any).cookieconsent.eraseCookies();
+      }
+
+      // Reload the page even if API call fails so the choice applies
+      if (typeof window !== "undefined") {
+        window.location.reload();
       }
     }
   };

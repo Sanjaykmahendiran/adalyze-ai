@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Search, Eye, Facebook, Instagram, MessageCircle, FileImage, Upload, Loader2, Linkedin, TrendingUp, TrendingDown, Share } from "lucide-react"
+import { Search, Eye, Facebook, Instagram, MessageCircle, FileImage, Upload, Loader2, Linkedin, TrendingUp, TrendingDown, Share, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -127,17 +127,17 @@ export default function MyAdsPage() {
 
     // Hydrate from sessionStorage after mount
     useEffect(() => {
-      if (typeof window !== "undefined") {
-        // Restore tab
-        const savedTab = sessionStorage.getItem('my-ads-active-tab');
-        if (savedTab === "ab-ads" || savedTab === "ads") {
-          setActiveTab(savedTab);
+        if (typeof window !== "undefined") {
+            // Restore tab
+            const savedTab = sessionStorage.getItem('my-ads-active-tab');
+            if (savedTab === "ab-ads" || savedTab === "ads") {
+                setActiveTab(savedTab);
+            }
+            // Restore page for the tab
+            const storageKey = savedTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
+            const savedPage = sessionStorage.getItem(storageKey);
+            if (savedPage) setCurrentPage(parseInt(savedPage, 10));
         }
-        // Restore page for the tab
-        const storageKey = savedTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
-        const savedPage = sessionStorage.getItem(storageKey);
-        if (savedPage) setCurrentPage(parseInt(savedPage, 10));
-      }
     }, []);
 
     // Use the new ad navigation hook
@@ -613,8 +613,8 @@ export default function MyAdsPage() {
                                 }
                             >
                                 <img
-                                    src={abAdPair.ad_a.image_path}
-                                    alt={abAdPair.ad_a.ads_name}
+                                    src={abAdPair.ad_b.image_path}
+                                    alt={abAdPair.ad_b.ads_name}
                                     loading="lazy"
                                     decoding="async"
                                     className="w-full aspect-square object-cover rounded-md transform group-hover:scale-105 transition-all duration-300"
@@ -744,7 +744,7 @@ export default function MyAdsPage() {
     return (
         <UserLayout userDetails={userDetails}>
             {loading ? <MyAdsSkeleton /> : (
-                <div className="w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-28 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
+                <div className="w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-28  pt-4">
                     <div className="mb-6 sm:mb-8">
                         <div>
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1110,6 +1110,27 @@ export default function MyAdsPage() {
                             </div>
 
                         )}
+
+                    {/* Floating Action Button - Desktop Only */}
+                    <div className="hidden md:flex fixed bottom-8 right-8 group">
+                        <button
+                            onClick={() => router.push("/upload")}
+                            className="w-12 h-12 rounded-full bg-primary hover:bg-[#db4900]/90 text-white shadow-lg shadow-black/50 z-50 items-center justify-center transition-all duration-300 hover:scale-110 flex"
+                        >
+                            <Plus className="w-6 h-6" />
+                        </button>
+
+                        {/* Tooltip */}
+                        <span className="absolute right-14 bottom-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100
+                                bg-black text-white text-xs px-3 py-1 rounded-lg shadow-lg border border-[#2a2a2a]
+                            transition-all duration-300 whitespace-nowrap">
+                            Upload
+                        </span>
+                    </div>
+
+
+
+
                 </div>
             )}
         </UserLayout>

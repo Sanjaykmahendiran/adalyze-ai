@@ -102,6 +102,7 @@ export interface Top10Ad {
   platforms: string
   uploaded_on: string
   weighted_rank: number
+  user_id: number
 }
 
 export interface TrendingAd {
@@ -117,6 +118,7 @@ export interface TrendingAd {
   platforms: string
   uploaded_on: string
   weighted_rank: number
+  user_id: number
 }
 
 export interface TrendingAdsResponse {

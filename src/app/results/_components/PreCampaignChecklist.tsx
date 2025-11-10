@@ -81,24 +81,24 @@ function itemIconBySlug(slug: string) {
     const s = slug.toLowerCase();
 
     if (s.includes("lp") || s.includes("landing"))
-        return <Globe className="w-6 h-6 text-blue-400" />;
+        return <Globe className="w-6 h-6 text-primary" />;
 
     if (s.includes("utm") || s.includes("link"))
-        return <LinkIcon className="w-6 h-6 text-green-400" />;
+        return <LinkIcon className="w-6 h-6 text-primary" />;
 
     if (s.includes("pixel") || s.includes("gtm") || s.includes("tracking"))
-        return <BarChart3 className="w-6 h-6 text-purple-400" />;
+        return <BarChart3 className="w-6 h-6 text-primary" />;
 
     if (s.includes("conversion"))
-        return <Target className="w-6 h-6 text-red-400" />;
+        return <Target className="w-6 h-6 text-primary" />;
 
     if (s.includes("audience") || s.includes("geo") || s.includes("demographic"))
-        return <Users className="w-6 h-6 text-yellow-400" />;
+        return <Users className="w-6 h-6 text-primary" />;
 
     if (s.includes("budget") || s.includes("plan"))
-        return <Wallet className="w-6 h-6 text-orange-400" />;
+        return <Wallet className="w-6 h-6 text-primary" />;
 
-    return <Circle className="w-6 h-6 text-gray-400" />;
+    return <Circle className="w-6 h-6 text-primary" />;
 }
 
 export default function PreCampaignChecklist({
@@ -129,6 +129,10 @@ export default function PreCampaignChecklist({
     const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
 
+    // Validation state
+    const [evidenceError, setEvidenceError] = useState<string>("");
+    const [screenshotError, setScreenshotError] = useState<string>("");
+
     // Evidence Viewer state
     const [showViewer, setShowViewer] = useState(false);
     const [viewerItem, setViewerItem] = useState<APIChecklistItem | null>(null);
@@ -136,6 +140,107 @@ export default function PreCampaignChecklist({
     const total = items.length;
     const completed = useMemo(() => items.filter((i) => i.status === "done").length, [items]);
     const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    const isValidHttpUrl = (value: string) => {
+        try {
+            const u = new URL(value.trim());
+            return u.protocol === "http:" || u.protocol === "https:";
+        } catch {
+            return false;
+        }
+    };
+
+    const validateMarkDoneInputs = () => {
+        setEvidenceError("");
+        setScreenshotError("");
+        const f = markDoneItem?.format;
+
+        // Nothing to validate if modal not ready
+        if (!markDoneItem) return false;
+
+        // Format-specific validation
+        if (f === "URL") {
+            if (!evidenceUrl.trim()) {
+                setEvidenceError("URL is required.");
+                return false;
+            }
+            if (!isValidHttpUrl(evidenceUrl)) {
+                setEvidenceError("Enter a valid http(s) URL.");
+                return false;
+            }
+            return true;
+        }
+
+        if (f === "SCREENSHOT") {
+            // Accept either a new file or an existing screenshot URL
+            if (screenshotFile) {
+                if (!screenshotFile.type.startsWith("image/")) {
+                    setScreenshotError("Only image files are allowed.");
+                    return false;
+                }
+                if (screenshotFile.size > MAX_IMAGE_SIZE) {
+                    setScreenshotError("Image must be 5 MB or smaller.");
+                    return false;
+                }
+                return true;
+            }
+            if (!evidenceUrl.trim()) {
+                setScreenshotError("Please upload a screenshot.");
+                return false;
+            }
+            // If an URL is already present, ensure it looks like an image link or data URL
+            const lower = evidenceUrl.trim().toLowerCase();
+            const isImageExt = /\.(png|jpe?g|gif|webp|svg)$/i.test(lower);
+            const isDataImg = lower.startsWith("data:image/");
+            if (!(isImageExt || isDataImg || isValidHttpUrl(evidenceUrl))) {
+                setScreenshotError("Provide a valid image URL or upload a file.");
+                return false;
+            }
+            return true;
+        }
+
+        if (f === "MESSAGE BOX") {
+            if (!evidenceUrl.trim() || evidenceUrl.trim().length < 10) {
+                setEvidenceError("Please enter at least 10 characters.");
+                return false;
+            }
+            return true;
+        }
+
+        // Fallback: infer by current value
+        const kind = getEvidenceKind(evidenceUrl, undefined);
+        if (kind === "url") {
+            if (!isValidHttpUrl(evidenceUrl)) {
+                setEvidenceError("Enter a valid http(s) URL.");
+                return false;
+            }
+            return true;
+        }
+        if (kind === "image") {
+            if (screenshotFile) {
+                if (!screenshotFile.type.startsWith("image/")) {
+                    setScreenshotError("Only image files are allowed.");
+                    return false;
+                }
+                if (screenshotFile.size > MAX_IMAGE_SIZE) {
+                    setScreenshotError("Image must be 5 MB or smaller.");
+                    return false;
+                }
+            } else if (!evidenceUrl.trim()) {
+                setScreenshotError("Please upload a screenshot or provide an image URL.");
+                return false;
+            }
+            return true;
+        }
+        // Treat as message otherwise
+        if (!evidenceUrl.trim() || evidenceUrl.trim().length < 10) {
+            setEvidenceError("Please enter at least 10 characters.");
+            return false;
+        }
+        return true;
+    };
 
     const fetchChecklist = async () => {
         try {
@@ -212,6 +317,8 @@ export default function PreCampaignChecklist({
         setMarkDoneItem(item);
         setEvidenceUrl(item.evidence_url || "");
         setScreenshotFile(null);
+        setEvidenceError("");
+        setScreenshotError("");
         setShowMarkDone(true);
     };
 
@@ -280,6 +387,10 @@ export default function PreCampaignChecklist({
 
     const submitMarkDone = async () => {
         if (!markDoneItem) return;
+
+        // Front-end validation before any network work
+        const ok = validateMarkDoneInputs();
+        if (!ok) return;
 
         try {
             let finalEvidence = evidenceUrl?.trim() ?? "";
@@ -409,18 +520,13 @@ export default function PreCampaignChecklist({
                                 return (
                                     <div
                                         key={item.checklist_id}
-                                        className="flex items-center justify-between bg-[#171717] p-3 sm:p-4 rounded-lg border border-transparent hover:border-primary/40 transition"
+                                        className="flex items-center justify-between gap-4 bg-[#171717] p-3 sm:p-4 rounded-lg border border-transparent hover:border-primary/40 transition"
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl text-primary">{itemIconBySlug(item.slug)}</span>
                                             <div>
-                                                <p className="font-medium text-white flex items-center gap-2">
+                                                <p className="font-medium text-white flex items-center gap-2 mb-1">
                                                     {item.title}
-                                                    {item.is_critical ? (
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/30">
-                                                            critical
-                                                        </span>
-                                                    ) : null}
                                                 </p>
                                                 <p className="text-xs text-white/70">{item.description}</p>
                                             </div>
@@ -444,13 +550,13 @@ export default function PreCampaignChecklist({
                                                 <div className="flex flex-col gap-2">
                                                     {/* Add Task removed/commented */}
                                                     {/* <button
-                                                        className="bg-primary/20 text-primary hover:text-primary/80 p-1 rounded-lg flex items-center justify-center"
-                                                        aria-label="Add task"
-                                                        title="Add task"
-                                                        onClick={() => openAddTask(item.checklist_id)}
-                                                        >
-                                                        <Plus className="w-5 h-5" />
-                                                        </button> */}
+                              className="bg-primary/20 text-primary hover:text-primary/80 p-1 rounded-lg flex items-center justify-center"
+                              aria-label="Add task"
+                              title="Add task"
+                              onClick={() => openAddTask(item.checklist_id)}
+                              >
+                              <Plus className="w-5 h-5" />
+                              </button> */}
 
                                                     {/* Mark Done */}
                                                     <button
@@ -490,11 +596,10 @@ export default function PreCampaignChecklist({
                 )}
             </section>
 
-
             {/* Evidence Viewer Modal */}
             {showViewer && viewerItem ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-full max-w-2xl bg-[#0f0f0f] border border-white/10 rounded-xl p-5 relative">
+                    <div className="w-full max-w-2xl bg-[#171717] border border-primary rounded-xl p-4 sm:p-6 relative backdrop-blur-sm">
                         <h3 className="text-white font-semibold text-lg mb-4">Evidence</h3>
 
                         {(() => {
@@ -558,9 +663,11 @@ export default function PreCampaignChecklist({
 
             {/* Mark Done Modal (format-specific fields) */}
             {showMarkDone && markDoneItem ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-full max-w-lg bg-[#0f0f0f] border border-white/10 rounded-xl p-5">
-                        <h3 className="text-white font-semibold text-lg mb-4">Mark Checklist as Done</h3>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-lg bg-[#171717] border border-primary rounded-xl p-4 sm:p-6 backdrop-blur-sm">
+                        {/* Title and description from checklist item */}
+                        <h3 className="text-white font-semibold text-lg">{markDoneItem.title}</h3>
+                        <p className="text-white/70 text-sm mb-4">{markDoneItem.description}</p>
 
                         <div className="grid gap-3">
                             {(() => {
@@ -573,9 +680,22 @@ export default function PreCampaignChecklist({
                                             <Input
                                                 className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
                                                 value={evidenceUrl}
-                                                onChange={(e) => setEvidenceUrl(e.target.value)}
+                                                onChange={(e) => {
+                                                    setEvidenceUrl(e.target.value);
+                                                    // live validate
+                                                    if (!e.target.value.trim()) {
+                                                        setEvidenceError("URL is required.");
+                                                    } else if (!isValidHttpUrl(e.target.value)) {
+                                                        setEvidenceError("Enter a valid http(s) URL.");
+                                                    } else {
+                                                        setEvidenceError("");
+                                                    }
+                                                }}
                                                 placeholder="https://example.com"
                                             />
+                                            {evidenceError ? (
+                                                <p className="text-xs text-red-400 mt-1">{evidenceError}</p>
+                                            ) : null}
                                         </div>
                                     );
                                 }
@@ -588,12 +708,30 @@ export default function PreCampaignChecklist({
                                                 type="file"
                                                 accept="image/*"
                                                 className="w-full rounded-md bg-black px-3 text-sm text-white items-center "
-                                                onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0] || null;
+                                                    setScreenshotFile(file);
+                                                    // validate file
+                                                    if (!file) {
+                                                        setScreenshotError("Please upload a screenshot.");
+                                                        return;
+                                                    }
+                                                    if (!file.type.startsWith("image/")) {
+                                                        setScreenshotError("Only image files are allowed.");
+                                                    } else if (file.size > MAX_IMAGE_SIZE) {
+                                                        setScreenshotError("Image must be 5 MB or smaller.");
+                                                    } else {
+                                                        setScreenshotError("");
+                                                    }
+                                                }}
                                             />
                                             {screenshotFile ? (
                                                 <p className="text-xs text-gray-400">Selected: {screenshotFile.name}</p>
                                             ) : evidenceUrl ? (
                                                 <p className="text-xs text-gray-400 break-all">Current: {evidenceUrl}</p>
+                                            ) : null}
+                                            {screenshotError ? (
+                                                <p className="text-xs text-red-400">{screenshotError}</p>
                                             ) : null}
                                         </div>
                                     );
@@ -607,9 +745,19 @@ export default function PreCampaignChecklist({
                                                 className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
                                                 rows={4}
                                                 value={evidenceUrl}
-                                                onChange={(e) => setEvidenceUrl(e.target.value)}
+                                                onChange={(e) => {
+                                                    setEvidenceUrl(e.target.value);
+                                                    if (!e.target.value.trim() || e.target.value.trim().length < 10) {
+                                                        setEvidenceError("Please enter at least 10 characters.");
+                                                    } else {
+                                                        setEvidenceError("");
+                                                    }
+                                                }}
                                                 placeholder="Enter details..."
                                             />
+                                            {evidenceError ? (
+                                                <p className="text-xs text-red-400 mt-1">{evidenceError}</p>
+                                            ) : null}
                                         </div>
                                     );
                                 }
@@ -623,9 +771,21 @@ export default function PreCampaignChecklist({
                                             <Input
                                                 className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
                                                 value={evidenceUrl}
-                                                onChange={(e) => setEvidenceUrl(e.target.value)}
+                                                onChange={(e) => {
+                                                    setEvidenceUrl(e.target.value);
+                                                    if (!e.target.value.trim()) {
+                                                        setEvidenceError("URL is required.");
+                                                    } else if (!isValidHttpUrl(e.target.value)) {
+                                                        setEvidenceError("Enter a valid http(s) URL.");
+                                                    } else {
+                                                        setEvidenceError("");
+                                                    }
+                                                }}
                                                 placeholder="https://example.com"
                                             />
+                                            {evidenceError ? (
+                                                <p className="text-xs text-red-400 mt-1">{evidenceError}</p>
+                                            ) : null}
                                         </div>
                                     );
                                 }
@@ -637,12 +797,29 @@ export default function PreCampaignChecklist({
                                                 type="file"
                                                 accept="image/*"
                                                 className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
-                                                onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0] || null;
+                                                    setScreenshotFile(file);
+                                                    if (!file) {
+                                                        setScreenshotError("Please upload a screenshot.");
+                                                        return;
+                                                    }
+                                                    if (!file.type.startsWith("image/")) {
+                                                        setScreenshotError("Only image files are allowed.");
+                                                    } else if (file.size > MAX_IMAGE_SIZE) {
+                                                        setScreenshotError("Image must be 5 MB or smaller.");
+                                                    } else {
+                                                        setScreenshotError("");
+                                                    }
+                                                }}
                                             />
                                             {screenshotFile ? (
                                                 <p className="text-xs text-gray-400">Selected: {screenshotFile.name}</p>
                                             ) : evidenceUrl ? (
                                                 <p className="text-xs text-gray-400 break-all">Current: {evidenceUrl}</p>
+                                            ) : null}
+                                            {screenshotError ? (
+                                                <p className="text-xs text-red-400">{screenshotError}</p>
                                             ) : null}
                                         </div>
                                     );
@@ -654,9 +831,19 @@ export default function PreCampaignChecklist({
                                             className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
                                             rows={4}
                                             value={evidenceUrl}
-                                            onChange={(e) => setEvidenceUrl(e.target.value)}
+                                            onChange={(e) => {
+                                                setEvidenceUrl(e.target.value);
+                                                if (!e.target.value.trim() || e.target.value.trim().length < 10) {
+                                                    setEvidenceError("Please enter at least 10 characters.");
+                                                } else {
+                                                    setEvidenceError("");
+                                                }
+                                            }}
                                             placeholder="Enter details..."
                                         />
+                                        {evidenceError ? (
+                                            <p className="text-xs text-red-400 mt-1">{evidenceError}</p>
+                                        ) : null}
                                     </div>
                                 );
                             })()}
@@ -676,70 +863,70 @@ export default function PreCampaignChecklist({
 
             {/* Add Task Modal */}
             {/* {showAddTask ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-                    <div className="w-full max-w-lg bg-[#171717] rounded-xl p-5">
-                        <h3 className="text-white font-semibold text-lg mb-4">Add Task</h3>
-                        <div className="grid gap-3">
-                            <div>
-                                <Label className="block text-base text-white mb-1">Title</Label>
-                                <Input
-                                    className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
-                                    value={addTaskForm.title}
-                                    onChange={(e) => setAddTaskForm((s) => ({ ...s, title: e.target.value }))}
-                                    placeholder="Enter Title"
-                                />
-                            </div>
-                            <div>
-                                <Label className="block text-base text-white mb-1">Description</Label>
-                                <Textarea
-                                    className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
-                                    value={addTaskForm.description}
-                                    onChange={(e) => setAddTaskForm((s) => ({ ...s, description: e.target.value }))}
-                                    rows={3}
-                                    placeholder="Enter Description"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label className="block text-base text-white mb-1">Priority</Label>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="w-full max-w-lg bg-[#171717] rounded-xl p-5">
+            <h3 className="text-white font-semibold text-lg mb-4">Add Task</h3>
+            <div className="grid gap-3">
+              <div>
+                <Label className="block text-base text-white mb-1">Title</Label>
+                <Input
+                  className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
+                  value={addTaskForm.title}
+                  onChange={(e) => setAddTaskForm((s) => ({ ...s, title: e.target.value }))}
+                  placeholder="Enter Title"
+                />
+              </div>
+              <div>
+                <Label className="block text-base text-white mb-1">Description</Label>
+                <Textarea
+                  className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
+                  value={addTaskForm.description}
+                  onChange={(e) => setAddTaskForm((s) => ({ ...s, description: e.target.value }))}
+                  rows={3}
+                  placeholder="Enter Description"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="block text-base text-white mb-1">Priority</Label>
 
-                                    <Select
-                                        value={addTaskForm.priority}
-                                        onValueChange={(value) =>
-                                            setAddTaskForm((s) => ({ ...s, priority: value }))
-                                        }
-                                    >
-                                        <SelectTrigger className="w-full bg-black text-white">
-                                            <SelectValue placeholder="Select priority" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-black text-white border border-white/10">
-                                            <SelectItem value="high">High</SelectItem>
-                                            <SelectItem value="medium">Medium</SelectItem>
-                                            <SelectItem value="low">Low</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label className="block text-base text-white mb-1">Due date</Label>
-                                    <Input
-                                        type="date"
-                                        className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
-                                        value={addTaskForm.due_date}
-                                        onChange={(e) => setAddTaskForm((s) => ({ ...s, due_date: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-5 flex items-center justify-end gap-2">
-                            <Button variant="ghost" onClick={() => setShowAddTask(false)}>
-                                Cancel
-                            </Button>
-                            <Button onClick={submitAddTask}>Create Task</Button>
-                        </div>
-                    </div>
+                  <Select
+                    value={addTaskForm.priority}
+                    onValueChange={(value) =>
+                      setAddTaskForm((s) => ({ ...s, priority: value }))
+                    }
+                  >
+                    <SelectTrigger className="w-full bg-black text-white">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black text-white border border-white/10">
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-            ) : null} */}
+                <div>
+                  <Label className="block text-base text-white mb-1">Due date</Label>
+                  <Input
+                    type="date"
+                    className="w-full rounded-md bg-black px-3 py-2 text-sm text-white"
+                    value={addTaskForm.due_date}
+                    onChange={(e) => setAddTaskForm((s) => ({ ...s, due_date: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowAddTask(false)}>
+                Cancel
+              </Button>
+              <Button onClick={submitAddTask}>Create Task</Button>
+            </div>
+          </div>
+        </div>
+      ) : null} */}
         </div>
     );
 }

@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -19,13 +18,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import GoogleSignInButton from "@/app/login/_components/GoogleSign-In";
 import Cookies from "js-cookie";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CustomSearchDropdown } from "@/components/ui/custom-search-dropdown";
 import { event, trackSignup } from "@/lib/gtm";
 import { login } from "@/services/authService";
 import { trackEvent } from "@/lib/eventTracker";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import RegistrationStep2Form from "./RegistrationStep2Form";
 
 interface LoginFormData {
   token?: string;
@@ -52,7 +48,6 @@ const registrationSchema = z.object({
 
 export default function RegistrationForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
   const [emailValue, setEmailValue] = useState("");
   const [userId, setUserId] = useState("");
@@ -89,17 +84,11 @@ export default function RegistrationForm() {
         trackEvent("Google_Register_completed", window.location.href, user.email);
         toast.success("Login successful!");
 
-        // if (user.payment_status === 0) {
-        //   if (user.fretra_status === 1) {
-        //     setEmailValue(user.email);
-        //     setUserId(user.user_id.toString());
-        //     setStep(2); // Allowed even if unpaid
-        //   } else {
-        //     router.push("/pricing"); // Unpaid and fretra_status not 1
-        //   }
-        // } else {
-        //   router.push("/dashboard"); // Paid users
-        // }
+        // Check register_level_status first
+        if (user.register_level_status === 2) {
+          router.push("/dashboard");
+          return;
+        }
 
         // Set user data and transition to step 2
         setEmailValue(user.email);
@@ -140,6 +129,22 @@ export default function RegistrationForm() {
 
   // Get source from search params
   const sourceFromParams = searchParams.get('source') || '';
+
+  // Add BEFORE the effect that loads from localStorage.
+  useEffect(() => {
+    const urlStep = searchParams.get("step");
+    const urlEmail = searchParams.get("email");
+    const urlUserId = searchParams.get("userId");
+
+    if (urlStep === "2" && urlEmail && urlUserId) {
+      setStep(2);
+      setEmailValue(urlEmail);
+      setUserId(urlUserId);
+      localStorage.setItem("registrationStep", "2");
+      localStorage.setItem("registrationEmail", urlEmail);
+      localStorage.setItem("registrationUserId", urlUserId);
+    }
+  }, [searchParams]);
 
   // Effect to persist the step and user data in localStorage
   useEffect(() => {
@@ -524,221 +529,28 @@ export default function RegistrationForm() {
         </>
       ) : (
         // Step 2: Full registration with password
-        <Form {...registrationForm}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              registrationForm.handleSubmit(onSubmitRegistration)(e);
+        step === 2 && (
+          <RegistrationStep2Form
+            email={emailValue}
+            userId={userId}
+            sourceFromParams={sourceFromParams}
+            referralCode={referralCode}
+            utmSource={utmSource}
+            utmMedium={utmMedium}
+            utmCampaign={utmCampaign}
+            utmContent={utmContent}
+            utmTerm={utmTerm}
+            onComplete={() => {
+              // Remove LS, route, etc as before
+              localStorage.removeItem("registrationStep");
+              localStorage.removeItem("registrationEmail");
+              localStorage.removeItem("registrationUserId");
+              setTimeout(() => {
+                router.push("/emailconfrimation");
+              }, 2000);
             }}
-            className="space-y-5 text-xs text-left"
-          >
-
-            <FormField
-              control={registrationForm.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold text-white">Analyze For</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="bg-black text-white focus:ring-none text-sm  w-full py-7">
-                        <SelectValue placeholder="Select Analyze For" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-black border border-orange-500/20 text-white gap-y-2">
-                      {/* Single Brand */}
-                      <SelectItem
-                        value="1"
-                        className={`p-4 rounded-lg bg-[#171717] cursor-pointer transition-all data-[state=checked]:bg-orange-500/10 data-[state=checked]:border-orange-500`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          {/* Checkbox */}
-                          <div className="flex items-center justify-center">
-                            <Checkbox checked={field.value === "1"} onCheckedChange={() => field.onChange("1")} />
-                          </div>
-
-                          {/* Text content */}
-                          <div className="flex flex-col text-left">
-                            <p className="font-semibold text-white">Single Brand</p>
-                            <p className="text-xs text-white/80">
-                              Upload and analyze ads for one brand
-                            </p>
-                          </div>
-                        </div>
-                      </SelectItem>
-
-                      {/* Multi Brand */}
-                      <SelectItem
-                        value="2"
-                        className={`p-4 rounded-lg bg-[#171717] cursor-pointer transition-all data-[state=checked]:bg-orange-500/10 data-[state=checked]:border-orange-500`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          {/* Checkbox */}
-                          <div className="flex items-center justify-center">
-                            <Checkbox checked={field.value === "2"} onCheckedChange={() => field.onChange("2")} />
-                          </div>
-
-                          {/* Text content */}
-                          <div className="flex flex-col text-left">
-                            <p className="font-semibold text-white">Multi Brand</p>
-                            <p className="text-xs text-white/80">
-                              Upload and analyze ads for multiple brands
-                            </p>
-                          </div>
-                        </div>
-
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={registrationForm.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold">Name</FormLabel>
-                  <FormControl>
-                    <input
-                      placeholder="Your Name"
-                      {...field}
-                      className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-
-            <FormField
-              control={registrationForm.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold">Password</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Password"
-                        {...field}
-                        className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent hover:text-primary text-primary"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={
-                          showPassword ? "Hide password" : "Show password"
-                        }
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* City Field - Custom Mobile-Friendly Dropdown */}
-            <FormField
-              control={registrationForm.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold">City</FormLabel>
-                  <FormControl>
-                    <CustomSearchDropdown
-                      options={cities.map((city) => ({
-                        id: city.id,
-                        name: city.name,
-                      }))}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Select City"
-                      searchPlaceholder="Type to search cities..."
-                      loading={loadingCities}
-                      onSearch={handleCitySearch}
-                      className="w-full"
-                      triggerClassName="w-full px-4  text-sm bg-black text-white rounded-md"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Referral Code Field - Only show when source is "Referral" from search params */}
-            {sourceFromParams === "Referral" && (
-              <FormField
-                control={registrationForm.control}
-                name="referral_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold">Referral Code</FormLabel>
-                    <FormControl>
-                      <input
-                        placeholder="Enter Referral Code"
-                        {...field}
-                        className="w-full px-4 py-3 text-sm bg-black text-white rounded-md placeholder-white/50 focus:outline-none focus:border-orange-500 transition-colors"
-                      />
-                    </FormControl>
-                    <FormMessage />
-
-                    {/* Show referred by name */}
-                    {isCheckingReferral && (
-                      <p className="text-xs text-gray-300 mt-1">Checking referral code...</p>
-                    )}
-                    {referredBy && !isCheckingReferral && (
-                      <p className="text-xs text-green-400 mt-1">
-                        Referred by: <span className="font-semibold">{referredBy}</span>
-                      </p>
-                    )}
-                    {!referredBy && !isCheckingReferral && field.value && (
-                      <p className="text-xs text-red-400 mt-1">Invalid referral code</p>
-                    )}
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <div className="pt-2">
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full px-12"
-              >
-                {isLoading ? "Registering..." : "Register"}
-              </Button>
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setStep(1)}
-                className="w-full px-12 mt-2"
-              >
-                Back
-              </Button>
-              <Link href="/login" className="text-sm text-gray-300 flex justify-center mt-3">
-                Already have an account?{" "}
-                <span className="hover:underline pl-1 text-primary">Login</span>
-              </Link>
-            </div>
-          </form>
-        </Form>
+          />
+        )
       )}
     </>
   );

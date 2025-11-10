@@ -124,7 +124,9 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
 
               <DropdownMenuContent align="end" className="w-48 bg-black">
                 <div className="md:hidden">
-                  <DropdownMenuItem onClick={() => router.push("/brands")}>Brands</DropdownMenuItem>
+                  {userDetails?.type === "2" && userDetails?.payment_status === 1 && (
+                    <DropdownMenuItem onClick={() => router.push("/brands")}>Brands</DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                 </div>
                 <DropdownMenuItem onClick={() => router.push("/myaccount")}>Account</DropdownMenuItem>
@@ -146,11 +148,11 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
 
       {/* Referral Modal */}
       {referralOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="relative w-full max-w-lg bg-[#171717] rounded-lg shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-lg bg-black border border-primary rounded-lg shadow-xl p-6 max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-white focus:outline-none"
+              className="absolute top-4 right-4 text-white/50 hover:text-white focus:outline-none cursor-pointer"
               onClick={() => setReferralOpen(false)}
             >
               <X className="w-5 h-5" />
@@ -167,7 +169,7 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
             </div>
 
             {/* Referral Link */}
-            <div className="mt-2 p-3 bg-[#3d3d3d] rounded-md flex items-center justify-between gap-2">
+            <div className="mt-2 p-3 bg-[#171717] rounded-md flex items-center justify-between gap-2">
               <span className="text-sm break-all">{referralLink}</span>
               <Button variant="ghost" size="icon" onClick={handleCopy}>
                 {copied ? <Check className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5" />}

@@ -30,7 +30,6 @@ import UserLayout from "@/components/layouts/user-layout"
 import StaticProSkeleton from "@/components/Skeleton-loading/pro-skeleton"
 import { useRouter } from "next/navigation"
 import ProTestimonials from "./_components/protestimonials"
-import { event } from "@/lib/gtm"
 import confetti from "canvas-confetti"
 import { trackEvent } from "@/lib/eventTracker"
 import { trackPurchase } from "@/lib/gtm"
@@ -49,6 +48,8 @@ interface PricingPlan {
     type: number  // Added type field - 1 = Single, 2 = Multi
     plan_name: string
     price_inr: number
+    base_price: string  // Base price before tax
+    tax: number  // Tax amount
     ori_price_inr: number  // Added original INR price
     ori_price_usd: number  // Added original USD price
     price_usd: string
@@ -403,7 +404,7 @@ const ProPage: React.FC = () => {
                     spread: 90,
                     angle: 90,
                     origin: { x: 0.5, y: 0.5 },
-                    colors: ["#ff6347", "#ffd700", "#32cd32"],
+                    colors: ["#db4900"],
                 })
 
                 // Show success popup
@@ -472,8 +473,8 @@ const ProPage: React.FC = () => {
                 orderType = "upgrade";
             }
             // If user type is 1 and package_id is 1 or 2, and they choose package_id 3 or 4 from type 2 → agency
-            else if (userType === 1 && (currentPackageId === 1 || currentPackageId === 2) && 
-                     (selectedPackageId === 3 || selectedPackageId === 4) && selectedType === 2) {
+            else if (userType === 1 && (currentPackageId === 1 || currentPackageId === 2) &&
+                (selectedPackageId === 3 || selectedPackageId === 4) && selectedType === 2) {
                 orderType = "agency";
             }
             // If user type is 1 and package_id is 2, and they choose package_id 1 → downgrade
@@ -611,7 +612,9 @@ const ProPage: React.FC = () => {
     return (
         <UserLayout userDetails={userDetails}>
             {loading ? (
-                <StaticProSkeleton />
+                <div className="min-h-screen text-white space-y-16 pb-26 overflow-x-hidden">
+                    <StaticProSkeleton />
+                </div>
             ) : (
                 <div className="min-h-screen text-white space-y-16 pb-26 overflow-x-hidden">
                     {/* Pricing Section */}
@@ -730,7 +733,7 @@ const ProPage: React.FC = () => {
                                                         </h3>
                                                     )}
 
-                                                    {/* Price Display with Strikethrough */}
+                                                    {/* Price Display with Tax Details */}
                                                     {currencyLoading ? (
                                                         <div className="mb-4">
                                                             <div className="h-8 bg-[#171717] rounded animate-pulse mb-2"></div>
@@ -803,7 +806,7 @@ const ProPage: React.FC = () => {
                                                             ) : (
                                                                 <>
                                                                     <CreditCard className="w-4 h-4 mr-2" />
-                                                                    {isFreeTrailUser ? 'Upgrade' : 'Renew Now'}
+                                                                    {isCurrentPlan(plan) ? 'Renew Now' : 'Upgrade'}
                                                                 </>
                                                             )}
                                                         </Button>
@@ -926,7 +929,7 @@ const ProPage: React.FC = () => {
                     </DialogHeader>
                     <div className="flex flex-col items-center gap-4 mt-4">
                         <p className="text-gray-300 text-center">
-                            {lastSelectedPackageId === 3 || lastSelectedPackageId === 4 && (lastOrderType === "new" || lastOrderType === "agency") 
+                            {((Number(lastSelectedPackageId) === 3 || Number(lastSelectedPackageId) === 4) && (lastOrderType === "new" || lastOrderType === "agency"))
                                 ? `Redirecting to my account to add your Agency details in ${countdown} seconds...`
                                 : `Redirecting to dashboard in ${countdown} seconds...`
                             }
@@ -934,7 +937,7 @@ const ProPage: React.FC = () => {
                         <Button
                             onClick={() => {
                                 // Redirect (manual): if package_id is 3 or 4 and lastOrderType is 'new' or 'agency'
-                                if ((lastSelectedPackageId === 3 || lastSelectedPackageId === 4) && (lastOrderType === "new" || lastOrderType === "agency")) {
+                                if (((Number(lastSelectedPackageId) === 3 || Number(lastSelectedPackageId) === 4) && (lastOrderType === "new" || lastOrderType === "agency"))) {
                                     router.push("/myaccount?action=add-agency")
                                 } else {
                                     router.push("/dashboard")
@@ -942,7 +945,7 @@ const ProPage: React.FC = () => {
                             }}
                             className="w-full bg-green-600 hover:bg-green-700 text-white"
                         >
-                            {userDetails?.type === "2" && (lastOrderType === "new" || lastOrderType === "agency") 
+                            {((Number(lastSelectedPackageId) === 3 || Number(lastSelectedPackageId) === 4) && (lastOrderType === "new" || lastOrderType === "agency"))
                                 ? "Go to My Account Now"
                                 : "Go to Dashboard Now"
                             }

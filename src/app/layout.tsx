@@ -100,15 +100,30 @@ export default function RootLayout({
             position="top-center"
             reverseOrder={false}
             toastOptions={{
+              duration: 3000,
               style: {
                 background: "#000000",
                 color: "#f9fafb",
                 fontFamily: "var(--font-poppins)",
+                border: "1px solid #db4900",
               },
-              success: { style: { background: "#000000", color: "#16a34a" } },
-              error: { style: { background: "#000000", color: "#dc2626" } },
+              success: {
+                style: {
+                  background: "#000000",
+                  color: "#16a34a",
+                  border: "1px solid #db4900",
+                },
+              },
+              error: {
+                style: {
+                  background: "#000000",
+                  color: "#dc2626",
+                  border: "1px solid #db4900",
+                },
+              },
             }}
           />
+
 
           <GoogleOAuthProvider clientId="543832771103-mjordts3br5jlop5dj8q9m16nijjupuu.apps.googleusercontent.com">
             {children}

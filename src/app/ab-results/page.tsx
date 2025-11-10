@@ -246,6 +246,16 @@ export default function ABTestResults() {
         }
     }, [adDataA, adDataB, searchParams]);
 
+    // Set active tab to winner when data is loaded
+    useEffect(() => {
+        if (adDataA && adDataB) {
+            const winner = getWinner();
+            if (winner) {
+                setActiveTab(winner);
+            }
+        }
+    }, [adDataA, adDataB, abTestResult]);
+
     // Ad copy filtering
     const getFilteredAdCopies = (apiData: ApiResponse) => {
         const adCopies = safeArray(apiData?.ad_copies);
@@ -340,14 +350,13 @@ export default function ABTestResults() {
         const currentIndex = adType === "A" ? currentImageIndexA : currentImageIndexB;
         const nextImage = adType === "A" ? nextImageA : nextImageB;
         const prevImage = adType === "A" ? prevImageA : nextImageB;
-        const issuesCount = safeArray((adData as any)?.critical_issues).length + safeArray((adData as any)?.minor_issues).length;
 
         return (
             <div className={`bg-black rounded-3xl shadow-lg shadow-white/5 border hover:scale-[1.01] transition-all duration-300 ${isWinner ? "border-2 border-yellow-400 shadow-[0_0_15px_#facc15]" : "border-[#121212]"}`}>
-                <div className="p-3 sm:p-6 relative">
+                <div className={`p-3 sm:p-6 relative ${isWinner ? "pt-8" : ""}`}>
                     {isWinner && (
-                        <Badge className="absolute -top-3 right-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-black font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-                            <Trophy className="w-4 h-4" />
+                        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 text-base bg-gradient-to-r from-yellow-400 to-orange-400 text-black font-semibold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
+                            <Trophy className="w-5 h-5" />
                             Winner
                         </Badge>
                     )}
@@ -413,12 +422,11 @@ export default function ABTestResults() {
 
                     {/* Score Section */}
                     <div className="bg-[#121212] rounded-2xl p-3 sm:p-6 border border-[#121212] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-2 sm:mb-4">
                             <h3 className="text-xl font-semibold text-white">Ad {adType} - {adData.title}</h3>
                         </div>
                         <div className="flex flex-wrap gap-2 mb-4">
                             <Badge className="bg-blue-600/20 text-blue-400 border border-blue-600/30">{adData.industry}</Badge>
-                            <Badge className="bg-purple-600/20 text-purple-400 border border-purple-600/30">{adData.ad_type}</Badge>
                             {getPlatformSuitability(adData).map((platform) => (
                                 <Badge
                                     key={platform.platform}
@@ -601,10 +609,15 @@ export default function ABTestResults() {
 
 
                         <div className="w-full mx-auto space-y-8">
-                            {/* Ad Comparison Preview Cards */}
+                            {/* Ad Comparison Preview Cards - Winner first on mobile */}
                             <div className="grid md:grid-cols-2 gap-6">
-                                {renderAdPreview(adDataA, winner === "A", "A")}
-                                {renderAdPreview(adDataB, winner === "B", "B")}
+                                {/* Mobile: Show winner first */}
+                                <div className={`md:order-none ${winner === "A" ? "order-1" : "order-2"}`}>
+                                    {renderAdPreview(adDataA, winner === "A", "A")}
+                                </div>
+                                <div className={`md:order-none ${winner === "B" ? "order-1" : "order-2"}`}>
+                                    {renderAdPreview(adDataB, winner === "B", "B")}
+                                </div>
                             </div>
 
                             {/* view target and delete */}
@@ -635,55 +648,57 @@ export default function ABTestResults() {
                                             <ArrowRight className="w-3 h-3" />
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="bg-black border border-[#2b2b2b] rounded-2xl w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-4 sm:p-6">
+                                    <DialogContent className="bg-[#171717] border border-primary rounded-2xl w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-4 sm:p-6">
                                         <DialogHeader>
-                                            <DialogTitle className="text-white text-lg sm:text-xl flex items-center gap-2">
-                                                <Target className="w-5 h-5 text-[#db4900]" />
-                                                Target Details (Ad {activeTab})
+                                            <DialogTitle className="text-white text-lg sm:text-xl mt-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+                                                    {/* --- Left (Title + Subtitle) --- */}
+                                                    <div className="flex flex-col gap-1">
+                                                        <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-2">
+                                                            <BarChart3 className="w-5 h-5 text-primary shrink-0" />
+                                                            Targeting Comparison
+                                                        </h3>
+                                                        <p className="text-xs text-white/60">
+                                                            How well your targeting aligns with the suggested setup
+                                                        </p>
+                                                    </div>
+
+                                                    {/* --- Right (Score Badge) --- */}
+                                                    <div
+                                                        className={`
+                                    px-3 py-1 text-sm sm:text-base font-semibold rounded-full border
+                                    self-center sm:self-auto
+                                    ${(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) >= 80
+                                                                ? "bg-green-700/20 text-green-400 border-green-700/40"
+                                                                : (activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) >= 60
+                                                                    ? "bg-[#F99244]/20 text-[#F99244] border-[#F99244]/40"
+                                                                    : "bg-red-700/20 text-red-400 border-red-700/40"
+                                                            }
+                                `}
+                                                    >
+                                                        {(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score)}% Match
+                                                    </div>
+                                                </div>
                                             </DialogTitle>
                                         </DialogHeader>
+
 
                                         <div className="space-y-6">
                                             {/* --- Target Insights Unified Section --- */}
                                             {(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) && (
-                                                <div className="bg-[#171717] rounded-2xl p-4 sm:p-5 shadow-md space-y-6">
-
-                                                    {/* --- Header with Score --- */}
-                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                        {/* Left section - title and subtitle */}
-                                                        <div className="flex flex-col gap-1">
-                                                            <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-2">
-                                                                <BarChart3 className="w-5 h-5 text-primary shrink-0" />
-                                                                Targeting Comparison
-                                                            </h3>
-                                                            <p className="text-xs text-white/60">
-                                                                How well your targeting aligns with the suggested setup
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Right section - badge */}
-                                                        <div
-                                                            className={`px-3 py-1 text-sm sm:text-base font-semibold rounded-full border self-start sm:self-auto ${(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) >= 80
-                                                                ? "bg-green-700/20 text-green-400 border-green-700/40"
-                                                                : (activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score) >= 60
-                                                                    ? "bg-yellow-700/20 text-yellow-400 border-yellow-700/40"
-                                                                    : "bg-red-700/20 text-red-400 border-red-700/40"
-                                                                }`}
-                                                        >
-                                                            {(activeTab === "A" ? adDataA?.target_match_score : adDataB?.target_match_score)}% Match
-                                                        </div>
-                                                    </div>
+                                                <div className=" space-y-6">
 
                                                     {/* --- Targeting Comparison Cards --- */}
-                                                    {(activeTab === "A" ? adDataA?.targeting_compare_json?.length > 0 : adDataB?.targeting_compare_json?.length > 0) && (
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {(activeTab === "A" ? adDataA?.targeting_compare_json : adDataB?.targeting_compare_json)?.length > 0 && (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                             {(activeTab === "A" ? adDataA?.targeting_compare_json : adDataB?.targeting_compare_json).map((item: any, index: number) => (
                                                                 <div
                                                                     key={index}
-                                                                    className={`rounded-lg p-3 border relative overflow-hidden transition-all ${item.match === "match"
+                                                                    className={`rounded-lg px-2  py-2 border relative overflow-hidden transition-all ${item.match === "match"
                                                                         ? "border-green-700/40 bg-green-900/10"
                                                                         : item.match === "partial"
-                                                                            ? "border-yellow-700/40 bg-yellow-900/10"
+                                                                            ? "border-[#F99244]/40 bg-[#F99244]/10"
                                                                             : "border-red-700/40 bg-red-900/10"
                                                                         }`}
                                                                 >
@@ -692,7 +707,7 @@ export default function ABTestResults() {
                                                                         className={`absolute top-0 left-0 h-1 w-full ${item.match === "match"
                                                                             ? "bg-green-500/70"
                                                                             : item.match === "partial"
-                                                                                ? "bg-yellow-500/70"
+                                                                                ? "bg-[#F99244]/70"
                                                                                 : "bg-red-500/70"
                                                                             }`}
                                                                     />
@@ -704,7 +719,7 @@ export default function ABTestResults() {
                                                                             className={`text-xs font-bold uppercase ${item.match === "match"
                                                                                 ? "text-green-400"
                                                                                 : item.match === "partial"
-                                                                                    ? "text-yellow-400"
+                                                                                    ? "text-[#F99244]"
                                                                                     : "text-red-400"
                                                                                 }`}
                                                                         >
@@ -715,13 +730,19 @@ export default function ABTestResults() {
                                                                     {/* Comparison Details */}
                                                                     <div className="text-xs space-y-1">
                                                                         <p className="text-white/60">
-                                                                            You:{" "}
                                                                             <span className="text-white font-medium">{item.user}</span>
                                                                         </p>
                                                                         <p className="text-white/60">
-                                                                            Suggested:{" "}
-                                                                            <span className="text-white font-medium">
-                                                                                {item.suggested}
+                                                                            <span
+                                                                                className={`flex items-center justify-between w-full px-2 py-1 rounded-md border ${item.match === "match"
+                                                                                    ? "bg-green-700/20 text-green-400 border-green-700/40"
+                                                                                    : item.match === "partial"
+                                                                                        ? "bg-[#F99244]/20 text-[#F99244] border-[#F99244]/40"
+                                                                                        : "bg-red-700/20 text-red-400 border-red-700/40"
+                                                                                    }`}
+                                                                            >
+                                                                                <span className="mr-3">AI Recommendation</span>
+                                                                                <span className="font-bold">{item.suggested}</span>
                                                                             </span>
                                                                         </p>
                                                                     </div>
@@ -731,19 +752,19 @@ export default function ABTestResults() {
                                                     )}
 
                                                     {/* --- Divider Line --- */}
-                                                    {(activeTab === "A" ? adDataA?.suggested_interests?.length > 0 : adDataB?.suggested_interests?.length > 0) && (
-                                                        <div className="border-t border-[#2b2b2b]" />
+                                                    {(activeTab === "A" ? adDataA?.suggested_interests : adDataB?.suggested_interests)?.length > 0 && (
+                                                        <div className="border-t border-[#2b2b2b] mb-2" />
                                                     )}
 
                                                     {/* --- Suggested Interests Section --- */}
-                                                    {(activeTab === "A" ? adDataA?.suggested_interests?.length > 0 : adDataB?.suggested_interests?.length > 0) && (
+                                                    {(activeTab === "A" ? adDataA?.suggested_interests : adDataB?.suggested_interests)?.length > 0 && (
                                                         <div>
-                                                            <h3 className="text-white font-semibold flex items-center gap-2 mb-3 text-base sm:text-lg">
+                                                            <h3 className="text-white font-semibold flex items-center gap-2 mb-2 text-base sm:text-lg">
                                                                 <Lightbulb className="w-5 h-5 text-primary shrink-0" />
                                                                 Suggested Interests
                                                             </h3>
                                                             <div className="flex flex-wrap gap-2">
-                                                                {(activeTab === "A" ? adDataA.suggested_interests : adDataB.suggested_interests).map((interest: string, i: number) => (
+                                                                {(activeTab === "A" ? adDataA?.suggested_interests : adDataB?.suggested_interests).map((interest: string, i: number) => (
                                                                     <span
                                                                         key={i}
                                                                         className="text-xs sm:text-sm bg-[#db4900]/20 text-[#db4900] px-3 py-1 rounded-full border border-[#db4900]/40 hover:bg-[#db4900]/30 transition-all duration-200"
@@ -785,7 +806,7 @@ export default function ABTestResults() {
                                         </Button>
 
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-[#1a1a1a] border-[#3d3d3d]">
+                                    <AlertDialogContent className="bg-[#171717] border border-primary rounded-2xl p-4 sm:p-6">
                                         <AlertDialogHeader>
                                             <AlertDialogTitle className="text-white">Delete A/B Test</AlertDialogTitle>
                                             <AlertDialogDescription className="text-gray-300">
@@ -859,11 +880,11 @@ export default function ABTestResults() {
                                 </div>
                             </div>
                             {/* Row 3 */}
-                            <div className="col-span-4 grid grid-cols-1 lg:grid-cols-6 gap-6 auto-rows-fr">
+                            <div className="col-span-4 grid grid-cols-1 lg:grid-cols-6 gap-6 lg:gap-6 lg:auto-rows-fr items-start lg:items-stretch mt-2 sm:mt-6">
                                 {/* Issues Detected - takes 2 columns */}
-                                <div className=" lg:col-span-2 h-full">
+                                <div className="lg:col-span-2 mb-0 lg:h-full lg:flex lg:flex-col">
                                     <div
-                                        className="relative bg-black rounded-2xl p-4 sm:p-6 h-full flex flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
+                                        className="relative bg-black rounded-2xl p-4 sm:p-6 lg:h-full lg:flex lg:flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
                                         style={{ transition: "all 0.3s" }}
                                         onMouseEnter={e => {
                                             e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -904,7 +925,7 @@ export default function ABTestResults() {
 
 
                                         {/* Body */}
-                                        <div className="text-left w-full space-y-4 pt-2">
+                                        <div className="text-left w-full space-y-2 sm:space-y-4 pt-1 sm:pt-2">
                                             {/* Issue Counters */}
                                             <div className="grid grid-cols-2 gap-3 w-full items-stretch">
                                                 {/* Critical Issues */}
@@ -939,32 +960,28 @@ export default function ABTestResults() {
                                             </div>
 
                                             {/* CTR Loss */}
-                                            <div className="relative bg-[#141414] rounded-xl border border-[#2a2a2a] p-4 mt-3 flex items-center justify-between hover:border-[#DB4900] transition-all duration-300">
+                                            <div className="relative bg-[#141414] rounded-xl border border-[#2a2a2a] p-4 mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:border-[#DB4900] transition-all duration-300">
                                                 <div className="flex items-center gap-3">
                                                     <TrendingDown className="w-5 h-5 text-red-400 mt-[2px]" />
                                                     <div>
-                                                        <p className="text-sm font-semibold text-white">
-                                                            Estimated CTR Loss
-                                                        </p>
-                                                        <p className="text-xs text-white/70 mt-1">
-                                                            If issues remain unfixed
-                                                        </p>
+                                                        <p className="text-sm font-semibold text-white">Estimated CTR Loss</p>
+                                                        <p className="text-xs text-white/70 mt-1">If issues remain unfixed</p>
                                                     </div>
                                                 </div>
-                                                <div className="text-3xl font-bold text-red-400">
-                                                    {estimatedCtrLoss || "25.66%"}
+
+                                                <div className="text-3xl font-bold text-red-400 mt-3 sm:mt-0 self-center sm:self-auto">
+                                                    {estimatedCtrLoss || "0%"}
                                                 </div>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Readability, Best Days & Time, Uniqueness, Ad Fatigue arranged by rows */}
-                                <div className="lg:col-span-4 h-full">
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                                <div className="lg:col-span-4 lg:flex lg:flex-col lg:h-full">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:h-full">
                                         {/* Row 1 - Col 1: Readability (hidden on small to preserve previous behavior) */}
-                                        <div className="hidden lg:block">
+                                        <div className="">
                                             <div
                                                 className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
                                                 style={{ transition: "all 0.3s" }}
@@ -1058,7 +1075,7 @@ export default function ABTestResults() {
                                                     }
 
                                                     return (
-                                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                                                        <div className="flex flex-row items-start sm:items-center gap-6">
                                                             {/* Days */}
                                                             <div>
                                                                 <h4 className="text-white text-sm mb-2 font-medium">Days</h4>
@@ -1094,7 +1111,7 @@ export default function ABTestResults() {
                                         </div>
 
                                         {/* Row 2 - Col 1: Uniqueness (hidden on small to preserve previous behavior) */}
-                                        <div className="hidden lg:block">
+                                        <div className="">
                                             <div
                                                 className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
                                                 style={{ transition: "all 0.3s" }}

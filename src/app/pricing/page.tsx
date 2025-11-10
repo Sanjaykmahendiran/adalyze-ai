@@ -35,6 +35,8 @@ interface PricingPlan {
     type: number  // Added type field
     plan_name: string
     price_inr: number
+    base_price: string  // Base price before tax
+    tax: number  // Tax amount
     ori_price_inr: number  // Added original INR price
     ori_price_usd: number  // Added original USD price
     price_usd: string
@@ -704,7 +706,7 @@ const ProPage: React.FC = () => {
                                                     </div>
                                                 )}
 
-                                                {/* Price Display with Strikethrough */}
+                                                {/* Price Display with Tax Details */}
                                                 {currencyLoading ? (
                                                     <div className="mb-4">
                                                         <div className="h-8 bg-[#171717] rounded animate-pulse mb-2"></div>

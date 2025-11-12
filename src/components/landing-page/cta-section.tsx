@@ -10,25 +10,25 @@ import { trackEvent } from "@/lib/eventTracker"
 export default function CTASection({ ButtonText }: { ButtonText: string }) {
 
   const features = [
-    "20M+ Ad Library",
-    "Best Ads for E-commerce / D2C",
-    "AI Ads Generator",
-    "Video Ads",
-    "AI Ad Maker",
-    "Whitelabel for Agencies",
-    "Facebook Ads Library",
-    "Ad Creative AI",
-    "Best Ads for Lead Generation",
-    "Best Ads for Small Businesses",
-    "AI Photoshoots",
-    "AI Videos",
-    "AI Sound (11 Labs)",
-    "AI Voice",
-    "Copyright Free Images (Getty Images)",
-    "AI Video Editor",
-    "Faceless YouTube Videos",
-    "UGC Ads",
+    "Data-Driven Insights",
+    "AI-Driven Reports",
+    "Campaign Tracker",
+    "Audience Pulse Analysis",
+    "Trend Prediction",
+    "Ad Health Score",
+    "Optimize Ad Budget",
+    "Actionable Alerts",
+    "Conversion Boost",
+    "Smart Suggestions",
+    "AI Ad Intelligence",
+    "ROI Analytics",
+    "Cross-Platform Review",
+    "Decision Intelligence",
+    "Impact Measurement",
+    "Performance & Confidence Metrics",
+    "Visual Analytics",
   ];
+
 
   function FeatureItem({ text }: { text: string }) {
     return (
@@ -159,7 +159,7 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
               transition={{
                 repeat: Infinity,
                 ease: "linear",
-                  duration: 100, // 🐢 slower = 100s full loop
+                duration: 100, // 🐢 slower = 100s full loop
               }}
             >
               {[...features, ...features].map((feature, i) => (

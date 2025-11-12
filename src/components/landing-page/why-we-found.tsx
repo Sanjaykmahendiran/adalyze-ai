@@ -3,25 +3,24 @@
 import { motion } from "framer-motion";
 
 const features = [
-    "20M+ Ad Library",
-    "Best Ads for E-commerce / D2C",
-    "AI Ads Generator",
-    "Video Ads",
-    "AI Ad Maker",
-    "Whitelabel for Agencies",
-    "Facebook Ads Library",
-    "Ad Creative AI",
-    "Best Ads for Lead Generation",
-    "Best Ads for Small Businesses",
-    "AI Photoshoots",
-    "AI Videos",
-    "AI Sound (11 Labs)",
-    "AI Voice",
-    "Copyright Free Images (Getty Images)",
-    "AI Video Editor",
-    "Faceless YouTube Videos",
-    "UGC Ads",
+    "2X ROI Growth",
+    "Avoid Guesswork",
+    "5X Cost Efficiency",
+    "95% Accuracy Rate",
+    "Turn insights into impact",
+    "70% Faster Analysis",
+    "50% Ad Spend Saved",
+    "Actionable Insights",
+    "60% Better Targeting",
+    "40% Higher CTR",
+    "Real-Time Tracking",
+    "30% Lower CAC",
+    "99% Data Reliability",
+    "Conversion Boost",
+    "4X Faster Decisions",
+    "85% Ad Quality Score",
 ];
+
 
 export default function WhyWeFoundSection() {
     return (

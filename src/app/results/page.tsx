@@ -66,10 +66,24 @@ export default function ResultsPage() {
   const [showMoreGoReasons, setShowMoreGoReasons] = useState(false);
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstanceRef = useRef<any>(null)
+  const issuesSectionRef = useRef<HTMLDivElement>(null)
 
   const scrollToTop = () => {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const scrollToIssues = () => {
+    if (issuesSectionRef.current && typeof window !== 'undefined') {
+      const element = issuesSectionRef.current
+      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+      const offsetPosition = elementPosition - (window.innerHeight * 0.2)
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
     }
   }
 
@@ -1828,11 +1842,32 @@ export default function ResultsPage() {
                           <TooltipTrigger asChild>
                             <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                           </TooltipTrigger>
-                          <TooltipContent className="w-52 bg-[#2b2b2b] text-xs text-gray-200">
-                            <p>
-                              AI-powered analysis highlighting issues that may reduce ad performance and engagement before launch.
-                            </p>
+                          <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-3">
+                            {/* Critical Issues */}
+                            <div className="space-y-1">
+                              <p className="font-semibold text-white text-sm">Critical Issues</p>
+                              <p>
+                                Major ad problems that can drastically impact visibility, engagement, or conversion performance if not fixed.
+                              </p>
+                            </div>
+
+                            {/* Minor Issues */}
+                            <div className="space-y-1">
+                              <p className="font-semibold text-white text-sm">Minor Issues</p>
+                              <p>
+                                Smaller creative or structural inconsistencies that slightly affect performance but are easy to correct.
+                              </p>
+                            </div>
+
+                            {/* Estimated CTR */}
+                            <div className="space-y-1">
+                              <p className="font-semibold text-white text-sm">Estimated CTR Loss</p>
+                              <p>
+                                Predicted decrease in click-through rate if the detected issues remain unresolved before launch.
+                              </p>
+                            </div>
                           </TooltipContent>
+
                         </Tooltip>
                       </div>
 
@@ -1854,7 +1889,10 @@ export default function ResultsPage() {
                     {/* Issue Counters */}
                     <div className="grid grid-cols-2 gap-3 w-full items-stretch">
                       {/* Critical Issues */}
-                      <div className="relative bg-[#171717] border border-[#2a2a2a] rounded-xl py-4 px-2 text-center flex flex-col justify-center group hover:border-red-500 transition-all duration-300">
+                      <div
+                        className="relative bg-[#171717] border border-[#2a2a2a] rounded-xl py-4 px-2 text-center flex flex-col justify-center group hover:border-red-500 transition-all duration-300 cursor-pointer"
+                        onClick={scrollToIssues}
+                      >
                         <p className="text-red-300 text-sm font-semibold mb-1 flex items-center justify-center gap-1">
                           Critical Issues
                         </p>
@@ -1869,7 +1907,10 @@ export default function ResultsPage() {
                       </div>
 
                       {/* Minor Issues */}
-                      <div className="relative bg-[#171717] border border-[#2a2a2a] rounded-xl py-4 py-2 text-center flex flex-col justify-center group hover:border-[#F99244]/60 transition-all duration-300">
+                      <div
+                        className="relative bg-[#171717] border border-[#2a2a2a] rounded-xl py-4 py-2 text-center flex flex-col justify-center group hover:border-[#F99244]/60 transition-all duration-300 cursor-pointer"
+                        onClick={scrollToIssues}
+                      >
                         <p className="text-[#F99244] text-sm font-semibold mb-1 flex items-center justify-center gap-1">
                           Minor Issues
                         </p>
@@ -2146,11 +2187,46 @@ export default function ResultsPage() {
                       <TooltipTrigger asChild>
                         <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                       </TooltipTrigger>
-                      <TooltipContent className="w-50 bg-[#2b2b2b]">
-                        <p>
-                          Predicted user engagement metrics including scroll-stopping ability, click-through
-                          rates, and conversion likelihood.
-                        </p>
+                      <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-3">
+                        {/* Traffic Efficiency Score */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Traffic Efficiency Score</p>
+                          <p>
+                            Shows how well your ad is expected to attract and engage viewers.
+                          </p>
+                        </div>
+
+                        {/* Scroll Stop Power */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Scroll Stop Power</p>
+                          <p>
+                            Tells how likely your ad is to catch attention while people scroll.
+                          </p>
+                        </div>
+
+                        {/* Estimated CTR */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Estimated CTR</p>
+                          <p>
+                            Predicts how many people might click your ad after seeing it.
+                          </p>
+                        </div>
+
+                        {/* Conversion Probability */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Conversion Probability</p>
+                          <p>
+                            Estimates the chance that viewers will take action after clicking.
+                          </p>
+                        </div>
+
+                        {/* Predicted Reach */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Predicted Reach</p>
+                          <p>
+                            The expected number of people who will see your ad.
+                          </p>
+                        </div>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -2264,11 +2340,54 @@ export default function ResultsPage() {
                       <TooltipTrigger asChild>
                         <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                       </TooltipTrigger>
-                      <TooltipContent className="w-60 bg-[#2b2b2b] space-y-2">
-                        <p>
-                          Comprehensive financial and targeting strategy — including expected CPM, ROI, and
-                          audience testing recommendations.
-                        </p>
+                      <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-3">
+                        {/* Expected CPM */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Expected CPM</p>
+                          <p>
+                            Estimated cost to reach 1,000 people. Lower CPM means more reach for your money.
+                          </p>
+                        </div>
+
+                        {/* ROI Range */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">ROI Range</p>
+                          <p>
+                            Predicted return on investment based on ad quality and targeting. Higher is better.
+                          </p>
+                        </div>
+
+                        {/* Test Budget */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Test Budget</p>
+                          <p>
+                            Suggested amount to spend for testing your campaign before scaling it up.
+                          </p>
+                        </div>
+
+                        {/* Test Duration */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Test Duration</p>
+                          <p>
+                            Recommended number of days to run the test campaign for reliable results.
+                          </p>
+                        </div>
+
+                        {/* Top Audience */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Top Audience</p>
+                          <p>
+                            The best-performing audience segments based on predicted engagement.
+                          </p>
+                        </div>
+
+                        {/* Strategy Tip */}
+                        <div className="space-y-1">
+                          <p className="font-semibold text-white text-sm">Strategy Tip</p>
+                          <p>
+                            Smart recommendations to optimize your budget and audience targeting for better results.
+                          </p>
+                        </div>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -2367,6 +2486,7 @@ export default function ResultsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Issues Section */}
               <div
+                ref={issuesSectionRef}
                 className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl hover:scale-[1.01] transition-all duration-300"
                 style={{ transition: "all 0.3s", maxHeight: "300px" }}
                 onMouseEnter={e => {
@@ -2462,6 +2582,112 @@ export default function ResultsPage() {
                       <TooltipTrigger asChild>
                         <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                       </TooltipTrigger>
+                      <TooltipContent className="w-60 bg-[#2b2b2b] text-gray-200 text-sm leading-relaxed">
+                        <p>
+                          Collected insights and improvement suggestions specifically for
+                          marketing experts — covering campaign strategy, messaging,
+                          targeting, and overall performance.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <ul className="space-y-2 sm:space-y-3">
+                    {feedbackDigitalMark.map((feedback, index) => (
+                      <li key={index} className="flex items-start text-gray-300">
+                        <span className="mr-2 sm:mr-3 text-green-400 text-base sm:text-lg flex-shrink-0">•</span>
+                        <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {feedbackDigitalMark.length === 0 && (
+                    <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
+                      No marketing feedback available
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Designer feedback and Digital Marketing Feedback - Mobile Responsive */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Designer feedback */}
+              <div
+                className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
+              >
+                <div className="p-4 sm:p-6 overflow-y-auto h-full">
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <div className="flex items-center gap-3">
+                      <h3 className="flex items-center text-lg sm:text-xl font-semibold text-blue-400">
+                        <TrendingUp className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                        For Designers
+                      </h3>
+
+                      <button
+                        className="flex items-center py-1 px-2 gap-2 rounded-md text-xs font-medium text-blue-400 bg-blue-400/10 border border-blue-400 hover:bg-blue-400/10 hover:text-white transition-all"
+                      >
+                        <Share2 className="w-3 h-3 flex-shrink-0" />
+                        <span>Share</span>
+                      </button>
+                    </div>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                      </TooltipTrigger>
+                      <TooltipContent className="w-50 bg-[#2b2b2b]">
+                        <p>Design tips and suggestions to improve the visual appeal and user experience of your ad.</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                  </div>
+
+                  <ul className="space-y-2 sm:space-y-3">
+                    {feedbackDigitalMark.map((feedback, index) => (
+                      <li key={index} className="flex items-start text-gray-300">
+                        <span className="mr-2 sm:mr-3 text-green-400 text-base sm:text-lg flex-shrink-0">•</span>
+                        <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {feedbackDigitalMark.length === 0 && (
+                    <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
+                      No marketing feedback available
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Digital Marketing Feedback */}
+              <div
+                className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
+              >
+                <div className="p-4 sm:p-6 overflow-y-auto h-full">
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <h3 className="flex items-center text-lg sm:text-xl font-semibold text-green-400">
+                      <TrendingUp className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      For Marketing Experts
+                    </h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                      </TooltipTrigger>
                       <TooltipContent className="w-50 bg-[#2b2b2b]">
                         <p>Strategic marketing advice on messaging, audience targeting, conversion optimization, and campaign effectiveness.</p>
                       </TooltipContent>
@@ -2508,13 +2734,17 @@ export default function ResultsPage() {
                       <TooltipTrigger asChild>
                         <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                       </TooltipTrigger>
-                      <TooltipContent className="w-60 bg-[#2b2b2b] text-gray-200">
-                        <p>
-                          AI-generated creative ideas based on your current ad — including
-                          headline, caption, and visual concept — to inspire your next
-                          campaign.
+                      <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-2">
+                        <p className="font-semibold text-white text-sm">Creative Variation Tip</p>
+                        <p className="text-xs">
+                          AI-generated suggestions to refresh your ad creative — including headline, caption,
+                          and visual ideas tailored to your current campaign.
+                        </p>
+                        <p className="text-xs">
+                          Helps you test new creative angles, boost engagement, and improve ad performance.
                         </p>
                       </TooltipContent>
+
                     </Tooltip>
                   </div>
 
@@ -2578,28 +2808,56 @@ export default function ResultsPage() {
                     <TooltipTrigger asChild>
                       <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                     </TooltipTrigger>
-                    <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
+                    <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-2">
+                      {/* Primary Emotion */}
                       <div>
-                        <strong>Budget Utilization:</strong>
-                        <p className="text-gray-300 text-xs">Tracks how efficiently your allocated budget is being spent.</p>
+                        <p className="font-semibold text-white text-sm">Primary Emotion</p>
+                        <p className="text-xs">
+                          Detects the main emotion in your ad — helps understand the emotional tone it conveys.
+                        </p>
                       </div>
+
+                      {/* Logo Visibility */}
                       <div>
-                        <strong>Faces Detected:</strong>
-                        <p className="text-gray-300 text-xs">Ensures people are clearly visible in content.</p>
+                        <p className="font-semibold text-white text-sm">Logo Visibility</p>
+                        <p className="text-xs">
+                          Measures how clear and noticeable your brand logo is in the creative.
+                        </p>
                       </div>
+
+                      {/* Text Percentage */}
                       <div>
-                        <strong>Logo Visibility:</strong>
-                        <p className="text-gray-300 text-xs">Checks if your logo is prominent and clear.</p>
+                        <p className="font-semibold text-white text-sm">Text Percentage</p>
+                        <p className="text-xs">
+                          Checks how much text appears in your ad to maintain visual balance.
+                        </p>
                       </div>
+
+                      {/* Faces Detected */}
                       <div>
-                        <strong>Text Percentage:</strong>
-                        <p className="text-gray-300 text-xs">Measures the balance between visuals and text.</p>
+                        <p className="font-semibold text-white text-sm">Faces Detected</p>
+                        <p className="text-xs">
+                          Counts how many faces appear in your ad — more faces often increase relatability.
+                        </p>
                       </div>
+
+                      {/* Layout Symmetry */}
                       <div>
-                        <strong>Layout Symmetry:</strong>
-                        <p className="text-gray-300 text-xs">Evaluates the visual alignment and balance.</p>
+                        <p className="font-semibold text-white text-sm">Layout Symmetry</p>
+                        <p className="text-xs">
+                          Evaluates how evenly elements are arranged for a well-balanced layout.
+                        </p>
+                      </div>
+
+                      {/* Color Harmony */}
+                      <div>
+                        <p className="font-semibold text-white text-sm">Color Harmony</p>
+                        <p className="text-xs">
+                          Checks if your ad colors work well together and feel visually pleasing.
+                        </p>
                       </div>
                     </TooltipContent>
+
                   </Tooltip>
                 </div>
 
@@ -2667,14 +2925,48 @@ export default function ResultsPage() {
                           <TooltipTrigger asChild>
                             <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                           </TooltipTrigger>
-                          <TooltipContent className="w-64 bg-[#2b2b2b] text-sm space-y-2">
+                          <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-2">
+                            {/* Engagement Score */}
                             <div>
-                              <strong>Engagement Score:</strong>
-                              <p className="text-gray-300 text-xs">
-                                Measures how actively users interact with your content (likes, comments, shares).
+                              <p className="font-semibold text-white text-sm">Engagement Score</p>
+                              <p className="text-xs">
+                                Shows how actively people react to your ad — likes, comments, shares, and overall interaction.
+                              </p>
+                            </div>
+
+                            {/* Viral Potential */}
+                            <div>
+                              <p className="font-semibold text-white text-sm">Viral Potential</p>
+                              <p className="text-xs">
+                                Predicts how likely your ad is to spread quickly through user shares and re-engagement.
+                              </p>
+                            </div>
+
+                            {/* FOMO Score */}
+                            <div>
+                              <p className="font-semibold text-white text-sm">FOMO Score</p>
+                              <p className="text-xs">
+                                Measures how well your ad creates urgency or the fear of missing out to drive action.
+                              </p>
+                            </div>
+
+                            {/* Trust Signal */}
+                            <div>
+                              <p className="font-semibold text-white text-sm">Trust Signal</p>
+                              <p className="text-xs">
+                                Evaluates if your ad builds credibility using social proof, quality visuals, or clear messaging.
+                              </p>
+                            </div>
+
+                            {/* Urgency Trigger */}
+                            <div>
+                              <p className="font-semibold text-white text-sm">Urgency Trigger</p>
+                              <p className="text-xs">
+                                Shows how strongly your ad encourages immediate response through time-limited offers or cues.
                               </p>
                             </div>
                           </TooltipContent>
+
                         </Tooltip>
                       </div>
 
@@ -2800,12 +3092,48 @@ export default function ResultsPage() {
                     <TooltipTrigger asChild>
                       <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                     </TooltipTrigger>
-                    <TooltipContent className="w-64 bg-[#2b2b2b] text-sm">
-                      <p>
-                        Creative strength across key performance areas including visual appeal,
-                        CTA effectiveness, emotional resonance, readability, and trust indicators.
-                      </p>
+                    <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-2">
+                      {/* Visual Appeal */}
+                      <div>
+                        <p className="font-semibold text-white text-sm">Visual Appeal</p>
+                        <p className="text-xs">
+                          Measures how attractive and eye-catching your ad looks to viewers.
+                        </p>
+                      </div>
+
+                      {/* CTA Effectiveness */}
+                      <div>
+                        <p className="font-semibold text-white text-sm">CTA Effectiveness</p>
+                        <p className="text-xs">
+                          Evaluates how clear and convincing your call-to-action is in driving clicks.
+                        </p>
+                      </div>
+
+                      {/* Emotional Resonance */}
+                      <div>
+                        <p className="font-semibold text-white text-sm">Emotional Resonance</p>
+                        <p className="text-xs">
+                          Analyzes how well your ad connects emotionally with the audience.
+                        </p>
+                      </div>
+
+                      {/* Readability */}
+                      <div>
+                        <p className="font-semibold text-white text-sm">Readability</p>
+                        <p className="text-xs">
+                          Checks if your ad text is easy to read and clearly delivers the message.
+                        </p>
+                      </div>
+
+                      {/* Trust Indicators */}
+                      <div>
+                        <p className="font-semibold text-white text-sm">Trust Indicators</p>
+                        <p className="text-xs">
+                          Reviews elements that make your ad appear credible, reliable, and brand-safe.
+                        </p>
+                      </div>
                     </TooltipContent>
+
                   </Tooltip>
                 </div>
 
@@ -2846,9 +3174,23 @@ export default function ResultsPage() {
                       <TooltipTrigger asChild>
                         <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                       </TooltipTrigger>
-                      <TooltipContent className="w-50 bg-[#2b2b2b]">
-                        <p>AI-generated ad copy variations optimized for different platforms and tones to maximize engagement and conversions.</p>
+                      <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-2">
+                        <div>
+                          <p className="font-semibold text-white text-sm">AI-Written Ad Copy Generator</p>
+                          <p className="text-xs">
+                            Creates engaging ad copy using AI, customized for your platform and tone.
+                            Helps you write attention-grabbing ads that boost clicks and conversions.
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-white text-sm">Trending Tags</p>
+                          <p className="text-xs">
+                            Shows the most relevant and high-performing hashtags related to your ad.
+                            Use them to improve reach, visibility, and audience engagement.
+                          </p>
+                        </div>
                       </TooltipContent>
+
                     </Tooltip>
                   </div>
                 </div>

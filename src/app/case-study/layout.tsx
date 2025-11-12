@@ -1,18 +1,30 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import { Suspense } from "react";
-import { Toaster } from "react-hot-toast";
-
-// Import Poppins
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
-  title: "Adalyze AI Case Studies | Real results from smart ad analysis",
+  title: "Adalyze AI Case Studies | Real results from smart AI ad analysis",
   description: "See how top brands improved ad performance using Adalyze AI. Real data, real results — explore case studies now.",
+  keywords: "adalyze ai case studies, ai ad results, campaign performance success, digital ad case study, ai marketing analytics, ad performance insights",
+  openGraph: {
+    title: "Adalyze AI Case Studies | Real results from smart AI ad analysis",
+    description: "See how top brands improved ad performance using Adalyze AI. Real data, real results — explore case studies now.",
+    url: "https://adalyze.app/case-study",
+    type: "website",
+    images: [
+      {
+        url: "https://adalyze.app/uploads/ad-icon-logo.webp",
+        width: 1200,
+        height: 630,
+        alt: "Adalyze AI Case Studies",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Adalyze AI Case Studies | Real results from smart AI ad analysis",
+    description: "See how top brands improved ad performance using Adalyze AI. Real data, real results — explore case studies now.",
+    images: ["https://adalyze.app/uploads/ad-icon-logo.webp"],
+  },
 };
 
 export default function Layout({
@@ -21,26 +33,10 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-            <head>
-        <title> Adalyze AI Case Studies | Real results from smart ad analysis</title>
-        <meta
-          name="description"
-          content="See how top brands improved ad performance using Adalyze AI. Real data, real results — explore case studies now."
-        />
-
-        <meta
-          name="keywords"
-          content="adalyze case studies, ai ad results, campaign performance success, digital ad case study, ai marketing analytics, ad performance insights"
-        />
-      </head>
-      <body className={`${poppins.variable} antialiased`}>
-        <div className="bg-[#171717]">
-          <Suspense>
-            {children}
-          </Suspense>
-        </div>
-      </body>
-    </html>
+    <div className="bg-[#171717]">
+      <Suspense>
+        {children}
+      </Suspense>
+    </div>
   );
 }

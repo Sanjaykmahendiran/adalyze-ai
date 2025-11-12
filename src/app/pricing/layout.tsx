@@ -1,18 +1,30 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import { Suspense } from "react";
-import { Toaster } from "react-hot-toast";
-
-// Import Poppins
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "Adalyze AI Pricing | Flexible plans to scale your ad success",
   description: "Choose a flexible Adalyze AI pricing plan that fits your business needs. Scale smarter ad decisions at affordable rates.",
+  keywords: "adalyze pricing, ai ad analysis plans, ad optimization software cost, ad analytics subscription, affordable ai tools, adalyze plans",
+  openGraph: {
+    title: "Adalyze AI Pricing | Flexible plans to scale your ad success",
+    description: "Choose a flexible Adalyze AI pricing plan that fits your business needs. Scale smarter ad decisions at affordable rates.",
+    url: "https://adalyze.app/pricing",
+    type: "website",
+    images: [
+      {
+        url: "https://adalyze.app/uploads/ad-icon-logo.webp",
+        width: 1200,
+        height: 630,
+        alt: "Adalyze AI Pricing",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Adalyze AI Pricing | Flexible plans to scale your ad success",
+    description: "Choose a flexible Adalyze AI pricing plan that fits your business needs. Scale smarter ad decisions at affordable rates.",
+    images: ["https://adalyze.app/uploads/ad-icon-logo.webp"],
+  },
 };
 
 export default function Layout({
@@ -21,26 +33,10 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <title> Adalyze AI Pricing | Flexible plans to scale your ad success</title>
-        <meta
-          name="description"
-          content="Choose a flexible Adalyze AI pricing plan that fits your business needs. Scale smarter ad decisions at affordable rates."
-        />
-
-        <meta
-          name="keywords"
-          content="adalyze pricing, ai ad analysis plans, ad optimization software cost, ad analytics subscription, affordable ai tools, adalyze plans"
-        />
-      </head>
-      <body className={`${poppins.variable} antialiased`}>
-        <div className="bg-[#171717]">
-          <Suspense>
-            {children}
-          </Suspense>
-        </div>
-      </body>
-    </html>
+    <div className="bg-[#171717]">
+      <Suspense>
+        {children}
+      </Suspense>
+    </div>
   );
 }

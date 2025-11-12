@@ -20,7 +20,7 @@ import { trackFreeTrial, trackPurchase } from "@/lib/gtm"
 import { trackEvent } from "@/lib/eventTracker"
 import Cookies from "js-cookie"
 import PricingHelp from "./_components/pricing-help"
-import { trackPaymentSuccess } from "@/lib/ga4"
+import { trackPaymentSuccess, trackConversion } from "@/lib/ga4"
 
 // Extend Window interface for Razorpay
 declare global {
@@ -356,6 +356,7 @@ const ProPage: React.FC = () => {
             // Check if the response indicates success
             if (result.response === "Free Trial Activated") {
                 trackFreeTrial("Free Trial", userDetails?.user_id?.toString());
+                trackConversion.trialStart("Free Trial", userDetails?.user_id?.toString());
                 trackEvent("Free_Trial_Activated", window.location.href, userDetails?.email?.toString());
                 router.push("/thanks?order_id=free_trial")
             } else {
@@ -401,6 +402,12 @@ const ProPage: React.FC = () => {
                     userCurrency,
                     paymentData.razorpay_order_id,
                     selectedPlan.plan_name,
+                    userDetails?.user_id?.toString()
+                );
+                trackConversion.subscriptionStart(
+                    selectedPlan.plan_name,
+                    userCurrency === "INR" ? selectedPlan?.price_inr || 0 : parseFloat(selectedPlan?.price_usd || "0"),
+                    userCurrency,
                     userDetails?.user_id?.toString()
                 );
             } else {
@@ -528,7 +535,7 @@ const ProPage: React.FC = () => {
                                 <div className="w-32 h-16 sm:w-40 sm:h-20 md:w-52 md:h-[104px] relative">
                                     <Image
                                         src={logo}
-                                        alt="Adalyze Pro"
+                                        alt="Adalyze AI Pro"
                                         fill
                                         className="object-contain"
                                         priority

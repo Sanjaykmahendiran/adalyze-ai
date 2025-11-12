@@ -7,6 +7,7 @@ import AdalyzeLogo from "@/assets/adlyze-black-logo.png";
 import { motion } from "framer-motion";
 
 interface Transaction {
+  base_price: string;
   tax: number;
   id: string;
   order_id: string;
@@ -108,13 +109,13 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
             {/* Header */}
             <div className="flex justify-between items-start mb-8">
               <div>
-                <Image src={AdalyzeLogo} alt="Adalyze Logo" width={200} height={60} />
+                <Image src={AdalyzeLogo} alt="Adalyze AI Logo" width={200} height={60} />
                 <div className="text-sm space-y-1 mt-4" style={{ color: "#374151" }}>
                   <p className="font-medium">Techades eBiz Arena</p>
                   <p>9A, 1st Floor, Chinnakannara Street, Mayiladuthurai</p>
                   <p>TamilNadu, India, 609001</p>
                   {transaction.currency?.toUpperCase() === "USD" ? (
-                    <p>LUT No : 33AZTPK2721N1ZZ</p>
+                    <p>LUT (ARN) No : AD330325211108M</p>
                   ) : (
                     <p>GSTIN No : 33AZTPK2721N1ZZ</p>
                   )}
@@ -233,7 +234,7 @@ export default function InvoicePdf({ transaction, userDetails }: InvoicePdfProps
               <div className="flex justify-between items-center">
                 <span style={{ color: "#374151" }}>Sub Total</span>
                 <span style={{ color: "#374151" }}>
-                  {transaction.currency} {transaction.amount}
+                  {transaction.currency} {transaction.base_price}
                 </span>
               </div>
               <div className="flex justify-between items-center">

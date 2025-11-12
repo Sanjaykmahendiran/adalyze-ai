@@ -18,7 +18,8 @@ import cookies from 'js-cookie'
 import toast from "react-hot-toast"
 import UserLayout from "@/components/layouts/user-layout"
 import useFetchUserDetails from "@/hooks/useFetchUserDetails"
-import { event, trackAdUpload } from "@/lib/gtm"
+import { event, trackAdUpload as trackAdUploadGTM } from "@/lib/gtm"
+import { trackAdUpload, trackAnalysisRequested } from "@/lib/ga4"
 import { Country, State, TargetInfo, Industry } from "./type"
 import { trackEvent } from "@/lib/eventTracker"
 import { generateAdToken } from "@/lib/tokenUtils"
@@ -677,6 +678,10 @@ export default function UploadPage() {
         // Use passed target info if available, otherwise use state
         const targetData = passedTargetInfo || targetInfo;
 
+        // Track analysis requested event
+        const analysisType = activeTab === "single" ? "single" : activeTab === "carousel" ? "carousel" : "video";
+        trackAnalysisRequested(analysisType, undefined, userDetails?.user_id?.toString());
+
         try {
             // Determine brand_id based on user type
             let brandId = ""
@@ -741,8 +746,25 @@ export default function UploadPage() {
 
             if (result && result.success) {
                 localStorage.setItem('analysisResults', JSON.stringify(result))
-                event("analyze");
-                trackAdUpload(result.data.ad_upload_id.toString());
+                
+                // Track ad upload with proper parameters
+                const adId = result.data.ad_upload_id.toString();
+                const adType = activeTab === "single" ? "image" : activeTab === "carousel" ? "image" : "video";
+                
+                // Get file size based on active tab
+                let fileSize: number | undefined;
+                if (activeTab === "single" && singleFile) {
+                    fileSize = singleFile.size;
+                } else if (activeTab === "carousel" && carouselFiles.length > 0) {
+                    fileSize = carouselFiles.reduce((sum, file) => sum + file.size, 0);
+                } else if (activeTab === "video" && videoFile) {
+                    fileSize = videoFile.size;
+                }
+                
+                // Track with both GTM and GA4
+                trackAdUploadGTM(adId);
+                trackAdUpload(adId, adType, fileSize);
+                
                 const eventName = isFreeTrailUser ? `free_trail_user_${activeTab}_Ad_Analyzed` : `${activeTab}_Ad_Analyzed`
                 trackEvent(eventName, window.location.href, userDetails?.email?.toString())
                 // Generate token for the ad_id with user_id
@@ -1087,7 +1109,7 @@ export default function UploadPage() {
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder="Select language" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-[60vh] overflow-y-auto overscroll-contain [touch-action:pan-y] z-[1000]">
+                                                <SelectContent className="bg-[#1a1a1a] border-[#2b2b2b] max-h-[40vh] overflow-y-auto overscroll-contain [touch-action:pan-y] z-[1000]">
                                                     {/* English */}
                                                     <SelectItem value="en-US">English (United States)</SelectItem>
                                                     <SelectItem value="en-GB">English (United Kingdom)</SelectItem>
@@ -1162,7 +1184,7 @@ export default function UploadPage() {
                                                     <SelectItem value="cold-audience">Cold Audience </SelectItem>
                                                     <SelectItem value="warm-audience">Warm Audience</SelectItem>
                                                     <SelectItem value="Retargeting / Hot">Retargeting / Hot</SelectItem>
-                                                </SelectContent> 
+                                                </SelectContent>
                                             </Select>
                                         </div>
 

@@ -326,7 +326,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
             <div
               className="flex flex-col items-center justify-center sm:px-4"
               style={{
-                minHeight: `${viewportHeight * 0.8}px`,
+                minHeight: `${viewportHeight * 0.9}px`,
               }}
             >
               <div className="pt-24 sm:pt-28">
@@ -339,16 +339,17 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="text-5xl sm:text-6xl font-extrabold tracking-tight text-white text-center leading-snug max-w-full mt-4"
+                className="text-[44px] font-bold tracking-tight text-white text-center leading-snug max-w-full mt-4"
               >
-                <div className="">
+                <div className="leading-snug">
                   {bannerData.heading}{" "}
                   <span className="text-primary font-semibold block sm:inline mt- sm:mt-0">
                     {bannerData.subheading}
                   </span>
                 </div>
 
-                <div className="mt-4 px-2 mb-4">
+
+                <div className="mt-4 px-2 mb-6">
                   <span className="bg-gradient-to-r from-orange-300 via-[#db4900] to-yellow-400 bg-clip-text text-transparent font-bold inline-block text-3xl">
                     {text}
                     <span className={`${isTyping ? "animate-pulse" : "opacity-0"}`}>|</span>
@@ -360,7 +361,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
-                className="text-lg sm:text-lg text-gray-300 text-center mx-auto max-w-md mt-5 mb-4 px-3 leading-relaxed"
+                className="text-lg sm:text-lg text-gray-300 text-center mx-auto max-w-md mt-5 mb-6 px-3 leading-relaxed"
               >
                 {bannerData.brief}
               </motion.p>
@@ -372,8 +373,8 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                 className="flex flex-col items-center mt-6"
               >
                 <Button
-                  onClick={() => window.open("/register", "_blank", "noopener,noreferrer")}
-                  className="flex items-center cursor-pointer gap-2 px-6 py-6 text-white text-xl font-semibold rounded-xl transition-colors w-full sm:w-auto min-w-[200px]"
+                  onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("LP_Banner_RB", window.location.href); }}
+                  className="flex items-center cursor-pointer gap-2 px-6 py-6 text-white text-xl font-semibold rounded-lg transition-colors w-full sm:w-auto min-w-[200px]"
                 >
                   {bannerData.pcta}
                 </Button>

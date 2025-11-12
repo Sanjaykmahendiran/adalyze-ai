@@ -95,7 +95,7 @@ const fetchMenuData = async (): Promise<UIMenuItem[]> => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data: unknown = await res.json()
       if (!Array.isArray(data)) return []
-      
+
       // Filter out any non-object entries like stray strings
       const rawItems: ApiMenuItem[] = (data as unknown[]).filter(
         (it): it is ApiMenuItem => typeof it === "object" && it !== null
@@ -239,7 +239,7 @@ export default function Header() {
                 <p className="font-medium text-white text-center truncate">
                   <span className="font-bold">50% OFF:</span>
                   <span className="hidden sm:inline md:inline"> Unlock the full power of </span>
-                  <span className="font-bold mx-1">AdalyzeAI</span>
+                  <span className="font-bold mx-1">Adalyze AI</span>
                   <span className="hidden md:inline">at half price. Limited-time offer!</span>
                   <span className="hidden sm:inline md:hidden">- Limited time!</span>
                   <span className="sm:hidden">- Limited!</span>
@@ -247,7 +247,7 @@ export default function Header() {
               </div>
 
               <a
-                href="/register"
+                onClick={() => { window.open("/register", "_blank", "noopener,noreferrer"); trackEvent("LP_Banner_RB", window.location.href); }}
                 className="flex-shrink-0 hover:scale-110 transition-transform duration-200"
                 aria-label="Get 50% off"
               >
@@ -279,7 +279,7 @@ export default function Header() {
           >
             <Image
               src={loginlogo || "/placeholder.svg"}
-              alt="Adalyze Logo"
+              alt="Adalyze AI Logo"
               className="object-contain w-full h-full"
               priority
               draggable={false}
@@ -380,7 +380,9 @@ export default function Header() {
               aria-label="Toggle mobile menu"
             >
               {isMobileMenuOpen ? (
-                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className="bg-[#171717] rounded-lg p-1">
+                  <X className="w-6 h-6 " />
+                </div>
               ) : (
                 <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
               )}
@@ -405,16 +407,16 @@ export default function Header() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -20, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full right-0 mt-2 w-64 sm:w-72 md:w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-lg shadow-xl z-40 max-h-[calc(100vh-120px)] sm:max-h-[calc(100vh-100px)] overflow-y-auto"
+                    className="absolute top-full right-0  w-[90vw] bg-black backdrop-blur-md border border-[#171717] rounded-lg shadow-xl z-40 max-h-[calc(100vh-120px)] sm:max-h-[calc(100vh-100px)] overflow-y-auto"
                   >
-                    <div className="py-2">
+                    <div className="py-2 space-y-2">
                       {navigationItems.map((item) => (
-                        <div key={item.name}>
+                        <div key={item.name} >
                           {item.hasDropdown ? (
-                            <div>
+                            <div className="bg-white/10 transition-colors duration-200 mx-2 rounded-lg">
                               <button
                                 onClick={() => setIsResourcesOpen(!isResourcesOpen)}
-                                className="w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-white hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 font-medium text-sm sm:text-base relative"
+                                className="w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-white transition-colors duration-200 font-medium text-sm sm:text-base relative"
                               >
                                 <div className="flex items-center gap-2">
                                   {item.name}
@@ -443,7 +445,7 @@ export default function Header() {
                                       <Link
                                         key={dropdownItem.name}
                                         href={dropdownItem.href}
-                                        className="block px-6 sm:px-8 py-2.5 sm:py-3 text-gray-300 hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 text-sm sm:text-base relative"
+                                        className="block px-6 sm:px-8 py-2.5 sm:py-3 text-white/80 transition-colors duration-200 text-sm sm:text-base relative"
                                         onClick={() => {
                                           setIsMobileMenuOpen(false)
                                           setIsResourcesOpen(false)
@@ -466,14 +468,14 @@ export default function Header() {
                           ) : (
                             <Link
                               href={item.href}
-                              className="block px-3 sm:px-4 py-2.5 sm:py-3 text-white hover:text-[#db4900] hover:bg-white/5 transition-colors duration-200 font-medium text-sm sm:text-base relative"
+                              className="block px-3 sm:px-4 py-2.5 sm:py-3 text-white/80 mx-2 rounded-lg bg-white/10 transition-colors duration-200 font-medium text-sm sm:text-base relative"
                               onClick={(e) => {
                                 handleSmoothScroll(e, item.href)
                                 setIsMobileMenuOpen(false)
                                 setIsResourcesOpen(false)
                               }}
                             >
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 ">
                                 {item.name}
                                 {item.badge_text && (
                                   <span className="absolute top-1 right-2 lg:top-0 lg:-right-5 bg-[#db4900] text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium min-w-[16px] h-4 flex items-center justify-center">
@@ -490,8 +492,8 @@ export default function Header() {
                       <div className="px-3 sm:px-4 pt-3 sm:pt-4 border-t border-white/10 mt-2 space-y-2.5 sm:space-y-3 pb-2">
                         <Button
                           asChild
-                          variant="ghost"
-                          className="w-full text-white hover:text-[#db4900] hover:bg-white/10 px-4 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all duration-200"
+                          variant="outline"
+                          className="w-full text-white px-4 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all duration-200"
                           onClick={() => {
                             setIsMobileMenuOpen(false)
                             trackEvent("LP_Direct_Login_button_clicked", window.location.href)

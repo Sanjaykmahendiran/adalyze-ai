@@ -19,6 +19,7 @@ import Link from "next/link";
 import GoogleSignInButton from "@/app/login/_components/GoogleSign-In";
 import Cookies from "js-cookie";
 import { event, trackSignup } from "@/lib/gtm";
+import { trackSignUp } from "@/lib/ga4";
 import { login } from "@/services/authService";
 import { trackEvent } from "@/lib/eventTracker";
 import RegistrationStep2Form from "./RegistrationStep2Form";
@@ -82,6 +83,7 @@ export default function RegistrationForm() {
         const user = loginData.user;
         Cookies.set("userId", user.user_id.toString(), { expires: 7 });
         trackEvent("Google_Register_completed", window.location.href, user.email);
+        trackSignUp("Google", user.user_id.toString());
         toast.success("Login successful!");
 
         // Check register_level_status first
@@ -455,8 +457,9 @@ export default function RegistrationForm() {
         Cookies.set("email", emailValue, { expires: 30 });
         trackEvent("Register_completed", window.location.href, emailValue);
         // ✅ GA4 / GTM custom event
-
-        trackSignup(sourceFromParams === "Referral" ? "Referral" : sourceFromParams || "Email", userId);
+        const signupMethod = sourceFromParams === "Referral" ? "Referral" : sourceFromParams || "Email";
+        trackSignup(signupMethod, userId);
+        trackSignUp(signupMethod, userId);
 
         toast.success(data.message || "Registration successful!");
         registrationForm.reset();

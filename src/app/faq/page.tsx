@@ -155,7 +155,7 @@ export default function FAQSection() {
                                             trackEvent("LP_FAQ_button_clicked", window.location.href);
                                         }}
                                     >
-                                        Try Adalyze for free
+                                        Try Adalyze AI for free
                                     </button>
                                 </div>
                             </div>

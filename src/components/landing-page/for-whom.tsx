@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Image from 'next/image';
+import { Building2, ShoppingCart, User, Share2, Building, Megaphone } from 'lucide-react';
 import image1 from "@/assets/Landing-page/1.agency.webp"
 import image2 from "@/assets/Landing-page/2.ecommerce.webp"
 import image3 from "@/assets/Landing-page/3.freelancers.webp"
@@ -18,32 +19,76 @@ const teamMembers = [
         title: "Marketing Agencies",
         description: "AI insights and automation to boost client ROI.",
         image: image1,
+        icon: Building2,
     },
     {
         id: "ecommerce-brands",
         title: "E-commerce Brands",
         description: "High-performing ad creatives that drive sales.",
         image: image2,
+        icon: ShoppingCart,
     },
     {
         id: "freelancers",
-        title: "Freelancers & Solopreneurs",
+        title: "Freelancers",
         description: "Budget-friendly tools to maximize ad spend.",
         image: image3,
+        icon: User,
     },
     {
         id: "social-media-managers",
         title: "Social Media Managers",
         description: "Engaging ads that boost reach and performance.",
         image: image4,
+        icon: Megaphone,
     },
     {
         id: "enterprises",
         title: "Enterprise & Large Brands",
         description: "Enterprise-grade AI for multi-market campaigns.",
         image: image5,
+        icon: Building,
     },
 ];
+
+const cardVariants = {
+    hidden: { opacity: 0, y: 40, scale: 0.8, rotateX: -15 },
+    visible: (index: number) => ({
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        rotateX: 0,
+        transition: {
+            delay: index * 0.1,
+            duration: 0.6,
+            ease: [0.17, 0.67, 0.83, 1] as const,
+        },
+    }),
+};
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.2,
+        },
+    },
+};
+
+const iconVariants = {
+    hidden: { scale: 0, rotate: -180 },
+    visible: {
+        scale: 1,
+        rotate: 0,
+        transition: {
+            type: "spring" as const,
+            stiffness: 200,
+            damping: 15,
+        },
+    },
+};
 
 export default function ForWhomSection() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -59,7 +104,7 @@ export default function ForWhomSection() {
 
     return (
         <section
-            id='use-cases'
+            id='for-whom'
             className="relative h-auto lg:h-[300vh]" ref={containerRef}>
             {/* Section Title - Optimized for small screens */}
             <motion.div
@@ -67,13 +112,13 @@ export default function ForWhomSection() {
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
                 viewport={{ once: false, amount: 0.3 }}
-                className="text-center py-2 sm:py-3 "
+                className="text-center py-2 sm:py-3 px-2"
             >
-                <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
+                <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2">
                     Who Benefits from <span className='text-primary'>Adalyze AI</span>
                 </h2>
                 <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1"> Designed for Marketers, Designers & Ad Agencies</p>
-                <p className="text-sm sm:text-base text-white/80 max-w-xl sm:max-w-2xl mx-auto px-1">
+                <p className="text-sm sm:text-base text-white/80 max-w-xl sm:max-w-2xl mx-auto ">
                     Adalyze AI helps marketers, designers, and agencies create better ads with AI-powered insights, ad scores, and trend analysis to boost performance and ROI.
                 </p>
             </motion.div>
@@ -145,29 +190,78 @@ export default function ForWhomSection() {
                 </motion.div>
             </div>
 
-            {/* Mobile fallback */}
-            <div className="lg:hidden container mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 pb-32">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
-                    {teamMembers.map((member) => (
-                        <div key={member.id} className="bg-black rounded-xl sm:rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                            <div className="relative h-96 sm:h-96 md:h-96">
-                                <Image
-                                    src={member.image.src}
-                                    alt={member.title}
-                                    fill
-                                    className="object-cover"
-                                />
-                                {/* Dark overlay for consistency */}
-                                <div className="absolute inset-0 bg-black/50" />
-                            </div>
-                            <div className="p-4 sm:p-5 md:p-6">
-                                <h3 className="text-xl sm:text-2xl font-semibold text-white mb-2">
+            {/* Mobile View */}
+            <div className="lg:hidden container mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 pb-28">
+                <motion.div
+                    className="grid grid-cols-2 sm:grid-cols-3 gap-6"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: false, amount: 0.1 }}
+                    variants={containerVariants}
+                >
+                    {teamMembers.map((member, index) => {
+                        const IconComponent = member.icon;
+                        const isLast = index === teamMembers.length - 1;
+
+                        return (
+                            <motion.div
+                                key={member.id}
+                                custom={index}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: false, amount: 0.2 }}
+                                variants={cardVariants}
+                                whileHover={{
+                                    scale: 1.08,
+                                    y: -8,
+                                    rotateY: 5,
+                                    transition: {
+                                        type: "spring" as const,
+                                        stiffness: 300,
+                                        damping: 20,
+                                    },
+                                }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`text-center relative overflow-hidden group rounded-2xl py-4 px-2 bg-black border border-[#2b2b2b]
+                                          ${isLast ? "col-span-full w-full" : ""}`}
+                            >
+
+                                {/* Icon */}
+                                <motion.div
+                                    className="flex justify-center mb-3 pt-4 relative z-10"
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={{ once: false }}
+                                    variants={iconVariants}
+                                    whileHover={{
+                                        scale: 1.2,
+                                        rotate: 360,
+                                        transition: {
+                                            type: "spring" as const,
+                                            stiffness: 300,
+                                            damping: 15,
+                                        },
+                                    }}
+                                >
+                                    <IconComponent className="w-10 h-10 text-primary bounce-slow" />
+                                </motion.div>
+
+                                {/* Title */}
+                                <motion.h3
+                                    className="text-sm font-medium text-white pb-4 relative z-10"
+                                    initial={{ opacity: 0 }}
+                                    whileInView={{ opacity: 1 }}
+                                    viewport={{ once: false }}
+                                    transition={{ delay: index * 0.1 + 0.3, duration: 0.4 }}
+                                    whileHover={{ scale: 1.05 }}
+                                >
                                     {member.title}
-                                </h3>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                                </motion.h3>
+
+                            </motion.div>
+                        );
+                    })}
+                </motion.div>
             </div>
 
             {/* Button positioned at bottom of this section only */}

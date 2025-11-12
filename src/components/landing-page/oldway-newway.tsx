@@ -1,3 +1,5 @@
+
+
 "use client"
 import Image from "next/image"
 import BeforeAdalyze from "@/assets/Landing-page/old-way.webp"
@@ -25,7 +27,7 @@ const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
   const steps = [
     {
       stepNumber: "01",
-      title: "Before Adalyze: Creative Guesswork",
+      title: "Before Adalyze AI: Creative Guesswork",
       desktopImage: BeforeAdalyze,
       mobileImage: MobileBeforeAdalyze,
       alt: "Struggling with ad results",
@@ -43,7 +45,7 @@ const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
 
   return (
     <section id="why-us" className="relative py-4 sm:py-6 lg:py-8 mt-2 sm:mt-4 px-2 sm:px-4">
-      <div className="container mx-auto px-1 sm:px-2 max-w-6xl">
+      <div className="container mx-auto max-w-6xl">
         {/* Section Title - Optimized for small screens */}
         <motion.div
           initial={{ y: -50, opacity: 0 }}
@@ -67,13 +69,13 @@ const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
           {steps.map((step, index) => (
             <div
               key={index}
-              className="sticky top-0"
+              className="sticky top-16 sm:top-24"
               style={{
                 zIndex: index + 1,
                 // Reduce sticky container height on mobile for better fit
-                height: isMobile ? "80vh" : "100vh",
-                minHeight: isMobile ? "400px" : "500px",
-                maxHeight: isMobile ? "600px" : "800px"
+                minHeight: isMobile ? "75vh" : "85vh",
+                paddingTop: "1rem",
+                paddingBottom: "1rem"
               }}
             >
               <div
@@ -83,27 +85,32 @@ const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
                   className="relative rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden w-full max-w-4xl mx-auto flex flex-col justify-end"
                   style={{
                     // Optimize card height for mobile
-                    height: isMobile ? "70vh" : "80vh",
-                    minHeight: isMobile ? "350px" : "450px",
-                    maxHeight: isMobile ? "500px" : "650px"
+                    height: isMobile ? "75vh" : "85vh",
+                    minHeight: isMobile ? "400px" : "500px",
+                    maxHeight: isMobile ? "600px" : "700px"
                   }}
                 >
                   {/* Full Background Image Container */}
-                  <div className="absolute inset-0 w-full h-full">
-                    <Image
-                      src={isMobile ? step.mobileImage : step.desktopImage}
-                      alt={step.alt}
-                      fill
-                      className="object-contain rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden"
-                      sizes="(max-width: 768px) 100vw, 1200px"
-                      priority={index === 0}
-                    />
+                  <div className="absolute inset-0 w-full h-full rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden">
+                    <div className="relative w-full h-full rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden">
+                      <Image
+                        src={isMobile ? step.mobileImage : step.desktopImage}
+                        alt={step.alt}
+                        fill
+                        className="object-contain rounded-xl sm:rounded-2xl lg:rounded-3xl"
+                        sizes="(max-width: 868px) 100vw, 1300px"
+                        priority={index === 0}
+                        style={{
+                          borderRadius: 'inherit'
+                        }}
+                      />
+                    </div>
                     {/* Enhanced gradient overlay for mobile readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none rounded-xl sm:rounded-2xl lg:rounded-3xl" />
                   </div>
 
                   {/* Optimized Text Content Container */}
-                  <div className="relative z-20 p-2 sm:p-3 lg:p-4 bg-[#171717]  rounded-lg sm:rounded-xl mx-2 sm:mx-4 mb-2 sm:mb-3 shadow-2xl">
+                  <div className="relative z-20 p-2 sm:p-3 lg:p-4 bg-black rounded-b-xl sm:rounded-b-2xl lg:rounded-b-3xl shadow-2xl">
                     <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2 text-primary leading-tight">
                       {step.title}
                     </h3>
@@ -166,4 +173,4 @@ const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
   )
 }
 
-export default WorkflowSection
+export default WorkflowSection 

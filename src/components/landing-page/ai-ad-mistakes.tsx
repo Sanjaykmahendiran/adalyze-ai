@@ -175,10 +175,9 @@ export default function AiAdMistakes({ category }: { category: string }) {
                     {/* Bottom Slide-Up Text Container */}
                     <div
                       className={`absolute -bottom-1 -left-1 -right-1 p-5 text-white transition-all duration-500 ease-out backdrop-blur-md bg-black/60
-                        ${
-                          isActive
-                            ? "translate-y-0 opacity-100"
-                            : "translate-y-full opacity-0"
+                        ${isActive
+                          ? "translate-y-0 opacity-100"
+                          : "translate-y-full opacity-0"
                         }
                       `}
                     >

@@ -1,13 +1,43 @@
 "use client"
 
 import Image from "next/image"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Check } from "lucide-react"
 import { motion } from "framer-motion"
 import PromoImg from "@/assets/Landing-page/above-cta.webp"
 import { Button } from "../ui/button"
 import { trackEvent } from "@/lib/eventTracker"
 
 export default function CTASection({ ButtonText }: { ButtonText: string }) {
+
+  const features = [
+    "20M+ Ad Library",
+    "Best Ads for E-commerce / D2C",
+    "AI Ads Generator",
+    "Video Ads",
+    "AI Ad Maker",
+    "Whitelabel for Agencies",
+    "Facebook Ads Library",
+    "Ad Creative AI",
+    "Best Ads for Lead Generation",
+    "Best Ads for Small Businesses",
+    "AI Photoshoots",
+    "AI Videos",
+    "AI Sound (11 Labs)",
+    "AI Voice",
+    "Copyright Free Images (Getty Images)",
+    "AI Video Editor",
+    "Faceless YouTube Videos",
+    "UGC Ads",
+  ];
+
+  function FeatureItem({ text }: { text: string }) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#2b2b2b] bg-[#171717] text-white text-sm font-medium">
+        <Check className="w-4 h-4 text-[#db4900]" strokeWidth={2.5} />
+        <span className="whitespace-nowrap">{text}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full overflow-hidden text-white md:overflow-x-hidden" id="promo-section">
@@ -68,7 +98,7 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
                   window.open("/register", "_blank", "noopener,noreferrer");
                   trackEvent("LP_CTA_button_clicked", window.location.href);
                 }}
-                className="py-4 sm:py-6 cursor-pointer w-full sm:w-auto min-w-[200px] text-sm sm:text-base"
+                className="py-6 sm:py-8 cursor-pointer sm:w-auto min-w-[200px] text-base sm:text-lg"
               >
                 {ButtonText} <ArrowRight className="ml-2" />
               </Button>
@@ -100,6 +130,66 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
           </motion.div>
         </div>
       </div>
+
+      <section className="w-full max-w-7xl mx-auto overflow-hidden bg-[#171717] py-6">
+        {/* Desktop Version (Two Rows) */}
+        <div className="hidden md:flex flex-col gap-4">
+          {/* Row 1 */}
+          <div className="relative flex overflow-hidden">
+            <motion.div
+              className="flex gap-8 whitespace-nowrap"
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{
+                repeat: Infinity,
+                ease: "linear",
+                duration: 100, // 🐢 Slower = 100s full loop
+              }}
+            >
+              {[...features, ...features].map((feature, i) => (
+                <FeatureItem key={`row1-${i}`} text={feature} />
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Row 2 (reverse direction) */}
+          <div className="relative flex overflow-hidden">
+            <motion.div
+              className="flex gap-8 whitespace-nowrap"
+              animate={{ x: ["-50%", "0%"] }}
+              transition={{
+                repeat: Infinity,
+                ease: "linear",
+                  duration: 100, // 🐢 slower = 100s full loop
+              }}
+            >
+              {[...features, ...features].map((feature, i) => (
+                <FeatureItem key={`row2-${i}`} text={feature} />
+              ))}
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Mobile Version (One Row) */}
+        <div className="md:hidden">
+          <div className="relative flex overflow-hidden">
+            <motion.div
+              className="flex gap-6 whitespace-nowrap"
+              animate={{ x: ["0%", "-100%"] }}
+              transition={{
+                repeat: Infinity,
+                ease: "linear",
+                duration: 100, // 🐢 slower = 100s full loop
+              }}
+            >
+              {[...features, ...features].map((feature, i) => (
+                <FeatureItem key={`mobile-${i}`} text={feature} />
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+
     </div>
   )
 }

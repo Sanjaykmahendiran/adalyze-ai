@@ -36,8 +36,47 @@ export function Providers() {
       // keep GTM pageview (your existing code)
       pageview(url);
 
-      // also call our events API for Page_View
-      // trackEvent("Page_View", url, Cookies.get("email") || null);
+      // List of pages that should track Page_View event
+      const pagesToTrack = [
+        "/",
+        "/login",
+        "/register",
+        "/pricing",
+        "/blog",
+        "/case-study",
+        "/affiliate-program",
+        "/aboutus",
+        "/cookie-policy",
+        "/termsandconditions",
+        "/returnpolicy",
+        "/privacypolicy",
+        "/agency",
+        "/use-cases",
+        "/features",
+        "/roi-calculator",
+        "/faq",
+      ];
+
+      // Only call trackEvent for specific pages
+      if (pagesToTrack.includes(pathname)) {
+        // Detect if device is mobile or desktop
+        const isMobile = () => {
+          // Check user agent for mobile devices
+          const userAgent = typeof window !== "undefined" ? window.navigator.userAgent : "";
+          const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+          const isMobileUserAgent = mobileRegex.test(userAgent);
+          
+          // Also check window width (mobile if width <= 768px)
+          const isMobileWidth = typeof window !== "undefined" && window.innerWidth <= 768;
+          
+          return isMobileUserAgent || isMobileWidth;
+        };
+
+        const deviceType = isMobile() ? "Mobile" : "Desktop";
+        const eventName = `Page_View_${deviceType}`;
+        
+        // trackEvent(eventName, url, Cookies.get("email") || null);
+      }
     }
   }, [pathname, searchParams]);
 

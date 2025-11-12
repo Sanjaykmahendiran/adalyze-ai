@@ -34,7 +34,7 @@ const features = [
             { value: 95, suffix: "%", label: "accuracy" },
             { value: 30, suffix: "%", label: "spend saved", prefix: "Up to " },
         ],
-        buttonText: "See How Agencies Use Adalyze",
+        buttonText: "See How Agencies Use Adalyze AI",
         desktopImage: Agencies,
 
     },
@@ -69,7 +69,7 @@ const features = [
             { value: 10, suffix: "+", label: "insights per campaign" },
             { value: 20, suffix: "%", label: "spend saved" },
         ],
-        buttonText: "Try Adalyze for Free",
+        buttonText: "Try Adalyze AI for Free",
         desktopImage: SmallBusiness,
     },
     {
@@ -86,7 +86,7 @@ const features = [
             { value: 30, suffix: "%", label: "more engagement" },
             { value: 10, suffix: "+", label: "platform insights" },
         ],
-        buttonText: "See How Social Media Managers Use Adalyze",
+        buttonText: "See How Social Media Managers Use Adalyze AI",
         desktopImage: SocialMedia,
     },
     {
@@ -224,7 +224,7 @@ export default function UseCases() {
                                     delay: 0.8
                                 }}
                             >
-                                From agencies to e-commerce, Adalyze helps maximize ROI with intelligent insights and automated optimization.
+                                From agencies to e-commerce, Adalyze AI helps maximize ROI with intelligent insights and automated optimization.
                             </motion.p>
                             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 mb-5 w-full sm:w-auto">
                                 <Button size="lg"

@@ -1466,7 +1466,7 @@ export default function ABTestResults() {
                                                         Headline Idea
                                                     </h4>
                                                     <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                                                        {currentAd?.next_ad_idea_based_on_this_post?.headline}
+                                                        {currentAd?.next_ad_idea_based_on_this_post.headline}
                                                     </p>
                                                 </div>
 
@@ -1477,7 +1477,7 @@ export default function ABTestResults() {
                                                         Short Caption
                                                     </h4>
                                                     <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                                                        {currentAd?.next_ad_idea_based_on_this_post?.short_caption}
+                                                        {currentAd?.next_ad_idea_based_on_this_post.short_caption}
                                                     </p>
                                                 </div>
                                             </div>
@@ -1489,7 +1489,7 @@ export default function ABTestResults() {
                                                     Visual Idea
                                                 </h4>
                                                 <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                                                    {currentAd?.next_ad_idea_based_on_this_post?.visual_idea}
+                                                    {currentAd?.next_ad_idea_based_on_this_post.visual_idea}
                                                 </p>
                                             </div>
                                         </div>

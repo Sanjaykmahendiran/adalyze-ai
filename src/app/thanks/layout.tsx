@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
-import UserLayout from "@/components/layouts/user-layout";
-import { Toaster } from "react-hot-toast";
 import { Suspense } from "react";
 
 // Import Poppins
@@ -12,8 +10,28 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Adalyze AI – Smart Ad Analysis for Agencies & Marketers",
+  title: "Thanks | Adalyze AI",
   description: "Adalyze AI helps marketers and agencies analyze, optimize, and improve ad performance with smart AI insights to boost ROI and creative quality.",
+  openGraph: {
+    title: "Thanks | Adalyze AI",
+    description: "Adalyze AI helps marketers and agencies analyze, optimize, and improve ad performance with smart AI insights to boost ROI and creative quality.",
+    url: "https://adalyze.app/thanks",
+    type: "website",
+    images: [
+      {
+        url: "https://adalyze.app/uploads/ad-icon-logo.webp",
+        width: 1200,
+        height: 630,
+        alt: "Thanks | Adalyze AI",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Thanks | Adalyze AI",
+    description: "Adalyze AI helps marketers and agencies analyze, optimize, and improve ad performance with smart AI insights to boost ROI and creative quality.",
+    images: ["https://adalyze.app/uploads/ad-icon-logo.webp"],
+  },
 };
 
 export default function Layout({

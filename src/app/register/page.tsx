@@ -20,7 +20,7 @@ const RegisterPage = () => {
                   src={loginlogo || "/placeholder.svg"}
                   layout="fill"
                   objectFit="contain"
-                  alt="Adalyze"
+                  alt="Adalyze AI"
                   draggable={false}
                 />
               </div>
@@ -36,7 +36,7 @@ const RegisterPage = () => {
 
             {/* Terms and Conditions */}
             <div className="text-xs text-center mt-4 mb-4">
-              By continuing, you agree to Adalyze&apos;s{" "}
+              By continuing, you agree to Adalyze AI&apos;s{" "}
               <Link
                 target="_blank"
                 rel="noopener noreferrer"

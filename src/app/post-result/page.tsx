@@ -12,7 +12,7 @@ const ShareAdResult = () => {
   const handleShare = async () => {
     if (!ref.current) return;
     const dataUrl = await toPng(ref.current, { width: 1000, height: 1000 });
-    saveAs(dataUrl, "Adalyze_Ad_Performance.png");
+    saveAs(dataUrl, "Adalyze_AI_Ad_Performance.png");
   };
 
   const staticData = {

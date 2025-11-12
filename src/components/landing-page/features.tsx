@@ -21,7 +21,7 @@ const features = [
   {
     title: "AI-Powered Ad Performance Prediction",
     description:
-      "Predict the effectiveness of any ad — image, carousel, or video — before you launch. Adalyze uses advanced AI to estimate CTR, engagement, and ROI, helping marketers make data-driven decisions and avoid wasted spend.",
+      "Predict the effectiveness of any ad — image, carousel, or video — before you launch. Adalyze AI uses advanced AI to estimate CTR, engagement, and ROI, helping marketers make data-driven decisions and avoid wasted spend.",
     buttonText: "Predict Now",
     desktopImage: Features1,
     mobileImage: Features1Mobile,
@@ -29,7 +29,7 @@ const features = [
   {
     title: "Multi-Channel Creative Insights",
     description:
-      "Get platform-specific recommendations for Facebook, Instagram, LinkedIn, Google Ads, and more. Adalyze analyzes visual elements, copy, and layout to maximize engagement across channels.",
+      "Get platform-specific recommendations for Facebook, Instagram, LinkedIn, Google Ads, and more. Adalyze AI analyzes visual elements, copy, and layout to maximize engagement across channels.",
     buttonText: "Analyze Across Platforms",
     desktopImage: Features2,
     mobileImage: Features2Mobile,
@@ -56,7 +56,7 @@ export default function FeaturesSection() {
   }, [])
 
   return (
-    <div id="features" className="min-h-screen text-white py-12 sm:py-16 px-4 sm:px-6">
+    <div id="features" className="min-h-screen text-white py-12 sm:py-16 px-4 sm:px-6 overflow-x-hidden lg:overflow-x-visible">
       <div className="max-w-6xl mx-auto">
         {/* Section Title - Optimized for small screens */}
         <motion.div
@@ -71,7 +71,7 @@ export default function FeaturesSection() {
           </h2>
           <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Tools That Make Your Ads More Effective</p>
           <p className="text-sm sm:text-base text-white/80 max-w-xl sm:max-w-2xl mx-auto px-1">
-            Adalyze AI offers powerful features like ad scoring, trend analysis, and performance predictions which give actionable insights to create ads that convert and maximize ROI.
+            Adalyze AI offers powerful features like ad scoring, trend analysis, and performance predictions which give actionable insights to create ads that convert and maximize ROI. AI-powered insights and automated optimization to boost client ROI.
           </p>
         </motion.div>
 
@@ -172,7 +172,7 @@ export default function FeaturesSection() {
             }}
             className="text-white cursor-pointer  text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
           >
-            Explore Adalyze Features
+            Explore Adalyze AI Features
           </Button>
         </div>
       </div>

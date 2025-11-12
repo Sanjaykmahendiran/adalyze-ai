@@ -63,7 +63,7 @@ type Props = {
 const defaultLeftInfo: LeftInfo = {
     title: "Why Pre-Campaign Checklist Matters",
     intro:
-        "Every successful campaign starts with a solid foundation. The Adalyze Pre-Campaign Checklist ensures that you’ve covered all technical and strategic aspects before launching ads — reducing wasted spend and improving ad performance.",
+        "Every successful campaign starts with a solid foundation. The Adalyze AI Pre-Campaign Checklist ensures that you’ve covered all technical and strategic aspects before launching ads — reducing wasted spend and improving ad performance.",
     bullets: [
         { icon: <Globe className="w-5 h-5" />, text: "Validate landing pages, audiences, and tracking accuracy.", colorClass: "text-green-500" },
         { icon: <BarChart3 className="w-5 h-5" />, text: "Prevent budget loss from missing setup or tracking issues.", colorClass: "text-yellow-500" },

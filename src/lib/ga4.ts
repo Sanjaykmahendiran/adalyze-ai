@@ -17,11 +17,11 @@ export const GA4_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || 
  */
 export const isGA4Initialized = (): boolean => {
     if (typeof window === "undefined") return false;
-    return !!(window.gtag && GA4_MEASUREMENT_ID);
+    return !!(typeof window.gtag === "function" && GA4_MEASUREMENT_ID);
 };
 
 /**
- * Track a page view
+ * Track a page view (works with or without cookies)
  * @param pagePath - Page path
  * @param pageTitle - Optional page title
  */
@@ -30,17 +30,22 @@ export const trackPageView = (pagePath: string, pageTitle?: string) => {
         window.gtag('config', GA4_MEASUREMENT_ID, {
             page_path: pagePath,
             page_title: pageTitle,
+            // Cookie-less configuration
+            anonymize_ip: true,
+            storage: 'none',
+            client_storage: 'none',
         });
     }
 };
 
 /**
- * Track a custom event
+ * Track a custom event (works with or without cookies)
  * @param eventName - Event name
  * @param parameters - Event parameters
  */
 export const trackEvent = (eventName: string, parameters: Record<string, any> = {}) => {
     if (isGA4Initialized()) {
+        // Events work without cookies when initial config has storage: 'none'
         window.gtag('event', eventName, parameters);
     }
 };
@@ -58,6 +63,7 @@ export const trackSignUp = (method: string, userId?: string) => {
 };
 
 /**
+ * upload page
  * Track ad upload event
  * @param adId - Ad identifier
  * @param adType - Type of ad (image, video, etc.)
@@ -72,6 +78,7 @@ export const trackAdUpload = (adId: string, adType?: string, fileSize?: number) 
 };
 
 /**
+ * upload page analysis requested
  * Track analysis requested event
  * @param analysisType - Type of analysis
  * @param adId - Optional ad identifier
@@ -90,6 +97,7 @@ export const trackAnalysisRequested = (
 };
 
 /**
+ * pricing and pro page
  * Track payment success event
  * @param value - Payment value
  * @param currency - Currency code
@@ -164,6 +172,7 @@ export const trackUserEngagement = {
 };
 
 /**
+ * pricing page
  * Track conversion events
  */
 export const trackConversion = {
@@ -197,25 +206,33 @@ export const trackConversion = {
 };
 
 /**
- * Set user properties
+ * Set user properties (works with or without cookies)
  * @param properties - User properties
  */
 export const setUserProperties = (properties: Record<string, any>) => {
     if (isGA4Initialized()) {
         window.gtag('config', GA4_MEASUREMENT_ID, {
             custom_map: properties,
+            // Cookie-less configuration
+            anonymize_ip: true,
+            storage: 'none',
+            client_storage: 'none',
         });
     }
 };
 
 /**
- * Set user ID
+ * Set user ID (works with or without cookies)
  * @param userId - User ID
  */
 export const setUserId = (userId: string) => {
     if (isGA4Initialized()) {
         window.gtag('config', GA4_MEASUREMENT_ID, {
             user_id: userId,
+            // Cookie-less configuration
+            anonymize_ip: true,
+            storage: 'none',
+            client_storage: 'none',
         });
     }
 };

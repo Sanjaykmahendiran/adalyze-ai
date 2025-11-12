@@ -327,7 +327,7 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                                 <div className="p-2 bg-[#171717] rounded-lg border border-white/5 h-full">
                                     <h3 className="text-white font-semibold text-sm mb-2">Brand Tip:</h3>
                                     <p className="text-white/70 text-xs leading-relaxed">
-                                        The details you add here help Adalyze understand, verify your brand identity and Analysis better.
+                                        The details you add here help Adalyze AI understand, verify your brand identity and Analysis better.
                                         Use your official logo (clean, high-resolution, square & JPG or JPEG format if possible) and the same name, mobile number, and email that you use across your social media pages.
                                     </p>
                                 </div>

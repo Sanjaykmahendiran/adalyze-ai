@@ -1168,7 +1168,7 @@ export default function Dashboard() {
                   <div className="bg-black rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group">
                     <div className="mb-4 sm:mb-6  ">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-lg sm:text-xl font-semibold text-white group-hover:text-white transition-colors duration-300">Adalyze Impacts</h2>
+                        <h2 className="text-lg sm:text-xl font-semibold text-white group-hover:text-white transition-colors duration-300">Adalyze AI Impacts</h2>
                         <Button
                           variant="ghost"
                           onClick={() => router.push("/case-study?type=dashboard")}
@@ -1177,7 +1177,7 @@ export default function Dashboard() {
                         </Button>
                       </div>
                       <p className="text-white/50 text-sm mt-1 group-hover:text-white/70 transition-colors duration-300">
-                        Know the recent success stories of adalyze
+                        Know the recent success stories of Adalyze AI
                       </p>
                     </div>
 
@@ -1256,7 +1256,7 @@ export default function Dashboard() {
                       </div>
                       <h3 className="text-[#db4900] font-bold text-xl sm:text-2xl group-hover:text-[#ff5722] transition-colors duration-300">Increase ROI</h3>
                       <p className="text-white/50 text-sm sm:text-md mb-1 flex-1 group-hover:text-white/70 transition-colors duration-300">
-                        Know how to use adalyze AI & increase your ROI
+                        Know how to use Adalyze AI & increase your ROI
                       </p>
                       <Button
                         onClick={handleViewIdea}
@@ -1291,7 +1291,7 @@ export default function Dashboard() {
               </div>
 
               {/* Row 5 - Top 10 Ads */}
-              {(userDetails?.package_id === 2 || userDetails?.package_id === 3) && (
+              {(userDetails?.package_id === 2 || userDetails?.package_id === 3 || userDetails?.package_id === 4) && (
                 <div className="col-span-full">
                   <div className="bg-black rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10">
                     <div className="mb-4 sm:mb-6">
@@ -1328,7 +1328,7 @@ export default function Dashboard() {
               )}
 
               {/* Row 6 - Top 10 Trending Ads */}
-              {userDetails?.package_id === 3 && (
+              {userDetails?.package_id === 3 || userDetails?.package_id === 4 && (
                 <div className="col-span-full pb-12 sm:pb-18">
                   <div className="bg-black rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10">
                     <div className="mb-4 sm:mb-6">
@@ -1411,7 +1411,7 @@ export default function Dashboard() {
             onCancel={() => setShowAddBrandPopup(false)}
             onAdded={async () => {
               setShowAddBrandPopup(false)
-              router.refresh()
+              router.push("/upload")
             }}
             userDetails={userDetails}
           />

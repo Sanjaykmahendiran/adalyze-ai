@@ -475,10 +475,10 @@ export default function Interact() {
           <TableShell
             title="Feedback"
             placeholder="Search feedback"
-            headers={["#", "Ad Name", "Comments", "Date"]}
+            headers={["#", "Ad Name", "Comments", "Rating", "Date"]}
             rows={feedbacks}
             searchPicker={(r) =>
-              [r?.fbid, r?.ads_name, r?.comments, r?.created_date].filter(Boolean).join(" ").toLowerCase()
+              [r?.fbid, r?.ads_name, r?.comments, r?.rating, r?.created_date].filter(Boolean).join(" ").toLowerCase()
             }
             onAdd={() => setShowFeedbackDialog(true)}
             renderRow={(r: FeedbackItem) => (
@@ -486,6 +486,7 @@ export default function Interact() {
                 <TableCell className="px-4 py-3 text-gray-200">{r.fbid}</TableCell>
                 <TableCell className="px-4 py-3 text-gray-200">{r.ads_name || "NA"}</TableCell>
                 <TableCell className="px-4 py-3 text-gray-200">{r.comments || "NA"}</TableCell>
+                <TableCell className="px-4 py-3 text-gray-200">{r.rating || "NA"}</TableCell>
                 <TableCell className="px-4 py-3 text-right text-gray-200">{formatDisplayDate(r.created_date)}</TableCell>
               </TableRow>
             )}

@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { trackEvent } from "@/lib/eventTracker"
 
 // Custom hook for intersection observer
-const useInView = (options = {}) => {
+const useInView = (options = {}): [React.RefObject<HTMLDivElement | null>, boolean] => {
     const [isInView, setIsInView] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -73,7 +73,11 @@ const AnimatedCounter: React.FC<{
     return (
         <span
             className={className + ' font-mono'}
-            style={{ display: 'inline-block', width: `${maxDigits}ch`, textAlign: 'end' }}
+            style={{ 
+                display: 'inline-block', 
+                width: `${maxDigits}ch`, 
+                textAlign: 'center'
+            }}
         >
             {formattedValue}
         </span>
@@ -86,7 +90,7 @@ interface MetricCardProps {
     title: string;
     description: string;
     metric: string | number;
-    metricPosition?: 'left' | 'right';
+    metricPosition?: 'left' | 'right' | 'center';
     isHovered?: boolean;
     onHover?: (id: string) => void;
     onLeave?: () => void;
@@ -110,8 +114,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
                 <AnimatedCounter
                     target={metric}
                     isActive={isCounterActive}
-                    className={`text-5xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold transition-colors duration-300 text-center sm:text-left ${isHovered ? 'text-white' : 'text-primary'} font-mono`}
-                    style={{ minWidth: `5ch` }} // FIXED width for 5 characters
+                    className={`text-5xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold transition-colors duration-300 text-center ${isHovered ? 'text-white' : 'text-primary'} font-mono`}
                 />
             );
         }
@@ -126,9 +129,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
         if (!isNaN(numericValue)) {
             return (
                 <div
-                    className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-center sm:text-left transition-colors duration-300 ${isHovered ? 'text-white' : 'text-primary'
+                    className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-center transition-colors duration-300 ${isHovered ? 'text-white' : 'text-primary'
                         } font-mono`}
-                    style={{ minWidth: `5ch` }} // FIXED width for 5 characters
                 >
                     <AnimatedCounter target={numericValue} suffix={suffix} isActive={isCounterActive} />
                 </div>
@@ -153,11 +155,11 @@ const MetricCard: React.FC<MetricCardProps> = ({
             <div
                 className={`z-10 rounded-2xl sm:rounded-3xl text-left bg-black px-4 sm:px-5 md:px-6 py-4 sm:py-5 flex flex-col justify-between transition-all duration-300
     ${isHovered ? 'shadow-lg scale-[1.02] bg-primary text-white' : 'shadow-md'}
-    h-auto sm:h-52 md:h-56 lg:h-64 xl:h-[240px]`}
+    h-full sm:h-52 md:h-56 lg:h-64 xl:h-[240px]`}
             >
 
                 <h4
-                    className={`text-xl sm:text-base md:text-lg font-bold whitespace-nowrap transition-colors duration-300 text-white text-center sm:text-left`}
+                    className={`text-sm sm:text-base md:text-lg font-bold sm:whitespace-nowrap transition-colors duration-300 text-white text-center sm:text-left break-words`}
                 >
                     {title}
                 </h4>
@@ -173,6 +175,11 @@ const MetricCard: React.FC<MetricCardProps> = ({
                         </p>
                     </div>
 
+                    {metricPosition === 'center' && (
+                        <div className="w-full sm:w-auto">
+                            {renderMetric()}
+                        </div>
+                    )}
 
                     {metricPosition === 'right' && renderMetric()}
                 </div>
@@ -191,8 +198,8 @@ const Counter: React.FC<{ ButtonText: string, metriccon1Description: string, met
             <div className="max-w-7xl relative mx-auto flex w-full flex-col items-center gap-6 sm:gap-8 md:gap-10 lg:gap-12 px-4 sm:px-6">
                 <div className="flex flex-col gap-4 sm:gap-5 md:gap-6 w-full">
                     {/* First Row */}
-                    <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6 w-full">
-                        <div className="flex-1">
+                    <div className="grid grid-cols-2 lg:flex lg:flex-row gap-3 sm:gap-4 md:gap-5 lg:gap-6 w-full items-stretch">
+                        <div className="flex-1 flex">
                             <MetricCard
                                 id="dashboard-lowered-costs-card"
                                 title="Ads Reviewed"
@@ -202,11 +209,11 @@ const Counter: React.FC<{ ButtonText: string, metriccon1Description: string, met
                                 onHover={setHoveredCard}
                                 onLeave={() => setHoveredCard(null)}
                                 isCounterActive={isCounterInView}
+                                metricPosition="center"
                             />
-
                         </div>
 
-                        <div className="flex-1 lg:flex-[1.2]">
+                        <div className="flex-1 lg:flex-[1.2] flex">
                             <MetricCard
                                 id="dashboard-evergreen-card"
                                 title="AI Feedback Accuracy"
@@ -217,13 +224,12 @@ const Counter: React.FC<{ ButtonText: string, metriccon1Description: string, met
                                 onLeave={() => setHoveredCard(null)}
                                 isCounterActive={isCounterInView}
                             />
-
                         </div>
                     </div>
 
                     {/* Second Row */}
-                    <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6 w-full">
-                        <div className="flex-1 lg:flex-[1.1]">
+                    <div className="grid grid-cols-2 lg:flex lg:flex-row gap-3 sm:gap-4 md:gap-5 lg:gap-6 w-full items-stretch">
+                        <div className="flex-1 lg:flex-[1.1] flex">
                             <MetricCard
                                 id="dashboard-roi-card"
                                 title="Avg CTR Boost"
@@ -235,9 +241,8 @@ const Counter: React.FC<{ ButtonText: string, metriccon1Description: string, met
                                 onLeave={() => setHoveredCard(null)}
                                 isCounterActive={isCounterInView}
                             />
-
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 flex">
                             <MetricCard
                                 id="dashboard-roas-card"
                                 title="Platforms Supported"
@@ -248,7 +253,6 @@ const Counter: React.FC<{ ButtonText: string, metriccon1Description: string, met
                                 onLeave={() => setHoveredCard(null)}
                                 isCounterActive={isCounterInView}
                             />
-
                         </div>
                     </div>
                 </div>

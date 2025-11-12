@@ -196,7 +196,7 @@ const CriminalDefenseHero: React.FC = () => {
               </h1>
 
               <p className="text-gray-300 text-base sm:text-lg mb-8 max-w-2xl mx-auto" data-aos="fade-up" data-aos-duration={1000}>
-                Transform your e-commerce ad performance with AI-driven analysis. Adalyze scans your creatives, identifies weak spots, and predicts CTR impact — helping you launch high-performing product campaigns that actually convert.
+                Transform your e-commerce ad performance with AI-driven analysis. Adalyze AI scans your creatives, identifies weak spots, and predicts CTR impact — helping you launch high-performing product campaigns that actually convert.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-duration={1200}>
@@ -207,7 +207,7 @@ const CriminalDefenseHero: React.FC = () => {
                   }}
                   className="flex items-center justify-center text-base sm:text-lg py-4 sm:py-5 cursor-pointer text-white font-semibold  rounded-lg transition-all transform hover:scale-105 shadow-lg"
                 >
-                  Try Adalyze Free
+                  Try Adalyze AI Free
                   <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 ml-2" />
                 </Button>
               </div>

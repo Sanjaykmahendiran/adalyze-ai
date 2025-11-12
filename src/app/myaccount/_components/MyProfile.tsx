@@ -539,6 +539,8 @@ export default function MyProfile({
       state: selectedStateName,
       city: selectedCityName,
       role: userRole,
+      address: address,
+      pincode: pincode,
       imgname: uploadedImageUrl || profileImage || "",
     }
 
@@ -547,8 +549,6 @@ export default function MyProfile({
       payload.designation = designation
       payload.website_url = websiteUrl
       payload.gst_no = gstNumber
-      payload.address = address
-      payload.pincode = pincode
       payload.team_members = teamMembers
     }
 

@@ -247,7 +247,7 @@ export default function AgencySuccessStories() {
             }}
             viewport={{ once: true }}
           >
-            Agencies using Adalyze report higher CTRs, faster approvals, and up to 40% improvement in campaign efficiency — powered by smarter creative decisions.
+            Agencies using Adalyze AI report higher CTRs, faster approvals, and up to 40% improvement in campaign efficiency — powered by smarter creative decisions.
           </motion.p>
         </motion.div>
 

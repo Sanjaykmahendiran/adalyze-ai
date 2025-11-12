@@ -14,38 +14,86 @@ import {
   Target,
   CheckCircle2
 } from 'lucide-react';
+import Image from 'next/image';
+import IntroImage from "@/assets/checklist/lp-intro-section.webp"
+import Banner from "@/assets/checklist/lp-banner.webp"
 
 const PixelGtmPage: React.FC = () => {
   return (
     <main className="w-full bg-black antialiased">
       {/* Hero */}
-      <section className="px-4 py-12 md:py-16 bg-gradient-to-b from-zinc-900 to-black border-b border-zinc-800">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 bg-white/5 rounded-full px-4 py-2 mb-5 ring-1 ring-white/10"
-          >
-            <Gauge className="h-4 w-4 text-primary" />
-            <p className="text-sm md:text-base font-medium">Tracking & Launch Checklist</p>
-          </motion.div>
 
+      <section
+        className="relative px-4 py-18 md:py-24  overflow-hidden"
+      >
+        {/* Background image + overlay */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url(${Banner.src})`,
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60"></div>
+        </div>
+
+        {/* Foreground content */}
+        <div className="relative max-w-4xl mx-auto text-center">
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-2xl md:text-5xl font-bold mb-2 leading-tight"
+            className="text-2xl md:text-5xl font-bold mb-2 leading-tight text-white"
           >
             Pixel / GTM Installed
           </motion.h1>
-          <p className="text-white/70 max-w-3xl mx-auto">
-            In digital marketing, running ads without proper tracking is like flying a plane with no radar. You may see movement, but you won’t know where you’re heading or what’s working. Installing Pixel (Meta Pixel) or Google Tag Manager (GTM) ensures that your campaigns can measure, optimize, and scale profitably. This checklist item confirms that your tracking foundation is correctly set before launching any ads.
-          </p>
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto">
+        {/* Intro copy */}
+        <section className="px-4 py-3 md:py-5 ">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="max-w-7xl mx-auto space-y-6 bg-[#141413] rounded-2xl p-6"
+          >
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="text-base md:text-lg leading-relaxed text-gray-200"
+            >
+              In digital marketing, running ads without proper tracking is like flying a plane with no radar.
+              You may see movement, but you won’t know where you’re heading or what’s working.
+              Installing Pixel (Meta Pixel) or Google Tag Manager (GTM) ensures that your campaigns can
+              measure, optimize, and scale profitably.
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="text-base md:text-lg leading-relaxed text-gray-200"
+            >
+              This checklist item confirms that your tracking foundation is correctly set before launching
+              any ads.
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+              className="w-full mt-4 md:mt-14 h-64 md:h-96 flex items-center justify-center "
+            >
+              <Image src={IntroImage} alt="Landing Page" width={1000} height={1000} className='w-full h-full object-contain' />
+            </motion.div>
+          </motion.div>
+        </section>
+
         {/* What is Pixel / GTM */}
         <section className="px-4 py-4 md:py-6">
           <div className="bg-[#141413] rounded-2xl p-6 space-y-6">

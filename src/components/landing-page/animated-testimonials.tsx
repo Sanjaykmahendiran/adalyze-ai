@@ -61,7 +61,7 @@ export const AnimatedTestimonials = ({
   };
 
   return (
-    <div className={cn("max-w-sm md:max-w-5xl mx-auto px-6 md:px-10 lg:px-12 py-20", className)}>
+    <div className={cn("max-w-sm md:max-w-5xl mx-auto pt-20", className)}>
       {/* Mobile Layout */}
       <div className="block md:hidden">
         <div className="flex flex-col items-center space-y-6">
@@ -69,7 +69,7 @@ export const AnimatedTestimonials = ({
           <div className="relative w-full max-w-sm">
             <div className="flex items-center justify-center relative">
               {/* Previous Image (Left Side) */}
-              <div 
+              <div
                 className="absolute left-0 z-10 cursor-pointer"
                 onClick={handlePrev}
               >
@@ -125,7 +125,7 @@ export const AnimatedTestimonials = ({
               </div>
 
               {/* Next Image (Right Side) */}
-              <div 
+              <div
                 className="absolute right-0 z-10 cursor-pointer"
                 onClick={handleNext}
               >
@@ -158,7 +158,7 @@ export const AnimatedTestimonials = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="text-center px-4"
+            className="text-center"
           >
             <h3 className="text-xl font-bold text-primary mb-2">
               {testimonials[active].name}
@@ -166,7 +166,7 @@ export const AnimatedTestimonials = ({
             <p className="text-sm text-white mb-4">
               {testimonials[active].designation}
             </p>
-            <motion.p className="text-sm text-gray-300 leading-relaxed">
+            <motion.p className="text-sm text-gray-300 leading-relaxed text-center text-justify tracking-normal leading-relaxed">
               {testimonials[active].quote.split(" ").map((word, index) => (
                 <motion.span
                   key={index}
@@ -187,19 +187,19 @@ export const AnimatedTestimonials = ({
 
           {/* Mobile Navigation Buttons */}
           <div className="flex justify-center gap-4 mt-4">
-              <button
-                onClick={handlePrev}
-                className="h-10 w-10 rounded-full bg-[#2b2b2b] flex items-center justify-center group/button hover:bg-[#3b3b3b] transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5 text-foreground group-hover/button:rotate-12 transition-transform duration-300" />
-              </button>
-              <button
-                onClick={handleNext}
-                className="h-10 w-10 rounded-full bg-[#2b2b2b] flex items-center justify-center group/button hover:bg-[#3b3b3b] transition-colors"
-              >
-                <ArrowRight className="h-5 w-5 text-foreground group-hover/button:-rotate-12 transition-transform duration-300" />
-              </button>
-            </div>
+            <button
+              onClick={handlePrev}
+              className="h-10 w-10 rounded-full bg-[#2b2b2b] flex items-center justify-center group/button hover:bg-[#3b3b3b] transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 text-foreground group-hover/button:rotate-12 transition-transform duration-300" />
+            </button>
+            <button
+              onClick={handleNext}
+              className="h-10 w-10 rounded-full bg-[#2b2b2b] flex items-center justify-center group/button hover:bg-[#3b3b3b] transition-colors"
+            >
+              <ArrowRight className="h-5 w-5 text-foreground group-hover/button:-rotate-12 transition-transform duration-300" />
+            </button>
+          </div>
         </div>
       </div>
 

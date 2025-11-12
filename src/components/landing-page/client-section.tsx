@@ -175,7 +175,7 @@ export default function ClientSection({ category, counter, CounterText }: { cate
           <AwardIcon className="w-6 h-6 mr-2 text-white fill-[gold]" stroke="currentColor" />
           <div className="flex flex-col items-start justify-start gap-1">
             <h2 className="text-[10px] font-thin uppercase leading-tight text-gray-300">
-              AdalyzeAI Platform
+              Adalyze AI Platform
             </h2>
             <h2 className="text-sm font-bold leading-tight text-white">
               Trusted by Leading Brands

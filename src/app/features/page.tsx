@@ -25,7 +25,7 @@ const features = [
   {
     title: "AI-Powered Ad Performance Prediction",
     description:
-      "Predict the effectiveness of any ad — image, carousel, or video — before you launch. Adalyze uses advanced AI to estimate CTR, engagement, and ROI, helping marketers make data-driven decisions and avoid wasted spend.",
+      "Predict the effectiveness of any ad — image, carousel, or video — before you launch. Adalyze AI uses advanced AI to estimate CTR, engagement, and ROI, helping marketers make data-driven decisions and avoid wasted spend.",
     buttonText: "Predict Now",
     desktopImage: Features1,
     mobileImage: Features1Mobile,
@@ -33,7 +33,7 @@ const features = [
   {
     title: "Multi-Channel Creative Insights",
     description:
-      "Get platform-specific recommendations for Facebook, Instagram, LinkedIn, Google Ads, and more. Adalyze analyzes visual elements, copy, and layout to maximize engagement across channels.",
+      "Get platform-specific recommendations for Facebook, Instagram, LinkedIn, Google Ads, and more. Adalyze AI analyzes visual elements, copy, and layout to maximize engagement across channels.",
     buttonText: "Analyze Across Platforms",
     desktopImage: Features2,
     mobileImage: Features2Mobile,
@@ -49,7 +49,7 @@ const features = [
   {
     title: "Automated Creative Optimization",
     description:
-      "Adalyze doesn't just identify problems — it provides actionable suggestions for improvement. From call-to-action tweaks to visual framing, instantly optimize creatives for maximum impact.",
+      "Adalyze AI doesn't just identify problems — it provides actionable suggestions for improvement. From call-to-action tweaks to visual framing, instantly optimize creatives for maximum impact.",
     buttonText: "Optimize Creatives",
     desktopImage: Features4,
     mobileImage: Features4Mobile,

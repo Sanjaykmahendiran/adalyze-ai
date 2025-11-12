@@ -33,7 +33,7 @@ import ProTestimonials from "./_components/protestimonials"
 import confetti from "canvas-confetti"
 import { trackEvent } from "@/lib/eventTracker"
 import { trackPurchase } from "@/lib/gtm"
-import { trackPaymentSuccess } from "@/lib/ga4"
+import { trackPaymentSuccess, trackConversion } from "@/lib/ga4"
 import Cookies from "js-cookie"
 
 // Extend Window interface for Razorpay
@@ -418,6 +418,12 @@ const ProPage: React.FC = () => {
                     userCurrency,
                     paymentData.razorpay_order_id,
                     selectedPlan.plan_name,
+                    userDetails?.user_id?.toString()
+                );
+                trackConversion.subscriptionStart(
+                    selectedPlan.plan_name,
+                    userCurrency === "INR" ? selectedPlan?.price_inr || 0 : parseFloat(selectedPlan?.price_usd || "0"),
+                    userCurrency,
                     userDetails?.user_id?.toString()
                 );
             } else {

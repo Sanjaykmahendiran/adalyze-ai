@@ -19,7 +19,7 @@ const steps = [
         step: "STEP 2",
         title: "Access Your Dashboard",
         description:
-            "Get a unique affiliate link and access detailed tracking and marketing assets to promote AdalyzeAI effectively.",
+            "Get a unique affiliate link and access detailed tracking and marketing assets to promote Adalyze AI effectively.",
     },
     {
         step: "STEP 3",
@@ -47,7 +47,7 @@ export default function AffiliatePage() {
             <section className="py-8 sm:py-12 lg:py-16 mt-16 sm:mt-20 lg:mt-28 px-4 text-center">
                 <div className="max-w-4xl mx-auto">
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 text-white leading-tight">
-                        Join the AdalyzeAI 
+                            Join the Adalyze AI 
                         <span className="block sm:inline"> Affiliate Program</span>
                     </h1>
                     <p className="text-base sm:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 leading-relaxed max-w-3xl mx-auto px-2">
@@ -113,7 +113,7 @@ export default function AffiliatePage() {
             </section>
 
             {/* Testimonials - Responsive */}
-            <Testimonials />
+            <Testimonials category={""} />
 
             {/* Program Benefits & Features - Mobile First */}
             <section className="py-12 sm:py-16 lg:py-20 px-4">
@@ -255,7 +255,7 @@ export default function AffiliatePage() {
                                 Ready to Start Earning?
                             </h3>
                             <p className="text-gray-300 mb-6 text-sm sm:text-base max-w-2xl mx-auto">
-                                Join thousands of successful affiliates who are already earning with AdalyzeAI. 
+                                Join thousands of successful affiliates who are already earning with Adalyze AI. 
                                 No experience required - we'll guide you every step of the way.
                             </p>
                             <Button 
@@ -271,7 +271,7 @@ export default function AffiliatePage() {
             </section>
 
             {/* FAQ and Footer */}
-            <FAQSection ButtonText="Join the Program Now" />
+            <FAQSection ButtonText="Join the Program Now" category="" />
             <LandingPageFooter />
         </div>
     )

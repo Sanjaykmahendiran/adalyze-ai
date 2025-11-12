@@ -20,7 +20,7 @@ export default function EmailConfirmationPage() {
                             fill
                             sizes="(max-width: 640px) 120px, 160px"
                             style={{ objectFit: "contain" }}
-                            alt="Adalyze"
+                            alt="Adalyze AI"
                             draggable={false}
                         />
                     </div>

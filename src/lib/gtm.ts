@@ -15,12 +15,12 @@ export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "";
 export const GA4_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "G-NP47DV1XRN";
 
 /**
- * Track a page view
+ * Track a page view (works with or without cookies)
  * @param url - page URL
  */
 export const pageview = (url: string) => {
   if (typeof window !== "undefined") {
-    // GTM page view
+    // GTM page view (works without cookies)
     if (GTM_ID) {
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
@@ -29,23 +29,27 @@ export const pageview = (url: string) => {
       });
     }
     
-    // GA4 page view
+    // GA4 page view (works without cookies when configured with storage: 'none')
     if (window.gtag) {
       window.gtag('config', GA4_MEASUREMENT_ID, {
         page_path: url,
+        // Cookie-less configuration (if not already set in initial config)
+        anonymize_ip: true,
+        storage: 'none',
+        client_storage: 'none',
       });
     }
   }
 };
 
 /**
- * Track a custom event
+ * Track a custom event (works with or without cookies)
  * @param eventName - Event name (e.g., 'sign_up', 'purchase')
  * @param params - Event parameters
  */
 export const event = (eventName: string, params: Record<string, any> = {}) => {
   if (typeof window !== "undefined") {
-    // GTM event
+    // GTM event (works without cookies)
     if (GTM_ID) {
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
@@ -54,7 +58,7 @@ export const event = (eventName: string, params: Record<string, any> = {}) => {
       });
     }
     
-    // GA4 event
+    // GA4 event (works without cookies when initial config has storage: 'none')
     if (window.gtag) {
       window.gtag('event', eventName, params);
     }

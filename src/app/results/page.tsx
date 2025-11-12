@@ -278,9 +278,9 @@ export default function ResultsPage() {
 
   const handleShare = async () => {
     if (!apiData) return;
-    
+
     setIsShareImageGenerating(true);
-    
+
     try {
       // Get ad_id from either URL param or token
       const adId = getAdIdFromUrl();
@@ -321,7 +321,7 @@ export default function ResultsPage() {
 
           // Check if we can share files
           const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
-          
+
           if (canShareFiles) {
             // Share with image file (works on iOS Safari, Android Chrome, etc.)
             // This opens the native share sheet with all available apps:
@@ -331,7 +331,7 @@ export default function ResultsPage() {
               text: shareText,
               files: [file],
             });
-            
+
             toast.success('Shared successfully! Text was also copied to clipboard if needed.');
           } else {
             // Fallback: Share text/URL only (some browsers don't support file sharing)
@@ -340,13 +340,13 @@ export default function ResultsPage() {
               text: shareText,
               url: shareUrl,
             });
-            
+
             // Download the image for manual attachment
             const link = document.createElement('a');
             link.download = 'ad-performance.png';
             link.href = dataUrl;
             link.click();
-            
+
             toast.success('Text shared and image downloaded! Attach the image manually.');
           }
         } catch (shareError: any) {
@@ -365,21 +365,21 @@ export default function ResultsPage() {
         link.download = 'ad-performance.png';
         link.href = dataUrl;
         link.click();
-        
+
         // Copy text with URL to clipboard
         await navigator.clipboard.writeText(shareText);
-        
+
         toast.success('Image downloaded and text copied! Open your social media app and paste the text, then attach the downloaded image.');
       }
     } catch (error) {
       console.error('Error sharing:', error);
-      
+
       // Final fallback: Just copy text to clipboard
       try {
         const adId = getAdIdFromUrl();
         const userId = userDetails?.user_id || null;
         const shareText = generateShareText(adId, userId || undefined);
-        
+
         await navigator.clipboard.writeText(shareText);
         toast.error('Sharing failed. Text copied to clipboard!');
       } catch (clipboardError) {
@@ -681,7 +681,7 @@ export default function ResultsPage() {
             {/* Left: Back + Title + Subtitle */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
               {/* Back Button - Hidden when viewing via shared token or special tokens */}
-              {!isFromToken && !isSpecialToken && (
+              {!isFromToken && (
                 <button
                   onClick={() => {
                     // Show upgrade popup if user is free trial user OR has 0 ads limit
@@ -1604,12 +1604,9 @@ export default function ResultsPage() {
                           {whyOverall.length === 0 && <li>No details available.</li>}
                         </ul>
                       </div>
-
-                      {(whyOverall.join(" ").length > 140 || whyConfidence.join(" ").length > 140 || whyMatch.join(" ").length > 140) && (
-                        <div className="flex justify-end mt-1">
-                          <Button size="sm" variant="link" className="px-3 text-xs text-primary py-1 h-7" onClick={() => setShowMoreGoReasons(true)}>View more</Button>
-                        </div>
-                      )}
+                      <div className="flex justify-end mt-1">
+                        <Button size="sm" variant="link" className="px-3 text-xs text-primary py-1 h-7" onClick={() => setShowMoreGoReasons(true)}>View more</Button>
+                      </div>
                     </div>
                     {/* Modal dialog for full reasons */}
                     <Dialog open={showMoreGoReasons} onOpenChange={setShowMoreGoReasons}>
@@ -2490,7 +2487,7 @@ export default function ResultsPage() {
             </div>
 
             {/* Ad Creative Suggestions - Mobile Optimized */}
-            {apiData.next_ad_idea_based_on_this_post && (
+            {apiData.next_ad_idea_based_on_this_post && apiData.next_ad_idea_based_on_this_post.length > 0 && (
               <div
                 className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]"
                 style={{ transition: "all 0.3s" }}
@@ -2531,7 +2528,7 @@ export default function ResultsPage() {
                           Headline Idea
                         </h4>
                         <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                          {apiData.next_ad_idea_based_on_this_post.headline}
+                          {apiData.next_ad_idea_based_on_this_post[0].headline}
                         </p>
                       </div>
 
@@ -2542,7 +2539,7 @@ export default function ResultsPage() {
                           Short Caption
                         </h4>
                         <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                          {apiData.next_ad_idea_based_on_this_post.short_caption}
+                          {apiData.next_ad_idea_based_on_this_post[0].short_caption}
                         </p>
                       </div>
                     </div>
@@ -2554,7 +2551,7 @@ export default function ResultsPage() {
                         Visual Idea
                       </h4>
                       <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                        {apiData.next_ad_idea_based_on_this_post.visual_idea}
+                        {apiData.next_ad_idea_based_on_this_post[0].visual_idea}
                       </p>
                     </div>
                   </div>
@@ -3115,7 +3112,7 @@ export default function ResultsPage() {
         )}
 
         {!isFromToken && (isFreeTrailUser || Number(userDetails?.ads_limit) === 0) && (
-          <div className="fixed bottom-24 right-6 z-50 ">
+          <div className="fixed bottom-24 right-6 z-50 skip-block">
             <button
               onClick={() => router.push("/pro")}
               className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md bg-[#db4900]/40 text-white  shadow-lg hover:bg-[#db4900]/30 hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-[#db4900]/30"

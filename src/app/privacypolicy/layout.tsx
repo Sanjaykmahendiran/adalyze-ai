@@ -1,17 +1,29 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
-
-
-// Import Poppins
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
-  title: "Adalyze Privacy Policy | Data protection & user trust",
+  title: "Adalyze AI Privacy Policy | Data protection & user trust",
   description: "Understand how Adalyze AI protects your data and ensures complete privacy and transparency in every interaction.",
+  keywords: "adalyze ai privacy policy, ai data protection, user privacy adalyze ai, advertising data security, ai analytics compliance, data transparency",
+  openGraph: {
+    title: "Adalyze AI Privacy Policy | Data protection & user trust",
+    description: "Understand how Adalyze AI protects your data and ensures complete privacy and transparency in every interaction.",
+    url: "https://adalyze.app/privacypolicy",
+    type: "website",
+    images: [
+      {
+        url: "https://adalyze.app/uploads/ad-icon-logo.webp",
+        width: 1200,
+        height: 630,
+        alt: "Adalyze AI Privacy Policy",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Adalyze AI Privacy Policy | Data protection & user trust",
+    description: "Understand how Adalyze AI protects your data and ensures complete privacy and transparency in every interaction.",
+    images: ["https://adalyze.app/uploads/ad-icon-logo.webp"],
+  },
 };
 
 export default function Layout({
@@ -20,24 +32,6 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <title> Adalyze Privacy Policy | Data protection & user trust</title>
-        <meta
-          name="description"
-          content="Understand how Adalyze AI protects your data and ensures complete privacy and transparency in every interaction."
-        />
-
-        <meta
-          name="keywords"
-          content="adalyze privacy policy, ai data protection, user privacy adalyze, advertising data security, ai analytics compliance, data transparency"
-        />
-      </head>
-      <body className={`${poppins.variable} antialiased`}>
-        <div className="bg-[#171717]">
-          {children}
-        </div>
-      </body>
-    </html>
+      {children}
   );
 }

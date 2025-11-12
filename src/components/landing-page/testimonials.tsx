@@ -71,11 +71,11 @@ export default function Testimonials({ category }: { category: string }) {
         viewport={{ once: false, amount: 0.3 }}
         className="text-center py-2 sm:py-3"
       >
-        <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2 px-1">
-          Why Marketers Trust Adalyze
+        <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-bold text-primary mb-1 sm:mb-2">
+          Why Marketers Trust Adalyze AI
         </h2>
         <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-1">Real Stories, Real Results</p>
-        <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto px-1 mt-2">
+        <p className="text-sm sm:text-base text-white/80 max-w-lg sm:max-w-xl mx-auto mt-2">
           Marketers and business owners rely on Adalyze AI to make smarter ad decisions, boost engagement, and improve ROI.
         </p>
       </motion.div>

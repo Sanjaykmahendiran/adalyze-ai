@@ -1,17 +1,29 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
-
-
-// Import Poppins
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "Ad ROI Calculator | Measure & maximize your ad spend with AI",
-  description: "Estimate your advertising ROI in seconds. Use Adalyze AI’s free ROI calculator to measure performance and maximize returns.",
+  description: "Estimate your advertising ROI in seconds. Use Adalyze AI's free ROI calculator to measure performance and maximize returns.",
+  keywords: "ad roi calculator, ai roi tool, ad performance roi, campaign roi analysis, digital marketing roi, ai advertising metrics",
+  openGraph: {
+    title: "Ad ROI Calculator | Measure & maximize your ad spend with AI",
+    description: "Estimate your advertising ROI in seconds. Use Adalyze AI's free ROI calculator to measure performance and maximize returns.",
+    url: "https://adalyze.app/roi-calculator",
+    type: "website",
+    images: [
+      {
+        url: "https://adalyze.app/uploads/ad-icon-logo.webp",
+        width: 1200,
+        height: 630,
+        alt: "Ad ROI Calculator",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ad ROI Calculator | Measure & maximize your ad spend with AI",
+    description: "Estimate your advertising ROI in seconds. Use Adalyze AI's free ROI calculator to measure performance and maximize returns.",
+    images: ["https://adalyze.app/uploads/ad-icon-logo.webp"],
+  },
 };
 
 export default function Layout({
@@ -20,24 +32,8 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <title>Ad ROI Calculator | Measure & maximize your ad spend with AI</title>
-        <meta
-          name="description"
-          content="Estimate your advertising ROI in seconds. Use Adalyze AI’s free ROI calculator to measure performance and maximize returns."
-        />
-
-        <meta
-          name="keywords"
-          content="ad roi calculator, ai roi tool, ad performance roi, campaign roi analysis, digital marketing roi, ai advertising metrics"
-        />
-      </head>
-      <body className={`${poppins.variable} antialiased`}>
-        <div className="bg-[#171717]">
-          {children}
-        </div>
-      </body>
-    </html>
+    <div className="bg-[#171717]">
+      {children}
+    </div>
   );
 }

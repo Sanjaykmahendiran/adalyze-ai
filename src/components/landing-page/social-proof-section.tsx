@@ -67,7 +67,7 @@ export default function SocialProofSection() {
         >
           <Image
             src={isMobile ? MobilePic : pic}
-            alt="Adalyze App Preview"
+            alt="Adalyze AI App Preview"
             className="rounded-lg max-w-full h-auto" />
         </motion.div>
 
@@ -81,7 +81,7 @@ export default function SocialProofSection() {
             viewport={{ once: false, amount: 0.4 }} // 👈 replays on re-enter
             className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4 px-2 text-center lg:text-left"
           >
-            Adalyze: <span className="text-[#db4900]"> Optimize Your Ads Instantly </span>
+            Adalyze AI: <span className="text-[#db4900]"> Optimize Your Ads Instantly </span>
           </motion.h2>
 
           {/* Paragraph */}
@@ -92,7 +92,7 @@ export default function SocialProofSection() {
             viewport={{ once: false, amount: 0.4 }}
             className="text-base sm:text-lg text-gray-300 leading-relaxed px-2 text-center lg:text-left"
           >
-            Adalyze uses AI to analyze performance, audience fit, and creative impact so you can stop guessing and start
+            Adalyze AI uses AI to analyze performance, audience fit, and creative impact so you can stop guessing and start
             scaling. Get actionable insights in seconds.
           </motion.p>
 

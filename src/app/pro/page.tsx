@@ -35,6 +35,7 @@ import { trackEvent } from "@/lib/eventTracker"
 import { trackPurchase } from "@/lib/gtm"
 import { trackPaymentSuccess, trackConversion } from "@/lib/ga4"
 import Cookies from "js-cookie"
+import { apiCall, createRazorpayOrder, verifyPayment } from "@/lib/apiClient"
 
 // Extend Window interface for Razorpay
 declare global {
@@ -273,9 +274,9 @@ const ProPage: React.FC = () => {
         const fetchData = async () => {
             try {
                 const [pricingRes, faqRes, testiRes] = await Promise.all([
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=packages"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=faqlist"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=testimonialslist"),
+                    apiCall({ gofor: "packages" }),
+                    apiCall({ gofor: "faqlist" }),
+                    apiCall({ gofor: "testimonialslist" }),
                 ])
 
                 if (!pricingRes.ok || !faqRes.ok || !testiRes.ok) {
@@ -373,18 +374,12 @@ const ProPage: React.FC = () => {
     }
 
     // Payment verification function
-    const verifyPayment = async (paymentData: RazorpayResponse, selectedPlan: PricingPlan) => {
+    const handleVerifyPayment = async (paymentData: RazorpayResponse, selectedPlan: PricingPlan) => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/verify.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    razorpay_payment_id: paymentData.razorpay_payment_id,
-                    razorpay_order_id: paymentData.razorpay_order_id,
-                    razorpay_signature: paymentData.razorpay_signature,
-                }),
+            const response = await verifyPayment({
+                razorpay_payment_id: paymentData.razorpay_payment_id,
+                razorpay_order_id: paymentData.razorpay_order_id,
+                razorpay_signature: paymentData.razorpay_signature,
             })
 
             const result = await response.json()
@@ -454,7 +449,7 @@ const ProPage: React.FC = () => {
 
         try {
             // Fetch Razorpay key from API
-            const configResponse = await fetch('https://adalyzeai.xyz/App/api.php?gofor=config');
+            const configResponse = await apiCall({ gofor: "config" });
             const configData = await configResponse.json();
 
             if (!configResponse.ok || !configData.rzpaykey) {
@@ -496,16 +491,12 @@ const ProPage: React.FC = () => {
             setLastOrderType(orderType);
 
             // Create order
-            const orderResponse = await fetch('https://adalyzeai.xyz/App/razorpay.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userDetails.user_id.toString(),
-                    package_id: selectedPlan.package_id.toString(),
-                    ctype: currency,
-                    period: getBillingPeriod(selectedPlan.package_id), // Add billing period to the request
-                    order_type: orderType
-                }),
+            const orderResponse = await createRazorpayOrder({
+                user_id: userDetails.user_id.toString(),
+                package_id: selectedPlan.package_id.toString(),
+                ctype: currency,
+                period: getBillingPeriod(selectedPlan.package_id), // Add billing period to the request
+                order_type: orderType
             });
 
             const orderData = await orderResponse.json();
@@ -527,7 +518,7 @@ const ProPage: React.FC = () => {
                 description: `${selectedPlan.plan_name} Plan Subscription (${getBillingPeriod(selectedPlan.package_id)})`,
                 order_id: orderData.order_id,
                 handler: function (response: RazorpayResponse) {
-                    verifyPayment(response, selectedPlan);
+                    handleVerifyPayment(response, selectedPlan);
                 },
                 prefill: {
                     name: userDetails.name || '',

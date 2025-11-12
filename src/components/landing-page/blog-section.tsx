@@ -39,7 +39,7 @@ export default function BlogSection() {
       try {
         setLoading(true);
         const response = await fetch(
-          "https://adalyzeai.xyz/App/api.php?gofor=blogslist"
+          "https://adalyzeai.xyz/App/tapi.php?gofor=blogslist"
         );
 
         if (!response.ok) {

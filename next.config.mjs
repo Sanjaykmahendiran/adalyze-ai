@@ -2,7 +2,7 @@
 const nextConfig = {
   basePath: '',
   env: {
-    API_BASE_URL: 'https://adalyzeai.xyz/App/api.php',
+    API_BASE_URL: 'https://adalyzeai.xyz/App/tapi.php',
     NEXT_PUBLIC_BASE_PATH: '',
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: '543832771103-mjordts3br5jlop5dj8q9m16nijjupuu.apps.googleusercontent.com',
     NEXT_PUBLIC_GTM_ID:'GTM-54MX8L24',

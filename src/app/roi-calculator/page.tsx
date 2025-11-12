@@ -75,7 +75,7 @@ function ContactFormModal({ onClose }: { onClose: () => void }) {
         try {
             setIsSubmitting(true)
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+            const response = await fetch("https://adalyzeai.xyz/App/tapi.php", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -197,7 +197,7 @@ function TestimonialSlider() {
     useEffect(() => {
         const fetchTestimonials = async () => {
             try {
-                const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=testilist')
+                const response = await fetch('https://adalyzeai.xyz/App/tapi.php?gofor=testilist')
                 const data = await response.json()
                 if (Array.isArray(data)) {
                     setTestimonials(data.filter(item => item.status === 1))
@@ -367,7 +367,7 @@ export default function ROICalculator() {
                     const weeklyRange = getWeeklyRangeMidpoint(creativesPerWeek)
 
                     const response = await fetch(
-                        `https://adalyzeai.xyz/App/api.php?gofor=calculateROI&country=${country}&users=${users}&weekly_range=${weeklyRange}`
+                        `https://adalyzeai.xyz/App/tapi.php?gofor=calculateROI&country=${country}&users=${users}&weekly_range=${weeklyRange}`
                     )
                     const data = await response.json()
                     setRoiData(data)

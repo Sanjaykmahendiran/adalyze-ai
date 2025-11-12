@@ -14,6 +14,7 @@ import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import SupportPageSkeleton from "@/components/Skeleton-loading/SupportPageSkeleton"
 import ExpertConsultationPopup from "@/components/expert-form"
+import { apiPost } from "@/lib/apiClient"
 
 interface FAQ {
   faq_id: number
@@ -96,7 +97,7 @@ export default function SupportPage() {
   // fetchFAQs: now takes an argument for isInitial
   const fetchFAQs = async (isInitialLoad = false) => {
     try {
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=faqlist&category=${selectedCategory}&search=${searchTerm}`;
+      const url = `https://adalyzeai.xyz/App/tapi.php?gofor=faqlist&category=${selectedCategory}&search=${searchTerm}`;
       const response = await fetch(url);
       const data = await response.json();
       setFaqs(data || []);
@@ -117,7 +118,7 @@ export default function SupportPage() {
       const userId = Cookies.get('userId');
       if (!userId) return;
 
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=fulladsnamelist&user_id=${userId}`;
+      const url = `https://adalyzeai.xyz/App/tapi.php?gofor=fulladsnamelist&user_id=${userId}`;
       const response = await fetch(url);
       const result = await response.json();
 
@@ -146,20 +147,16 @@ export default function SupportPage() {
       setLoading(true)
       const userId = Cookies.get('userId')
 
-      const response = await fetch('https://adalyzeai.xyz/App/api.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gofor: "needhelp",
+      const response = await apiPost(
+        { gofor: "needhelp" },
+        {
           user_id: userId,
           description: formData.message,
           email: formData.email,
           category: formData.category,
           imgname: formData.imgname || ""
-        })
-      })
+        }
+      )
 
       if (response.ok) {
         toast.success('Support request submitted successfully!')
@@ -178,19 +175,15 @@ export default function SupportPage() {
       setLoading(true)
       const userId = Cookies.get('userId')
 
-      const response = await fetch('https://adalyzeai.xyz/App/api.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gofor: "exptalkrequest",
+      const response = await apiPost(
+        { gofor: "exptalkrequest" },
+        {
           user_id: userId,
           prefdate: data.prefdate,
           preftime: data.preftime,
           comments: data.comments
-        })
-      })
+        }
+      )
 
       if (response.ok) {
         toast.success('Expert call request submitted successfully!')
@@ -213,19 +206,15 @@ export default function SupportPage() {
       setLoading(true)
       const userId = Cookies.get('userId')
 
-      const response = await fetch('https://adalyzeai.xyz/App/api.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gofor: "feedback",
+      const response = await apiPost(
+        { gofor: "feedback" },
+        {
           user_id: userId,
           ad_upload_id: feedbackData.ad_upload_id,
           rating: feedbackData.rating,
           comments: feedbackData.comments
-        })
-      })
+        }
+      )
 
       if (response.ok) {
         toast.success('Feedback submitted successfully!')

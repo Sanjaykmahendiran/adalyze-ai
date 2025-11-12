@@ -47,6 +47,11 @@ const LoginPage = () => {
         if (loginData.status === "success" && loginData.user) {
           const user = loginData.user;
           
+          // Save token if available
+          if (loginData.token) {
+            Cookies.set("authToken", loginData.token, { expires: 7 });
+          }
+          
           // Check if registration is incomplete (customize fields as needed)
           if ((!user.name || !user.type || !user.city) && (data.token || data.nouptoken)) {
             setShowStep2(true);

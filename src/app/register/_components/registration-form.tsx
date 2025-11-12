@@ -81,6 +81,12 @@ export default function RegistrationForm() {
 
       if (loginData.status === "success" && loginData.user) {
         const user = loginData.user;
+        
+        // Save token if available
+        if (loginData.token) {
+          Cookies.set("authToken", loginData.token, { expires: 7 });
+        }
+        
         Cookies.set("userId", user.user_id.toString(), { expires: 7 });
         trackEvent("Google_Register_completed", window.location.href, user.email);
         trackSignUp("Google", user.user_id.toString());
@@ -263,7 +269,7 @@ export default function RegistrationForm() {
     setIsCheckingReferral(true);
     try {
       const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=usergetbyref&referral_code=${code}`
+        `https://adalyzeai.xyz/App/tapi.php?gofor=usergetbyref&referral_code=${code}`
       );
 
       if (response.ok) {
@@ -322,7 +328,7 @@ export default function RegistrationForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch("https://adalyzeai.xyz/App/tapi.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -348,7 +354,7 @@ export default function RegistrationForm() {
         // Call addidentifier API after step 1 completion
         try {
           const cookieId = Cookies.get('cookie_id') || '';
-          const addIdentifierResponse = await fetch("https://adalyzeai.xyz/App/api.php", {
+          const addIdentifierResponse = await fetch("https://adalyzeai.xyz/App/tapi.php", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -440,7 +446,7 @@ export default function RegistrationForm() {
         payload.utm_term = utmTerm;
       }
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch("https://adalyzeai.xyz/App/tapi.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

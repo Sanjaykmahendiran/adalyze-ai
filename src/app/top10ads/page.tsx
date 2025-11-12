@@ -42,7 +42,7 @@ export default function Top10AdsWall() {
       try {
         setLoading(true)
         const response = await fetch(
-          "https://adalyzeai.xyz/App/api.php?gofor=top10ads"
+          "https://adalyzeai.xyz/App/tapi.php?gofor=top10ads"
         )
 
         if (!response.ok) {

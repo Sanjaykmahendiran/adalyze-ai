@@ -25,6 +25,7 @@ import {
 import { Search, ReceiptText, Plus, X } from "lucide-react"
 import Cookies from "js-cookie"
 import toast from "react-hot-toast"
+import { apiCall, apiPost } from "@/lib/apiClient"
 import ExpertConsultationPopup from "@/components/expert-form"
 
 type SupportItem = {
@@ -244,9 +245,9 @@ export default function Interact() {
     const load = async () => {
       try {
         const [a, b, c] = await Promise.all([
-          fetch(`https://adalyzeai.xyz/App/api.php?gofor=userhelplist&user_id=${userId}`).then((r) => r.json()),
-          fetch(`https://adalyzeai.xyz/App/api.php?gofor=userfeedbacklist&user_id=${userId}`).then((r) => r.json()),
-          fetch(`https://adalyzeai.xyz/App/api.php?gofor=userexptalkreqlist&user_id=${userId}`).then((r) => r.json()),
+          apiCall({ gofor: "userhelplist", user_id: userId }).then((r) => r.json()),
+          apiCall({ gofor: "userfeedbacklist", user_id: userId }).then((r) => r.json()),
+          apiCall({ gofor: "userexptalkreqlist", user_id: userId }).then((r) => r.json()),
         ])
         setSupport(Array.isArray(a?.data) ? a.data : [])
         setFeedbacks(Array.isArray(b?.data) ? b.data : [])
@@ -271,8 +272,7 @@ export default function Interact() {
     try {
       if (!userId) return
 
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=fulladsnamelist&user_id=${userId}`
-      const response = await fetch(url)
+      const response = await apiCall({ gofor: "fulladsnamelist", user_id: userId })
       const result = await response.json()
 
       if (result.status && Array.isArray(result.data)) {
@@ -291,27 +291,23 @@ export default function Interact() {
     try {
       setLoading(true)
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          gofor: "needhelp",
+      const response = await apiPost(
+        { gofor: "needhelp" },
+        {
           user_id: userId,
           description: supportFormData.message,
           email: supportFormData.email,
           category: supportFormData.category,
           imgname: supportFormData.imgname || ""
-        })
-      })
+        }
+      )
 
       if (response.ok) {
         toast.success("Support request submitted successfully!")
         setSupportFormData({ name: "", email: "", category: "", message: "", imgname: "" })
         setShowSupportDialog(false)
         // Reload support data
-        const res = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=userhelplist&user_id=${userId}`)
+        const res = await apiCall({ gofor: "userhelplist", user_id: userId })
         const data = await res.json()
         setSupport(Array.isArray(data?.data) ? data.data : [])
       }
@@ -335,24 +331,22 @@ export default function Interact() {
     try {
       setLoading(true)
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gofor: "feedback",
+      const response = await apiPost(
+        { gofor: "feedback" },
+        {
           user_id: userId,
           ad_upload_id: feedbackFormData.ad_upload_id,
           rating: feedbackFormData.rating,
           comments: feedbackFormData.comments,
-        }),
-      })
+        }
+      )
 
       if (response.ok) {
         toast.success("Feedback submitted successfully!")
         setFeedbackFormData({ ad_upload_id: "", rating: "", comments: "" })
         setShowFeedbackDialog(false)
         // Reload feedback data
-        const res = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=userfeedbacklist&user_id=${userId}`)
+        const res = await apiCall({ gofor: "userfeedbacklist", user_id: userId })
         const data = await res.json()
         setFeedbacks(Array.isArray(data?.data) ? data.data : [])
       }
@@ -368,25 +362,21 @@ export default function Interact() {
     try {
       setLoading(true)
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          gofor: "exptalkrequest",
+      const response = await apiPost(
+        { gofor: "exptalkrequest" },
+        {
           user_id: userId,
           prefdate: data.prefdate,
           preftime: data.preftime,
           comments: data.comments
-        })
-      })
+        }
+      )
 
       if (response.ok) {
         toast.success("Expert call request submitted successfully!")
         setShowExpertDialog(false)
         // Reload expert data
-        const res = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=userexptalkreqlist&user_id=${userId}`)
+        const res = await apiCall({ gofor: "userexptalkreqlist", user_id: userId })
         const result = await res.json()
         setExperts(Array.isArray(result?.data) ? result.data : [])
       } else {

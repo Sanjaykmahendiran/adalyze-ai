@@ -1,6 +1,6 @@
-import { axiosInstance } from "@/configs/axios";
 import { getSessionId } from "@/lib/sessionManager";
 import Cookies from "js-cookie";
+import { apiCall, apiPost } from "@/lib/apiClient";
 
 export interface CookieConsentData {
   necessary: number;
@@ -89,8 +89,7 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
     const cookieId = generateCookieId();
     const userId = getUserId();
     
-    const payload: CookieConsentPayload = {
-      gofor: "addconsent",
+    const payload = {
       cookie_id: cookieId,
       consent,
       ...(userId && { user_id: userId })
@@ -98,13 +97,12 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
 
     console.log("Sending cookie consent:", payload);
 
-    const response = await axiosInstance.post("", payload, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await apiPost(
+      { gofor: "addconsent" },
+      payload
+    );
 
-    const result: AddConsentResponse = response.data;
+    const result: AddConsentResponse = await response.json();
     
     // If successful, save the cookie_id from response to cookies
     if (result.status === "success" && result.cookie_id) {
@@ -127,14 +125,12 @@ export async function getCookieConsent(cookieId?: string): Promise<GetConsentRes
     // Use provided cookieId, or get from cookies, or generate new one
     const id = cookieId || getCookieId();
     
-    const response = await axiosInstance.get("", {
-      params: {
-        gofor: "getconsent",
-        cookie_id: id,
-      },
+    const response = await apiCall({
+      gofor: "getconsent",
+      cookie_id: id,
     });
 
-    return response.data;
+    return await response.json();
   } catch (error) {
     console.error("Get cookie consent API error:", error);
     return null;

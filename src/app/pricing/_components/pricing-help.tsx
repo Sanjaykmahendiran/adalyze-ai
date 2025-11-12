@@ -82,7 +82,7 @@ const PricingHelp: React.FC = () => {
         try {
             setIsSubmitting(true);
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+            const response = await fetch("https://adalyzeai.xyz/App/tapi.php", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

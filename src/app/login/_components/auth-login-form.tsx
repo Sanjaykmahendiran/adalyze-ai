@@ -79,7 +79,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
 
     setResetLoading(true);
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=forgot_otp&email=${encodeURIComponent(email)}`);
+      const response = await fetch(`https://adalyzeai.xyz/App/tapi.php?gofor=forgot_otp&email=${encodeURIComponent(email)}`);
       const result = await response.json();
 
       if (result.user_id) {
@@ -108,7 +108,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
 
     setResetLoading(true);
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=forgot_verify_otp&email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
+      const response = await fetch(`https://adalyzeai.xyz/App/tapi.php?gofor=forgot_verify_otp&email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
       const result = await response.json();
 
       if (result.message === "OTP is success") {
@@ -135,7 +135,7 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
 
     setResetLoading(true);
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=updatepassword&email=${encodeURIComponent(verifiedEmail)}&password=${encodeURIComponent(data.newPassword)}&confirmpassword=${encodeURIComponent(data.confirmPassword)}`);
+      const response = await fetch(`https://adalyzeai.xyz/App/tapi.php?gofor=updatepassword&email=${encodeURIComponent(verifiedEmail)}&password=${encodeURIComponent(data.newPassword)}&confirmpassword=${encodeURIComponent(data.confirmPassword)}`);
       const result = await response.json();
 
       if (result.message === 'Password Updated Successfully') {

@@ -3,6 +3,7 @@
 import HtmlRenderer from "@/components/html-renderer";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiCall } from "@/lib/apiClient";
 
 const PoliciesSkeleton = () => (
   <div className="mt-6 space-y-4 animate-pulse">
@@ -38,9 +39,9 @@ export default function PolicyComponent() {
     const fetchPolicies = async () => {
       try {
         const [privacyRes, returnRes, termsRes] = await Promise.all([
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=privacypolicy'),
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=returnpolicy'),
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=termsandconditions')
+          apiCall({ gofor: "privacypolicy" }),
+          apiCall({ gofor: "returnpolicy" }),
+          apiCall({ gofor: "termsandconditions" })
         ]);
 
         const privacyData = await privacyRes.text();

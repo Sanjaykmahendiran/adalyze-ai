@@ -26,6 +26,7 @@ import { generateAdToken } from "@/lib/tokenUtils"
 import Footer from "@/components/footer"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import UploadLoadingSkeleton from "@/components/Skeleton-loading/upload-loading"
+import { apiCall, uploadFile, uploadVideo, analyzeAd } from "@/lib/apiClient"
 
 // Move FreeTrailOverlay outside to prevent re-creation on every render
 const FreeTrailOverlay = ({
@@ -313,7 +314,7 @@ export default function UploadPage() {
 
     const fetchIndustries = async () => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=industrylist')
+            const response = await apiCall({ gofor: "industrylist" })
             if (!response.ok) {
                 throw new Error('Failed to fetch industries')
             }
@@ -330,7 +331,7 @@ export default function UploadPage() {
     const fetchBrands = async () => {
         setLoadingBrands(true)
         try {
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`)
+            const response = await apiCall({ gofor: "brandslist", user_id: userId })
             if (!response.ok) {
                 throw new Error('Failed to fetch brands')
             }
@@ -393,10 +394,7 @@ export default function UploadPage() {
                 })
             }, 200)
 
-            const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
-                method: 'POST',
-                body: formData,
-            })
+            const response = await uploadFile(fileToUpload, userId)
 
             clearInterval(progressInterval)
             setSingleUploadProgress(100)
@@ -504,10 +502,7 @@ export default function UploadPage() {
                 formData.append('file', file)
                 formData.append('user_id', userId)
 
-                const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
-                    method: 'POST',
-                    body: formData,
-                })
+                const response = await uploadFile(file, userId)
 
                 if (!response.ok) {
                     throw new Error(`Upload failed: ${response.statusText}`)
@@ -588,10 +583,7 @@ export default function UploadPage() {
             formData.append('user_id', userId)
             formData.append('file', fileToUpload)
 
-            const response = await fetch('https://adalyzeai.xyz/App/vidadupl.php', {
-                method: 'POST',
-                body: formData,
-            })
+            const response = await uploadVideo(fileToUpload, userId)
 
             clearInterval(progressInterval)
             setVideoUploadProgress(100)
@@ -721,11 +713,7 @@ export default function UploadPage() {
             if (activeTab === "video") analyzeData.duration = videoDuration
             if (activeTab === "video") analyzeData.transcript = videoTranscript
 
-            const response = await fetch('https://adalyzeai.xyz/App/analyze.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(analyzeData),
-            })
+            const response = await analyzeAd(analyzeData)
 
             let result: any = null
             try {

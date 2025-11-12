@@ -20,6 +20,7 @@ import { trackEvent } from "@/lib/eventTracker"
 import { Industry } from "../upload/type"
 import { generateAdToken } from "@/lib/tokenUtils"
 import Footer from "@/components/footer"
+import { apiCall, uploadFile, abAnalyze } from "@/lib/apiClient"
 
 // FreeTrailOverlay component - same pattern as upload page
 const FreeTrailOverlay = ({
@@ -128,7 +129,7 @@ export default function AdComparisonUpload() {
 
     const fetchIndustries = async () => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=industrylist')
+            const response = await apiCall({ gofor: "industrylist" })
             if (!response.ok) {
                 throw new Error('Failed to fetch industries')
             }
@@ -283,19 +284,16 @@ export default function AdComparisonUpload() {
                 })
             }, 200)
 
-            const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
-                method: 'POST',
-                body: formData,
-            })
+            const response = await uploadFile(fileToUpload, userId) as unknown as Response
 
             clearInterval(progressInterval)
             setUploadProgress(100)
 
             if (!response.ok) {
-                throw new Error(`Upload failed: ${response.statusText}`)
+                throw new Error(`Upload failed: ${response.status}`)
             }
 
-            const result = await response.json()
+            const result = await response.json() as any
 
             if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
                 if (type === "A") {
@@ -407,19 +405,13 @@ export default function AdComparisonUpload() {
                 funnel_stage: targetInfo?.funnelStage,
             }
 
-            const response = await fetch('https://adalyzeai.xyz/App/abanalyze.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(analyzeData),
-            })
+            const response = await abAnalyze(analyzeData) as unknown as Response
 
             if (!response.ok) {
-                throw new Error(`Analysis failed: ${response.statusText}`)
+                throw new Error(`Analysis failed: ${response.status}`)
             }
 
-            const result = await response.json()
+            const result = await response.json() as any
 
             if (result.success) {
                 if (typeof window !== 'undefined') {

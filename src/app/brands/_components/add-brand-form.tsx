@@ -8,6 +8,7 @@ import { Upload, X } from "lucide-react"
 import toast from "react-hot-toast"
 import Cookies from "js-cookie"
 import Image from "next/image"
+import { apiPost } from "@/lib/apiClient"
 
 interface Brand {
     brand_id: number
@@ -106,16 +107,14 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
         try {
             const base64String = await readFileAsBase64(file)
             const imageUploadPayload = {
-                gofor: "image_upload",
                 imgname: base64String,
                 type: "Brand",
             }
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(imageUploadPayload),
-            })
+            const response = await apiPost(
+                { gofor: "image_upload" },
+                imageUploadPayload
+            )
 
             const result = await response.json()
 
@@ -179,7 +178,6 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
             const isEditing = !!editingBrand
             const payload = isEditing
                 ? {
-                    gofor: "editbrands",
                     brand_id: editingBrand.brand_id.toString(),
                     user_id: userId,
                     brand_name: brandName.trim(),
@@ -189,7 +187,6 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                     logo_url: logoUrl,
                 }
                 : {
-                    gofor: "addbrand",
                     user_id: userId,
                     brand_name: brandName.trim(),
                     email: brandEmail.trim(),
@@ -198,11 +195,10 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                     logo_url: logoUrl,
                 }
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            })
+            const response = await apiPost(
+                { gofor: isEditing ? "editbrands" : "addbrand" },
+                payload
+            )
 
             const result = await response.json()
 

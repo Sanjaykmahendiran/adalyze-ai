@@ -14,6 +14,7 @@ import {
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Card } from "@/components/ui/card";
+import { apiCall, apiPost } from "@/lib/apiClient";
 
 interface Ad {
   ads_type: string
@@ -52,8 +53,7 @@ const FeedbackForm: React.FC = () => {
     try {
       if (!userId) return;
 
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=fulladsnamelist&user_id=${userId}`;
-      const response = await fetch(url);
+      const response = await apiCall({ gofor: "fulladsnamelist", user_id: userId });
       const result = await response.json();
 
       if (result.status && Array.isArray(result.data)) {
@@ -72,17 +72,15 @@ const FeedbackForm: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gofor: "feedback",
+      const response = await apiPost(
+        { gofor: "feedback" },
+        {
           user_id: userId,
           ad_upload_id: feedbackData.ad_upload_id,
           rating: feedbackData.rating,
           comments: feedbackData.comments,
-        }),
-      });
+        }
+      );
 
       if (response.ok) {
         toast.success("Feedback submitted successfully!");

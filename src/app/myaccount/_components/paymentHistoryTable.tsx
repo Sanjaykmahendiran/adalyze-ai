@@ -46,7 +46,7 @@ export default function TransactionTable({ userDetails }: TransactionTableProps)
       if (!userId) return;
       try {
         const response = await fetch(
-          `https://adalyzeai.xyz/App/api.php?gofor=paymenthistory&user_id=${userId}`
+          `https://adalyzeai.xyz/App/tapi.php?gofor=paymenthistory&user_id=${userId}`
         );
         const data = await response.json();
         setTransactions(data || []);

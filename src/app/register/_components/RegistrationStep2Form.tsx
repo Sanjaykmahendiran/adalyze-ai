@@ -125,7 +125,7 @@ export default function RegistrationStep2Form({
     setIsCheckingReferral(true);
     try {
       const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=usergetbyref&referral_code=${code}`
+        `https://adalyzeai.xyz/App/tapi.php?gofor=usergetbyref&referral_code=${code}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -191,7 +191,7 @@ export default function RegistrationStep2Form({
       if (utmCampaign) payload.utm_campaign = utmCampaign;
       if (utmContent) payload.utm_content = utmContent;
       if (utmTerm) payload.utm_term = utmTerm;
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch("https://adalyzeai.xyz/App/tapi.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

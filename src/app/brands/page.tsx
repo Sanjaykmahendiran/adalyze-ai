@@ -62,7 +62,7 @@ export default function BrandsPage() {
     try {
       setLoading(true)
       const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`
+        `https://adalyzeai.xyz/App/tapi.php?gofor=brandslist&user_id=${userDetails?.user_id}`
       )
       const data = await response.json()
       if (Array.isArray(data)) setBrands(data)

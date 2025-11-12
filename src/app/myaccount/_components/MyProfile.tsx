@@ -19,7 +19,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown, Search, ChevronDown, X } from "lucide-react"
 
 // Base URL configuration
-export const BASE_URL = "https://adalyzeai.xyz/App/api.php"
+export const BASE_URL = "https://adalyzeai.xyz/App/tapi.php"
 
 interface ProfileProps {
   name?: string

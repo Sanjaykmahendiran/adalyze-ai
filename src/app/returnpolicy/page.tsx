@@ -28,7 +28,7 @@ export default function RetrunPolicy() {
   useEffect(() => {
     const fetchRetrunPolicy = async () => {
       try {
-        const response = await fetch("https://adalyzeai.xyz/App/api.php?gofor=returnpolicy");
+        const response = await fetch("https://adalyzeai.xyz/App/tapi.php?gofor=returnpolicy");
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

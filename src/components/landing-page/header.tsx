@@ -89,7 +89,7 @@ const fetchMenuData = async (): Promise<UIMenuItem[]> => {
   // Create new fetch promise
   menuFetchPromise = (async () => {
     try {
-      const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=menulist", {
+      const res = await fetch("https://adalyzeai.xyz/App/tapi.php?gofor=menulist", {
         cache: "no-store",
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)

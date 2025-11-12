@@ -61,8 +61,8 @@ export default function AiAdMistakes({ category }: { category: string }) {
       try {
         setError(null);
         const url = category
-          ? `https://adalyzeai.xyz/App/api.php?gofor=issueslist&category=${encodeURIComponent(category)}`
-          : `https://adalyzeai.xyz/App/api.php?gofor=issueslist`;
+          ? `https://adalyzeai.xyz/App/tapi.php?gofor=issueslist&category=${encodeURIComponent(category)}`
+          : `https://adalyzeai.xyz/App/tapi.php?gofor=issueslist`;
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error(`Failed: ${res.status}`);
         const data = (await res.json()) as Issue[] | unknown;

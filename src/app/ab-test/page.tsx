@@ -20,6 +20,9 @@ import { trackEvent } from "@/lib/eventTracker"
 import { Industry } from "../upload/type"
 import { generateAdToken } from "@/lib/tokenUtils"
 import Footer from "@/components/footer"
+import uploadService from "@/services/uploadService"
+import { API_CONFIG } from "@/configs/api.config"
+import { axiosInstance } from "@/configs/axios"
 
 // FreeTrailOverlay component - same pattern as upload page
 const FreeTrailOverlay = ({
@@ -128,11 +131,8 @@ export default function AdComparisonUpload() {
 
     const fetchIndustries = async () => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=industrylist')
-            if (!response.ok) {
-                throw new Error('Failed to fetch industries')
-            }
-            const data: Industry[] = await response.json()
+            const response = await axiosInstance.get('?gofor=industrylist')
+            const data: Industry[] = response.data
             setIndustries(data)
         } catch (error) {
             console.error('Error fetching industries:', error)
@@ -258,71 +258,64 @@ export default function AdComparisonUpload() {
 
 
     const uploadFile = async (fileToUpload: File, type: string) => {
-        const isTypeA = type === "A"
-        const setIsUploading = isTypeA ? setIsUploadingA : setIsUploadingB
-        const setUploadProgress = isTypeA ? setUploadProgressA : setUploadProgressB
-        const toastId = `upload-${type}`
+        const isTypeA = type === "A";
+        const setIsUploading = isTypeA ? setIsUploadingA : setIsUploadingB;
+        const setUploadProgress = isTypeA ? setUploadProgressA : setUploadProgressB;
+        const toastId = `upload-${type}`;
 
         try {
-            setIsUploading(true)
-            setUploadProgress(0)
+            setIsUploading(true);
+            setUploadProgress(0);
+            toast.dismiss(toastId);
 
-            toast.dismiss(toastId)
-
-            const formData = new FormData()
-            formData.append('file', fileToUpload)
-            formData.append('user_id', userId)
+            const formData = new FormData();
+            formData.append("file", fileToUpload);
+            formData.append("user_id", userId);
 
             const progressInterval = setInterval(() => {
-                setUploadProgress(prev => {
+                setUploadProgress((prev) => {
                     if (prev >= 90) {
-                        clearInterval(progressInterval)
-                        return 90
+                        clearInterval(progressInterval);
+                        return 90;
                     }
-                    return prev + 10
-                })
-            }, 200)
+                    return prev + 10;
+                });
+            }, 200);
 
-            const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
-                method: 'POST',
-                body: formData,
-            })
+            const response = await uploadService.post(API_CONFIG.UPLOAD_IMAGE, formData);
 
-            clearInterval(progressInterval)
-            setUploadProgress(100)
+            clearInterval(progressInterval);
+            setUploadProgress(100);
 
-            if (!response.ok) {
-                throw new Error(`Upload failed: ${response.statusText}`)
-            }
+            const result = response.data;
 
-            const result = await response.json()
+            if (result.fileUrl) {
+                if (isTypeA) setUploadedImagePathA(result.fileUrl);
+                else setUploadedImagePathB(result.fileUrl);
 
-            if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
-                if (type === "A") {
-                    setUploadedImagePathA(result.fileUrl)
-                } else {
-                    setUploadedImagePathB(result.fileUrl)
-                }
-                toast.success(`File ${type} uploaded successfully!`, { id: toastId })
+                toast.success(`File ${type} uploaded successfully!`, { id: toastId });
             } else {
-                throw new Error(result.message || 'Upload failed')
+                throw new Error(result.message || "Upload failed");
             }
         } catch (err) {
-            console.error(`File ${type} upload error:`, err)
-            toast.error(err instanceof Error ? err.message : `Failed to upload file ${type}`, { id: toastId })
+            console.error(err);
+            toast.error(
+                err instanceof Error ? err.message : `Failed to upload file ${type}`,
+                { id: toastId }
+            );
 
-            if (type === "A") {
-                setFileA(null)
-                setUploadedImagePathA(null)
+            if (isTypeA) {
+                setFileA(null);
+                setUploadedImagePathA(null);
             } else {
-                setFileB(null)
-                setUploadedImagePathB(null)
+                setFileB(null);
+                setUploadedImagePathB(null);
             }
         } finally {
-            setIsUploading(false)
-            setUploadProgress(0)
+            setIsUploading(false);
+            setUploadProgress(0);
         }
-    }
+    };
 
     const handleFileUpload = async (file: File | null, type: string) => {
         if (type === "A") {
@@ -407,19 +400,9 @@ export default function AdComparisonUpload() {
                 funnel_stage: targetInfo?.funnelStage,
             }
 
-            const response = await fetch('https://adalyzeai.xyz/App/abanalyze.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(analyzeData),
-            })
+            const response = await uploadService.post(API_CONFIG.ANALYZE_AB, analyzeData);
 
-            if (!response.ok) {
-                throw new Error(`Analysis failed: ${response.statusText}`)
-            }
-
-            const result = await response.json()
+            const result = response.data;
 
             if (result.success) {
                 if (typeof window !== 'undefined') {

@@ -21,6 +21,9 @@ import { trackEvent } from "@/lib/eventTracker"
 import Cookies from "js-cookie"
 import PricingHelp from "./_components/pricing-help"
 import { trackPaymentSuccess, trackConversion } from "@/lib/ga4"
+import uploadService from "@/services/uploadService"
+import { API_CONFIG } from "@/configs/api.config"
+import { axiosInstance } from "@/configs/axios"
 
 // Extend Window interface for Razorpay
 declare global {
@@ -181,18 +184,14 @@ const ProPage: React.FC = () => {
         const fetchData = async () => {
             try {
                 const [pricingRes, faqRes, testiRes] = await Promise.all([
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=packages"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=faqlist"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=testimonialslist"),
+                    axiosInstance.get("?gofor=packages"),
+                    axiosInstance.get("?gofor=faqlist"),
+                    axiosInstance.get("?gofor=testimonialslist"),
                 ])
 
-                if (!pricingRes.ok || !faqRes.ok || !testiRes.ok) {
-                    throw new Error("One or more network responses were not ok")
-                }
-
-                const pricing: PricingPlan[] = await pricingRes.json()
-                const faqs: FAQ[] = await faqRes.json()
-                const testimonials: Testimonial[] = await testiRes.json()
+                const pricing: PricingPlan[] = pricingRes.data
+                const faqs: FAQ[] = faqRes.data
+                const testimonials: Testimonial[] = testiRes.data
 
                 if (cancelled) return
 
@@ -345,13 +344,9 @@ const ProPage: React.FC = () => {
         setFreeTrialLoading(true)
 
         try {
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=fretra&user_id=${userDetails.user_id}`)
+            const response = await axiosInstance.get(`?gofor=fretra&user_id=${userDetails.user_id}`);
 
-            if (!response.ok) {
-                throw new Error('Failed to activate free trial')
-            }
-
-            const result = await response.json()
+            const result = response.data;
 
             // Check if the response indicates success
             if (result.response === "Free Trial Activated") {
@@ -373,19 +368,13 @@ const ProPage: React.FC = () => {
     // Payment verification function
     const verifyPayment = async (paymentData: RazorpayResponse, selectedPlan: PricingPlan) => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/verify.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    razorpay_payment_id: paymentData.razorpay_payment_id,
-                    razorpay_order_id: paymentData.razorpay_order_id,
-                    razorpay_signature: paymentData.razorpay_signature,
-                }),
-            })
+            const response = await uploadService.post(API_CONFIG.VERIFY_PAYMENT, {
+                razorpay_payment_id: paymentData.razorpay_payment_id,
+                razorpay_order_id: paymentData.razorpay_order_id,
+                razorpay_signature: paymentData.razorpay_signature,
+            });
 
-            const result = await response.json()
+            const result = response.data;
 
             if (result.response === 'Payment Successful & User Upgraded') {
                 toast.success("Payment Successful! Your subscription has been activated.")
@@ -435,32 +424,26 @@ const ProPage: React.FC = () => {
 
         try {
             // Fetch Razorpay key from API
-            const configResponse = await fetch('https://adalyzeai.xyz/App/api.php?gofor=config');
-            const configData = await configResponse.json();
+            const configRes = await axiosInstance.get("?gofor=config");
+            const configData = configRes.data;
 
-            if (!configResponse.ok || !configData.rzpaykey) {
-                throw new Error('Failed to fetch Razorpay key');
-            }
+            if (!configData.rzpaykey) throw new Error("Failed to fetch Razorpay key");
 
             const rzpKey = configData.rzpaykey;
 
             // Create order
-            const orderResponse = await fetch('https://adalyzeai.xyz/App/razorpay.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userDetails.user_id.toString(),
-                    package_id: selectedPlan.package_id.toString(),
-                    ctype: currency,
-                    period: getBillingPeriod(selectedPlan.package_id),
-                    order_type: "new"
-                }),
+            const orderRes = await uploadService.post(API_CONFIG.RAZORPAY, {
+                user_id: userDetails.user_id.toString(),
+                package_id: selectedPlan.package_id.toString(),
+                ctype: currency,
+                period: getBillingPeriod(selectedPlan.package_id),
+                order_type: "new",
             });
 
-            const orderData = await orderResponse.json();
+            const orderData = orderRes.data;
 
-            if (!orderResponse.ok || !orderData.order_id) {
-                throw new Error(orderData.message || 'Failed to create order');
+            if (!orderData.order_id) {
+                throw new Error(orderData.message || "Failed to create order");
             }
 
             // Calculate the final price based on billing period

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { AwardIcon } from "lucide-react";
 import { LazyLoadSection } from '@/components/lazy-load-section';
 import { motion } from 'framer-motion';
+import { axiosInstance1 } from '@/configs/axios';
 
 interface Client {
   client_id: number;
@@ -55,10 +56,10 @@ export default function ClientSection({ category, counter, CounterText }: { cate
     const fetchClients = async () => {
       try {
         const url = category
-          ? `https://adalyzeai.xyz/App/api.php?gofor=clientslist&category=${encodeURIComponent(category)}`
-          : `https://adalyzeai.xyz/App/api.php?gofor=clientslist`;
-        const response = await fetch(url)
-        const data = await response.json()
+          ? `?gofor=clientslist&category=${encodeURIComponent(category)}`
+          : `?gofor=clientslist`;
+        const response = await axiosInstance1.get(url)
+        const data = response.data
         // Validate and filter clients with valid logo URLs (handles URLs of any length/format)
         const validClients = data
           .map((c: Client) => ({

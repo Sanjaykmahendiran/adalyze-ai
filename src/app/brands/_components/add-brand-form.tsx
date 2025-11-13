@@ -8,6 +8,7 @@ import { Upload, X } from "lucide-react"
 import toast from "react-hot-toast"
 import Cookies from "js-cookie"
 import Image from "next/image"
+import { axiosInstance } from "@/configs/axios"
 
 interface Brand {
     brand_id: number
@@ -111,13 +112,9 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                 type: "Brand",
             }
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(imageUploadPayload),
-            })
+            const response = await axiosInstance.post("", imageUploadPayload)
 
-            const result = await response.json()
+            const result = response.data
 
             if (result?.success || result?.status === "success") {
                 const uploadedUrl: string = result?.url || ""
@@ -144,39 +141,29 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
 
     const handleAddBrand = async () => {
         // Validate all required fields
-        if (!brandName.trim()) {
-            toast.error("Brand Name is required")
-            return
-        }
-        if (!brandEmail.trim()) {
-            toast.error("Brand Email is required")
-            return
-        }
-        if (!brandMobile.trim()) {
-            toast.error("Brand Mobile Number is required")
-            return
-        }
-        if (!logoUrl.trim()) {
-            toast.error("Logo is required. Please upload a logo.")
-            return
-        }
+        if (!brandName.trim()) return toast.error("Brand Name is required");
+        if (!brandEmail.trim()) return toast.error("Brand Email is required");
+        if (!brandMobile.trim()) return toast.error("Brand Mobile Number is required");
+        if (!logoUrl.trim()) return toast.error("Logo is required. Please upload a logo.");
 
         // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(brandEmail.trim())) {
-            toast.error("Please enter a valid email address")
-            return
+            return toast.error("Please enter a valid email address");
         }
 
-        // Check brand limit for new brands only
+        // Brand limit check
         if (!editingBrand && isAtBrandLimit) {
-            toast.error(`You have reached the maximum limit of ${brandLimit} brands for your current package. Please upgrade your package to add more brands.`)
-            return
+            return toast.error(
+                `You have reached the maximum limit of ${brandLimit} brands for your current package. Please upgrade your package to add more brands.`
+            );
         }
 
-        setIsSubmitting(true)
+        setIsSubmitting(true);
+
         try {
-            const isEditing = !!editingBrand
+            const isEditing = !!editingBrand;
+
             const payload = isEditing
                 ? {
                     gofor: "editbrands",
@@ -196,30 +183,29 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                     mobile: brandMobile.trim(),
                     website: website,
                     logo_url: logoUrl,
-                }
+                };
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            })
+            // 🟢 axiosInstance handles JSON + token automatically
+            const response = await axiosInstance.post("", payload);
 
-            const result = await response.json()
+            // axios returns response.data, not response.json()
+            const result = response.data;
 
             if (result?.success || result?.status === "success") {
-                toast.success(isEditing ? "Brand updated successfully!" : "Brand added successfully!")
-                resetForm()
-                onAdded()
+                toast.success(isEditing ? "Brand updated successfully!" : "Brand added successfully!");
+                resetForm();
+                onAdded();
             } else {
-                toast.error(result?.error || `Failed to ${isEditing ? "update" : "add"} brand`)
+                toast.error(result?.error || `Failed to ${isEditing ? "update" : "add"} brand`);
             }
         } catch (error) {
-            console.error(`Error ${editingBrand ? "updating" : "adding"} brand:`, error)
-            toast.error(`Failed to ${editingBrand ? "update" : "add"} brand. Please try again.`)
+            console.error(`Error ${editingBrand ? "updating" : "adding"} brand:`, error);
+            toast.error(`Failed to ${editingBrand ? "update" : "add"} brand. Please try again.`);
         } finally {
-            setIsSubmitting(false)
+            setIsSubmitting(false);
         }
-    }
+    };
+
 
     const resetForm = () => {
         setBrandName("")

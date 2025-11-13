@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import LandingPageFooter from "@/components/landing-page/landing-page-footer";
 import Header from "@/components/landing-page/header";
+import { axiosInstance1 } from "@/configs/axios";
 
 
 // Simple HTML sanitizer function (you might want to use a library like DOMPurify)
@@ -34,14 +35,10 @@ export default function PrivacyPolicy() {
     useEffect(() => {
         const fetchPrivacyPolicy = async () => {
             try {
-                const response = await fetch("https://adalyzeai.xyz/App/api.php?gofor=privacypolicy");
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const response = await axiosInstance1.get("?gofor=privacypolicy");
 
                 // Since the API returns HTML directly, use text() instead of json()
-                const htmlContent = await response.text();
+                const htmlContent = response.data;
 
                 // Check if we actually got HTML content
                 if (!htmlContent || htmlContent.trim() === '') {
@@ -49,7 +46,7 @@ export default function PrivacyPolicy() {
                 }
 
                 // Sanitize the HTML content
-                const sanitizedContent = sanitizeHTML(htmlContent);
+                const sanitizedContent = sanitizeHTML(htmlContent as string);
                 setPrivacy(sanitizedContent);
 
             } catch (error) {

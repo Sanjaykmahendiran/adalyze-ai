@@ -1,6 +1,6 @@
-import { axiosInstance } from "@/configs/axios";
 import { getSessionId } from "@/lib/sessionManager";
 import Cookies from "js-cookie";
+import { axiosInstance1 } from "@/configs/axios";
 
 export interface CookieConsentData {
   necessary: number;
@@ -49,13 +49,13 @@ export function generateCookieId(): string {
  */
 export function getCookieId(): string {
   if (typeof window === "undefined") return generateCookieId();
-  
+
   // First try to get from cookies (from addconsent response)
   const savedCookieId = Cookies.get('cookie_id');
   if (savedCookieId) {
     return savedCookieId;
   }
-  
+
   // Fallback to generating new one
   return generateCookieId();
 }
@@ -74,9 +74,9 @@ export function saveCookieId(cookieId: string): void {
  */
 export function getUserId(): number | undefined {
   if (typeof window === "undefined") return undefined;
-  
+
   const userId = Cookies.get('userId');
-  
+
   // Return user_id if available, otherwise return undefined for anonymous users
   return userId ? parseInt(userId, 10) : undefined;
 }
@@ -88,9 +88,8 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
   try {
     const cookieId = generateCookieId();
     const userId = getUserId();
-    
-    const payload: CookieConsentPayload = {
-      gofor: "addconsent",
+
+    const payload = {
       cookie_id: cookieId,
       consent,
       ...(userId && { user_id: userId })
@@ -98,14 +97,13 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
 
     console.log("Sending cookie consent:", payload);
 
-    const response = await axiosInstance.post("", payload, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await axiosInstance1.post("", {
+      gofor: "addconsent",
+      payload
+    })
 
     const result: AddConsentResponse = response.data;
-    
+
     // If successful, save the cookie_id from response to cookies
     if (result.status === "success" && result.cookie_id) {
       saveCookieId(result.cookie_id);
@@ -126,13 +124,8 @@ export async function getCookieConsent(cookieId?: string): Promise<GetConsentRes
   try {
     // Use provided cookieId, or get from cookies, or generate new one
     const id = cookieId || getCookieId();
-    
-    const response = await axiosInstance.get("", {
-      params: {
-        gofor: "getconsent",
-        cookie_id: id,
-      },
-    });
+
+    const response = await axiosInstance1.get("?gofor=getconsent&cookie_id=" + id)
 
     return response.data;
   } catch (error) {
@@ -158,14 +151,14 @@ export async function hasExistingConsent(): Promise<boolean> {
     if (!hasCookieId()) {
       return false;
     }
-    
+
     const consentData = await getCookieConsent();
-    
+
     // If status is "empty", no consent record found - should ask for cookies
     if (consentData?.status === "empty") {
       return false;
     }
-    
+
     // If status is "success" and has consent data, user has given consent
     return consentData?.status === "success" && !!consentData?.data?.consent_json;
   } catch (error) {
@@ -180,17 +173,17 @@ export async function hasExistingConsent(): Promise<boolean> {
 export async function getExistingConsent(): Promise<CookieConsentData | null> {
   try {
     const consentData = await getCookieConsent();
-    
+
     // If status is "empty", no consent record found
     if (consentData?.status === "empty") {
       return null;
     }
-    
+
     // If status is "success" and has consent data, return it
     if (consentData?.status === "success" && consentData?.data?.consent_json) {
       return consentData.data.consent_json;
     }
-    
+
     return null;
   } catch (error) {
     console.error("Error getting existing consent:", error);

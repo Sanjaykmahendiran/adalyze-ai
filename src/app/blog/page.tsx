@@ -9,6 +9,7 @@ import Spinner from "@/components/overlay"
 import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
+import { axiosInstance1 } from "@/configs/axios"
 
 interface BlogPost {
   blogs_id: number
@@ -36,11 +37,8 @@ export default function Blogs() {
     const fetchBlogPosts = async () => {
       try {
         setLoading(true)
-        const response = await fetch(
-          "https://adalyzeai.xyz/App/api.php?gofor=blogslist"
-        )
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
-        const data = await response.json()
+        const response = await axiosInstance1.get("?gofor=blogslist")
+        const data = response.data
         setBlogPosts(data)
       } catch (err) {
         console.error("Error fetching blog posts:", err)

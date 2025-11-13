@@ -8,6 +8,7 @@ import "react-circular-progressbar/dist/styles.css"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
+import { axiosInstance } from "@/configs/axios"
 
 interface TrendingAdData {
   ad_id: number
@@ -50,15 +51,11 @@ export default function Top10TrendingAdsWall() {
     const fetchAdsData = async () => {
       try {
         setLoading(true)
-        const response = await fetch(
-          "https://adalyzeai.xyz/App/api.php?gofor=trendingads"
+        const response = await axiosInstance.get(
+          "?gofor=trendingads"
         )
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch trending ads data")
-        }
-
-        const data: TrendingAdsResponse = await response.json()
+        const data: TrendingAdsResponse = response.data
         setAdsData(data.trending_ads?.slice(0, 10) || [])
         setTimeFrame(data.time_frame || "")
         setTotalAdsConsidered(data.total_ads_considered || 0)

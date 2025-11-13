@@ -12,9 +12,9 @@ import toast from "react-hot-toast"
 import Cookies from "js-cookie"
 import { Camera } from "lucide-react"
 import Image from "next/image"
+import { axiosInstance } from "@/configs/axios"
 
 // Base URL configuration
-export const BASE_URL = "https://adalyzeai.xyz/App/api.php"
 
 interface BrandData {
   brand_id: number
@@ -69,8 +69,8 @@ export default function YourBrand({
   const fetchBrandData = async (brandId: number) => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${BASE_URL}?gofor=getbrand&brand_id=${brandId}`)
-      const data = await response.json()
+      const response = await axiosInstance.get(`?gofor=getbrand&brand_id=${brandId}`)
+      const data = response.data
       
       if (data.brand_id) {
         setBrandData(data)
@@ -101,15 +101,15 @@ export default function YourBrand({
     }
 
     try {
-      const response = await fetch(BASE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const response = await axiosInstance.post('', {
+        gofor: "image_upload",
+        imgname: base64Data,
+        type: "brand",
       })
 
-      const data = await response.json()
+      const data = response.data
 
-      if (data.success === true) {
+      if (data?.success === true) {
         toast.success("Brand image uploaded successfully")
         setUploadedImageUrl(data.url)
         setImagePreview(data.url)
@@ -184,15 +184,11 @@ export default function YourBrand({
     }
 
     try {
-      const response = await fetch(BASE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const response = await axiosInstance.post('', payload)
 
-      const data = await response.json()
+      const data = response.data
 
-      if (response.ok && data.success === true) {
+      if (response && data.success === true) {
         toast.success("Brand updated successfully")
         // Refresh brand data
         await fetchBrandData(brandData.brand_id)

@@ -11,6 +11,7 @@ import { Button } from "../ui/button"
 import { AnimatePresence, motion } from "framer-motion"
 import loginlogo from "@/assets/ad-logo.webp"
 import { trackEvent } from "@/lib/eventTracker"
+import { axiosInstance1 } from "@/configs/axios"
 
 // API type definitions
 type ApiMenuItem = {
@@ -89,11 +90,8 @@ const fetchMenuData = async (): Promise<UIMenuItem[]> => {
   // Create new fetch promise
   menuFetchPromise = (async () => {
     try {
-      const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=menulist", {
-        cache: "no-store",
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: unknown = await res.json()
+      const response = await axiosInstance1.get("?gofor=menulist")
+      const data: unknown = response.data
       if (!Array.isArray(data)) return []
 
       // Filter out any non-object entries like stray strings

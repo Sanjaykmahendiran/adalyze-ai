@@ -60,7 +60,9 @@ const LoginPage = () => {
 
           Cookies.set("userId", user.user_id.toString(), { expires: 7 });
           Cookies.set("email", user.email, { expires: 7 });
-
+          Cookies.set("authToken", loginData.token, { expires: 7 });
+          Cookies.set("refreshToken", loginData.refresh_token, { expires: 30 });
+          
           let eventName = "Login_completed";
           if (data.token) eventName = "google_login_completed"; 
           else if (data.nouptoken) eventName = "email_confirmation_login_completed";

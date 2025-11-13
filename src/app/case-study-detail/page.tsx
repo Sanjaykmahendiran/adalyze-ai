@@ -11,6 +11,7 @@ import Image from "next/image"
 import { Suspense, useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import Spinner from "@/components/overlay"
+import { axiosInstance1 } from "@/configs/axios"
 
 // Type definitions
 interface CaseStudy {
@@ -88,13 +89,8 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
   // Client-side fetch functions
   const fetchAllCaseStudies = () => {
-    return fetch("https://adalyzeai.xyz/App/api.php?gofor=casestudylist", {
-      cache: 'no-store'
-    })
-      .then(response => {
-        if (!response.ok) throw new Error("Failed to fetch case studies")
-        return response.json()
-      })
+    return axiosInstance1.get("?gofor=casestudylist")
+      .then(response => response.data)
       .then(data => data as CaseStudy[])
       .catch(error => {
         console.error("Error fetching case studies:", error)
@@ -103,14 +99,8 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
   }
 
   const fetchCaseStudyById = (slug: string) => {
-    return fetch(
-      `https://adalyzeai.xyz/App/api.php?gofor=getcasestudy&slug=${slug}`,
-      { cache: 'no-store' }
-    )
-      .then(response => {
-        if (!response.ok) throw new Error("Failed to fetch case study")
-        return response.json()
-      })
+    return axiosInstance1.get(`?gofor=getcasestudy&slug=${slug}`)
+      .then(response => response.data)
       .then(data => data as CaseStudy)
       .catch(error => {
         console.error("Error fetching case study:", error)

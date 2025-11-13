@@ -34,6 +34,7 @@ import PreCampaignChecklist from "./_components/PreCampaignChecklist"
 import GoIcon from "@/assets/go-icon.png"
 import NoGoIcon from "@/assets/nogo-icon.png"
 import AdPerformancePost from "@/components/share-result"
+import { axiosInstance } from "@/configs/axios"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -415,13 +416,9 @@ export default function ResultsPage() {
     setDeleteLoading(true)
 
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=deletead&ad_upload_id=${adId}`)
+      const response = await axiosInstance.get(`?gofor=deletead&ad_upload_id=${adId}`)
 
-      if (!response.ok) {
-        throw new Error('Failed to delete ad')
-      }
-
-      const result = await response.json()
+      const result = response.data
 
       if (result.response === "Ad Deleted") {
         toast.success("Ad deleted successfully")
@@ -460,11 +457,10 @@ export default function ResultsPage() {
             userIdParam = `&user_id=${userIdFromToken}`;
           }
         }
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
-        if (!response.ok) throw new Error('Failed to fetch ad details');
-        const result = await response.json();
+        const response = await axiosInstance.get(`?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
+        const result = response.data;
         if (!result.success) throw new Error(result.message || 'API returned error');
-        if (!didCancel) setApiData(result.data);
+        if (!didCancel) setApiData(result.data as any);
       } catch (err) {
         if (!didCancel) setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -496,11 +492,10 @@ export default function ResultsPage() {
         if (userDetails?.user_id) {
           userIdParam = `&user_id=${userDetails.user_id}`;
         }
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
-        if (!response.ok) throw new Error('Failed to fetch ad details');
-        const result = await response.json();
+        const response = await axiosInstance.get(`?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
+        const result = response.data;
         if (!result.success) throw new Error(result.message || 'API returned error');
-        if (!didCancel) setApiData(result.data);
+        if (!didCancel) setApiData(result.data as any);
       } catch (err) {
         if (!didCancel) setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {

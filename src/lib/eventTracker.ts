@@ -1,4 +1,5 @@
 // lib/eventTracker.ts
+import { axiosInstance1 } from "@/configs/axios";
 import { getSessionId } from "./sessionManager";
 import Cookies from "js-cookie";
 import debounce from "lodash.debounce";
@@ -20,25 +21,24 @@ interface EventPayload {
     };
 }
 
-const EVENT_API_URL = "https://adalyzeai.xyz/App/api.php";
 const EVENT_QUEUE_KEY = "adalyze_event_queue_v1"; // versionable
 
 // == Utility function to extract metadata from URL ==
 function extractMetadataFromUrl(): { utm_source?: string; utm_campaign?: string; ad_id?: string } {
     if (typeof window === "undefined") return {};
-    
+
     const urlParams = new URLSearchParams(window.location.search);
     const metadata: { utm_source?: string; utm_campaign?: string; ad_id?: string } = {};
-    
+
     // Extract UTM parameters
     const utmSource = urlParams.get('utm_source');
     const utmCampaign = urlParams.get('utm_campaign');
     const adId = urlParams.get('ad_id');
-    
+
     if (utmSource) metadata.utm_source = utmSource;
     if (utmCampaign) metadata.utm_campaign = utmCampaign;
     if (adId) metadata.ad_id = adId;
-    
+
     return metadata;
 }
 
@@ -63,22 +63,19 @@ function saveEventQueue(queue: EventPayload[]) {
 // == send single event (non-debounced underlying sender) ==
 async function sendEventNow(payload: EventPayload) {
     try {
-        const res = await fetch(EVENT_API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
+        await axiosInstance1.post("", payload);
 
-        if (!res.ok) throw new Error(`Server responded ${res.status}`);
-        // success -> nothing more
+        // success → do nothing
     } catch (err) {
-        // push to local queue if any failure (network/offline/server)
+        // push to local queue when network/server errors happen
         const q = getEventQueue();
         q.push(payload);
         saveEventQueue(q);
-        // don't throw
+
+        // Do NOT throw
     }
 }
+
 
 // == Debounced sender (prevents flooding in rapid succession) ==
 const debouncedSend = debounce((payload: EventPayload) => {
@@ -95,21 +92,18 @@ async function processQueuedEvents() {
 
     for (const ev of queue) {
         try {
-            const res = await fetch(EVENT_API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(ev),
-            });
-            if (!res.ok) {
-                remaining.push(ev);
-            }
-        } catch {
+            // axiosInstance1.post() throws on error automatically
+            await axiosInstance1.post("", ev);
+
+        } catch (error) {
+            // Any network or server error → keep event in queue
             remaining.push(ev);
         }
     }
 
     saveEventQueue(remaining);
 }
+
 
 // Retry queued events when we become online
 if (typeof window !== "undefined") {
@@ -127,11 +121,11 @@ if (typeof window !== "undefined") {
  * - pageUrl : full URL or path string
  * - email : optional
  */
-export function trackEvent(eventName: string, pageUrl: string, email?: string | null, currency?: string | null, eventValue?: number | null  ) {
+export function trackEvent(eventName: string, pageUrl: string, email?: string | null, currency?: string | null, eventValue?: number | null) {
     if (typeof window === "undefined") return;
 
     const metadata = extractMetadataFromUrl();
-    
+
     const payload: EventPayload = {
         gofor: "addevents",
         user_id: Cookies.get("userId") || null,

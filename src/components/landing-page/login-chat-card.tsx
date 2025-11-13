@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import Captcha, { CaptchaHandle } from "../Captcha";
+import { axiosInstance1 } from "@/configs/axios";
 
 interface LoginChatCardProps {
   onClose: () => void;
@@ -62,19 +63,15 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gofor: "needhelp",
-          email,
-          category,
-          description,
-        }),
+      const response = await axiosInstance1.post("", {
+        gofor: "needhelp",
+        email,
+        category,
+        description,
       });
 
-      const result = await response.json();
-      if (response.ok && result?.status !== "error") {
+      const result = response.data;
+      if (result?.status !== "error") {
         toast.success(
           "Enquiry submitted successfully!\nWe'll respond within 24 hours.",
           {

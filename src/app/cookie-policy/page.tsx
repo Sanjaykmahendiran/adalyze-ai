@@ -28,7 +28,7 @@ export default function CookiePolicyPage() {
     useEffect(() => {
         const fetchPrivacyPolicy = async () => {
             try {
-                const response = await fetch("https://adalyzeai.xyz/App/tapi.php?gofor=cookiepolicy");
+                const response = await fetch("https://adalyzeai.xyz/App/api.php?gofor=cookiepolicy");
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

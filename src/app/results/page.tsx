@@ -34,6 +34,7 @@ import PreCampaignChecklist from "./_components/PreCampaignChecklist"
 import GoIcon from "@/assets/go-icon.png"
 import NoGoIcon from "@/assets/nogo-icon.png"
 import AdPerformancePost from "@/components/share-result"
+import { apiCall } from "@/lib/apiClient"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -401,7 +402,10 @@ export default function ResultsPage() {
     setDeleteLoading(true)
 
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/tapi.php?gofor=deletead&ad_upload_id=${adId}`)
+      const response = await apiCall({
+        gofor: 'deletead',
+        ad_upload_id: adId
+      })
 
       if (!response.ok) {
         throw new Error('Failed to delete ad')
@@ -439,14 +443,17 @@ export default function ResultsPage() {
     const fetchAdDetails = async () => {
       try {
         const shareToken = searchParams.get('token') || searchParams.get('ad-token') || searchParams.get('top10-token') || searchParams.get('trending-token');
-        let userIdParam = '';
+        const params: Record<string, string | number> = {
+          gofor: 'addetail',
+          ad_upload_id: adUploadId
+        };
         if (shareToken) {
           const userIdFromToken = parseUserIdFromToken(shareToken);
           if (userIdFromToken) {
-            userIdParam = `&user_id=${userIdFromToken}`;
+            params.user_id = userIdFromToken;
           }
         }
-        const response = await fetch(`https://adalyzeai.xyz/App/tapi.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
+        const response = await apiCall(params);
         if (!response.ok) throw new Error('Failed to fetch ad details');
         const result = await response.json();
         if (!result.success) throw new Error(result.message || 'API returned error');
@@ -478,11 +485,14 @@ export default function ResultsPage() {
     let didCancel = false;
     const fetchAdDetails = async () => {
       try {
-        let userIdParam = '';
+        const params: Record<string, string | number> = {
+          gofor: 'addetail',
+          ad_upload_id: adUploadId
+        };
         if (userDetails?.user_id) {
-          userIdParam = `&user_id=${userDetails.user_id}`;
+          params.user_id = userDetails.user_id;
         }
-        const response = await fetch(`https://adalyzeai.xyz/App/tapi.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
+        const response = await apiCall(params);
         if (!response.ok) throw new Error('Failed to fetch ad details');
         const result = await response.json();
         if (!result.success) throw new Error(result.message || 'API returned error');

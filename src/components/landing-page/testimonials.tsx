@@ -23,8 +23,8 @@ export default function Testimonials({ category }: { category: string }) {
     const fetchTestimonials = async () => {
       try {
         const url = category
-          ? `https://adalyzeai.xyz/App/tapi.php?gofor=testilist&category=${encodeURIComponent(category)}`
-          : `https://adalyzeai.xyz/App/tapi.php?gofor=testilist`;
+          ? `https://adalyzeai.xyz/App/api.php?gofor=testilist&category=${encodeURIComponent(category)}`
+          : `https://adalyzeai.xyz/App/api.php?gofor=testilist`;
         const response = await fetch(url)
         const data = await response.json()
 

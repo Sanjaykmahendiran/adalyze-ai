@@ -2,7 +2,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 // Queries that should not have token attached
-const EXCLUDED_QUERIES = ["login", "register", "eregister", "forgot-password"];
+const EXCLUDED_QUERIES = ["login", "register", "eregister", "forgot-password", "addevents"];
 
 /**
  * Get the 'gofor' parameter from axios config

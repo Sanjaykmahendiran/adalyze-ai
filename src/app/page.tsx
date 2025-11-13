@@ -74,7 +74,7 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchBannerData = async () => {
       try {
-        const baseUrl = "https://adalyzeai.xyz/App/tapi.php?gofor=livebanner";
+        const baseUrl = "https://adalyzeai.xyz/App/api.php?gofor=livebanner";
         const url = variant && variant !== "default" ? `${baseUrl}&variant=${variant}` : baseUrl;
         const response = await fetch(url);
         const data = await response.json();

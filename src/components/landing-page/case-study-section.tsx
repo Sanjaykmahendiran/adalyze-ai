@@ -27,8 +27,8 @@ export default function CaseStudySection({ category }: { category: string }) {
         const fetchCaseStudies = async () => {
             try {
                 const url = category
-                    ? `https://adalyzeai.xyz/App/tapi.php?gofor=casestudylist&category=${encodeURIComponent(category)}`
-                    : `https://adalyzeai.xyz/App/tapi.php?gofor=casestudylist`;
+                    ? `https://adalyzeai.xyz/App/api.php?gofor=casestudylist&category=${encodeURIComponent(category)}`
+                    : `https://adalyzeai.xyz/App/api.php?gofor=casestudylist`;
                 const response = await fetch(url)
                 if (!response.ok) {
                     throw new Error('Failed to fetch case studies')

@@ -209,36 +209,39 @@ export default function MyAdsPage() {
         fetchBrands()
     }, [userId, userDetails?.type])
 
-    // Helper function to build API URL with filters
+    // Helper function to build API params with filters
     // Only sends filter parameters to API when a specific filter is selected (not "all" or empty)
-    const buildAdsListUrl = (offset: number, limit: number) => {
-        if (!userId) return ''
+    const buildAdsListParams = (offset: number, limit: number): Record<string, string | number> | null => {
+        if (!userId) return null
 
-        const baseUrl = `https://adalyzeai.xyz/App/tapi.php?gofor=adslist&user_id=${userId}&offset=${offset}&limit=${limit}`
-        const params: string[] = []
+        const params: Record<string, string | number> = {
+            gofor: 'adslist',
+            user_id: userId,
+            offset: offset,
+            limit: limit
+        }
 
         // Only add brand_id parameter if a specific brand is selected (not empty and not "All Brands")
         if (selectedBrandId && selectedBrandId.trim() !== "" && selectedBrandId !== "All Brands") {
-            params.push(`brand_id=${encodeURIComponent(selectedBrandId)}`)
+            params.brand_id = selectedBrandId
         }
 
         // Only add platform parameter if a specific platform is selected (not "all")
         if (selectedPlatform && selectedPlatform.trim() !== "" && selectedPlatform !== "all") {
-            params.push(`platform=${encodeURIComponent(selectedPlatform)}`)
+            params.platform = selectedPlatform
         }
 
         // Only add score parameter if a specific score range is selected (not "all")
         if (scoreFilter && scoreFilter.trim() !== "" && scoreFilter !== "all") {
-            params.push(`score=${encodeURIComponent(scoreFilter)}`)
+            params.score = scoreFilter
         }
 
         // Only add ad_type parameter if a specific ad type is selected (not "all")
         if (adTypeFilter && adTypeFilter.trim() !== "" && adTypeFilter !== "all") {
-            params.push(`ad_type=${encodeURIComponent(adTypeFilter)}`)
+            params.ad_type = adTypeFilter
         }
 
-        // Only append filter parameters if any filters are selected
-        return params.length > 0 ? `${baseUrl}&${params.join('&')}` : baseUrl
+        return params
     }
 
     // Fetch all ads for filtering (no pagination)
@@ -247,10 +250,10 @@ export default function MyAdsPage() {
             if (!userId) return
 
             // Fetch all user's ads with a high limit (replace 1000 with larger value if needed)
-            const url = buildAdsListUrl(0, 1000)
-            if (!url) return
+            const params = buildAdsListParams(0, 1000)
+            if (!params) return
 
-            const response = await fetch(url)
+            const response = await apiCall(params)
 
             if (!response.ok) {
                 throw new Error('Failed to fetch all ads')
@@ -276,13 +279,13 @@ export default function MyAdsPage() {
             }
 
             const offset = (currentPage - 1) * itemsPerPage
-            const url = buildAdsListUrl(offset, itemsPerPage)
-            if (!url) {
+            const params = buildAdsListParams(offset, itemsPerPage)
+            if (!params) {
                 setLoading(false)
                 return
             }
 
-            const response = await fetch(url)
+            const response = await apiCall(params)
 
             if (!response.ok) {
                 throw new Error('Failed to fetch ads')

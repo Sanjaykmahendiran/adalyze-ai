@@ -34,7 +34,7 @@ export default function PrivacyPolicy() {
     useEffect(() => {
         const fetchPrivacyPolicy = async () => {
             try {
-                const response = await fetch("https://adalyzeai.xyz/App/tapi.php?gofor=privacypolicy");
+                const response = await fetch("https://adalyzeai.xyz/App/api.php?gofor=privacypolicy");
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

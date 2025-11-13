@@ -28,7 +28,7 @@ export default function termsandconditions() {
   useEffect(() => {
     const fetchTerms = async () => {
       try {
-        const response = await fetch("https://adalyzeai.xyz/App/tapi.php?gofor=termsandconditions");
+        const response = await fetch("https://adalyzeai.xyz/App/api.php?gofor=termsandconditions");
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

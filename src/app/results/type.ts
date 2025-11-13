@@ -5,6 +5,7 @@ export interface AdCopy {
 }
 
 export interface ApiResponse {
+  response: string;
   targeting_compare_json: any;
   suggested_interests: any;
   target_match_score: any;

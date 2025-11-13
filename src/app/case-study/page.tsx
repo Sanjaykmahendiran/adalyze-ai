@@ -32,7 +32,7 @@ export default function CaseStudiesPage() {
 
   useEffect(() => {
     const fetchCaseStudies = () => {
-      fetch('https://adalyzeai.xyz/App/tapi.php?gofor=casestudylist')
+      fetch('https://adalyzeai.xyz/App/api.php?gofor=casestudylist')
         .then(response => {
           if (!response.ok) {
             throw new Error('Failed to fetch case studies')

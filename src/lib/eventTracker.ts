@@ -20,7 +20,7 @@ interface EventPayload {
     };
 }
 
-const EVENT_API_URL = "https://adalyzeai.xyz/App/tapi.php";
+const EVENT_API_URL = "https://adalyzeai.xyz/App/api.php";
 const EVENT_QUEUE_KEY = "adalyze_event_queue_v1"; // versionable
 
 // == Utility function to extract metadata from URL ==

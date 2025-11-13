@@ -1,6 +1,5 @@
 import { getSessionId } from "@/lib/sessionManager";
 import Cookies from "js-cookie";
-import { apiCall, apiPost } from "@/lib/apiClient";
 
 export interface CookieConsentData {
   necessary: number;
@@ -97,10 +96,13 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
 
     console.log("Sending cookie consent:", payload);
 
-    const response = await apiPost(
-      { gofor: "addconsent" },
-      payload
-    );
+    const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ gofor: "addconsent", ...payload }),
+    });
 
     const result: AddConsentResponse = await response.json();
     
@@ -125,9 +127,12 @@ export async function getCookieConsent(cookieId?: string): Promise<GetConsentRes
     // Use provided cookieId, or get from cookies, or generate new one
     const id = cookieId || getCookieId();
     
-    const response = await apiCall({
-      gofor: "getconsent",
-      cookie_id: id,
+    const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ gofor: "getconsent", cookie_id: id }),
     });
 
     return await response.json();

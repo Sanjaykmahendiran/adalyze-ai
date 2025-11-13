@@ -55,8 +55,8 @@ export default function ClientSection({ category, counter, CounterText }: { cate
     const fetchClients = async () => {
       try {
         const url = category
-          ? `https://adalyzeai.xyz/App/tapi.php?gofor=clientslist&category=${encodeURIComponent(category)}`
-          : `https://adalyzeai.xyz/App/tapi.php?gofor=clientslist`;
+          ? `https://adalyzeai.xyz/App/api.php?gofor=clientslist&category=${encodeURIComponent(category)}`
+          : `https://adalyzeai.xyz/App/api.php?gofor=clientslist`;
         const response = await fetch(url)
         const data = await response.json()
         // Validate and filter clients with valid logo URLs (handles URLs of any length/format)

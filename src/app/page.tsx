@@ -271,7 +271,7 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen lg:overflow-x-visible pb-20 md:pb-0">
+    <div className="relative bg-background min-h-screen lg:overflow-x-visible pb-20 md:pb-0">
       {variant === "Ecomm" ? (
         <EcommBanner />
       ) : (
@@ -319,7 +319,7 @@ const LandingPage = () => {
                 exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 8 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 onClick={toggleChat}
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg hover:shadow-xl transition-all bg-white touch-manipulation cursor-pointer"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg hover:shadow-xl transition-all bg-card touch-manipulation cursor-pointer"
                 aria-label="Open Info Assistant chat"
               >
                 <Image src={ChatIcon} alt="Chat" width={56} height={56} className="w-full h-full" priority />
@@ -356,7 +356,7 @@ const LandingPage = () => {
               animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.8 }}
               onClick={scrollToTop}
-              className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 flex items-center justify-center bg-[#1f1f21] hover:bg-[#1f1f21]/80 text-white p-2 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#db4900] focus:ring-opacity-50 active:scale-95 transform min-w-[44px] min-h-[44px] sm:min-w-[52px] sm:min-h-[52px]"
+              className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 flex items-center justify-center bg-secondary hover:bg-secondary/80 text-foreground p-2 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 active:scale-95 transform min-w-[44px] min-h-[44px] sm:min-w-[52px] sm:min-h-[52px]"
               aria-label="Scroll to top"
             >
               <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -371,7 +371,7 @@ const LandingPage = () => {
       {/* Fixed Mobile CTA Button */}
       {buttonText && isPartnerLogosVisible && (
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-          <div className="bg-black backdrop-blur-sm border-t border-[#171717] shadow-lg px-4 py-3 flex flex-col items-center">
+          <div className="bg-card backdrop-blur-sm border-t border-border shadow-lg px-4 py-3 flex flex-col items-center">
             <Button
               onClick={() => {
                 window.open("/register", "_blank", "noopener,noreferrer");
@@ -383,7 +383,7 @@ const LandingPage = () => {
             </Button>
 
             {/* 👇 Added text below button */}
-            <p className="text-white/60 text-xs mt-2 text-center leading-snug">
+            <p className="text-foreground/60 text-xs mt-2 text-center leading-snug">
               No credit card required!
             </p>
           </div>

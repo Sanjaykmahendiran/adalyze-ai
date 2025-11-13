@@ -341,7 +341,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="text-[44px] font-bold tracking-tight text-white text-center leading-snug max-w-full mt-4"
               >
-                <div className="leading-snug">
+                <div className="leading-[1.1]">
                   {bannerData.heading}{" "}
                   <span className="text-primary font-semibold block sm:inline mt- sm:mt-0">
                     {bannerData.subheading}

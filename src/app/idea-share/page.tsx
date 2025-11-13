@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { JSX, useMemo, useState } from 'react';
 import { ArrowRightIcon, PlusIcon, TrashIcon, UploadIcon } from 'lucide-react';
+import Image from 'next/image';
+import logo from "@/assets/ad-logo.webp"
 
 type Direction = {
     title: string;
@@ -140,35 +142,36 @@ function EditableList({
                         key={idx}
                         className={classNames(
                             pill
-                                ? 'rounded-xl bg-night border border-slateX-800 px-3 py-2 flex items-center gap-2'
-                                : 'rounded-xl bg-night border border-slateX-800 p-2',
+                                ? 'rounded-xl bg-black border border-white/20 px-3 py-2 flex items-center gap-2'
+                                : 'rounded-xl bg-black border border-white/20 p-2',
                         )}
                     >
                         <InlineEditable
                             value={it}
                             onChange={(v) => updateItem(idx, v)}
                             className={classNames(
-                                'text-slateX-200 text-sm flex-1',
+                                'text-white text-sm flex-1',
                                 itemClassName,
                             )}
                         />
-                        <button
-                            className="text-xs text-slateX-400 hover:text-white"
+                        <Button
+                            variant="outline"
+                            className="text-xs"
                             onClick={() => removeItem(idx)}
                             aria-label="Remove"
                             title="Remove"
                         >
-                            Remove
-                        </button>
+                            <TrashIcon className="w-3 h-3" />
+                        </Button>
                     </div>
                 ))}
             </div>
-            <button
-                className="text-xs rounded-lg bg-slateX-800 text-slateX-200 px-2 py-1 hover:bg-slateX-700"
+            <Button
+                className="text-xs rounded-lg bg-black text-white px-2 py-1 hover:bg-black/80"
                 onClick={addItem}
             >
                 + Add
-            </button>
+            </Button>
         </div>
     );
 }
@@ -226,11 +229,11 @@ function MoodboardEditor({
     };
 
     return (
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 p-3 bg-night/40">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 p-3">
             {tiles.map((url, idx) => (
                 <div
                     key={idx}
-                    className="aspect-[4/5] rounded-xl bg-slateX-800 relative overflow-hidden border border-slateX-800"
+                    className="aspect-[4/5] rounded-xl bg-black relative overflow-hidden "
                 >
                     {url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -240,7 +243,7 @@ function MoodboardEditor({
                             className="absolute inset-0 h-full w-full object-cover"
                         />
                     ) : (
-                        <div className="absolute inset-0 grid place-items-center text-slateX-400 text-xs">
+                        <div className="absolute inset-0 grid place-items-center text-white/50 text-xs">
                             mood_{String(idx + 1).padStart(2, '0')}.jpg
                         </div>
                     )}
@@ -250,15 +253,15 @@ function MoodboardEditor({
                             placeholder="Image URL"
                             value={url}
                             onChange={(e) => update(idx, e.target.value)}
-                            className="flex-1 rounded-lg bg-night/80 border border-slateX-700 px-2 py-1 text-xs text-slateX-100 placeholder-slateX-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                            className="flex-1 rounded-lg bg-[#171717] border border-white/20 px-2 py-1 text-xs text-white placeholder-white/50 focus:outline-none focus:ring-1 focus:ring-primary"
                         />
-                        <button
-                            className="rounded-lg bg-night/80 text-slateX-200 text-xs px-2 border border-slateX-700 hover:bg-night"
+                        <Button
+                            className="rounded-lg bg-[#171717] text-white text-xs px-2 border border-white/20 hover:bg-[#171717]/80"
                             onClick={() => update(idx, '')}
                             title="Clear"
                         >
                             Clear
-                        </button>
+                        </Button>
                     </div>
                 </div>
             ))}
@@ -266,7 +269,7 @@ function MoodboardEditor({
     );
 }
 
-export default function Page() {
+export default function MoodboardEditorPage() {
     // Basics (left panel)
     const [client, setClient] = useState('Acme Nutrition');
     const [campaign, setCampaign] = useState('Winter Launch 2025');
@@ -348,21 +351,10 @@ export default function Page() {
             <header className="sticky top-0 z-30 border-b border-slateX-800 bg-night/80 backdrop-blur">
                 <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-teal-500 grid place-items-center shadow-soft">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-night" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M4 12c0-4.418 3.582-8 8-8a8 8 0 0 1 7.07 11.313l1.744 1.744-1.414 1.414-1.48-1.48A8 8 0 1 1 4 12zm8-6a6 6 0 1 0 4.243 10.243A6 6 0 0 0 12 6z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <div className="text-white font-semibold tracking-wide">Adalyze AI</div>
-                            <div className="text-slateX-400 text-xs -mt-0.5">Campaign Concept Board Generator</div>
-                        </div>
+                        <Image src={logo} alt="Adalyze AI" width={150} height={100} />
                     </div>
                     <nav className="flex items-center gap-2">
-                        <button className="px-3 py-1.5 rounded-lg text-sm bg-cloud text-slateX-200 hover:bg-slateX-800">Dashboard</button>
-                        <button className="px-3 py-1.5 rounded-lg text-sm bg-teal-500 text-night font-medium hover:bg-teal-400 shadow-soft">
-                            New Concept Board
-                        </button>
+                        <Button className="px-3 py-1.5 rounded-lg text-sm text-white">Dashboard</Button>
                     </nav>
                 </div>
             </header>
@@ -409,7 +401,7 @@ export default function Page() {
                                             className="rounded-xl text-sm text-white px-3 hover:bg-slateX-700"
                                         >
                                             <PlusIcon className="w-4 h-4" /> New
-                                        </Button> 
+                                        </Button>
                                     </div>
                                 </div>
                                 <div>
@@ -449,7 +441,7 @@ export default function Page() {
                                     </div>
                                     <p className="text-white/80">
                                         Drag & drop files here <span className="text-white/50">or</span>{' '}
-                                        <button className="underline underline-offset-4 decoration-primary hover:text-white">browse</button>
+                                        <Button className="underline underline-offset-4 decoration-primary hover:text-white">browse</Button>
                                     </p>
                                     <p className="text-xs text-white/50 mt-1">PNG, JPG up to 10MB each</p>
                                 </div>
@@ -499,11 +491,11 @@ export default function Page() {
                                             <SelectValue placeholder="Select primary goal" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#171717] text-white">
-                                        <SelectItem value="Leads">Leads</SelectItem>
-                                        <SelectItem value="Sales">Sales</SelectItem>
-                                        <SelectItem value="Awareness">Awareness</SelectItem>
-                                        <SelectItem value="Retention">Retention</SelectItem>
-                                    </SelectContent>
+                                            <SelectItem value="Leads">Leads</SelectItem>
+                                            <SelectItem value="Sales">Sales</SelectItem>
+                                            <SelectItem value="Awareness">Awareness</SelectItem>
+                                            <SelectItem value="Retention">Retention</SelectItem>
+                                        </SelectContent>
                                     </Select>
                                 </div>
                                 <div>
@@ -514,10 +506,10 @@ export default function Page() {
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#171717] text-white">
                                             <SelectItem value="Friendly">Friendly</SelectItem>
-                                        <SelectItem value="Professional">Professional</SelectItem>
-                                        <SelectItem value="Aggressive">Aggressive</SelectItem>
-                                        <SelectItem value="Luxury Minimal">Luxury Minimal</SelectItem>
-                                    </SelectContent>
+                                            <SelectItem value="Professional">Professional</SelectItem>
+                                            <SelectItem value="Aggressive">Aggressive</SelectItem>
+                                            <SelectItem value="Luxury Minimal">Luxury Minimal</SelectItem>
+                                        </SelectContent>
                                     </Select>
                                 </div>
                                 <div>
@@ -529,8 +521,8 @@ export default function Page() {
                                         <SelectContent className="bg-[#171717] text-white">
                                             <SelectItem value="3 variations">3 variations</SelectItem>
                                             <SelectItem value="5 variations">5 variations</SelectItem>
-                                        <SelectItem value="10 variations">10 variations</SelectItem>
-                                    </SelectContent>
+                                            <SelectItem value="10 variations">10 variations</SelectItem>
+                                        </SelectContent>
                                     </Select>
                                 </div>
                             </div>
@@ -557,21 +549,22 @@ export default function Page() {
                                             onChange={setPreviewTitle}
                                             className="inline"
                                         />{' '}
-                                        — <span className="text-teal-400">{client} · {campaign}</span>
+                                        — <span className="text-primary">{client} · {campaign}</span>
                                     </h3>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button className="px-3 py-2 rounded-lg bg-slateX-800 text-slateX-200 text-sm">Copy Client Link</button>
-                                    <button className="px-3 py-2 rounded-lg bg-slateX-800 text-slateX-200 text-sm">Download PDF</button>
-                                    <button className="px-3 py-2 rounded-lg bg-teal-500 text-night font-medium shadow-soft text-sm">Save Board</button>
-                                </div>
+
+                            </div>
+                            <div className="flex items-center justify-end gap-2 px-5">
+                                <Button variant="outline" className="px-3 py-2 rounded-lg text-white text-sm">Copy Client Link</Button>
+                                <Button variant="outline" className="px-3 py-2 rounded-lg text-white text-sm">Download PDF</Button>
+                                <Button className="px-3 py-2 rounded-lg bg-primary text-white font-medium shadow-soft text-sm">Save Board</Button>
                             </div>
 
                             {/* Preview Body */}
                             <div className="p-5 grid gap-6">
                                 {/* Moodboard */}
-                                <div className="rounded-2xl border border-slateX-800 overflow-hidden">
-                                    <div className="px-5 py-3 border-b border-slateX-800 flex items-center justify-between">
+                                <div className="rounded-2xl bg-[#171717] overflow-hidden">
+                                    <div className="px-5 py-3 border-b border-white/20 flex items-center justify-between">
                                         <h4 className="font-semibold text-white">Visual Moodboard</h4>
                                         <span className="text-xs text-slateX-400">Derived from {derivedRefCount} references</span>
                                     </div>
@@ -579,27 +572,27 @@ export default function Page() {
                                 </div>
 
                                 {/* Colors & Typography */}
-                                <div className="grid md:grid-cols-3 gap-6">
-                                    <div className="rounded-2xl border border-slateX-800 overflow-hidden">
-                                        <div className="px-5 py-3 border-b border-slateX-800">
+                                <div className="flex flex-col gap-4">
+                                    <div className="rounded-2xl bg-[#171717] overflow-hidden">
+                                        <div className="px-5 py-3 border-b border-white/20">
                                             <h4 className="font-semibold text-white">Color Palette</h4>
                                         </div>
                                         <ColorPaletteEditor colors={colors} onChange={setColors} />
                                     </div>
 
-                                    <div className="rounded-2xl border border-slateX-800 overflow-hidden md:col-span-2">
-                                        <div className="px-5 py-3 border-b border-slateX-800">
+                                    <div className="rounded-2xl bg-[#171717] overflow-hidden md:col-span-2">
+                                        <div className="px-5 py-3 border-b border-white/20">
                                             <h4 className="font-semibold text-white">Message Angle & Emotional Hooks</h4>
                                         </div>
                                         <div className="p-5 grid md:grid-cols-2 gap-4">
                                             <div>
                                                 <div className="text-xs uppercase tracking-wider text-slateX-400 mb-2">Core Angle</div>
-                                                <div className="rounded-xl bg-night border border-slateX-800 p-4">
+                                                <div className="rounded-xl bg-black p-4">
                                                     <InlineEditable
                                                         value={coreAngle}
                                                         onChange={setCoreAngle}
                                                         multiline
-                                                        className="text-slateX-200"
+                                                        className="text-white"
                                                     />
                                                 </div>
                                             </div>
@@ -612,17 +605,17 @@ export default function Page() {
                                 </div>
 
                                 {/* Copy Directions */}
-                                <div className="rounded-2xl border border-slateX-800 overflow-hidden">
-                                    <div className="px-5 py-3 border-b border-slateX-800 flex items-center justify-between">
+                                <div className="rounded-2xl bg-[#171717] overflow-hidden">
+                                    <div className="px-5 py-3 border-b border-white/20 flex items-center justify-between">
                                         <h4 className="font-semibold text-white">Ad Copy Direction</h4>
-                                        <span className="text-xs text-slateX-400">
+                                        <span className="text-xs text-white/70">
                                             {copyCards.length} suggested pattern{copyCards.length === 1 ? '' : 's'}
                                         </span>
                                     </div>
                                     <div className="grid md:grid-cols-3 gap-4 p-5">
                                         {copyCards.map((card, idx) => (
-                                            <div key={idx} className="rounded-xl bg-night border border-slateX-800 p-4">
-                                                <div className="text-slateX-300 text-xs mb-1">
+                                            <div key={idx} className="rounded-xl bg-black border border-white/20 p-4">
+                                                <div className="text-white/70 text-xs mb-1">
                                                     <InlineEditable value={card.label} onChange={(v) => {
                                                         const next = [...copyCards];
                                                         next[idx] = { ...next[idx], label: v };
@@ -647,19 +640,21 @@ export default function Page() {
                                                     className="text-slateX-300 text-sm"
                                                 />
                                                 <div className="mt-2 flex justify-between">
-                                                    <button
-                                                        className="text-xs rounded-lg bg-slateX-800 text-slateX-200 px-2 py-1 hover:bg-slateX-700"
+                                                    <Button
+                                                        variant="outline"
+                                                        className="text-xs rounded-lg text-white px-2 py-1"
                                                         onClick={() => {
                                                             const next = [...copyCards];
                                                             next.splice(idx, 1);
                                                             setCopyCards(next);
                                                         }}
                                                     >
-                                                        Remove
-                                                    </button>
+                                                        <TrashIcon className="w-3 h-3" />
+                                                    </Button>
                                                     {idx === copyCards.length - 1 && (
-                                                        <button
-                                                            className="text-xs rounded-lg bg-slateX-800 text-slateX-200 px-2 py-1 hover:bg-slateX-700"
+                                                        <Button
+                                                            variant="outline"
+                                                            className="text-xs rounded-lg text-white px-2 py-1"
                                                             onClick={() =>
                                                                 setCopyCards([
                                                                     ...copyCards,
@@ -667,8 +662,8 @@ export default function Page() {
                                                                 ])
                                                             }
                                                         >
-                                                            + Add
-                                                        </button>
+                                                            <PlusIcon className="w-3 h-3" /> Add
+                                                        </Button>
                                                     )}
                                                 </div>
                                             </div>
@@ -677,14 +672,14 @@ export default function Page() {
                                 </div>
 
                                 {/* Caption Suggestions */}
-                                <div className="rounded-2xl border border-slateX-800 overflow-hidden">
-                                    <div className="px-5 py-3 border-b border-slateX-800 flex items-center justify-between">
+                                <div className="rounded-2xl bg-[#171717] overflow-hidden">
+                                    <div className="px-5 py-3 border-b border-white/20 flex items-center justify-between">
                                         <h4 className="font-semibold text-white">Caption Suggestions</h4>
-                                        <span className="text-xs text-slateX-400">Ready to copy</span>
+                                        <span className="text-xs text-white/70">Ready to copy</span>
                                     </div>
                                     <div className="p-5 grid md:grid-cols-2 gap-4">
                                         {captions.map((c, idx) => (
-                                            <div key={idx} className="rounded-xl bg-night border border-slateX-800 p-4 text-sm text-slateX-200">
+                                            <div key={idx} className="rounded-xl bg-black  p-4 text-sm text-white">
                                                 <InlineEditable
                                                     value={c}
                                                     onChange={(v) => {
@@ -695,23 +690,25 @@ export default function Page() {
                                                     multiline
                                                 />
                                                 <div className="mt-2 flex justify-between">
-                                                    <button
-                                                        className="text-xs rounded-lg bg-slateX-800 text-slateX-200 px-2 py-1 hover:bg-slateX-700"
+                                                    <Button
+                                                        variant="outline"
+                                                        className="text-xs rounded-lg text-white px-2 py-1"
                                                         onClick={() => {
                                                             const next = [...captions];
                                                             next.splice(idx, 1);
                                                             setCaptions(next);
                                                         }}
                                                     >
-                                                        Remove
-                                                    </button>
+                                                        <TrashIcon className="w-3 h-3" />
+                                                    </Button>
                                                     {idx === captions.length - 1 && (
-                                                        <button
-                                                            className="text-xs rounded-lg bg-slateX-800 text-slateX-200 px-2 py-1 hover:bg-slateX-700"
+                                                        <Button
+                                                            variant="outline"
+                                                            className="text-xs rounded-lg text-white px-2 py-1"
                                                             onClick={() => setCaptions([...captions, 'New caption'])}
                                                         >
-                                                            + Add
-                                                        </button>
+                                                            <PlusIcon className="w-3 h-3" /> Add
+                                                        </Button>
                                                     )}
                                                 </div>
                                             </div>
@@ -720,14 +717,14 @@ export default function Page() {
                                 </div>
 
                                 {/* Creative Directions */}
-                                <div className="rounded-2xl border border-slateX-800 overflow-hidden">
-                                    <div className="px-5 py-3 border-b border-slateX-800">
+                                <div className="rounded-2xl bg-[#171717] overflow-hidden">
+                                    <div className="px-5 py-3 border-b border-white/20">
                                         <h4 className="font-semibold text-white">Creative Direction (Try these 3)</h4>
                                     </div>
                                     <div className="p-5 grid md:grid-cols-3 gap-4">
                                         {directions.map((d, idx) => (
-                                            <div key={idx} className="rounded-xl bg-night border border-slateX-800 p-4">
-                                                <div className="text-slateX-300 text-xs mb-1">Direction {idx + 1}</div>
+                                            <div key={idx} className="rounded-xl bg-black border border-white/20 p-4">
+                                                <div className="text-white/70 text-xs mb-1">Direction {idx + 1}</div>
                                                 <h5 className="font-medium text-white mb-2">
                                                     <InlineEditable value={d.title} onChange={(v) => {
                                                         const next = [...directions];
@@ -745,25 +742,27 @@ export default function Page() {
                                                     itemClassName="text-sm"
                                                 />
                                                 <div className="mt-2 flex justify-between">
-                                                    <button
-                                                        className="text-xs rounded-lg bg-slateX-800 text-slateX-200 px-2 py-1 hover:bg-slateX-700"
+                                                    <Button
+                                                        variant="outline"
+                                                        className="text-xs rounded-lg text-white px-2 py-1"
                                                         onClick={() => {
                                                             const next = [...directions];
                                                             next.splice(idx, 1);
                                                             setDirections(next);
                                                         }}
                                                     >
-                                                        Remove
-                                                    </button>
+                                                        <TrashIcon className="w-3 h-3" />
+                                                    </Button>
                                                     {idx === directions.length - 1 && (
-                                                        <button
-                                                            className="text-xs rounded-lg bg-slateX-800 text-slateX-200 px-2 py-1 hover:bg-slateX-700"
+                                                        <Button
+                                                            variant="outline"
+                                                            className="text-xs rounded-lg text-white px-2 py-1"
                                                             onClick={() =>
                                                                 setDirections([...directions, { title: 'New Direction', bullets: ['Point 1'] }])
                                                             }
                                                         >
-                                                            + Add
-                                                        </button>
+                                                            <PlusIcon className="w-3 h-3" /> Add
+                                                        </Button>
                                                     )}
                                                 </div>
                                             </div>
@@ -773,25 +772,16 @@ export default function Page() {
 
                                 {/* Footer Actions */}
                                 <div className="flex items-center justify-end gap-2 pb-4">
-                                    <button className="px-3 py-2 rounded-lg bg-slateX-800 text-slateX-200 text-sm">Back</button>
-                                    <button className="px-3 py-2 rounded-lg bg-teal-500 text-night font-medium shadow-soft text-sm">
+                                    <Button variant="outline" className="px-3 py-2 rounded-lg text-white text-sm">Back</Button>
+                                    <Button className="px-3 py-2 rounded-lg bg-primary text-white font-medium text-sm">
                                         Approve & Publish
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
                     </section>
                 </div>
-
-                {/* Tiny helper note */}
-                <p className="mt-6 text-xs text-slateX-500">
-                    UI mock: non-functional controls for reference. Hook your upload, link-parse, and generation flows to these elements.
-                </p>
             </main>
-
-            <footer className="mx-auto max-w-7xl px-4 pb-10 pt-6 text-slateX-500 text-xs">
-                © 2025 Adalyze AI — Concept Board Generator UI mock
-            </footer>
         </>
     );
 }

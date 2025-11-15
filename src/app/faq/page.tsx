@@ -6,7 +6,7 @@ import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { trackEvent } from "@/lib/eventTracker"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 
 interface FAQItem {
@@ -31,7 +31,7 @@ export default function FAQSection() {
         const fetchFAQs = async () => {
             try {
                 setLoading(true);
-                const response = await axiosInstance1.get("?gofor=prefaqlist");
+                const response = await axiosInstance.get("?gofor=prefaqlist");
 
                 const data: FAQItem[] = response.data;
                 setFaqs(data);

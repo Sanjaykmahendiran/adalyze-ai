@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { trackEvent } from "@/lib/eventTracker";
 import { ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { axiosInstance1 } from "@/configs/axios";
+import { axiosInstance } from "@/configs/axios";
 
 interface Issue {
   issue_id: number;
@@ -61,7 +61,7 @@ export default function AiAdMistakes({ category }: { category: string }) {
     async function load() {
       try {
         setError(null);
-        const response = await axiosInstance1.get(category
+        const response = await axiosInstance.get(category
           ? `?gofor=issueslist&category=${encodeURIComponent(category)}`
           : `?gofor=issueslist`);
         const data = response.data as Issue[] | unknown;

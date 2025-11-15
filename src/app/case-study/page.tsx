@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import { useSearchParams, useRouter } from "next/navigation"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 interface CaseStudy {
   cs_id: string
@@ -33,7 +33,7 @@ export default function CaseStudiesPage() {
 
   useEffect(() => {
     const fetchCaseStudies = () => {
-      axiosInstance1.get("?gofor=casestudylist")
+      axiosInstance.get("?gofor=casestudylist")
         .then(response => response.data)
         .then(data => {
           setCaseStudies(data)

@@ -11,7 +11,7 @@ import Image from "next/image"
 import { Suspense, useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import Spinner from "@/components/overlay"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 // Type definitions
 interface CaseStudy {
@@ -89,7 +89,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
   // Client-side fetch functions
   const fetchAllCaseStudies = () => {
-    return axiosInstance1.get("?gofor=casestudylist")
+    return axiosInstance.get("?gofor=casestudylist")
       .then(response => response.data)
       .then(data => data as CaseStudy[])
       .catch(error => {
@@ -99,7 +99,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
   }
 
   const fetchCaseStudyById = (slug: string) => {
-    return axiosInstance1.get(`?gofor=getcasestudy&slug=${slug}`)
+    return axiosInstance.get(`?gofor=getcasestudy&slug=${slug}`)
       .then(response => response.data)
       .then(data => data as CaseStudy)
       .catch(error => {

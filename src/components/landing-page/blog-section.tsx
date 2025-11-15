@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { trackEvent } from "@/lib/eventTracker"
 import { useRouter } from "next/navigation";
-import { axiosInstance1 } from "@/configs/axios";
+import { axiosInstance } from "@/configs/axios";
 
 export default function BlogSection() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function BlogSection() {
     const fetchBlogPosts = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance1.get("?gofor=blogslist");
+        const response = await axiosInstance.get("?gofor=blogslist");
         const data = response.data;
         // Only take the first three posts
         setBlogPosts(data.slice(0, 3));

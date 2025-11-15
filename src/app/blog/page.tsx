@@ -9,7 +9,7 @@ import Spinner from "@/components/overlay"
 import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 interface BlogPost {
   blogs_id: number
@@ -37,7 +37,7 @@ export default function Blogs() {
     const fetchBlogPosts = async () => {
       try {
         setLoading(true)
-        const response = await axiosInstance1.get("?gofor=blogslist")
+        const response = await axiosInstance.get("?gofor=blogslist")
         const data = response.data
         setBlogPosts(data)
       } catch (err) {

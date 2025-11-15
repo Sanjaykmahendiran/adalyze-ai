@@ -4,7 +4,7 @@ import { AnimatedTestimonials } from "@/components/landing-page/animated-testimo
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 type TestimonialType = {
   quote: string
@@ -26,7 +26,7 @@ export default function Testimonials({ category }: { category: string }) {
         const url = category
           ? `?gofor=testilist&category=${encodeURIComponent(category)}`
           : `?gofor=testilist`;
-        const response = await axiosInstance1.get(url)
+        const response = await axiosInstance.get(url)
         const data = response.data
 
         const formatted: TestimonialType[] = data

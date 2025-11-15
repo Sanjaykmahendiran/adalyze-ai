@@ -1,5 +1,5 @@
 // lib/eventTracker.ts
-import { axiosInstance1 } from "@/configs/axios";
+import { axiosInstance } from "@/configs/axios";
 import { getSessionId } from "./sessionManager";
 import Cookies from "js-cookie";
 import debounce from "lodash.debounce";
@@ -63,7 +63,7 @@ function saveEventQueue(queue: EventPayload[]) {
 // == send single event (non-debounced underlying sender) ==
 async function sendEventNow(payload: EventPayload) {
     try {
-        await axiosInstance1.post("", payload);
+        await axiosInstance.post("", payload);
 
         // success → do nothing
     } catch (err) {
@@ -92,8 +92,8 @@ async function processQueuedEvents() {
 
     for (const ev of queue) {
         try {
-            // axiosInstance1.post() throws on error automatically
-            await axiosInstance1.post("", ev);
+            // axiosInstance.post() throws on error automatically
+            await axiosInstance.post("", ev);
 
         } catch (error) {
             // Any network or server error → keep event in queue

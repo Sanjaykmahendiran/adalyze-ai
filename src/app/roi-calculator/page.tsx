@@ -20,7 +20,7 @@ import { motion } from "framer-motion"
 import Image from "next/image"
 import { trackEvent } from "@/lib/eventTracker"
 import Spinner from "@/components/overlay"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 interface ROIData {
     Return_on_Investment?: string
@@ -76,7 +76,7 @@ function ContactFormModal({ onClose }: { onClose: () => void }) {
         try {
             setIsSubmitting(true)
 
-            const response = await axiosInstance1.post("", {
+            const response = await axiosInstance.post("", {
                 gofor: "sendquery",
                 email,
                 category: "roi-call",
@@ -192,7 +192,7 @@ function TestimonialSlider() {
     useEffect(() => {
         const fetchTestimonials = async () => {
             try {
-                const response = await axiosInstance1.get("?gofor=testilist")
+                const response = await axiosInstance.get("?gofor=testilist")
                 const data = response.data;
                 if (Array.isArray(data)) {
                     setTestimonials(data.filter(item => item.status === 1))
@@ -361,7 +361,7 @@ export default function ROICalculator() {
                     const users = getUserCount(teamMembers)
                     const weeklyRange = getWeeklyRangeMidpoint(creativesPerWeek)
 
-                    const response = await axiosInstance1.get(`?gofor=calculateROI&country=${country}&users=${users}&weekly_range=${weeklyRange}`)
+                    const response = await axiosInstance.get(`?gofor=calculateROI&country=${country}&users=${users}&weekly_range=${weeklyRange}`)
                     const data = response.data;
                     setRoiData(data)
                 } catch (error) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { trackEvent } from "@/lib/eventTracker"
-import { axiosInstance1 } from '@/configs/axios';
+import { axiosInstance } from '@/configs/axios';
 interface FAQItem {
   faq_id: number;
   question: string;
@@ -24,7 +24,7 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
     const fetchFAQs = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance1.get(`?gofor=prefaqlist&category=${encodeURIComponent(category)}`);
+        const response = await axiosInstance.get(`?gofor=prefaqlist&category=${encodeURIComponent(category)}`);
 
         const data: FAQItem[] = response.data;
         setFaqs(data);

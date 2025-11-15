@@ -11,7 +11,7 @@ import { Button } from "../ui/button"
 import { AnimatePresence, motion } from "framer-motion"
 import loginlogo from "@/assets/ad-logo.webp"
 import { trackEvent } from "@/lib/eventTracker"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 // API type definitions
 type ApiMenuItem = {
@@ -90,7 +90,7 @@ const fetchMenuData = async (): Promise<UIMenuItem[]> => {
   // Create new fetch promise
   menuFetchPromise = (async () => {
     try {
-      const response = await axiosInstance1.get("?gofor=menulist")
+      const response = await axiosInstance.get("?gofor=menulist")
       const data: unknown = response.data
       if (!Array.isArray(data)) return []
 

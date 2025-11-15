@@ -11,7 +11,7 @@ import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import Spinner from "@/components/overlay"
 import { Button } from "@/components/ui/button"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 interface BlogPost {
     blogs_id: number;
@@ -28,7 +28,7 @@ interface BlogPost {
 
 async function getBlogPostById(slug: string): Promise<BlogPost | null> {
     try {
-        const response = await axiosInstance1.get(`?gofor=getblog&slug=${slug}`)
+        const response = await axiosInstance.get(`?gofor=getblog&slug=${slug}`)
         return response.data as BlogPost
     } catch (error) {
         console.error("Error fetching blog post:", error)
@@ -38,7 +38,7 @@ async function getBlogPostById(slug: string): Promise<BlogPost | null> {
 
 async function getAllBlogPosts(): Promise<BlogPost[]> {
     try {
-        const response = await axiosInstance1.get("?gofor=blogslist")
+        const response = await axiosInstance.get("?gofor=blogslist")
         return response.data as BlogPost[]
     } catch (error) {
         console.error("Error fetching blog posts:", error)

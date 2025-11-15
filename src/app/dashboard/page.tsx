@@ -49,11 +49,24 @@ const platformIcons = {
 } as const;
 
 // Helper function to parse platforms
-const parsePlatforms = (platformsString: string): string[] => {
+const parsePlatforms = (platformsString: string | undefined): string[] => {
+  if (!platformsString) return []
+  
   try {
-    return JSON.parse(platformsString) || []
-  } catch {
+    // Try to parse as JSON first (for array format)
+    const parsed = JSON.parse(platformsString)
+    // If it's already an array, return it
+    if (Array.isArray(parsed)) {
+      return parsed
+    }
+    // If it's a string, return as single item array
+    if (typeof parsed === 'string') {
+      return [parsed]
+    }
     return []
+  } catch {
+    // If JSON.parse fails, treat it as a plain string
+    return [platformsString]
   }
 }
 

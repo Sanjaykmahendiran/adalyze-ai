@@ -13,7 +13,7 @@ import {
     CarouselItem,
     type CarouselApi,
 } from "@/components/ui/carousel"
-import { axiosInstance1 } from "@/configs/axios"
+import { axiosInstance } from "@/configs/axios"
 
 export default function CaseStudySection({ category }: { category: string }) {
     const router = useRouter()
@@ -30,7 +30,7 @@ export default function CaseStudySection({ category }: { category: string }) {
                 const url = category
                     ? `?gofor=casestudylist&category=${encodeURIComponent(category)}`
                     : `?gofor=casestudylist`;
-                const response = await axiosInstance1.get(url)
+                const response = await axiosInstance.get(url)
                 const data = response.data
                 setCaseStudies(data.slice(0, 3))
             } catch (err) {

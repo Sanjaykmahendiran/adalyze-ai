@@ -7,6 +7,6 @@ export function logoutService() {
   Cookies.remove("email");
 
   if (typeof window !== "undefined") {
-    window.location.href = "/login";
+    window.location.href = "/";
   }
 }

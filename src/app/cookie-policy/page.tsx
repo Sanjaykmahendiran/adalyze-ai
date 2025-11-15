@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import LandingPageFooter from "@/components/landing-page/landing-page-footer";
 import Header from "@/components/landing-page/header";
-import { axiosInstance1 } from "@/configs/axios";
+import { axiosInstance } from "@/configs/axios";
 
 
 // Simple HTML sanitizer function (you might want to use a library like DOMPurify)
@@ -29,7 +29,7 @@ export default function CookiePolicyPage() {
     useEffect(() => {
         const fetchPrivacyPolicy = async () => {
             try {
-                const response = await axiosInstance1.get("?gofor=cookiepolicy");
+                const response = await axiosInstance.get("?gofor=cookiepolicy");
 
                 // Since the API returns HTML directly, use text() instead of json()
                 const htmlContent = response.data;

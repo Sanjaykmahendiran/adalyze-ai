@@ -10,6 +10,7 @@ import ChatIcon from "@/assets/Chat-icon-suggesto.png";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/eventTracker";
+import { axiosInstance } from "@/configs/axios";
 
 
 // Shared type for banner data (same shape as before)
@@ -74,20 +75,30 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchBannerData = async () => {
       try {
-        const baseUrl = "https://adalyzeai.xyz/App/api.php?gofor=livebanner";
-        const url = variant && variant !== "default" ? `${baseUrl}&variant=${variant}` : baseUrl;
-        const response = await fetch(url);
-        const data = await response.json();
+        const baseUrl = "?gofor=livebanner";
+        const finalUrl =
+          variant && variant !== "default"
+            ? `${baseUrl}&variant=${variant}`
+            : baseUrl;
+
+        // axiosInstance auto-adds baseURL (tapi.php or api.php depending on your config)
+        const response = await axiosInstance.get(finalUrl);
+
+        const data = response.data;
+
         setBannerData(data);
-        setIsLoadingBanner(false);
         setButtonText(data.pcta);
+        setIsLoadingBanner(false);
+
       } catch (error) {
         console.error("Error fetching banner data:", error);
         setIsLoadingBanner(false);
       }
     };
+
     fetchBannerData();
   }, [variant]);
+
 
   // UI state
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -308,8 +319,8 @@ const LandingPage = () => {
             <motion.div
               key="chat-toggle-wrapper"
               className={`fixed transition-all duration-300 right-3 sm:right-4 z-50 ${buttonText && isPartnerLogosVisible
-                  ? "bottom-24 md:bottom-4"
-                  : "bottom-3 sm:bottom-4"
+                ? "bottom-24 md:bottom-4"
+                : "bottom-3 sm:bottom-4"
                 }`}
             >
               <motion.button
@@ -335,8 +346,8 @@ const LandingPage = () => {
               key="chat-panel"
               ref={chatRef}
               className={`fixed right-2 w-[92vw] sm:w-[360px] md:w-[400px] max-w-sm z-50 transition-all duration-300 ${buttonText && isPartnerLogosVisible
-                  ? "bottom-20 md:bottom-1"
-                  : "bottom-1"
+                ? "bottom-20 md:bottom-1"
+                : "bottom-1"
                 }`}
               initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
               animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}

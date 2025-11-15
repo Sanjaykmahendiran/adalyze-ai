@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
-import { useSearchParams } from "next/navigation"
 import { Check, CreditCard, Loader2, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -59,15 +58,6 @@ interface FAQ {
     created_date: string
 }
 
-interface Testimonial {
-    testi_id: number
-    content: string
-    name: string
-    role: string
-    status: number
-    created_date: string
-}
-
 interface Feature {
     text: string
     included: boolean
@@ -104,7 +94,6 @@ const ProPage: React.FC = () => {
 
     const [pricingData, setPricingData] = useState<PricingPlan[]>([])
     const [faqData, setFaqData] = useState<FAQ[]>([])
-    const [testimonialData, setTestimonialData] = useState<Testimonial[]>([])
     const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
     const [paymentLoading, setPaymentLoading] = useState<{ [key: number]: boolean }>({})
@@ -112,7 +101,7 @@ const ProPage: React.FC = () => {
     const [razorpayLoaded, setRazorpayLoaded] = useState<boolean>(false)
     const [userCurrency, setUserCurrency] = useState<Currency>("INR")
     const [currencyLoading, setCurrencyLoading] = useState<boolean>(true)
-    const [selectedPackageType, setSelectedPackageType] = useState<PackageType>(1)  // Default to Single (1)
+    const [selectedPackageType, setSelectedPackageType] = useState<PackageType>(1)
     const [billingPeriods, setBillingPeriods] = useState<{ [key: number]: BillingPeriod }>({})
     const userId = Cookies.get("userId");
 
@@ -183,23 +172,18 @@ const ProPage: React.FC = () => {
 
         const fetchData = async () => {
             try {
-                const [pricingRes, faqRes, testiRes] = await Promise.all([
+                const [pricingRes, faqRes] = await Promise.all([
                     axiosInstance.get("?gofor=packages"),
                     axiosInstance.get("?gofor=faqlist"),
-                    axiosInstance.get("?gofor=testimonialslist"),
                 ])
 
                 const pricing: PricingPlan[] = pricingRes.data
                 const faqs: FAQ[] = faqRes.data
-                const testimonials: Testimonial[] = testiRes.data
 
                 if (cancelled) return
 
                 setPricingData(pricing.filter((plan) => plan.status === 1))
                 setFaqData(faqs.filter((faq) => faq.status === 1))
-                setTestimonialData(
-                    testimonials.filter((testimonial) => testimonial.status === 1)
-                )
                 setError(null)
             } catch (err) {
                 console.error("Error fetching data:", err)
@@ -334,10 +318,7 @@ const ProPage: React.FC = () => {
     // Free trial activation function
     const activateFreeTrial = async () => {
         if (!userDetails?.user_id) {
-            toast.error("Register to activate free trial and try again.")
-            setTimeout(() => {
                 router.push("/register");
-            }, 2000);
             return
         }
 
@@ -412,10 +393,7 @@ const ProPage: React.FC = () => {
     // Initiate payment function
     const initiatePayment = async (currency: Currency, selectedPlan: PricingPlan) => {
         if (!userDetails?.user_id || !selectedPlan || !razorpayLoaded) {
-            toast.error("Register to initiate payment and try again.");
-            setTimeout(() => {
-                router.push("/register");
-            }, 2000);
+            router.push("/register");
             return;
         }
 
@@ -808,8 +786,8 @@ const ProPage: React.FC = () => {
                         <CompetitorTable basicPrice={getPriceDisplay(activePlans[0]).primary} />
                     )}
 
+                    {/* Version Card */}
                     <VersionCard />
-
 
                     {/* FAQs - Always render */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">

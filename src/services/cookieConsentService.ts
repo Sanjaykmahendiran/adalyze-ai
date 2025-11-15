@@ -1,6 +1,6 @@
 import { getSessionId } from "@/lib/sessionManager";
 import Cookies from "js-cookie";
-import { axiosInstance1 } from "@/configs/axios";
+import { axiosInstance } from "@/configs/axios";
 
 export interface CookieConsentData {
   necessary: number;
@@ -97,7 +97,7 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
 
     console.log("Sending cookie consent:", payload);
 
-    const response = await axiosInstance1.post("", {
+    const response = await axiosInstance.post("", {
       gofor: "addconsent",
       payload
     })
@@ -125,7 +125,7 @@ export async function getCookieConsent(cookieId?: string): Promise<GetConsentRes
     // Use provided cookieId, or get from cookies, or generate new one
     const id = cookieId || getCookieId();
 
-    const response = await axiosInstance1.get("?gofor=getconsent&cookie_id=" + id)
+    const response = await axiosInstance.get("?gofor=getconsent&cookie_id=" + id)
 
     return response.data;
   } catch (error) {

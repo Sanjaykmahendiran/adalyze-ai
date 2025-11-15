@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import Captcha, { CaptchaHandle } from "../Captcha";
-import { axiosInstance1 } from "@/configs/axios";
+import { axiosInstance } from "@/configs/axios";
 
 interface LoginChatCardProps {
   onClose: () => void;
@@ -63,7 +63,7 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
 
     try {
       setIsSubmitting(true);
-      const response = await axiosInstance1.post("", {
+      const response = await axiosInstance.post("", {
         gofor: "needhelp",
         email,
         category,

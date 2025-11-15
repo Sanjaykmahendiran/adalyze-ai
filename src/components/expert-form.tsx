@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MessageCircle, X } from "lucide-react";
 import { useState } from "react";
 
@@ -33,7 +32,7 @@ const ExpertConsultationPopup = ({ isOpen, onClose, onSubmit }: {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
       <style dangerouslySetInnerHTML={{
         __html: `
         input[type="date"]::-webkit-calendar-picker-indicator,

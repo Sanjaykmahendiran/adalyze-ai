@@ -46,7 +46,26 @@ return (
           {ad.ads_name ? (ad.ads_name.length > 15 ? ad.ads_name.slice(0, 15) + "..." : ad.ads_name) : "Untitled Ad"}
         </h3>
         <div className="flex gap-1 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
-          {(ad.platforms ? JSON.parse(ad.platforms) : []).map((platform: string, index: number) => (
+          {(() => {
+            if (!ad.platforms) return []
+            
+            try {
+              // Try to parse as JSON first (for array format)
+              const parsed = JSON.parse(ad.platforms)
+              // If it's already an array, return it
+              if (Array.isArray(parsed)) {
+                return parsed
+              }
+              // If it's a string, return as single item array
+              if (typeof parsed === 'string') {
+                return [parsed]
+              }
+              return []
+            } catch {
+              // If JSON.parse fails, treat it as a plain string
+              return [ad.platforms]
+            }
+          })().map((platform: string, index: number) => (
             <span
               key={index}
               className="bg-[#3d3d3d] text-gray-300 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full"

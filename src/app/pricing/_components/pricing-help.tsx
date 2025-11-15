@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import toast, { Toaster } from "react-hot-toast";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
-import ChatIcon from "@/assets/Chat-icon-suggesto.png";
+import ChatIcon from "@/assets/Chat-icon.png";
 import Cookies from "js-cookie";
 import {
     Select,

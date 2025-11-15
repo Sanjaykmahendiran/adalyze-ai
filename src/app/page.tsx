@@ -6,7 +6,7 @@ import Image from "next/image";
 import { ChevronUp } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import LoginChatCard from "@/components/landing-page/login-chat-card";
-import ChatIcon from "@/assets/Chat-icon-suggesto.png";
+import ChatIcon from "@/assets/Chat-icon.png";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/eventTracker";

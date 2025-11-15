@@ -5,34 +5,36 @@ import { motion } from "framer-motion";
 import After1 from "@/assets/Landing-page/before-after/after-1.jpg"
 import After2 from "@/assets/Landing-page/before-after/after-2.jpg"
 import After3 from "@/assets/Landing-page/before-after/after-3.jpg"
-import After4 from "@/assets/Landing-page/before-after/after-4.jpg"
-import After5 from "@/assets/Landing-page/before-after/after-5.jpg"
 import Before1 from "@/assets/Landing-page/before-after/before-1.jpg"
 import Before2 from "@/assets/Landing-page/before-after/before-2.jpg"
 import Before3 from "@/assets/Landing-page/before-after/before-3.jpg"
-import Before4 from "@/assets/Landing-page/before-after/before-4.jpg"
-import Before5 from "@/assets/Landing-page/before-after/before-5.jpg"
 
 export default function IssuesBeforeAfter() {
     const comparisons = [
         {
             title: "Ad Visual Optimization",
-            predicted_ctr_change: "10%",
-            overall_score: "90",
+            before_ctr: "3.2%",
+            before_score: "65",
+            after_ctr: "13.2%",
+            after_score: "90",
             before: Before1,
             after: After1,
         },
         {
             title: "Audience Targeting Precision",
-            predicted_ctr_change: "10%",
-            overall_score: "90",
+            before_ctr: "2.8%",
+            before_score: "58",
+            after_ctr: "12.8%",
+            after_score: "88",
             before: Before2,
             after: After2,
         },
         {
             title: "Creative Performance Insights",
-            predicted_ctr_change: "10%",
-            overall_score: "90",
+            before_ctr: "3.5%",
+            before_score: "62",
+            after_ctr: "13.5%",
+            after_score: "92",
             before: Before3,
             after: After3,
         },
@@ -67,21 +69,41 @@ export default function IssuesBeforeAfter() {
                                 afterImage={item.after.src}
                             />
                         </div>
-                        <div className="w-full  p-4">
-                            <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                            <div className="mt-3 bg-[#171717]/70 rounded-lg px-3 py-2 border border-white/10 text-sm text-white/90">
-
-                                <div className="flex justify-between">
-                                    <span>Estimated CTR</span>
-                                    <span className="font-bold text-primary">
-                                        {item.predicted_ctr_change}
-                                    </span>
+                        <div className="w-full p-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-2">Before</h3>
+                                    <div className=" bg-[#171717]/70 rounded-lg px-3 py-2 border border-white/10 text-sm text-white/90">
+                                        <div className="flex justify-between">
+                                            <span>Estimated CTR</span>
+                                            <span className="font-bold text-primary">
+                                                {item.before_ctr}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Score</span>
+                                            <span className="font-bold text-primary">
+                                                {item.before_score}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>Score</span>
-                                    <span className="font-bold text-primary">
-                                        {item.overall_score}
-                                    </span>
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-2">After</h3>
+                                    <div className="bg-[#171717]/70 rounded-lg px-3 py-2 border border-white/10 text-sm text-white/90">
+                                        <div className="flex justify-between">
+                                            <span>Estimated CTR</span>
+                                            <span className="font-bold text-primary">
+                                                {item.after_ctr}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Score</span>
+                                            <span className="font-bold text-primary">
+                                                {item.after_score}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

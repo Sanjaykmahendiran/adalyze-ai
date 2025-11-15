@@ -275,7 +275,7 @@ const ProPage: React.FC = () => {
                 const [pricingRes, faqRes, testiRes] = await Promise.all([
                     fetch("https://adalyzeai.xyz/App/api.php?gofor=packages"),
                     fetch("https://adalyzeai.xyz/App/api.php?gofor=faqlist"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=testimonialslist"),
+                    fetch("https://adalyzeai.xyz/App/api.php?gofor=testilist"),
                 ])
 
                 if (!pricingRes.ok || !faqRes.ok || !testiRes.ok) {

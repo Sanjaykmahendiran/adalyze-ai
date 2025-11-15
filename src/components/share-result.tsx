@@ -65,13 +65,10 @@ const ShareAdResult: React.FC<ShareAdResultProps> = ({
 
                 {/* Go / No Go Card - Top Left */}
                 <div
-                    className="absolute -left-24 top-12 bg-[#171717] border border-[#db4900] rounded-2xl p-5 w-[180px] h-[180px] flex flex-col items-center justify-center text-white">
-                    <p className="text-gray-400 text-xs mb-3 font-light">Go / No Go</p>
-                    <p className="text-gray-500 text-[10px] mb-2 leading-tight text-center px-2">
-                        Indicates if your ad is ready to run or needs improvement
-                    </p>
+                    className="absolute -left-24 top-20 bg-[#171717] border border-[#db4900] rounded-2xl p-5 w-[180px] h-[180px] flex flex-col items-center justify-center text-white">
+                    <p className="text-white font-semibold text-xs mb-3 font-light">Go / No Go</p>
                     <h3
-                        className="text-6xl font-extrabold mb-2"
+                        className={`${goStatus === "Go" ? "text-6xl" : "text-3xl"} font-extrabold mb-2`}
                         style={{ color: goColor }}
                     >
                         {goStatus === "Go" ? "GO" : "NO GO"}
@@ -101,17 +98,17 @@ const ShareAdResult: React.FC<ShareAdResultProps> = ({
                             height="24"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="#00ff66"
-                            strokeWidth="2"
+                            stroke={confidenceScore < 50 ? "#ff4444" : confidenceScore < 75 ? "#F99244" : "#22C55E"}
+                            strokeWidth="3"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                         >
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                         </svg>
                     </div>
-                    <p className="text-gray-300 text-xs mb-1">Confidence Score</p>
-                    <p className="text-[#00ff66] text-3xl font-bold">
-                        {confidenceScore}<span className="text-white">/100</span>
+                    <p className="text-white font-semibold text-xs mb-1">Confidence Score</p>
+                    <p className={`${confidenceScore < 50 ? "text-red-400" : confidenceScore < 75 ? "text-[#F99244]" : "text-[#22C55E]"} text-3xl font-bold`}>
+                        {confidenceScore}%
                     </p>
                 </div>
 
@@ -125,8 +122,8 @@ const ShareAdResult: React.FC<ShareAdResultProps> = ({
                             height="24"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="#00ff66"
-                            strokeWidth="2"
+                            stroke={performanceScore < 50 ? "#ff4444" : performanceScore < 75 ? "#F99244" : "#22C55E"}
+                            strokeWidth="3"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                         >
@@ -134,9 +131,9 @@ const ShareAdResult: React.FC<ShareAdResultProps> = ({
                             <path d="m19 9-5 5-4-4-3 3"></path>
                         </svg>
                     </div>
-                    <p className="text-gray-300 text-xs mb-1">Performance Score</p>
-                    <p className="text-[#00ff66] text-3xl font-bold">
-                        {performanceScore}<span className="text-white">/100</span>
+                    <p className="text-white font-semibold text-xs mb-1">Performance Score</p>
+                    <p className={`${performanceScore < 50 ? "text-red-400" : performanceScore < 75 ? "text-[#F99244]" : "text-[#22C55E]"} text-3xl font-bold`}>
+                        {performanceScore}%
                     </p>
                 </div>
             </div>

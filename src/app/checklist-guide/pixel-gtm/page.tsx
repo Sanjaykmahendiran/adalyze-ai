@@ -17,12 +17,14 @@ import {
 import Image from 'next/image';
 import IntroImage from "@/assets/checklist/lp-intro-section.webp"
 import Banner from "@/assets/checklist/lp-banner.webp"
+import ChecklistHeade from "../header/page";
 
 const PixelGtmPage: React.FC = () => {
   return (
     <main className="w-full bg-black antialiased">
+      
+      <ChecklistHeade />
       {/* Hero */}
-
       <section
         className="relative px-4 py-18 md:py-24  overflow-hidden"
       >

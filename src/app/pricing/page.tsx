@@ -180,27 +180,22 @@ const ProPage: React.FC = () => {
 
         const fetchData = async () => {
             try {
-                const [pricingRes, faqRes, testiRes] = await Promise.all([
+                const [pricingRes, faqRes] = await Promise.all([
                     fetch("https://adalyzeai.xyz/App/api.php?gofor=packages"),
                     fetch("https://adalyzeai.xyz/App/api.php?gofor=faqlist"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=testimonialslist"),
                 ])
 
-                if (!pricingRes.ok || !faqRes.ok || !testiRes.ok) {
+                if (!pricingRes.ok || !faqRes.ok ) {
                     throw new Error("One or more network responses were not ok")
                 }
 
                 const pricing: PricingPlan[] = await pricingRes.json()
                 const faqs: FAQ[] = await faqRes.json()
-                const testimonials: Testimonial[] = await testiRes.json()
 
                 if (cancelled) return
 
                 setPricingData(pricing.filter((plan) => plan.status === 1))
                 setFaqData(faqs.filter((faq) => faq.status === 1))
-                setTestimonialData(
-                    testimonials.filter((testimonial) => testimonial.status === 1)
-                )
                 setError(null)
             } catch (err) {
                 console.error("Error fetching data:", err)

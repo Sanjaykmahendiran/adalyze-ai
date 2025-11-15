@@ -33,6 +33,7 @@ import PreCampaignChecklist from "./_components/PreCampaignChecklist"
 import GoIcon from "@/assets/go-icon.png"
 import NoGoIcon from "@/assets/nogo-icon.png"
 import AdPerformancePost from "@/components/share-result"
+import ShareAdResultFeedback from "@/components/share-feedback"
 import AdalyzeChatBot from "./_components/AdalyzeChatBot"
 
 export default function ResultsPage() {
@@ -411,6 +412,121 @@ export default function ResultsPage() {
     }
   };
 
+  const handleShareFeedback = async (feedbackType: 'marketing' | 'designer' = 'marketing') => {
+    if (!apiData) return;
+
+    setIsShareImageGenerating(true);
+
+    try {
+      // Get ad_id from either URL param or token
+      const adId = getAdIdFromUrl();
+
+      // Get user_id from userDetails or from token if viewing shared link
+      const userId = userDetails?.user_id || null;
+
+      // Generate share URL and text using tokenUtils
+      const shareUrl = generateShareUrl(adId, userId || undefined);
+      const shareText = generateShareText(adId, userId || undefined);
+
+      // Generate image from share card - use different ID based on feedback type
+      const cardId = feedbackType === 'marketing' ? 'ad-feedback-card' : 'ad-feedback-card-designer';
+      const shareCard = document.getElementById(cardId);
+      if (!shareCard) {
+        throw new Error('Share card element not found');
+      }
+
+      // Convert to blob
+      const dataUrl = await htmlToImage.toPng(shareCard, {
+        quality: 1,
+        pixelRatio: 2,
+      });
+
+      // Convert data URL to blob
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], 'ad-feedback.png', { type: 'image/png' });
+
+      // Check if Web Share API is available (works on iOS, Android, and some desktop browsers)
+      if (navigator.share) {
+        try {
+          // Pre-copy text to clipboard as backup
+          // This helps when apps like WhatsApp/Instagram ignore the text parameter
+          try {
+            await navigator.clipboard.writeText(shareText);
+          } catch (clipboardError) {
+            console.log('Clipboard write failed (might need user permission):', clipboardError);
+          }
+
+          // Check if we can share files
+          const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+
+          if (canShareFiles) {
+            // Share with image file (works on iOS Safari, Android Chrome, etc.)
+            // This opens the native share sheet with all available apps:
+            // WhatsApp, Instagram, LinkedIn, Twitter/X, Facebook, etc.
+            await navigator.share({
+              title: 'Ad Feedback Results',
+              text: shareText,
+              files: [file],
+            });
+
+            toast.success('Shared successfully! Text was also copied to clipboard if needed.');
+          } else {
+            // Fallback: Share text/URL only (some browsers don't support file sharing)
+            await navigator.share({
+              title: 'Ad Feedback Results',
+              text: shareText,
+              url: shareUrl,
+            });
+
+            // Download the image for manual attachment
+            const link = document.createElement('a');
+            link.download = 'ad-feedback.png';
+            link.href = dataUrl;
+            link.click();
+
+            toast.success('Text shared and image downloaded! Attach the image manually.');
+          }
+        } catch (shareError: any) {
+          // User cancelled the share dialog
+          if (shareError.name === 'AbortError') {
+            toast('Share cancelled', { icon: 'ℹ️' });
+            return;
+          }
+          // Some other error occurred
+          throw shareError;
+        }
+      } else {
+        // Fallback for browsers without Web Share API (older desktop browsers)
+        // Download the image
+        const link = document.createElement('a');
+        link.download = 'ad-feedback.png';
+        link.href = dataUrl;
+        link.click();
+
+        // Copy text with URL to clipboard
+        await navigator.clipboard.writeText(shareText);
+
+        toast.success('Image downloaded and text copied! Open your social media app and paste the text, then attach the downloaded image.');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+
+      // Final fallback: Just copy text to clipboard
+      try {
+        const adId = getAdIdFromUrl();
+        const userId = userDetails?.user_id || null;
+        const shareText = generateShareText(adId, userId || undefined);
+
+        await navigator.clipboard.writeText(shareText);
+        toast.error('Sharing failed. Text copied to clipboard!');
+      } catch (clipboardError) {
+        toast.error('Sharing failed. Please try again.');
+      }
+    } finally {
+      setIsShareImageGenerating(false);
+    }
+  };
+
   // Delete ad function
   const handleDeleteAd = async () => {
     const adId = getAdIdFromUrl();
@@ -577,17 +693,22 @@ export default function ResultsPage() {
   const getPlatformSuitability = () => {
     if (!apiData) return [];
 
-    const suitablePlatforms = safeArray(apiData.platform_suits).map(p =>
-      typeof p === 'string' ? p.toLowerCase() : String(p).toLowerCase()
-    );
+    // Handle new structure with objects
+    const platformSuits = safeArray((apiData as any)?.platform_suits);
+    const platformNotSuits = safeArray((apiData as any)?.platform_notsuits);
 
-    const allPlatforms = ['Facebook', 'Instagram', 'LinkedIn', 'Twitter', 'Flyer'];
+    // Extract platforms from suitable platforms
+    const suitablePlatforms = platformSuits
+      .filter((item: any) => item && typeof item === 'object' && item.platform)
+      .map((item: any) => ({ platform: item.platform, suitable: true, score: item.suitable_score }));
 
-    const suitabilityList = allPlatforms
-      .filter(platform => suitablePlatforms.includes(platform.toLowerCase()))
-      .map(platform => ({ platform, suitable: true }));
+    // Extract platforms from not suitable platforms
+    const notSuitablePlatforms = platformNotSuits
+      .filter((item: any) => item && typeof item === 'object' && item.platform)
+      .map((item: any) => ({ platform: item.platform, suitable: false, score: item.notsuitable_score }));
 
-    return suitabilityList;
+    // Combine both lists
+    return [...suitablePlatforms, ...notSuitablePlatforms];
   };
 
   // Helper function to format date
@@ -2771,11 +2892,14 @@ export default function ResultsPage() {
 
 
                       <div className="flex items-center gap-3">
-                        <button
-                          className="flex items-center py-1 px-2 gap-2 rounded-md text-xs font-medium text-green-400 bg-green-400/10 border border-green-400 hover:bg-green-400/10 hover:text-white transition-all"
-                        >
-                          <Share2 className="w-3 h-3 flex-shrink-0" />
-                        </button>
+                        {!isFromToken && !isSpecialToken && isProUser && (
+                          <button
+                            onClick={() => { handleShareFeedback('marketing'); trackEvent("Ad_Feedback_Shared", window.location.href, userDetails?.email?.toString()) }}
+                            className="flex items-center py-1 px-2 gap-2 rounded-md text-xs font-medium text-green-400 bg-green-400/10 border border-green-400 hover:bg-green-400/10 hover:text-white transition-all cursor-pointer"
+                          >
+                            <Share2 className="w-3 h-3 flex-shrink-0" />
+                          </button>
+                        )}
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
@@ -2826,11 +2950,14 @@ export default function ResultsPage() {
                       </h3>
 
                       <div className="flex items-center gap-3">
-                        <button
-                          className="flex items-center py-1 px-2 gap-2 rounded-md text-xs font-medium text-blue-400 bg-blue-400/10 border border-blue-400 hover:bg-blue-400/10 hover:text-white transition-all"
-                        >
-                          <Share2 className="w-3 h-3 flex-shrink-0" />
-                        </button>
+                        {!isFromToken && !isSpecialToken && isProUser && (
+                          <button
+                            onClick={() => { handleShareFeedback('designer'); trackEvent("Ad_Feedback_Shared", window.location.href, userDetails?.email?.toString()) }}
+                            className="flex items-center py-1 px-2 gap-2 rounded-md text-xs font-medium text-blue-400 bg-blue-400/10 border border-blue-400 hover:bg-blue-400/10 hover:text-white transition-all cursor-pointer"
+                          >
+                            <Share2 className="w-3 h-3 flex-shrink-0" />
+                          </button>
+                        )}
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
@@ -2930,63 +3057,99 @@ export default function ResultsPage() {
 
               {/* Platforms - Combined Card */}
               <div
-                className="bg-black  rounded-3xl sm:rounded-4xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                style={{ maxHeight: "500px" }}
-                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900")}
-                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)")}
+                className="bg-black  rounded-3xl sm:rounded-4xl shadow-lg p-4 sm:p-6 shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
               >
-                <div className="p-4 sm:p-6 overflow-y-auto h-full">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="flex items-center text-lg sm:text-xl font-semibold text-white">
-                      <MonitorCheckIcon className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-primary" />
-                      Platforms
-                    </h3>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="w-50 bg-[#2b2b2b]">
-                        <p>Platform suitability analysis for your ad.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-2">
+                  <MonitorCheckIcon className="text-primary h-5 w-5" />
+                  <h3 className="text-lg sm:text-xl font-semibold text-white">Platforms</h3>
+                </div>
 
-                  <div className="space-y-4">
-                    {/* Suitable For Section */}
-                    {Array.isArray((apiData as any)?.platform_suits) && (apiData as any).platform_suits.length > 0 && (
-                      <div className="bg-green-900/40 border border-green-700/50 rounded-2xl sm:rounded-3xl p-3 sm:p-4">
-                        <p className="text-xs sm:text-sm font-medium text-white mb-2">Suitable For</p>
-                        <div className="flex flex-wrap gap-2">
-                          {(apiData as any).platform_suits.map((item: any, index: number) => (
-                            <p key={index} className="text-green-400 text-sm sm:text-base">
-                              {item.platform} <span className="text-white">{item.suitable_score}%</span>
-                            </p>
-                          ))}
-                        </div>
+                <div className="space-y-4">
+
+                  {/* Suitable For */}
+                  {Array.isArray((apiData as any)?.platform_suits) && (apiData as any).platform_suits.length > 0 && (
+                    <div>
+                      {/* <p className="text-sm font-medium text-white mb-3">Suitable For</p> */}
+
+                      <div className="space-y-2 bg-[#171717] rounded-2xl sm:rounded-3xl p-4">
+                        {(apiData as any).platform_suits.map((item: any, index: number) => (
+                          <div key={index} className="flex items-center gap-4 ">
+
+                            {/* Progress Bar Container */}
+                            <div className="flex-1 bg-[#2b2b2b] h-8 rounded-full relative overflow-hidden max-w-[400px]">
+
+                              {/* Progress Fill */}
+                              <div
+                                className="h-full bg-[#9ad066] rounded-full transition-all duration-700 flex items-center pl-3"
+                                style={{ width: `${item.suitable_score}%` }}
+                              >
+                                {/* Platform Name INSIDE */}
+                                <span className="text-green-900 font-semibold text-sm">
+                                  {item.platform}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Percentage */}
+                            <span className="text-[#9ad066] font-semibold text-xl">
+                              {item.suitable_score}%
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Not Suitable For Section */}
-                    {Array.isArray((apiData as any)?.platform_notsuits) && (apiData as any).platform_notsuits.length > 0 && (
-                      <div className="bg-red-900/40 border border-red-700/50 rounded-2xl sm:rounded-3xl p-3 sm:p-4">
-                        <p className="text-xs sm:text-sm font-medium text-white mb-2">Not Suitable For</p>
-                        <div className="flex flex-wrap gap-2">
-                          {(apiData as any).platform_notsuits.map((item: any, index: number) => (
-                            <p key={index} className="text-red-400 text-sm sm:text-base">
-                              {item.platform} <span className="text-white">{item.notsuitable_score}%</span>
-                            </p>
-                          ))}
-                        </div>
+                  {/* Not Suitable For */}
+                  {Array.isArray((apiData as any)?.platform_notsuits) && (apiData as any).platform_notsuits.length > 0 && (
+                    <div>
+                      {/* <p className="text-sm font-medium text-white mb-3">Not Suitable For</p> */}
+
+                      <div className="space-y-2 bg-[#171717] rounded-2xl sm:rounded-3xl p-4">
+                        {(apiData as any).platform_notsuits.map((item: any, index: number) => (
+                          <div key={index} className="flex items-center gap-4 ">
+
+                            {/* Progress Bar Container */}
+                            <div className="flex-1 bg-[#2b2b2b] h-8 rounded-full relative overflow-hidden max-w-[400px]">
+
+                              {/* Progress Fill */}
+                              <div
+                                className="h-full bg-[#d87a7a] rounded-full transition-all duration-700 flex items-center pl-3"
+                                style={{ width: `${item.notsuitable_score}%` }}
+                              >
+                                {/* Platform Name INSIDE */}
+                                <span className="text-red-900 font-semibold text-sm">
+                                  {item.platform}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Percentage */}
+                            <span className="text-[#d87a7a] font-semibold text-xl">
+                              {item.notsuitable_score}%
+                            </span>
+
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {(!Array.isArray((apiData as any)?.platform_suits) || (apiData as any).platform_suits.length === 0) &&
-                      (!Array.isArray((apiData as any)?.platform_notsuits) || (apiData as any).platform_notsuits.length === 0) && (
-                        <p className="text-white/70 text-left py-8 text-sm sm:text-base">No platform data available</p>
-                      )}
-                  </div>
+                  {/* No Data */}
+                  {(!Array.isArray((apiData as any)?.platform_suits) || (apiData as any).platform_suits.length === 0) &&
+                    (!Array.isArray((apiData as any)?.platform_notsuits) || (apiData as any).platform_notsuits.length === 0) && (
+                      <p className="text-center text-white/60 py-8 text-sm">No platform data available</p>
+                    )}
                 </div>
               </div>
+
             </div>
 
             {/* Ad Creative Suggestions - Mobile Optimized */}
@@ -3813,9 +3976,21 @@ export default function ResultsPage() {
             performanceScore={apiData?.score_out_of_100 || 0}
             goStatus={(apiData?.go_no_go as "Go" | "No Go") || "No Go"}
             industry={apiData?.industry || "N/A"}
-            bestSuit={platformSuitability.map(p => p.platform)}
+            bestSuit={platformSuitability.filter(p => p.suitable).map(p => p.platform)}
             website={apiData?.agency_website || "adalyze.app"}
             adImage={images.length > 0 ? images[0] : logo.src}
+          />
+          <ShareAdResultFeedback
+            id="ad-feedback-card"
+            adImage={images.length > 0 ? images[0] : logo.src}
+            feedback={feedbackDigitalMark}
+            AdName={apiData?.title || "Ad Analysis"}
+          />
+          <ShareAdResultFeedback
+            id="ad-feedback-card-designer"
+            adImage={images.length > 0 ? images[0] : logo.src}
+            feedback={feedbackDesigner}
+            AdName={apiData?.title || "Ad Analysis"}
           />
         </div>
 

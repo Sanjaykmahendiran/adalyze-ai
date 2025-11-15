@@ -42,8 +42,16 @@ export interface ApiResponse {
   score_out_of_100: number;
   why_overall_score_out_of_100?: string[];
   estimated_ctr_loss_if_issues_unfixed?: string[];
-  platform_suits: string[];
-  platform_notsuits: string[];
+  platform_suits?: Array<{
+    platform: string;
+    suitable_score: number;
+    explanation: string;
+  }>;
+  platform_notsuits?: Array<{
+    platform: string;
+    notsuitable_score: number;
+    explanation: string;
+  }>;
   issues: string[];
   critical_issues?: string[];
   minor_issues?: string[];

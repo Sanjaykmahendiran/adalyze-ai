@@ -6,10 +6,13 @@ import {
   Gauge,
   Users
 } from 'lucide-react';
+import ChecklistHeade from "../header/page";
 
 const TargetAudiencePage: React.FC = () => {
   return (
     <main className="w-full bg-black antialiased">
+<ChecklistHeade />
+
       {/* Hero */}
       <section className="px-4 py-12 md:py-16 bg-gradient-to-b from-zinc-900 to-black border-b border-zinc-800">
         <div className="max-w-4xl mx-auto text-center">

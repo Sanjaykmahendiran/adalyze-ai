@@ -11,6 +11,7 @@ import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import Spinner from "@/components/overlay"
 import { Button } from "@/components/ui/button"
+import { axiosInstance } from "@/configs/axios"
 
 interface BlogPost {
     blogs_id: number;
@@ -27,11 +28,8 @@ interface BlogPost {
 
 async function getBlogPostById(slug: string): Promise<BlogPost | null> {
     try {
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=getblog&slug=${slug}`, {
-            cache: 'no-store'
-        })
-        if (!response.ok) throw new Error("Failed to fetch blog post")
-        return (await response.json()) as BlogPost
+        const response = await axiosInstance.get(`?gofor=getblog&slug=${slug}`)
+        return response.data as BlogPost
     } catch (error) {
         console.error("Error fetching blog post:", error)
         return null
@@ -40,11 +38,8 @@ async function getBlogPostById(slug: string): Promise<BlogPost | null> {
 
 async function getAllBlogPosts(): Promise<BlogPost[]> {
     try {
-        const response = await fetch("https://adalyzeai.xyz/App/api.php?gofor=blogslist", {
-            cache: 'no-store'
-        })
-        if (!response.ok) throw new Error("Failed to fetch blog posts")
-        return (await response.json()) as BlogPost[]
+        const response = await axiosInstance.get("?gofor=blogslist")
+        return response.data as BlogPost[]
     } catch (error) {
         console.error("Error fetching blog posts:", error)
         return []

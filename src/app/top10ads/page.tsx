@@ -8,6 +8,7 @@ import "react-circular-progressbar/dist/styles.css"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
+import { axiosInstance } from "@/configs/axios"
 
 interface AdData {
   ad_id: number
@@ -41,15 +42,11 @@ export default function Top10AdsWall() {
     const fetchAdsData = async () => {
       try {
         setLoading(true)
-        const response = await fetch(
-          "https://adalyzeai.xyz/App/api.php?gofor=top10ads"
+        const response = await axiosInstance.get(
+          "?gofor=top10ads"
         )
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch ads data")
-        }
-
-        const data: AdData[] = await response.json()
+        const data: AdData[] = response.data
         setAdsData(data.slice(0, 10))
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred")

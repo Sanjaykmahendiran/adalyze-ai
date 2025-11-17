@@ -1,14 +1,12 @@
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { logoutService } from "@/services/logoutService";
 
 const useLogout = () => {
   const router = useRouter();
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
   const logout = () => {
-    Cookies.remove("userId", { path: basePath });
-    Cookies.remove("email", { path: basePath });
-    router.push("/");
+    logoutService();
+    router.push("/login");
   };
 
   return logout;

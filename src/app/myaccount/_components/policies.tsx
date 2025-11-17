@@ -3,6 +3,7 @@
 import HtmlRenderer from "@/components/html-renderer";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { axiosInstance } from "@/configs/axios";
 
 const PoliciesSkeleton = () => (
   <div className="mt-6 space-y-4 animate-pulse">
@@ -38,18 +39,15 @@ export default function PolicyComponent() {
     const fetchPolicies = async () => {
       try {
         const [privacyRes, returnRes, termsRes] = await Promise.all([
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=privacypolicy'),
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=returnpolicy'),
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=termsandconditions')
+          axiosInstance.get("?gofor=privacypolicy", { responseType: "text" }),
+          axiosInstance.get("?gofor=returnpolicy", { responseType: "text" }),
+          axiosInstance.get("?gofor=termsandconditions", { responseType: "text" }),
         ]);
 
-        const privacyData = await privacyRes.text();
-        const returnData = await returnRes.text();
-        const termsData = await termsRes.text();
+        setPrivacy(privacyRes.data);
+        setReturnPolicy(returnRes.data);
+        setTermsConditions(termsRes.data);
 
-        setPrivacy(privacyData);
-        setReturnPolicy(returnData);
-        setTermsConditions(termsData);
       } catch (error) {
         console.error("Error fetching policies:", error);
       } finally {
@@ -59,6 +57,7 @@ export default function PolicyComponent() {
 
     fetchPolicies();
   }, []);
+
 
   return (
     <div className="w-full  shadow  rounded-2xl lg:mt-6">

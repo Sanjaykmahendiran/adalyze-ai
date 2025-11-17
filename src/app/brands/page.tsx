@@ -21,6 +21,7 @@ import BrandsLoadingSkeleton from "@/components/Skeleton-loading/brands-loading"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import { useRouter } from "next/navigation"
 import UserLayout from "@/components/layouts/user-layout"
+import { axiosInstance } from "@/configs/axios"
 
 interface Brand {
   brand_id: number
@@ -61,10 +62,8 @@ export default function BrandsPage() {
   const fetchBrands = async () => {
     try {
       setLoading(true)
-      const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`
-      )
-      const data = await response.json()
+      const response = await axiosInstance.get(`?gofor=brandslist&user_id=${userDetails?.user_id}`)
+      const data = response.data
       if (Array.isArray(data)) setBrands(data)
       else setBrands([])
     } catch (error) {

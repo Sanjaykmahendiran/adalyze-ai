@@ -3,6 +3,7 @@
 import React, { JSX, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { CheckCircle, Loader2, Clock } from 'lucide-react';
+import { axiosInstance } from '@/configs/axios';
 
 
 interface VersionData {
@@ -26,9 +27,8 @@ const VersionCard: React.FC = () => {
     useEffect(() => {
         const fetchVersions = async () => {
             try {
-                const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=versionlist');
-                if (!response.ok) throw new Error('Failed to fetch versions');
-                const data = await response.json();
+                const response = await axiosInstance.get('?gofor=versionlist');
+                const data = response.data;
                 setVersions(data);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'An error occurred');

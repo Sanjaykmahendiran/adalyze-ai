@@ -23,6 +23,7 @@ import { trackSignUp } from "@/lib/ga4";
 import { login } from "@/services/authService";
 import { trackEvent } from "@/lib/eventTracker";
 import RegistrationStep2Form from "./RegistrationStep2Form";
+import { axiosInstance } from "@/configs/axios";
 
 interface LoginFormData {
   token?: string;
@@ -262,28 +263,16 @@ export default function RegistrationForm() {
 
     setIsCheckingReferral(true);
     try {
-      const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=usergetbyref&referral_code=${code}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-
+        const response = await axiosInstance.get(`?gofor=usergetbyref&referral_code=${code}`);
+        const data = response.data;
         if (data.user_id && data.name) {
-          // Store the user_id separately
           setReferralUserId(data.user_id.toString());
-          // Display the user name
           setReferredBy(data.name);
         } else {
           setReferredBy("");
           setReferralUserId("");
           toast.error("Invalid referral code");
         }
-      } else {
-        setReferredBy("");
-        setReferralUserId("");
-        toast.error("Invalid referral code");
-      }
     } catch (error) {
       console.error("Error checking referral code:", error);
       setReferredBy("");
@@ -322,22 +311,16 @@ export default function RegistrationForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          gofor: "eregister",
-          email: values.email,
-        }),
+      const response = await axiosInstance.post("", {
+        gofor: "eregister",
+        email: values.email,
       });
 
       const data: {
         user_id?: number;
         status?: string;
         message?: string;
-      } = await response.json();
+      } = response.data;
 
       if (data.user_id) {
         setEmailValue(values.email);
@@ -348,21 +331,15 @@ export default function RegistrationForm() {
         // Call addidentifier API after step 1 completion
         try {
           const cookieId = Cookies.get('cookie_id') || '';
-          const addIdentifierResponse = await fetch("https://adalyzeai.xyz/App/api.php", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              gofor: "addidentifier",
+          const addIdentifierResponse = await axiosInstance.post("", {
+            gofor: "addidentifier",
               cookie_id: cookieId,
               user_id: data.user_id,
               email: values.email,
               phone: "" // Phone will be added in step 2 if needed
-            }),
           });
 
-          const addIdentifierData = await addIdentifierResponse.json();
+          const addIdentifierData = addIdentifierResponse.data;
           console.log("Add identifier response:", addIdentifierData);
         } catch (error) {
           console.error("Add identifier API error:", error);
@@ -440,15 +417,9 @@ export default function RegistrationForm() {
         payload.utm_term = utmTerm;
       }
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await axiosInstance.post("", payload);
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.status === "success") {
         // Save user_id in cookies

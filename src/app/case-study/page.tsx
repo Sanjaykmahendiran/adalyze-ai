@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import { useSearchParams, useRouter } from "next/navigation"
+import { axiosInstance } from "@/configs/axios"
 
 interface CaseStudy {
   cs_id: string
@@ -32,13 +33,8 @@ export default function CaseStudiesPage() {
 
   useEffect(() => {
     const fetchCaseStudies = () => {
-      fetch('https://adalyzeai.xyz/App/api.php?gofor=casestudylist')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Failed to fetch case studies')
-          }
-          return response.json()
-        })
+      axiosInstance.get("?gofor=casestudylist")
+        .then(response => response.data)
         .then(data => {
           setCaseStudies(data)
           setLoading(false)

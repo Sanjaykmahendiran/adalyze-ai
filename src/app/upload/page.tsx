@@ -26,6 +26,9 @@ import { generateAdToken } from "@/lib/tokenUtils"
 import Footer from "@/components/footer"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import UploadLoadingSkeleton from "@/components/Skeleton-loading/upload-loading"
+import { axiosInstance } from "@/configs/axios"
+import { API_CONFIG } from "@/configs/api.config"
+import uploadService from "@/services/uploadService"
 
 // Move FreeTrailOverlay outside to prevent re-creation on every render
 const FreeTrailOverlay = ({
@@ -313,11 +316,8 @@ export default function UploadPage() {
 
     const fetchIndustries = async () => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=industrylist')
-            if (!response.ok) {
-                throw new Error('Failed to fetch industries')
-            }
-            const data: Industry[] = await response.json()
+            const response = await axiosInstance.get('?gofor=industrylist')
+            const data: Industry[] = response.data
             setIndustries(data)
         } catch (error) {
             console.error('Error fetching industries:', error)
@@ -330,11 +330,8 @@ export default function UploadPage() {
     const fetchBrands = async () => {
         setLoadingBrands(true)
         try {
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`)
-            if (!response.ok) {
-                throw new Error('Failed to fetch brands')
-            }
-            const data = await response.json()
+            const response = await axiosInstance.get(`?gofor=brandslist&user_id=${userId}`)
+            const data = response.data
             setBrands(data)
         } catch (error) {
             console.error('Error fetching brands:', error)
@@ -393,19 +390,12 @@ export default function UploadPage() {
                 })
             }, 200)
 
-            const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
-                method: 'POST',
-                body: formData,
-            })
+            const response = await uploadService.post(API_CONFIG.UPLOAD_IMAGE, formData);
 
             clearInterval(progressInterval)
             setSingleUploadProgress(100)
 
-            if (!response.ok) {
-                throw new Error(`Upload failed: ${response.statusText}`)
-            }
-
-            const result = await response.json()
+            const result = response.data
             if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
                 toast.success('File uploaded successfully!')
                 setSingleImageUrl(result.fileUrl)
@@ -504,16 +494,9 @@ export default function UploadPage() {
                 formData.append('file', file)
                 formData.append('user_id', userId)
 
-                const response = await fetch('https://adalyzeai.xyz/App/adupl.php', {
-                    method: 'POST',
-                    body: formData,
-                })
+                const response = await uploadService.post(API_CONFIG.UPLOAD_IMAGE, formData);
 
-                if (!response.ok) {
-                    throw new Error(`Upload failed: ${response.statusText}`)
-                }
-
-                const result = await response.json()
+                const result = response.data
                 if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
                     // Store the mapping
                     fileUrlMap.set(file, result.fileUrl)
@@ -588,19 +571,12 @@ export default function UploadPage() {
             formData.append('user_id', userId)
             formData.append('file', fileToUpload)
 
-            const response = await fetch('https://adalyzeai.xyz/App/vidadupl.php', {
-                method: 'POST',
-                body: formData,
-            })
+            const response = await uploadService.post(API_CONFIG.UPLOAD_VIDEO, formData);
 
             clearInterval(progressInterval)
             setVideoUploadProgress(100)
 
-            if (!response.ok) {
-                throw new Error(`Upload failed: ${response.statusText}`)
-            }
-
-            const result = await response.json()
+            const result = response.data
 
             if (result.thumbnails && result.thumbnails.length > 0) {
                 toast.success('File uploaded successfully!')
@@ -721,21 +697,11 @@ export default function UploadPage() {
             if (activeTab === "video") analyzeData.duration = videoDuration
             if (activeTab === "video") analyzeData.transcript = videoTranscript
 
-            const response = await fetch('https://adalyzeai.xyz/App/analyze.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(analyzeData),
-            })
-
-            let result: any = null
-            try {
-                result = await response.json()
-            } catch (e) {
-                // ignore JSON parse error, will be handled below
-            }
+            const response = await axiosInstance.post(API_CONFIG.ANALYZE_IMAGE, analyzeData);
+            let result: any = response.data
 
             // Handle error responses and show popup with error + notes when available
-            if (!response.ok || (result && result.error && !result.success)) {
+            if (!response || (result && result.error && !result.success)) {
                 const popupErrorMessage = result?.error || `Analysis failed: ${response.statusText}`
                 const popupNotes = result?.brand_verification?.notes || ""
                 setErrorMessage(popupErrorMessage)

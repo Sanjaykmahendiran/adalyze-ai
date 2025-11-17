@@ -15,6 +15,7 @@ import { Search, ReceiptText, X } from "lucide-react";
 import Cookies from "js-cookie";
 import { Card } from "@/components/ui/card";
 import InvoicePdf from "./invoice-pdf";
+import { axiosInstance } from "@/configs/axios";
 
 const userId = Cookies.get("userId") || "";
 
@@ -45,10 +46,8 @@ export default function TransactionTable({ userDetails }: TransactionTableProps)
     const fetchData = async () => {
       if (!userId) return;
       try {
-        const response = await fetch(
-          `https://adalyzeai.xyz/App/api.php?gofor=paymenthistory&user_id=${userId}`
-        );
-        const data = await response.json();
+        const response = await axiosInstance.get(`?gofor=paymenthistory&user_id=${userId}`);
+        const data = response.data;
         setTransactions(data || []);
       } catch (error) {
         console.error("Error fetching payment history:", error);

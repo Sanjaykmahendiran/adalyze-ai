@@ -6,6 +6,7 @@ import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { trackEvent } from "@/lib/eventTracker"
+import { axiosInstance } from "@/configs/axios"
 
 
 interface FAQItem {
@@ -30,13 +31,9 @@ export default function FAQSection() {
         const fetchFAQs = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=prefaqlist');
+                const response = await axiosInstance.get("?gofor=prefaqlist");
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch FAQs');
-                }
-
-                const data: FAQItem[] = await response.json();
+                const data: FAQItem[] = response.data;
                 setFaqs(data);
                 setError(null);
             } catch (err) {

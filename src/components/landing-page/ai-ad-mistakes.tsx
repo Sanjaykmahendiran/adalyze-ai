@@ -6,6 +6,7 @@ import { Button } from "../ui/button";
 import { trackEvent } from "@/lib/eventTracker";
 import { ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { axiosInstance } from "@/configs/axios";
 
 interface Issue {
   issue_id: number;
@@ -60,12 +61,10 @@ export default function AiAdMistakes({ category }: { category: string }) {
     async function load() {
       try {
         setError(null);
-        const url = category
-          ? `https://adalyzeai.xyz/App/api.php?gofor=issueslist&category=${encodeURIComponent(category)}`
-          : `https://adalyzeai.xyz/App/api.php?gofor=issueslist`;
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`Failed: ${res.status}`);
-        const data = (await res.json()) as Issue[] | unknown;
+        const response = await axiosInstance.get(category
+          ? `?gofor=issueslist&category=${encodeURIComponent(category)}`
+          : `?gofor=issueslist`);
+        const data = response.data as Issue[] | unknown;
         if (!active) return;
         setIssues(Array.isArray(data) ? data : []);
       } catch (e: any) {

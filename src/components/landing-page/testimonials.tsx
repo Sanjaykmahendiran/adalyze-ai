@@ -4,6 +4,7 @@ import { AnimatedTestimonials } from "@/components/landing-page/animated-testimo
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
+import { axiosInstance } from "@/configs/axios"
 
 type TestimonialType = {
   quote: string
@@ -23,10 +24,10 @@ export default function Testimonials({ category }: { category: string }) {
     const fetchTestimonials = async () => {
       try {
         const url = category
-          ? `https://adalyzeai.xyz/App/api.php?gofor=testilist&category=${encodeURIComponent(category)}`
-          : `https://adalyzeai.xyz/App/api.php?gofor=testilist`;
-        const response = await fetch(url)
-        const data = await response.json()
+          ? `?gofor=testilist&category=${encodeURIComponent(category)}`
+          : `?gofor=testilist`;
+        const response = await axiosInstance.get(url)
+        const data = response.data
 
         const formatted: TestimonialType[] = data
           .filter((item: any) => item.status === 1)

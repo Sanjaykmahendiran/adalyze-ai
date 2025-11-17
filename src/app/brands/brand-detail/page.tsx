@@ -19,6 +19,7 @@ import AverageScore from "@/assets/dashboard/average-score.png"
 import TotalSuggestions from "@/assets/dashboard/total-suggestion.png"
 import UserLayout from "@/components/layouts/user-layout"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { axiosInstance } from "@/configs/axios"
 
 // Define the API response interface
 interface AdsApiResponse {
@@ -151,15 +152,8 @@ export default function MyAdsPage() {
             const userId = Cookies.get('userId')
             if (!userId) return
 
-            const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=0&limit=12`
-            )
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch all ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const response = await axiosInstance.get(`?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=0&limit=12`)
+            const data: AdsApiResponse = response.data
             setAllAds(data.ads)
             setTotalAds(data.total)
         } catch (error) {
@@ -173,11 +167,8 @@ export default function MyAdsPage() {
             const userId = Cookies.get('userId')
             if (!userId || !brandId) return
 
-            const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`
-            )
-            if (!response.ok) throw new Error('Failed to fetch brand stats')
-            const data: BrandStats[] = await response.json()
+            const response = await axiosInstance.get(`?gofor=brandslist&user_id=${userId}`)
+            const data: BrandStats[] = response.data
             const current = Array.isArray(data)
                 ? data.find((b) => String(b.brand_id) === String(brandId))
                 : null
@@ -202,15 +193,8 @@ export default function MyAdsPage() {
             }
 
             const offset = (currentPage - 1) * itemsPerPage
-            const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=${offset}&limit=${itemsPerPage}`
-            )
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const response = await axiosInstance.get(`?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=${offset}&limit=${itemsPerPage}`)
+            const data: AdsApiResponse = response.data
             setAds(data.ads)
             setTotalAds(data.total)
             // Removed fetchAllAds call from here to avoid duplicate request
@@ -751,11 +735,8 @@ export default function MyAdsPage() {
                                                 if (!brandId) return
                                                 setIsDeleting(true)
                                                 try {
-                                                    const response = await fetch(
-                                                        `https://adalyzeai.xyz/App/api.php?gofor=deletebrand&brand_id=${brandId}`,
-                                                        { method: "DELETE" }
-                                                    )
-                                                    const result = await response.json()
+                                                    const response = await axiosInstance.get(`?gofor=deletebrand&brand_id=${brandId}`)
+                                                    const result = response.data
                                                     if (result?.response === "Brand deleted successfully") {
                                                         toast.success("Brand deleted successfully!")
                                                         setShowDeleteModal(false)

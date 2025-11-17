@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { trackEvent } from "@/lib/eventTracker"
+import { axiosInstance } from '@/configs/axios';
 interface FAQItem {
   faq_id: number;
   question: string;
@@ -23,13 +24,9 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
     const fetchFAQs = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=prefaqlist&category=${category}`);
+        const response = await axiosInstance.get(`?gofor=prefaqlist&category=${encodeURIComponent(category)}`);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch FAQs');
-        }
-
-        const data: FAQItem[] = await response.json();
+        const data: FAQItem[] = response.data;
         setFaqs(data);
         setError(null);
       } catch (err) {

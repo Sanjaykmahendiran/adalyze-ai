@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import NoDataFound from "@/components/no-data-found"
+import { axiosInstance } from "@/configs/axios"
 
 // Color system
 const colors = {
@@ -105,8 +106,8 @@ export default function GuidePage() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=guideslist')
-        const guidesData = await response.json() as Guide[]
+        const response = await axiosInstance.get(`?gofor=guideslist`)
+        const guidesData = response.data as Guide[]
         setGuides(guidesData.filter(guide => guide.status === 1))
       } catch (err) {
         setError('Failed to load guides. Please try again later.')

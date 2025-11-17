@@ -17,9 +17,9 @@ import { useRouter } from "next/navigation"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Check, ChevronsUpDown, Search, ChevronDown, X } from "lucide-react"
+import { axiosInstance } from "@/configs/axios"
 
 // Base URL configuration
-export const BASE_URL = "https://adalyzeai.xyz/App/api.php"
 
 interface ProfileProps {
   name?: string
@@ -414,15 +414,15 @@ export default function MyProfile({
     }
 
     try {
-      const response = await fetch(BASE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const response = await axiosInstance.post('', {
+        gofor: "image_upload",
+        imgname: base64Data,
+        type: type,
       })
 
-      const data = await response.json()
+      const data = response.data
 
-      if (data.success === true) {
+      if (data?.success === true) {
         toast.success(`${type === "profile" ? "Profile" : "Agency logo"} uploaded successfully`)
         if (type === "profile") {
           setUploadedImageUrl(data.url)
@@ -526,9 +526,21 @@ export default function MyProfile({
   }
 
   const handleSubmit = async () => {
-    const selectedCountryName = countries.find((c) => c.id === selectedCountryId)?.name || userDetails?.country || ""
-    const selectedStateName = states.find((s) => s.id === selectedStateId)?.name || userDetails?.state || ""
-    const selectedCityName = cities.find((c) => c.id === selectedCityId)?.name || userCity || userDetails?.city || ""
+    const selectedCountryName =
+      countries.find((c) => c.id === selectedCountryId)?.name ||
+      userDetails?.country ||
+      "";
+
+    const selectedStateName =
+      states.find((s) => s.id === selectedStateId)?.name ||
+      userDetails?.state ||
+      "";
+
+    const selectedCityName =
+      cities.find((c) => c.id === selectedCityId)?.name ||
+      userCity ||
+      userDetails?.city ||
+      "";
 
     const payload: any = {
       gofor: "editprofile",
@@ -542,50 +554,41 @@ export default function MyProfile({
       address: address,
       pincode: pincode,
       imgname: uploadedImageUrl || profileImage || "",
-    }
+    };
 
-    // Add additional fields if role requires them
     if (shouldShowAdditionalFields) {
-      payload.designation = designation
-      payload.website_url = websiteUrl
-      payload.gst_no = gstNumber
-      payload.team_members = teamMembers
+      payload.designation = designation;
+      payload.website_url = websiteUrl;
+      payload.gst_no = gstNumber;
+      payload.team_members = teamMembers;
     }
 
     try {
-      const response = await fetch(BASE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      // 🟢 axiosInstance already handles POST/JSON/token
+      const response = await axiosInstance.post("", payload);
+      const data = response.data;
 
-      const data = await response.json()
+      if (data?.user_id) {
+        // Update local + storage
+        sessionStorage.setItem("userDetails", JSON.stringify(data));
 
-      if (response.ok && data.user_id) {
-        // Save the entire user object to sessionStorage
-        sessionStorage.setItem("userDetails", JSON.stringify(data))
+        toast.success("Profile updated successfully");
 
-        // Call parent callback if exists
-        onProfileUpdate?.(data)
+        setUserName(data.name);
+        setUserMobileno(data.mobileno);
+        setUserCity(data.city);
+        setUserRole(data.role);
 
-        toast.success("Profile updated successfully")
-
-        // Optionally reload or update local state
-        setUserName(data.name)
-        setUserMobileno(data.mobileno)
-        setUserCity(data.city)
-        setUserRole(data.role)
-
-        // Exit edit mode
-        setIsEditingProfile(false)
+        setIsEditingProfile(false);
       } else {
-        toast.error(data.message || "Failed to update profile")
+        toast.error(data.message || "Failed to update profile");
       }
     } catch (error) {
-      console.error("Profile update error:", error)
-      toast.error("Network error. Please try again.")
+      console.error("Profile update error:", error);
+      toast.error("Network error. Please try again.");
     }
-  }
+  };
+
 
   // Handle agency form submission
   const handleAgencySubmit = async () => {
@@ -612,30 +615,22 @@ export default function MyProfile({
     };
 
     try {
-      const response = await fetch(BASE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const response = await axiosInstance.post("", payload);
+      const data = response.data;
 
-      const data = await response.json();
+      if (data?.status === "success") {
+        toast.success(
+          data.message || `Agency ${isEdit ? "updated" : "created"} successfully`
+        );
 
-      if (response.ok && data.status === "success") {
-        toast.success(data.message || `Agency ${isEdit ? "updated" : "created"} successfully`);
-
-        // Update local state (optional)
-        setAgencyData(prev => ({
+        setAgencyData((prev) => ({
           ...prev,
           ...agencyData,
         }));
 
-        // Trigger parent callback if available
         onProfileUpdate?.(data);
-
-        // Exit edit mode
         setIsEditingAgency(false);
 
-        // ✅ Only redirect if it's a new agency (not edit)
         if (!isEdit) {
           router.push("/brands");
         }
@@ -647,6 +642,7 @@ export default function MyProfile({
       toast.error("Network error. Please try again.");
     }
   };
+
 
 
   // Handle action prop changes

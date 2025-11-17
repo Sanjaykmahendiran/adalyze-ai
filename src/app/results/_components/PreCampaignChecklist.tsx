@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
+import { axiosInstance } from "@/configs/axios";
 import Image from "next/image";
 import ChecklistStaticImage from "@/assets/result-checklist-static.webp"
 
@@ -340,13 +341,9 @@ export default function PreCampaignChecklist({
             type: "checklist-evidence",
         };
 
-        const res = await fetch("https://adalyzeai.xyz/App/api.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
+        const response = await axiosInstance.post("", payload);
 
-        const data = await res.json();
+        const data = response.data;
         // Try common fields that could contain the URL
         const url = data?.url || data?.image_url || data?.data?.url || data?.result?.url || "";
         if (!url) {
@@ -391,13 +388,9 @@ export default function PreCampaignChecklist({
                 evidence_url: finalEvidence,
             };
 
-            const res = await fetch("https://adalyzeai.xyz/App/api.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
+            const response = await axiosInstance.post("", payload);
 
-            const data = await res.json();
+            const data = response.data;
 
             // Keep existing success check, but allow a fallback success condition
             if ((data.status && data.message === "Checklist Created successfully.") || data.status === true || data.success === true) {

@@ -33,6 +33,7 @@ import toast from "react-hot-toast";
 import logo from "@/assets/ad-icon-logo.png"
 import { getAdIdFromUrlParams, parseUserIdFromToken } from "@/lib/tokenUtils"
 import { ABTestResult, ApiResponse } from "./type";
+import { axiosInstance } from "@/configs/axios";
 
 // Array helper
 const safeArray = (arr: any): any[] => Array.isArray(arr) ? arr : arr ? [arr] : [];
@@ -72,37 +73,61 @@ export default function ABTestResults() {
             try {
                 const tokenA = searchParams.get("ad-token-a");
                 const tokenB = searchParams.get("ad-token-b");
-                const adIdA = tokenA ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenA })) : searchParams.get("ad_id_a") || "";
-                const adIdB = tokenB ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenB })) : searchParams.get("ad_id_b") || "";
-
+    
+                const adIdA = tokenA
+                    ? getAdIdFromUrlParams(new URLSearchParams({ "ad-token": tokenA }))
+                    : searchParams.get("ad_id_a") || "";
+    
+                const adIdB = tokenB
+                    ? getAdIdFromUrlParams(new URLSearchParams({ "ad-token": tokenB }))
+                    : searchParams.get("ad_id_b") || "";
+    
+                // Build user_id param
                 const token = tokenA || tokenB;
-                let userIdParam = '';
+                let userIdParam = "";
+    
                 if (token) {
                     const userIdFromToken = parseUserIdFromToken(token);
                     if (userIdFromToken) {
                         userIdParam = `&user_id=${userIdFromToken}`;
                     }
                 } else if (userDetails?.user_id) {
-                    // If no token but userDetails available, use that user_id
                     userIdParam = `&user_id=${userDetails.user_id}`;
                 }
-                if (!adIdA || !adIdB) throw new Error("Missing ad IDs for comparison");
-                const [responseA, responseB] = await Promise.all([
-                    fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdA}${userIdParam}`),
-                    fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adIdB}${userIdParam}`),
+    
+                if (!adIdA || !adIdB) {
+                    throw new Error("Missing ad IDs for comparison");
+                }
+    
+                // 🟢 Axios version — NO fetch(), NO .ok, NO .json()
+                const [resA, resB] = await Promise.all([
+                    axiosInstance.get(
+                        `?gofor=addetail&ad_upload_id=${adIdA}${userIdParam}`
+                    ),
+                    axiosInstance.get(
+                        `?gofor=addetail&ad_upload_id=${adIdB}${userIdParam}`
+                    ),
                 ]);
-                if (!responseA.ok || !responseB.ok) throw new Error("Failed to fetch ad details");
-                const [resultA, resultB] = await Promise.all([responseA.json(), responseB.json()]);
-                setAdDataA(resultA.data || resultA);
-                setAdDataB(resultB.data || resultB);
+    
+                // Axios places JSON inside res.data
+                const resultA = resA.data;
+                const resultB = resB.data;
+    
+                setAdDataA(resultA?.data || resultA);
+                setAdDataB(resultB?.data || resultB);
+    
             } catch (err) {
-                setError(err instanceof Error ? err.message : "An error occurred");
+                setError(
+                    err instanceof Error ? err.message : "An error occurred"
+                );
             } finally {
                 setLoading(false);
             }
         };
+    
         fetchAdDetails();
     }, [searchParams]);
+    
 
     // Chart: render doughnut for current tab ad
     useEffect(() => {
@@ -178,15 +203,11 @@ export default function ABTestResults() {
                 return;
             }
 
-            const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=abaddetail&ad_upload_id1=${adIdA}&ad_upload_id2=${adIdB}`
+            const response = await axiosInstance.get(
+                `?gofor=abaddetail&ad_upload_id1=${adIdA}&ad_upload_id2=${adIdB}`
             );
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = response.data;
             setAbTestResult(result);
 
             // Log the winner for checking
@@ -215,13 +236,9 @@ export default function ABTestResults() {
         setDeleteLoading(true);
 
         try {
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=deleteabad&ad_upload_id_a=${adIdA}&ad_upload_id_b=${adIdB}`);
+            const response = await axiosInstance.get(`?gofor=deleteabad&ad_upload_id_a=${adIdA}&ad_upload_id_b=${adIdB}`);
 
-            if (!response.ok) {
-                throw new Error('Failed to delete A/B ad');
-            }
-
-            const result = await response.json();
+            const result = response.data;
 
             if (result.response === "AB Ad Deleted") {
                 toast.success("A/B ad deleted successfully");

@@ -19,6 +19,7 @@ import Cookies from "js-cookie";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trackEvent } from "@/lib/eventTracker";
 import { useRouter } from "next/navigation";
+import { axiosInstance } from "@/configs/axios";
 
 const registrationSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -124,19 +125,11 @@ export default function RegistrationStep2Form({
     }
     setIsCheckingReferral(true);
     try {
-      const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=usergetbyref&referral_code=${code}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.user_id && data.name) {
-          setReferralUserId(data.user_id.toString());
-          setReferredBy(data.name);
-        } else {
-          setReferredBy("");
-          setReferralUserId("");
-          toast.error("Invalid referral code");
-        }
+      const response = await axiosInstance.get(`?gofor=usergetbyref&referral_code=${code}`);
+      const data = response.data;
+      if (data.user_id && data.name) {
+        setReferralUserId(data.user_id.toString());
+        setReferredBy(data.name);
       } else {
         setReferredBy("");
         setReferralUserId("");
@@ -191,12 +184,8 @@ export default function RegistrationStep2Form({
       if (utmCampaign) payload.utm_campaign = utmCampaign;
       if (utmContent) payload.utm_content = utmContent;
       if (utmTerm) payload.utm_term = utmTerm;
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
+        const response = await axiosInstance.post("", payload);
+      const data = response.data;
       if (data.status === "success") {
         Cookies.set("userId", userId, { expires: 30 });
         Cookies.set("email", email, { expires: 30 });

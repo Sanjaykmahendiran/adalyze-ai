@@ -38,6 +38,7 @@ import ExpertConsultationPopup from "@/components/expert-form"
 import { Badge } from "@/components/ui/badge"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import { MainStatCard } from "./_components/main-status-card"
+import { axiosInstance } from "@/configs/axios"
 
 const platformIcons = {
   facebook: Facebook,
@@ -133,9 +134,8 @@ export default function Dashboard() {
   const fetchDashboardData = async (userId: string, brandId?: string) => {
     try {
       const brandParam = brandId && brandId.length > 0 && brandId !== "All Clients" ? `&brand_id=${encodeURIComponent(brandId)}` : ""
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard1&user_id=${userId}${brandParam}`)
-      if (!response.ok) throw new Error('Failed to fetch dashboard data')
-      return await response.json()
+      const response = await axiosInstance.get(`?gofor=dashboard1&user_id=${userId}${brandParam}`)
+      return response.data
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       throw error
@@ -146,9 +146,8 @@ export default function Dashboard() {
     try {
       const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }).toUpperCase()
       const brandParam = brandId && brandId.length > 0 && brandId !== "All Clients" ? `&brand_id=${encodeURIComponent(brandId)}` : ""
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=dashboard2&user_id=${userId}&month=${currentMonth}${brandParam}`)
-      if (!response.ok) throw new Error('Failed to fetch dashboard2 data')
-      return await response.json()
+      const response = await axiosInstance.get(`?gofor=dashboard2&user_id=${userId}&month=${currentMonth}${brandParam}`)
+      return response.data
     } catch (error) {
       console.error('Error fetching dashboard2 data:', error)
       throw error
@@ -157,9 +156,8 @@ export default function Dashboard() {
 
   const fetchCaseStudies = async () => {
     try {
-      const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=recentcslist')
-      if (!response.ok) throw new Error('Failed to fetch case studies')
-      return await response.json()
+      const response = await axiosInstance.get(`?gofor=recentcslist`)
+      return response.data
     } catch (error) {
       console.error('Error fetching case studies:', error)
       throw error
@@ -176,16 +174,8 @@ export default function Dashboard() {
         comments: formData.comments
       }
 
-      const response = await fetch('https://adalyzeai.xyz/App/api.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (!response.ok) throw new Error('Failed to submit expert request')
-      const result = await response.json()
+      const response = await axiosInstance.post('', payload)
+      const result = response.data
 
       toast.success(result);
 
@@ -198,9 +188,8 @@ export default function Dashboard() {
 
   const fetchTop10Ads = async () => {
     try {
-      const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=top10ads')
-      if (!response.ok) throw new Error('Failed to fetch top 10 ads')
-      return await response.json()
+      const response = await axiosInstance.get(`?gofor=top10ads`)
+      return response.data
     } catch (error) {
       console.error('Error fetching top 10 ads:', error)
       throw error
@@ -209,9 +198,8 @@ export default function Dashboard() {
 
   const fetchTrendingAds = async () => {
     try {
-      const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=trendingads')
-      if (!response.ok) throw new Error('Failed to fetch trending ads')
-      return await response.json()
+      const response = await axiosInstance.get(`?gofor=trendingads`)
+      return response.data
     } catch (error) {
       console.error('Error fetching trending ads:', error)
       throw error
@@ -315,9 +303,8 @@ export default function Dashboard() {
     const fetchBrands = async () => {
       try {
         setClientBrandsLoading(true)
-        const resp = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`)
-        if (!resp.ok) throw new Error('Failed to fetch brands list')
-        const data = await resp.json()
+        const response = await axiosInstance.get(`?gofor=brandslist&user_id=${userId}`)
+        const data = response.data
         const normalized = Array.isArray(data)
           ? data.map((b: any) => ({ brand_id: Number(b.brand_id), brand_name: String(b.brand_name || 'Unnamed') }))
           : []

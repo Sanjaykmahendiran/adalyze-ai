@@ -23,7 +23,7 @@ const AdCard = ({ ad, onViewReport }: { ad: RecentAd; onViewReport: (adId: strin
 
   const score = ad.score ?? 75; // default score
 
-return (
+  return (
     <div
       onClick={() => onViewReport(ad.ad_id.toString())}
       className="bg-[#171717] rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group cursor-pointer"
@@ -48,6 +48,7 @@ return (
         <div className="flex gap-1 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
           {(() => {
             if (!ad.platforms) return []
+
             
             try {
               // Try to parse as JSON first (for array format)

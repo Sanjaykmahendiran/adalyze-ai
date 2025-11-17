@@ -13,6 +13,7 @@ import {
     CarouselItem,
     type CarouselApi,
 } from "@/components/ui/carousel"
+import { axiosInstance } from "@/configs/axios"
 
 export default function CaseStudySection({ category }: { category: string }) {
     const router = useRouter()
@@ -27,13 +28,10 @@ export default function CaseStudySection({ category }: { category: string }) {
         const fetchCaseStudies = async () => {
             try {
                 const url = category
-                    ? `https://adalyzeai.xyz/App/api.php?gofor=casestudylist&category=${encodeURIComponent(category)}`
-                    : `https://adalyzeai.xyz/App/api.php?gofor=casestudylist`;
-                const response = await fetch(url)
-                if (!response.ok) {
-                    throw new Error('Failed to fetch case studies')
-                }
-                const data = await response.json()
+                    ? `?gofor=casestudylist&category=${encodeURIComponent(category)}`
+                    : `?gofor=casestudylist`;
+                const response = await axiosInstance.get(url)
+                const data = response.data
                 setCaseStudies(data.slice(0, 3))
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'An error occurred')

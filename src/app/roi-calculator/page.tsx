@@ -20,6 +20,7 @@ import { motion } from "framer-motion"
 import Image from "next/image"
 import { trackEvent } from "@/lib/eventTracker"
 import Spinner from "@/components/overlay"
+import { axiosInstance } from "@/configs/axios"
 
 interface ROIData {
     Return_on_Investment?: string
@@ -75,22 +76,16 @@ function ContactFormModal({ onClose }: { onClose: () => void }) {
         try {
             setIsSubmitting(true)
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    gofor: "sendquery",
-                    email,
-                    category: "roi-call",
-                    description,
-                }),
+            const response = await axiosInstance.post("", {
+                gofor: "sendquery",
+                email,
+                category: "roi-call",
+                description,
             })
 
-            const result = await response.json()
+            const result = response.data;
 
-            if (response.ok && result?.status !== "error") {
+            if (response && result?.status !== "error") {
                 setSubmitStatus('success')
                 captchaRef.current?.reset()
                 setTimeout(() => {
@@ -197,8 +192,8 @@ function TestimonialSlider() {
     useEffect(() => {
         const fetchTestimonials = async () => {
             try {
-                const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=testilist')
-                const data = await response.json()
+                const response = await axiosInstance.get("?gofor=testilist")
+                const data = response.data;
                 if (Array.isArray(data)) {
                     setTestimonials(data.filter(item => item.status === 1))
                 }
@@ -366,10 +361,8 @@ export default function ROICalculator() {
                     const users = getUserCount(teamMembers)
                     const weeklyRange = getWeeklyRangeMidpoint(creativesPerWeek)
 
-                    const response = await fetch(
-                        `https://adalyzeai.xyz/App/api.php?gofor=calculateROI&country=${country}&users=${users}&weekly_range=${weeklyRange}`
-                    )
-                    const data = await response.json()
+                    const response = await axiosInstance.get(`?gofor=calculateROI&country=${country}&users=${users}&weekly_range=${weeklyRange}`)
+                    const data = response.data;
                     setRoiData(data)
                 } catch (error) {
                     console.error("Error fetching ROI data:", error)

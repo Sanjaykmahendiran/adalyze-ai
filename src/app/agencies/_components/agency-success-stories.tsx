@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { X, ArrowRight, TrendingUp, Clock, Target, DollarSign } from "lucide-react"
 import { trackEvent } from "@/lib/eventTracker"
+import { axiosInstance } from "@/configs/axios"
 
 
 
@@ -89,8 +90,8 @@ export default function AgencySuccessStories() {
       try {
         setIsLoading(true)
         setIsError(false)
-        const res = await fetch("https://adalyzeai.xyz/App/api.php?gofor=agusecaselist", { cache: "no-store" })
-        const data: CaseStudyApiResponse[] = await res.json()
+        const response = await axiosInstance.get("?gofor=agusecaselist")
+        const data: CaseStudyApiResponse[] = response.data
         if (!Array.isArray(data)) throw new Error("Invalid response")
 
         const normalizeList = (text: string): string[] => {

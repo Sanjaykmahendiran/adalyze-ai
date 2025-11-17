@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { toast } from "react-hot-toast"
+import { axiosInstance } from "@/configs/axios"
 
 type ChangePasswordFormProps = {
   email: string;
@@ -44,13 +45,9 @@ export default function ChangePasswordForm({ email }: ChangePasswordFormProps) {
     }
 
     try {
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=loggedupdatepassword&email=${encodeURIComponent(email)}&oldpassword=${encodeURIComponent(formData.oldPassword)}&password=${encodeURIComponent(formData.newPassword)}&confirmpassword=${encodeURIComponent(formData.confirmPassword)}`;
+      const response = await axiosInstance.get(`?gofor=loggedupdatepassword&email=${encodeURIComponent(email)}&oldpassword=${encodeURIComponent(formData.oldPassword)}&password=${encodeURIComponent(formData.newPassword)}&confirmpassword=${encodeURIComponent(formData.confirmPassword)}`);
 
-      const response = await fetch(url, {
-        method: "GET",
-      });
-
-      const data = await response.json();
+      const data = response.data;
 
       if (data?.message === "Password Updated Successfully") {
         setShowSuccess(true);

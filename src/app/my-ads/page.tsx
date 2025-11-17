@@ -14,6 +14,7 @@ import UserLayout from "@/components/layouts/user-layout"
 import MyAdsSkeleton from "@/components/Skeleton-loading/myads-loading"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
 import Cookies from "js-cookie";
+import { axiosInstance } from "@/configs/axios"
 
 
 // Define the API response interface
@@ -172,9 +173,8 @@ export default function MyAdsPage() {
         const fetchAbAdsCount = async () => {
             try {
                 if (!userId) return;
-                const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=abadslist&user_id=${userId}`);
-                if (!response.ok) return;
-                const rawAbAds = await response.json();
+                const response = await axiosInstance.get(`?gofor=abadslist&user_id=${userId}`);
+                const rawAbAds = response.data;
                 setTotalAbAds(Array.isArray(rawAbAds) ? rawAbAds.length : 0);
             } catch (e) {
                 setTotalAbAds(0);
@@ -191,9 +191,8 @@ export default function MyAdsPage() {
         const fetchBrands = async () => {
             try {
                 setClientBrandsLoading(true)
-                const resp = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`)
-                if (!resp.ok) throw new Error('Failed to fetch brands list')
-                const data = await resp.json()
+                const response = await axiosInstance.get(`?gofor=brandslist&user_id=${userDetails?.user_id}`)
+                const data = response.data
                 const normalized = Array.isArray(data)
                     ? data.map((b: any) => ({ brand_id: Number(b.brand_id), brand_name: String(b.brand_name || 'Unnamed') }))
                     : []
@@ -213,7 +212,7 @@ export default function MyAdsPage() {
     const buildAdsListUrl = (offset: number, limit: number) => {
         if (!userId) return ''
 
-        const baseUrl = `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&offset=${offset}&limit=${limit}`
+        const baseUrl = `?gofor=adslist&user_id=${userId}&offset=${offset}&limit=${limit}`
         const params: string[] = []
 
         // Only add brand_id parameter if a specific brand is selected (not empty and not "All Brands")
@@ -249,13 +248,9 @@ export default function MyAdsPage() {
             const url = buildAdsListUrl(0, 1000)
             if (!url) return
 
-            const response = await fetch(url)
+                const response = await axiosInstance.get(url)
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch all ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const data: AdsApiResponse = response.data
             setAllAds(data.ads)
             setTotalAds(data.total)
         } catch (error) {
@@ -281,13 +276,9 @@ export default function MyAdsPage() {
                 return
             }
 
-            const response = await fetch(url)
+            const response = await axiosInstance.get(url)
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const data: AdsApiResponse = response.data
             setAds(data.ads)
             setTotalAds(data.total)
             // Removed fetchAllAds() from here to prevent double API call
@@ -322,13 +313,9 @@ export default function MyAdsPage() {
                 return
             }
 
-            const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=abadslist&user_id=${userId}`)
+            const response = await axiosInstance.get(`?gofor=abadslist&user_id=${userId}`)
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch A/B ads')
-            }
-
-            const rawAbAds: any = await response.json()
+            const rawAbAds: any = response.data
             const normalizedAbAds: ABAdPair[] = (rawAbAds || []).map((pair: any) => {
                 const adA = pair?.ad_a || {}
                 const adB = pair?.ad_b || {}

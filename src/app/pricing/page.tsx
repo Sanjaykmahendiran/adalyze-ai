@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
-import { Check, CreditCard, Loader2, Gift } from "lucide-react"
+import { useSearchParams } from "next/navigation"
+import { Check, CreditCard, Loader2, Gift, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -524,36 +525,65 @@ const ProPage: React.FC = () => {
 
                         {/* Free Trial - Full Width Row */}
                         <div className="mb-8 sm:mb-10">
-                            <div className="bg-gradient-to-r from-green-900/20 to-green-800/10 rounded-lg p-4 sm:p-6 shadow-lg shadow-green-500/10 border border-green-500/30 hover:scale-[1.02] transition-all duration-300 relative max-w-6xl mx-auto">
-                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                                    <Badge className="bg-green-600 text-white px-3 sm:px-4 py-1 text-xs sm:text-sm">
-                                        <Gift className="w-3 h-3 mr-1" />
-                                        Free Trial
-                                    </Badge>
+                            <div className="relative max-w-6xl mx-auto rounded-3xl border-2 border-green-500 bg-black p-4 sm:p-6 shadow-[0_0_20px_rgba(0,255,0,0.2)] hover:shadow-[0_0_25px_rgba(0,255,0,0.3)] transition-all duration-300">
+
+                                {/* Top Right Ad Credits */}
+                                <div className="absolute -top-5 right-6">
+                                    <div className="bg-green-600 text-white font-semibold rounded-full px-6 py-2 text-base shadow-lg">
+                                        Ad Credits: 01
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 items-center p-2 sm:p-0">
-                                    {/* Left: Plan Info */}
-                                    <div className="lg:col-span-2">
-                                        <h3 className="text-xl sm:text-2xl font-semibold mb-2">
-                                            Try Premium Free
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+
+                                    {/* Left Side */}
+                                    <div className="lg:col-span-2 px-2">
+
+                                        <h3 className="text-2xl sm:text-3xl font-bold text-green-500">
+                                            Try Premium for <span className="text-white font-bold text-4xl sm:text-5xl">Free</span>
                                         </h3>
 
-                                        <div className="flex items-baseline gap-2 mb-3">
-                                            <span className="text-3xl sm:text-4xl font-bold">
-                                                {userCurrency === "INR" ? "₹0" : "$0"}
+                                        <p className="text-white mt-2">
+                                            unlock every feature, analyze smarter, and boost your ad performance instantly
+                                        </p>
+
+                                        {/* Feature Pills */}
+                                        <div className="flex flex-wrap gap-3 mt-4">
+
+                                            <span className="bg-green-700/20 border border-green-600 text-green-400 px-4 py-1 rounded-full text-sm">
+                                                Valid for 5 Days
                                             </span>
-                                            <span className="text-base sm:text-lg text-gray-300">Validity: 5 days</span>
-                                        </div>
-                                        <div className="text-base text-green-400">
-                                            Access all premium features for 1 ad
+
+                                            <span className="bg-green-700/20 border border-green-600 text-green-400 px-4 py-1 rounded-full text-sm">
+                                                No Credit Card Required
+                                            </span>
+
+                                            <span className="bg-green-700/20 border border-green-600 text-green-400 px-4 py-1 rounded-full text-sm">
+                                                AI Analysis & Report
+                                            </span>
+
+                                            <span className="bg-green-700/20 border border-green-600 text-green-400 px-4 py-1 rounded-full text-sm">
+                                                Access all Premium Features
+                                            </span>
+
                                         </div>
                                     </div>
 
-                                    {/* Right: CTA Button */}
-                                    <div className="flex justify-center lg:justify-end">
+                                    {/* Right CTA - Bottom aligned */}
+                                    <div className="flex flex-col gap-4 self-end justify-end h-full">
+
+                                        {/* Price */}
+                                        <p className="text-green-500 text-4xl font-bold text-center">
+                                            {currencyLoading ? (
+                                                <span className="inline-block w-20 h-10 bg-[#171717] rounded animate-pulse"></span>
+                                            ) : (
+                                                userCurrency === "INR" ? "₹.00" : "$.00"
+                                            )}
+                                        </p>
+
+                                        {/* Button */}
                                         <Button
-                                            className="bg-green-600 hover:bg-green-700 text-base px-8 py-2 sm:px-8 sm:py-4 h-auto sm:min-w-[200px] w-full"
+                                            className="bg-white text-black hover:bg-gray-200 text-lg font-semibold px-8 py-4 h-auto rounded-xl shadow-md w-full sm:w-auto"
                                             type="button"
                                             onClick={() => {
                                                 if (isDashboardPage && !userId) {
@@ -571,15 +601,18 @@ const ProPage: React.FC = () => {
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Gift className="w-5 h-5 mr-2" />
-                                                    {isDashboardPage ? "Start Free Trial" : "Start Free Trial"}
+                                                    Start Free Trial <ArrowRight className="w-5 h-5 ml-2" />
                                                 </>
                                             )}
                                         </Button>
+
                                     </div>
+
                                 </div>
+
                             </div>
                         </div>
+
 
                         {/* Package Type Tabs - Only show if userDetails.type is 1 or not set */}
                         {(!userDetails?.type || userDetails.type === "1") && (
@@ -611,7 +644,7 @@ const ProPage: React.FC = () => {
 
 
                         {/* Paid Plans - Dynamic Grid Layout */}
-                        <div className={`grid gap-6 sm:gap-8 max-w-5xl mx-auto ${activePlans.length === 1 ? 'grid-cols-1 max-w-md' :
+                        <div className={`grid gap-6 sm:gap-8 max-w-5xl mx-auto items-stretch ${activePlans.length === 1 ? 'grid-cols-1 max-w-md' :
                             activePlans.length === 2 ? 'grid-cols-1 lg:grid-cols-2' :
                                 activePlans.length === 3 ? 'grid-cols-1 lg:grid-cols-3' :
                                     'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
@@ -621,15 +654,14 @@ const ProPage: React.FC = () => {
                                 const isPopular = index === 1 && activePlans.length >= 2 // Mark second plan as popular if we have 2+ plans
 
                                 return (
-                                    <div key={plan.package_id}>
-
+                                    <div key={plan.package_id} className="h-full flex">
                                         <div
-                                            className={`bg-black rounded-lg p-6 sm:p-8 relative shadow-lg shadow-white/5 border hover:scale-[1.02] transition-all duration-300 flex flex-col w-full ${isPopular ? 'border-primary' : 'border-[#2a2a2a]'
+                                            className={`bg-black rounded-3xl py-6 sm:py-8 px-3 sm:px-5 relative shadow-lg shadow-white/5 border-3 hover:scale-[1.02] transition-all duration-300 flex flex-col w-full h-full ${isPopular ? 'border-primary' : 'border-[#3d3d3d]'
                                                 }`}
                                         >
                                             {/* Popular Badge */}
                                             {isPopular && (
-                                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                                                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                                                     <Badge className="bg-primary text-white px-3 sm:px-4 py-1 text-xs sm:text-sm">
                                                         Most Popular
                                                     </Badge>
@@ -637,130 +669,162 @@ const ProPage: React.FC = () => {
                                             )}
 
                                             <div className="flex-1">
-                                                {/* Plan name with One Time text or billing dropdown in justify-between */}
-                                                {plan.package_id === 1 ? (
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <h3 className="text-lg sm:text-xl font-semibold">
-                                                            {plan.plan_name}
-                                                        </h3>
-                                                        <div className="text-sm text-white/80">
-                                                            One Time
+                                                <div className="bg-[#171717] rounded-3xl p-4">
+                                                    {/* Plan name with One Time text or billing dropdown in justify-between */}
+                                                    {plan.package_id === 1 ? (
+                                                        <div className="flex justify-between items-center mb-6">
+                                                            <div className="flex flex-col">
+                                                                <h3 className="text-lg sm:text-xl font-semibold">
+                                                                    {plan.plan_name}
+                                                                </h3>
+                                                                {plan.type === 1 && (
+                                                                    <p className="text-sm text-white/70">
+                                                                        Best Pick for Single Brand
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-sm text-white/70">
+                                                                One Time
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <h3 className="text-lg sm:text-xl font-semibold">
-                                                            {plan.plan_name}
-                                                        </h3>
-                                                        <Select
-                                                            value={getBillingPeriod(plan.package_id)}
-                                                            onValueChange={(value) => setBillingPeriodForPlan(plan.package_id, value as BillingPeriod)}
-                                                        >
-                                                            <SelectTrigger className="w-32 py-2 text-sm bg-[#171717] text-white">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent className="bg-[#171717]">
-                                                                <SelectItem value="monthly" className="text-white hover:bg-[#171717]">
-                                                                    Monthly
-                                                                </SelectItem>
-                                                                <SelectItem value="half-yearly" className="text-white hover:bg-[#171717]">
-                                                                    Half-Yearly
-                                                                </SelectItem>
-                                                                <SelectItem value="yearly" className="text-white hover:bg-[#171717]">
-                                                                    Yearly
-                                                                </SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                )}
+                                                    ) : (
+                                                        <div className="flex justify-between items-center mb-6">
+                                                            <div className="flex flex-col">
+                                                                <h3 className="text-lg sm:text-xl font-semibold">
+                                                                    {plan.plan_name}
+                                                                </h3>
+                                                                {plan.type === 1 && (
+                                                                    <p className="text-sm text-white/70">
+                                                                        Best Pick for Single Brand
+                                                                    </p>
+                                                                )}
+                                                                {plan.type === 2 && (
+                                                                    <p className="text-sm text-white/70">
+                                                                        Best Pick for Multi Brand
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            <Select
+                                                                value={getBillingPeriod(plan.package_id)}
+                                                                onValueChange={(value) => setBillingPeriodForPlan(plan.package_id, value as BillingPeriod)}
+                                                            >
+                                                                <SelectTrigger className="w-32 py-2 text-sm bg-[#3d3d3d] text-white/70 text-sm font-semibold px-3 py-1 ">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="bg-[#3d3d3d]">
+                                                                    <SelectItem value="monthly" className="text-white hover:bg-[#171717]">
+                                                                        Monthly
+                                                                    </SelectItem>
+                                                                    <SelectItem value="half-yearly" className="text-white hover:bg-[#171717]">
+                                                                        Half-Yearly
+                                                                    </SelectItem>
+                                                                    <SelectItem value="yearly" className="text-white hover:bg-[#171717]">
+                                                                        Yearly
+                                                                    </SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    )}
 
-                                                {/* Price Display with Tax Details */}
-                                                {currencyLoading ? (
-                                                    <div className="mb-4">
-                                                        <div className="h-8 bg-[#171717] rounded animate-pulse mb-2"></div>
-                                                        <div className="h-4 bg-[#171717] rounded w-24 animate-pulse"></div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="mb-4">
-                                                        {(() => {
-                                                            const priceInfo = getPriceDisplay(plan)
-                                                            return (
-                                                                <div>
-                                                                    <div className="flex items-center gap-3 mb-2">
-                                                                        {priceInfo.hasDiscount && (
-                                                                            <span className="text-lg sm:text-xl text-white/60 line-through">
-                                                                                {priceInfo.originalPrice}
+                                                    {/* Price Display with Tax Details */}
+                                                    {currencyLoading ? (
+                                                        <div className="mb-4">
+                                                            <div className="h-8 bg-[#171717] rounded animate-pulse mb-2"></div>
+                                                            <div className="h-4 bg-[#171717] rounded w-24 animate-pulse"></div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="mb-4">
+                                                            {(() => {
+                                                                const priceInfo = getPriceDisplay(plan)
+                                                                return (
+                                                                    <div>
+                                                                        <div className="flex items-center gap-3 mb-6">
+                                                                            {priceInfo.hasDiscount && (
+                                                                                <span className="text-lg sm:text-xl text-white/60 line-through">
+                                                                                    {priceInfo.originalPrice}
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="text-3xl sm:text-4xl font-bold text-white">
+                                                                                {priceInfo.discountedPrice}
                                                                             </span>
-                                                                        )}
-                                                                        <span className="text-2xl sm:text-3xl font-bold text-white">
-                                                                            {priceInfo.discountedPrice}
-                                                                        </span>
-                                                                        {/* Savings Badge */}
-                                                                        {plan.package_id !== 1 && getBillingPeriod(plan.package_id) !== 'monthly' && (
-                                                                            <Badge className="bg-green-600 text-white px-2 py-1 text-xs">
-                                                                                {getBillingPeriod(plan.package_id) === 'half-yearly' ? 'Save 1 Month' : 'Save 2 Months'}
-                                                                            </Badge>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="text-base sm:text-lg text-gray-300">
-                                                                        <span className="text-green-600 font-semibold">
-                                                                            Ad Credits: {plan.package_id === 1
-                                                                                ? (plan.ads_limit === "Unlimited" ? "Unlimited" : plan.ads_limit)
-                                                                                : calculateAdsLimit(plan.ads_limit, getBillingPeriod(plan.package_id))
-                                                                            } </span> |
-                                                                        Validity: {plan.package_id === 1
-                                                                            ? `${plan.valid_till} days`
-                                                                            : getBillingPeriod(plan.package_id) === 'monthly'
-                                                                                ? `${plan.valid_till} days`
-                                                                                : getBillingPeriod(plan.package_id) === 'half-yearly'
-                                                                                    ? '6 months'
-                                                                                    : '12 months'
-                                                                        }
-                                                                    </div>
-                                                                </div>
-                                                            )
-                                                        })()}
-                                                    </div>
-                                                )}
+                                                                            {/* Savings Badge */}
+                                                                            {plan.package_id !== 1 && getBillingPeriod(plan.package_id) !== 'monthly' && (
+                                                                                <Badge className="bg-green-600 text-white px-2 py-1 text-xs">
+                                                                                    {getBillingPeriod(plan.package_id) === 'half-yearly' ? 'Save 1 Month' : 'Save 2 Months'}
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className=" flex items-center gap-2 mb-6">
+                                                                            <span
+                                                                                className="inline-block bg-primary/30 text-primary text-sm font-semibold px-3 py-1 rounded-full"
+                                                                            >
+                                                                                Ad Credits:{" "}
+                                                                                {plan.package_id === 1
+                                                                                    ? (plan.ads_limit === "Unlimited" ? "Unlimited" : plan.ads_limit)
+                                                                                    : calculateAdsLimit(plan.ads_limit, getBillingPeriod(plan.package_id))
+                                                                                }
+                                                                            </span>
 
-                                                <div className="mt-auto">
-                                                    <Button
-                                                        className={`w-full text-sm sm:text-base ${isPopular
-                                                            ? 'bg-primary hover:bg-primary/90'
-                                                            : 'bg-primary hover:bg-primary/90'
-                                                            }`}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (isDashboardPage && !userId) {
-                                                                router.push("/register");
-                                                            } else {
-                                                                initiatePayment(userCurrency, plan);
-                                                            }
-                                                        }}
-                                                        disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[plan.package_id]))}
-                                                    >
-                                                        {paymentLoading[plan.package_id] && !isDashboardPage ? (
-                                                            <>
-                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                                Processing...
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <CreditCard className="w-4 h-4 mr-2" />
-                                                                {isDashboardPage ? "Analyze Ad" : `Pay ${getPriceDisplay(plan).primary}`}
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                                            <span className="inline-block bg-primary/30 text-primary text-sm font-semibold px-3 py-1 rounded-full">
+                                                                                Validity:{" "}
+                                                                                {plan.package_id === 1
+                                                                                    ? `${plan.valid_till} days`
+                                                                                    : getBillingPeriod(plan.package_id) === 'monthly'
+                                                                                        ? `${plan.valid_till} days`
+                                                                                        : getBillingPeriod(plan.package_id) === 'half-yearly'
+                                                                                            ? '6 months'
+                                                                                            : '12 months'
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })()}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="mt-auto px-3 sm:px-5">
+                                                        <Button
+                                                            className={`w-full text-base sm:text-lg py-6 rounded-xl ${isPopular
+                                                                ? 'bg-primary hover:bg-primary/90'
+                                                                : 'bg-primary hover:bg-primary/90'
+                                                                }`}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (isDashboardPage && !userId) {
+                                                                    router.push("/register");
+                                                                } else {
+                                                                    initiatePayment(userCurrency, plan);
+                                                                }
+                                                            }}
+                                                            disabled={(!isDashboardPage && (!razorpayLoaded || currencyLoading || paymentLoading[plan.package_id]))}
+                                                        >
+                                                            {paymentLoading[plan.package_id] && !isDashboardPage ? (
+                                                                <>
+                                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                                    Processing...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <CreditCard className="w-4 h-4 mr-2" />
+                                                                    {isDashboardPage ? "Analyze Ad" : `Pay ${getPriceDisplay(plan).primary}`}
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                        <p className="text-xs text-white/70 text-center mt-2">
+                                                            No Credit Card Required
+                                                        </p>
+                                                    </div>
+
+                                                    {!razorpayLoaded && !currencyLoading && (
+                                                        <p className="text-xs text-gray-500 text-center mt-2">
+                                                            Loading payment gateway...
+                                                        </p>
+                                                    )}
                                                 </div>
 
-                                                {!razorpayLoaded && !currencyLoading && (
-                                                    <p className="text-xs text-gray-500 text-center mt-2">
-                                                        Loading payment gateway...
-                                                    </p>
-                                                )}
-
                                                 <div className="mt-6">
-                                                    <h3 className="text-lg sm:text-xl font-semibold  mb-3">Features</h3>
+                                                    <h3 className="text-lg sm:text-xl font-semibold text-primary mb-3">What's Included ?</h3>
                                                     <ul className="space-y-2 sm:space-y-4 mb-6 sm:mb-8">
                                                         {planFeatures.map((feature, featureIndex) => (
                                                             <li

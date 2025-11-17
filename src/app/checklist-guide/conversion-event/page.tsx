@@ -9,22 +9,16 @@ import {
   CheckCircle2,
   XCircle
 } from 'lucide-react';
+import ChecklistHeade from "../header/page";
 
 const ConversionEventPage: React.FC = () => {
   return (
     <main className="w-full bg-black antialiased">
+      <ChecklistHeade />
       {/* Hero */}
       <section className="px-4 py-12 md:py-16 bg-gradient-to-b from-zinc-900 to-black border-b border-zinc-800">
         <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 bg-white/5 rounded-full px-4 py-2 mb-5 ring-1 ring-white/10"
-          >
-            <Gauge className="h-4 w-4 text-primary" />
-            <p className="text-sm md:text-base font-medium">Tracking & Launch Checklist</p>
-          </motion.div>
+          
 
           <motion.h1
             initial={{ opacity: 0, y: 10 }}

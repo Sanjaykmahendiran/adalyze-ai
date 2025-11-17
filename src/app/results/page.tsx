@@ -10,9 +10,8 @@ import toast from "react-hot-toast"
 import {
   Download, Search, Sparkles, AlertTriangle, CheckCircle, Lock, PenTool, GitCompareArrows, Target,
   TrendingUp, FileText, ChevronLeft, ChevronRight, Info, Zap, Shield, BarChart3,
-  Type, ArrowLeft, ShieldCheck, ChartNoAxesCombined, MousePointerClick, TrendingDown,
-  Copy, Share2, Trash2, Loader2, Gift, ChevronUp,
-  Check, X, Lightbulb, MessageSquare, ArrowRight,
+  Type, ArrowLeft, ShieldCheck, ChartNoAxesCombined, MousePointerClick, TrendingDown, Copy, Share2,
+  Trash2, Loader2, Gift, ChevronUp, Lightbulb, MessageSquare, ArrowRight, Calendar, MonitorCheckIcon, Cpu, Eye, ImageIcon,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -35,6 +34,8 @@ import GoIcon from "@/assets/go-icon.png"
 import NoGoIcon from "@/assets/nogo-icon.png"
 import AdPerformancePost from "@/components/share-result"
 import { axiosInstance } from "@/configs/axios"
+import ShareAdResultFeedback from "@/components/share-feedback"
+import AdalyzeChatBot from "./_components/AdalyzeChatBot"
 
 export default function ResultsPage() {
   const { userDetails } = useFetchUserDetails()
@@ -59,12 +60,19 @@ export default function ResultsPage() {
   // View Target dialog state
   const [viewTargetOpen, setViewTargetOpen] = useState(false)
 
+  // Heatmap states
+  const [heatmapData, setHeatmapData] = useState<any>(null)
+  const [heatmapLoading, setHeatmapLoading] = useState(false)
+  const [showHeatmapOverlay, setShowHeatmapOverlay] = useState(false)
+
   // Upgrade popup state
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
 
   // Scroll to Top button visibility
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [showMoreGoReasons, setShowMoreGoReasons] = useState(false);
+  const [selectedPlatformExplanation, setSelectedPlatformExplanation] = useState<{ platform: string; explanation: string; type: 'suitable' | 'notsuitable' } | null>(null);
+  const [isExplanationDialogOpen, setIsExplanationDialogOpen] = useState(false);
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstanceRef = useRef<any>(null)
   const issuesSectionRef = useRef<HTMLDivElement>(null)
@@ -405,6 +413,121 @@ export default function ResultsPage() {
     }
   };
 
+  const handleShareFeedback = async (feedbackType: 'marketing' | 'designer' = 'marketing') => {
+    if (!apiData) return;
+
+    setIsShareImageGenerating(true);
+
+    try {
+      // Get ad_id from either URL param or token
+      const adId = getAdIdFromUrl();
+
+      // Get user_id from userDetails or from token if viewing shared link
+      const userId = userDetails?.user_id || null;
+
+      // Generate share URL and text using tokenUtils
+      const shareUrl = generateShareUrl(adId, userId || undefined);
+      const shareText = generateShareText(adId, userId || undefined);
+
+      // Generate image from share card - use different ID based on feedback type
+      const cardId = feedbackType === 'marketing' ? 'ad-feedback-card' : 'ad-feedback-card-designer';
+      const shareCard = document.getElementById(cardId);
+      if (!shareCard) {
+        throw new Error('Share card element not found');
+      }
+
+      // Convert to blob
+      const dataUrl = await htmlToImage.toPng(shareCard, {
+        quality: 1,
+        pixelRatio: 2,
+      });
+
+      // Convert data URL to blob
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], 'ad-feedback.png', { type: 'image/png' });
+
+      // Check if Web Share API is available (works on iOS, Android, and some desktop browsers)
+      if (navigator.share) {
+        try {
+          // Pre-copy text to clipboard as backup
+          // This helps when apps like WhatsApp/Instagram ignore the text parameter
+          try {
+            await navigator.clipboard.writeText(shareText);
+          } catch (clipboardError) {
+            console.log('Clipboard write failed (might need user permission):', clipboardError);
+          }
+
+          // Check if we can share files
+          const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+
+          if (canShareFiles) {
+            // Share with image file (works on iOS Safari, Android Chrome, etc.)
+            // This opens the native share sheet with all available apps:
+            // WhatsApp, Instagram, LinkedIn, Twitter/X, Facebook, etc.
+            await navigator.share({
+              title: 'Ad Feedback Results',
+              text: shareText,
+              files: [file],
+            });
+
+            toast.success('Shared successfully! Text was also copied to clipboard if needed.');
+          } else {
+            // Fallback: Share text/URL only (some browsers don't support file sharing)
+            await navigator.share({
+              title: 'Ad Feedback Results',
+              text: shareText,
+              url: shareUrl,
+            });
+
+            // Download the image for manual attachment
+            const link = document.createElement('a');
+            link.download = 'ad-feedback.png';
+            link.href = dataUrl;
+            link.click();
+
+            toast.success('Text shared and image downloaded! Attach the image manually.');
+          }
+        } catch (shareError: any) {
+          // User cancelled the share dialog
+          if (shareError.name === 'AbortError') {
+            toast('Share cancelled', { icon: 'ℹ️' });
+            return;
+          }
+          // Some other error occurred
+          throw shareError;
+        }
+      } else {
+        // Fallback for browsers without Web Share API (older desktop browsers)
+        // Download the image
+        const link = document.createElement('a');
+        link.download = 'ad-feedback.png';
+        link.href = dataUrl;
+        link.click();
+
+        // Copy text with URL to clipboard
+        await navigator.clipboard.writeText(shareText);
+
+        toast.success('Image downloaded and text copied! Open your social media app and paste the text, then attach the downloaded image.');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+
+      // Final fallback: Just copy text to clipboard
+      try {
+        const adId = getAdIdFromUrl();
+        const userId = userDetails?.user_id || null;
+        const shareText = generateShareText(adId, userId || undefined);
+
+        await navigator.clipboard.writeText(shareText);
+        toast.error('Sharing failed. Text copied to clipboard!');
+      } catch (clipboardError) {
+        toast.error('Sharing failed. Please try again.');
+      }
+    } finally {
+      setIsShareImageGenerating(false);
+    }
+  };
+
   // Delete ad function
   const handleDeleteAd = async () => {
     const adId = getAdIdFromUrl();
@@ -433,6 +556,53 @@ export default function ResultsPage() {
     } finally {
       setDeleteLoading(false)
       setDeleteDialogOpen(false)
+    }
+  }
+
+  // Fetch heatmap data
+  const handleFetchHeatmap = async () => {
+    // If heatmap is already loaded, just toggle overlay
+    if (heatmapData) {
+      setShowHeatmapOverlay(!showHeatmapOverlay)
+      return
+    }
+
+    const adId = getAdIdFromUrl();
+    if (!adId) {
+      toast.error('No ad ID found')
+      return
+    }
+
+    setHeatmapLoading(true)
+
+    try {
+      const response = await fetch('https://adalyzeai.xyz/App/heatmap.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ad_upload_id: Number(adId)
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch heatmap')
+      }
+
+      const result = await response.json()
+
+      if (result.heatmap && result.heatmap.zones) {
+        setHeatmapData(result.heatmap)
+        setShowHeatmapOverlay(true)
+      } else {
+        throw new Error('Invalid heatmap data')
+      }
+    } catch (error) {
+      console.error('Error fetching heatmap:', error)
+      toast.error('Failed to load heatmap. Please try again.')
+    } finally {
+      setHeatmapLoading(false)
     }
   }
 
@@ -518,17 +688,22 @@ export default function ResultsPage() {
   const getPlatformSuitability = () => {
     if (!apiData) return [];
 
-    const suitablePlatforms = safeArray(apiData.platform_suits).map(p =>
-      typeof p === 'string' ? p.toLowerCase() : String(p).toLowerCase()
-    );
+    // Handle new structure with objects
+    const platformSuits = safeArray((apiData as any)?.platform_suits);
+    const platformNotSuits = safeArray((apiData as any)?.platform_notsuits);
 
-    const allPlatforms = ['Facebook', 'Instagram', 'LinkedIn', 'Twitter', 'Flyer'];
+    // Extract platforms from suitable platforms
+    const suitablePlatforms = platformSuits
+      .filter((item: any) => item && typeof item === 'object' && item.platform)
+      .map((item: any) => ({ platform: item.platform, suitable: true, score: item.suitable_score }));
 
-    const suitabilityList = allPlatforms
-      .filter(platform => suitablePlatforms.includes(platform.toLowerCase()))
-      .map(platform => ({ platform, suitable: true }));
+    // Extract platforms from not suitable platforms
+    const notSuitablePlatforms = platformNotSuits
+      .filter((item: any) => item && typeof item === 'object' && item.platform)
+      .map((item: any) => ({ platform: item.platform, suitable: false, score: item.notsuitable_score }));
 
-    return suitabilityList;
+    // Combine both lists
+    return [...suitablePlatforms, ...notSuitablePlatforms];
   };
 
   // Helper function to format date
@@ -672,6 +847,7 @@ export default function ResultsPage() {
   const filteredAdCopies = getFilteredAdCopies()
   const images = safeArray(apiData?.images)
   const feedbackDigitalMark = safeArray(apiData?.feedback_digitalmark)
+  const feedbackDesigner = safeArray(apiData?.feedback_designer)
   const criticalIssues = safeArray((apiData as any)?.critical_issues)
   const minorIssues = safeArray((apiData as any)?.minor_issues)
   const estimatedCtrLossArr = safeArray((apiData as any)?.estimated_ctr_loss_if_issues_unfixed)
@@ -801,7 +977,7 @@ export default function ResultsPage() {
               {/* Mobile: Image + Go/No Go side by side */}
               <div className="lg:hidden grid grid-cols-2 gap-4">
                 {/* Ad Preview - Left side, small square */}
-                <div className="relative aspect-square overflow-hidden rounded-xl bg-[#121212] border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+                <div className="relative aspect-square overflow-hidden rounded-xl bg-[#121212]  hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
                   {apiData.ad_type === "Video" && apiData.video ? (
                     <video
                       src={apiData.video}
@@ -821,24 +997,104 @@ export default function ResultsPage() {
                           className="object-contain"
                         />
 
+                        {/* Dark Overlay when heatmap is active */}
+                        {showHeatmapOverlay && (
+                          <div className="absolute inset-0 bg-black/40 z-[5]" />
+                        )}
+
+                        {/* Heatmap Zones Overlay */}
+                        {showHeatmapOverlay && heatmapData && heatmapData.zones && images.length === 1 && (
+                          <>
+                            {heatmapData.zones.map((zone: any, index: number) => (
+                              <div
+                                key={index}
+                                className="absolute z-[6] cursor-pointer group"
+                                style={{
+                                  left: `${zone.x}%`,
+                                  top: `${zone.y}%`,
+                                  transform: 'translate(-50%, -50%)',
+                                }}
+                              >
+                                {/* Zone Marker - Text Container with Emoji */}
+                                <div className="relative">
+                                  {/* Blurred Background */}
+                                  <div
+                                    className="absolute inset-0 rounded-full blur-md opacity-50 -z-10"
+                                    style={{
+                                      backgroundColor: zone.color,
+                                      transform: 'scale(1.5)',
+                                    }}
+                                  />
+
+                                  {/* Label Container */}
+                                  <div
+                                    className="relative flex items-center gap-0.5 px-1 py-1 rounded-full transition-all duration-200 group-hover:scale-105"
+                                    style={{
+                                      backgroundColor: zone.color,
+                                    }}
+                                  >
+                                    {/* Emoji */}
+                                    <span className="text-sm leading-none">{zone.emoji}</span>
+
+                                    {/* Label */}
+                                    <span className="text-xs font-medium text-white whitespace-nowrap leading-none">
+                                      {zone.label}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
+
+                        {/* View Heatmap Button - On Image (only for single image) */}
+                        {images.length === 1 && apiData.ad_type !== "Video" && (
+                          <div className="absolute bottom-2 right-2 z-[7]">
+                            <Button
+                              size="sm"
+                              onClick={handleFetchHeatmap}
+                              disabled={heatmapLoading}
+                              className={cn(
+                                "flex items-center gap-1.5 font-medium transition-all duration-200 text-xs px-2 py-1 h-7",
+                                showHeatmapOverlay
+                                  ? "bg-red-700/20 text-red-400 border border-red-700/40 hover:bg-red-700/30"
+                                  : "bg-black text-white border border-white/40 hover:bg-white/10"
+                              )}
+                            >
+                              {heatmapLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  {showHeatmapOverlay ? (
+                                    <ImageIcon className="w-3 h-3" />
+                                  ) : (
+                                    <Eye className="w-3 h-3" />
+                                  )}
+                                  {showHeatmapOverlay ? "View Image" : "View Heatmap"}
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
+
                         {/* Navigation - Touch Optimized */}
                         {images.length > 1 && (
                           <>
                             <button
                               onClick={prevImage}
-                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-all touch-manipulation cursor-pointer"
+                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-all touch-manipulation cursor-pointer z-[8]"
                             >
                               <ChevronLeft className="w-3 h-3" />
                             </button>
                             <button
                               onClick={nextImage}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-all touch-manipulation cursor-pointer"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-all touch-manipulation cursor-pointer z-[8]"
                             >
                               <ChevronRight className="w-3 h-3" />
                             </button>
 
                             {/* Indicators - Mobile Optimized */}
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1 z-[8]">
                               {images.map((_, index) => (
                                 <button
                                   key={index}
@@ -884,33 +1140,13 @@ export default function ResultsPage() {
                       {apiData.industry || "N/A"}
                     </Badge>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2  transition-all duration-300 max-w-full">
-                    <span className="text-sm flex-shrink-0">Best Suit for:</span>
-                    <div className="flex flex-wrap gap-1 max-w-full overflow-hidden">
-                      {platformSuitability.map((platform) => (
-                        <Badge
-                          key={platform.platform}
-                          className={cn(
-                            "flex items-center gap-1 transition-all duration-300 text-xs whitespace-nowrap",
-                            platform.suitable
-                              ? "bg-green-600/20 text-green-400 border border-green-600/30"
-                              : "bg-red-600/20 text-red-400 border border-red-600/30"
-                          )}
-                        >
-                          {platform.suitable && <CheckCircle className="w-3 h-3 flex-shrink-0" />}
-                          {platform.platform}
-                        </Badge>
-                      ))}
-
-                    </div>
-                  </div>
                 </div>
 
                 {/* Score Section - Mobile Grid */}
                 <div className="grid grid-cols-1 gap-3">
                   {/* Performance Score - Full Width */}
                   <div
-                    className="flex items-center justify-between p-4 sm:p-6 rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                    className="flex items-center justify-between p-4 sm:p-6 rounded-2xl bg-[#121212]  shadow-lg hover:scale-[1.01] transition-all duration-300"
                     onMouseEnter={e => {
                       e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                     }}
@@ -951,7 +1187,7 @@ export default function ResultsPage() {
                   <div className="grid grid-cols-2 gap-3">
                     {/* Confidence Score */}
                     <div
-                      className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                      className="p-3 sm:p-4 rounded-3xl sm:rounded-4xl bg-[#121212]  shadow-lg hover:scale-[1.01] transition-all duration-300"
                       onMouseEnter={e => {
                         e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                       }}
@@ -986,7 +1222,7 @@ export default function ResultsPage() {
 
                     {/* Match Score */}
                     <div
-                      className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                      className="p-3 sm:p-4 rounded-3xl sm:rounded-4xl bg-[#121212]  shadow-lg hover:scale-[1.01] transition-all duration-300"
                       onMouseEnter={e => {
                         e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                       }}
@@ -1254,10 +1490,10 @@ export default function ResultsPage() {
             </div>
 
             {/* Desktop Layout - Hidden on mobile */}
-            <div className="hidden bg-black lg:grid grid-cols-1 lg:grid-cols-3 gap-2 lg:gap-4 p-6 rounded-2xl">
+            <div className="hidden bg-black lg:grid grid-cols-1 lg:grid-cols-3 gap-2 lg:gap-4 p-6 rounded-3xl sm:rounded-4xl">
               {/* Ad Preview Section - Desktop */}
               <div className="lg:col-span-1 order-1 lg:order-1">
-                <div className="relative aspect-square overflow-hidden rounded-xl sm:rounded-2xl bg-[#121212] border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300 max-w-sm mx-auto lg:max-w-none">
+                <div className="relative aspect-square overflow-hidden rounded-3xl sm:rounded-4xl bg-[#121212]  hover:shadow-lg hover:scale-[1.01] transition-all duration-300 max-w-sm mx-auto lg:max-w-none">
                   {apiData.ad_type === "Video" && apiData.video ? (
                     <video
                       src={apiData.video}
@@ -1277,24 +1513,104 @@ export default function ResultsPage() {
                           className="object-contain"
                         />
 
+                        {/* Dark Overlay when heatmap is active */}
+                        {showHeatmapOverlay && (
+                          <div className="absolute inset-0 bg-black/60 z-[5]" />
+                        )}
+
+                        {/* Heatmap Zones Overlay */}
+                        {showHeatmapOverlay && heatmapData && heatmapData.zones && images.length === 1 && (
+                          <>
+                            {heatmapData.zones.map((zone: any, index: number) => (
+                              <div
+                                key={index}
+                                className="absolute z-[6] cursor-pointer group"
+                                style={{
+                                  left: `${zone.x}%`,
+                                  top: `${zone.y}%`,
+                                  transform: 'translate(-50%, -50%)',
+                                }}
+                              >
+                                {/* Zone Marker - Text Container with Emoji */}
+                                <div className="relative">
+                                  {/* Blurred Background */}
+                                  <div
+                                    className="absolute inset-0 rounded-full blur-md opacity-50 -z-10"
+                                    style={{
+                                      backgroundColor: zone.color,
+                                      transform: 'scale(1.5)',
+                                    }}
+                                  />
+
+                                  {/* Label Container */}
+                                  <div
+                                    className="relative flex items-center gap-0.5 px-1 py-1 rounded-full transition-all duration-200 group-hover:scale-105"
+                                    style={{
+                                      backgroundColor: zone.color,
+                                    }}
+                                  >
+                                    {/* Emoji */}
+                                    <span className="text-sm leading-none">{zone.emoji}</span>
+
+                                    {/* Label */}
+                                    <span className="text-xs font-medium text-white whitespace-nowrap leading-none">
+                                      {zone.label}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
+
+                        {/* View Heatmap Button - On Image (only for single image) */}
+                        {images.length === 1 && apiData.ad_type !== "Video" && (
+                          <div className="absolute bottom-3 right-3 z-[7]">
+                            <Button
+                              size="sm"
+                              onClick={handleFetchHeatmap}
+                              disabled={heatmapLoading}
+                              className={cn(
+                                "flex items-center gap-2 font-medium transition-all duration-200 text-xs px-3 py-1.5 h-8",
+                                showHeatmapOverlay
+                                  ? "bg-black text-white border border-white/40 hover:bg-[#171717]"
+                                  : "bg-black text-white border border-white/40 hover:bg-[#171717]"
+                              )}
+                            >
+                              {heatmapLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  {showHeatmapOverlay ? (
+                                    <ImageIcon className="w-3 h-3" />
+                                  ) : (
+                                    <Eye className="w-3 h-3" />
+                                  )}
+                                  {showHeatmapOverlay ? "View Image" : "View Heatmap"}
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
+
                         {/* Navigation - Touch Optimized */}
                         {images.length > 1 && (
                           <>
                             <button
                               onClick={prevImage}
-                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer"
+                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer z-[8]"
                             >
                               <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                             </button>
                             <button
                               onClick={nextImage}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-all touch-manipulation cursor-pointer z-[8]"
                             >
                               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                             </button>
 
                             {/* Indicators - Mobile Optimized */}
-                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-[8]">
                               {images.map((_, index) => (
                                 <button
                                   key={index}
@@ -1537,26 +1853,6 @@ export default function ResultsPage() {
                         {apiData.industry || "N/A"}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2  transition-all duration-300 max-w-full">
-                      <span className="text-sm flex-shrink-0">Best Suit for:</span>
-                      <div className="flex flex-wrap gap-1 sm:gap-2 max-w-full overflow-hidden">
-                        {platformSuitability.map((platform) => (
-                          <Badge
-                            key={platform.platform}
-                            className={cn(
-                              "flex items-center gap-1 transition-all duration-300 text-xs whitespace-nowrap",
-                              platform.suitable
-                                ? "bg-green-600/20 text-green-400 border border-green-600/30"
-                                : "bg-red-600/20 text-red-400 border border-red-600/30"
-                            )}
-                          >
-                            {platform.suitable && <CheckCircle className="w-3 h-3 flex-shrink-0" />}
-                            {platform.platform}
-                          </Badge>
-                        ))}
-
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -1564,7 +1860,7 @@ export default function ResultsPage() {
                 <div className="hidden lg:grid grid-cols-2 gap-4">
                   {/* Left: Go / No Go large card */}
                   <div
-                    className="relative bg-[#171717] border border-[#2a2a2a] rounded-2xl p-6 h-full flex flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
+                    className="relative bg-[#171717] rounded-2xl sm:rounded-3xl p-6 h-full flex flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
                     style={{ transition: "all 0.3s" }}
                     onMouseEnter={e => {
                       e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -1672,7 +1968,7 @@ export default function ResultsPage() {
                   <div className="grid grid-rows-[auto_1fr] gap-4">
                     {/* Performance - large */}
                     <div
-                      className="p-4 rounded-2xl bg-[#171717] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                      className="p-4 rounded-2xl sm:rounded-3xl bg-[#171717]  shadow-lg hover:scale-[1.01] transition-all duration-300"
                       onMouseEnter={e => {
                         e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                       }}
@@ -1709,7 +2005,7 @@ export default function ResultsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       {/* Confidence */}
                       <div
-                        className="p-4 rounded-2xl bg-[#171717] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                        className="p-4 rounded-2xl sm:rounded-3xl bg-[#171717]  shadow-lg hover:scale-[1.01] transition-all duration-300"
                         onMouseEnter={e => {
                           e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                         }}
@@ -1747,7 +2043,7 @@ export default function ResultsPage() {
 
                       {/* Match */}
                       <div
-                        className="p-4 rounded-2xl bg-[#171717] border border-[#2a2a2a] shadow-lg hover:scale-[1.01] transition-all duration-300"
+                        className="p-4 rounded-2xl sm:rounded-3xl bg-[#171717]  shadow-lg hover:scale-[1.01] transition-all duration-300"
                         onMouseEnter={e => {
                           e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                         }}
@@ -1818,7 +2114,7 @@ export default function ResultsPage() {
               {/* Issues Detected - takes 2 columns */}
               <div className="lg:col-span-2 mb-0 lg:h-full lg:flex lg:flex-col">
                 <div
-                  className="relative bg-black rounded-2xl p-4 sm:p-6 lg:h-full lg:flex lg:flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
+                  className="relative bg-black rounded-3xl sm:rounded-4xl p-4 sm:p-6 lg:h-full lg:flex lg:flex-col overflow-hidden hover:scale-[1.01] transition-all duration-300"
                   style={{ transition: "all 0.3s" }}
                   onMouseEnter={e => {
                     e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -1885,7 +2181,7 @@ export default function ResultsPage() {
                     <div className="grid grid-cols-2 gap-3 w-full items-stretch">
                       {/* Critical Issues */}
                       <div
-                        className="relative bg-[#171717] border border-[#2a2a2a] rounded-xl py-4 px-2 text-center flex flex-col justify-center group hover:border-red-500 transition-all duration-300 cursor-pointer"
+                        className="relative bg-[#171717]  rounded-2xl sm:rounded-3xl py-4 px-2 text-center flex flex-col justify-center group hover:border-red-500 transition-all duration-300 cursor-pointer"
                         onClick={scrollToIssues}
                       >
                         <p className="text-red-300 text-sm font-semibold mb-1 flex items-center justify-center gap-1">
@@ -1903,7 +2199,7 @@ export default function ResultsPage() {
 
                       {/* Minor Issues */}
                       <div
-                        className="relative bg-[#171717] border border-[#2a2a2a] rounded-xl py-4 py-2 text-center flex flex-col justify-center group hover:border-[#F99244]/60 transition-all duration-300 cursor-pointer"
+                        className="relative bg-[#171717]  rounded-2xl sm:rounded-3xl py-4 py-2 text-center flex flex-col justify-center group hover:border-[#F99244]/60 transition-all duration-300 cursor-pointer"
                         onClick={scrollToIssues}
                       >
                         <p className="text-[#F99244] text-sm font-semibold mb-1 flex items-center justify-center gap-1">
@@ -1921,7 +2217,7 @@ export default function ResultsPage() {
                     </div>
 
                     {/* CTR Loss */}
-                    <div className="relative bg-[#141414] rounded-xl border border-[#2a2a2a] p-4 mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:border-[#DB4900] transition-all duration-300">
+                    <div className="relative bg-[#141414] rounded-2xl sm:rounded-3xl  p-4 mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:border-[#DB4900] transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <TrendingDown className="w-5 h-5 text-red-400 mt-[2px]" />
                         <div>
@@ -1944,7 +2240,7 @@ export default function ResultsPage() {
                   {/* Row 1 - Col 1: Readability (hidden on small to preserve previous behavior) */}
                   <div className="hidden lg:block">
                     <div
-                      className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
+                      className="bg-black px-4 py-4 rounded-3xl sm:rounded-4xl h-full hover:scale-[1.01] transition-all duration-300"
                       style={{ transition: "all 0.3s" }}
                       onMouseEnter={e => {
                         e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -1986,7 +2282,7 @@ export default function ResultsPage() {
                   {/* Row 1 - Col 2: Best Days & Time */}
                   <div>
                     <div
-                      className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
+                      className="bg-black px-4 py-4 rounded-3xl sm:rounded-4xl h-full hover:scale-[1.01] transition-all duration-300"
                       style={{ transition: "all 0.3s" }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -2074,7 +2370,7 @@ export default function ResultsPage() {
                   {/* Row 2 - Col 1: Uniqueness (hidden on small to preserve previous behavior) */}
                   <div className="hidden lg:block">
                     <div
-                      className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
+                      className="bg-black px-4 py-4 rounded-3xl sm:rounded-4xl h-full hover:scale-[1.01] transition-all duration-300"
                       style={{ transition: "all 0.3s" }}
                       onMouseEnter={e => {
                         e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -2107,7 +2403,7 @@ export default function ResultsPage() {
                           {apiData?.competitor_uniqueness_meter || 0}%
                         </div>
                       </div>
-                      <div className="bg-[#171717] rounded-lg p-3 border border-[#2a2a2a] flex items-center gap-2">
+                      <div className="bg-[#171717] rounded-2xl sm:rounded-3xl p-4 sm:p-6  flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-green-500" />
                         <p className="text-xs text-white/80">
                           {apiData.competitor_uniqueness_text || "No Competitor Uniqueness"}
@@ -2120,7 +2416,7 @@ export default function ResultsPage() {
                   {/* Row 2 - Col 2: Ad Fatigue */}
                   <div>
                     <div
-                      className="bg-black px-4 py-4 rounded-2xl h-full hover:scale-[1.01] transition-all duration-300"
+                      className="bg-black px-4 py-4 rounded-3xl sm:rounded-4xl h-full hover:scale-[1.01] transition-all duration-300"
                       style={{ transition: "all 0.3s" }}
                       onMouseEnter={e => {
                         e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -2167,7 +2463,7 @@ export default function ResultsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-6 mt-2 sm:mt-6">
                 {/* Traffic Prediction */}
                 <div
-                  className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                  className="bg-black rounded-3xl sm:rounded-4xl p-4 sm:p-6  hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
                   style={{ transition: "all 0.3s" }}
                   onMouseEnter={e => {
                     e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -2320,7 +2616,7 @@ export default function ResultsPage() {
 
                 {/* Merged Budget & Audience Insights Card (takes 2 columns) */}
                 <div
-                  className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300 lg:col-span-2"
+                  className="bg-black rounded-3xl sm:rounded-4xl p-4 sm:p-6  hover:shadow-lg hover:scale-[1.01] transition-all duration-300 lg:col-span-2"
                   style={{ transition: "all 0.3s" }}
                   onMouseEnter={e => {
                     e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -2391,7 +2687,7 @@ export default function ResultsPage() {
                     {/* Left Column: Metrics */}
                     <div className="space-y-2 sm:space-y-3">
                       {/* Expected CPM + ROI Range */}
-                      <div className="bg-[#171717] p-4 rounded-xl space-y-3">
+                      <div className="bg-[#171717] p-4 rounded-2xl sm:rounded-3xl space-y-3">
                         {/* Expected CPM */}
                         <div className="flex justify-between items-center">
                           <span className="text-gray-300 text-sm sm:text-base">Expected CPM</span>
@@ -2426,7 +2722,7 @@ export default function ResultsPage() {
                       {/* Budget + Duration (two separate boxes, side by side on larger screens) */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {/* Suggested Test Budget */}
-                        <div className="bg-[#171717] py-4 px-2 rounded-xl flex flex-col items-center justify-center text-center space-y-2">
+                        <div className="bg-[#171717] py-4 px-2 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center text-center space-y-2">
                           <span className="text-gray-300 text-sm sm:text-base">Test Budget</span>
                           <span className="font-bold text-xl sm:text-2xl text-primary">
                             ${apiData.suggested_test_budget_in_usd || "N/A"}
@@ -2434,7 +2730,7 @@ export default function ResultsPage() {
                         </div>
 
                         {/* Suggested Test Duration */}
-                        <div className="bg-[#171717] py-4 px-2 rounded-xl flex flex-col items-center justify-center text-center space-y-2">
+                        <div className="bg-[#171717] py-4 px-2 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center text-center space-y-2">
                           <span className="text-gray-300 text-sm sm:text-base">Test Duration</span>
                           <span className="font-bold text-xl sm:text-2xl text-primary">
                             {apiData.suggested_test_duration_days
@@ -2464,7 +2760,7 @@ export default function ResultsPage() {
                       </div>
                       {/* Spend Recommendation */}
 
-                      <div className="bg-[#171717] border border-[#2b2b2b] rounded-lg p-3 sm:p-4">
+                      <div className="bg-[#171717]  rounded-2xl sm:rounded-3xl p-3 sm:p-4">
                         <p className="text-primary text-xs sm:text-sm mb-1 font-medium">Strategy Tip:</p>
                         <p className="text-gray-100 text-xs sm:text-sm leading-relaxed">
                           {apiData.spend_recommendation_strategy_tip || "No recommendation available."}
@@ -2477,23 +2773,32 @@ export default function ResultsPage() {
               </div>
             </ProOverlay>
 
-            {/* Issues and Digital Marketing Feedback - Mobile Responsive */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {/* Actions Required Section */}
+            <div className="bg-black rounded-3xl sm:rounded-4xl p-4 sm:p-6 shadow-lg shadow-white/10 ">
+              <div className="mb-3 sm:mb-4 space-y-2"  >
+                <h3 className="flex items-center text-xl sm:text-2xl font-semibold text-white">
+                  Actions Required
+                </h3>
+                <p className="text-gray-300 text-sm sm:text-base">
+                  Actions required to improve your ad performance.
+                </p>
+              </div>
+
               {/* Issues Section */}
               <div
                 ref={issuesSectionRef}
-                className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl hover:scale-[1.01] transition-all duration-300"
-                style={{ transition: "all 0.3s", maxHeight: "300px" }}
-                onMouseEnter={e => {
+                className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6 bg-[#171717]  rounded-3xl sm:rounded-4xl hover:scale-[1.01] transition-all duration-300"
+                style={{ transition: "all 0.3s" }}
+                onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
                 }}
-                onMouseLeave={e => {
+                onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
                 }}
               >
+                {/* Critical Issues */}
                 <div className="px-4 sm:px-6 py-2 sm:py-4 overflow-y-auto h-full">
-                  {/* Critical Issues Block */}
-                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                  <div className="flex items-center gap-2 mt-3 mb-1 sm:mb-2 rounded-2xl sm:rounded-3xl">
                     <h3 className="flex items-center text-lg sm:text-xl font-semibold text-red-400">
                       <Search className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                       Critical Issues
@@ -2512,23 +2817,25 @@ export default function ResultsPage() {
                     {criticalIssues.map((issue, index) => (
                       <li key={index} className="flex items-start text-white">
                         <span className="mr-2 sm:mr-3 text-base sm:text-lg flex-shrink-0">•</span>
-                        <span className="text-xs sm:text-sm leading-relaxed">{issue}</span>
+                        <span className="text-sm sm:text-base leading-relaxed">{issue}</span>
                       </li>
                     ))}
                   </ul>
 
                   {criticalIssues.length === 0 && (
-                    <div className="text-white/70 text-center py-6 sm:py-8 text-sm sm:text-base">
+                    <div className="text-white/70 text-left py-6 sm:py-8 text-sm sm:text-base">
                       No critical issues detected
                     </div>
                   )}
-
-                  {/* Minor Issues Block */}
-                  <div className="flex items-center justify-between mt-3 mb-1 sm:mb-2">
+                </div>
+                {/* Minor Issues */}
+                <div className="px-4 sm:px-6 py-2 sm:py-4 overflow-y-auto h-full rounded-2xl sm:rounded-3xl">
+                  <div className="flex items-center gap-2 mt-3 mb-1 sm:mb-2">
                     <h3 className="flex items-center text-lg sm:text-xl font-semibold text-[#F99244]">
                       <Search className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                       Minor Issues
                     </h3>
+
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
@@ -2539,132 +2846,148 @@ export default function ResultsPage() {
                     </Tooltip>
                   </div>
 
+
                   <ul className="space-y-1">
                     {minorIssues.map((issue, index) => (
                       <li key={index} className="flex items-start text-white">
                         <span className="mr-2 sm:mr-3 text-base sm:text-lg flex-shrink-0">•</span>
-                        <span className="text-xs sm:text-sm leading-relaxed">{issue}</span>
+                        <span className="text-sm sm:text-base leading-relaxed">{issue}</span>
                       </li>
                     ))}
                   </ul>
 
                   {minorIssues.length === 0 && (
-                    <div className="text-white/70 text-center py-6 sm:py-8 text-sm sm:text-base">
+                    <div className="text-white/70 text-left py-6 sm:py-8 text-sm sm:text-base">
                       No minor issues detected
                     </div>
                   )}
                 </div>
+
               </div>
 
-              {/* Digital Marketing Feedback */}
-              <div
-                className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                style={{ transition: "all 0.3s", maxHeight: "300px" }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                }}
-              >
-                <div className="p-4 sm:p-6 overflow-y-auto h-full">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h3 className="flex items-center text-lg sm:text-xl font-semibold text-green-400">
-                      <TrendingUp className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                      For Marketing Experts
-                    </h3>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                      </TooltipTrigger>
-                      <TooltipContent className="w-60 bg-[#2b2b2b] text-gray-200 text-sm leading-relaxed">
-                        <p>
-                          Collected insights and improvement suggestions specifically for
-                          marketing experts — covering campaign strategy, messaging,
-                          targeting, and overall performance.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                {/* Digital Marketing Feedback */}
+                <div
+                  className="bg-[#171717]  rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                  style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                  }}
+                >
+                  <div className="p-4 sm:p-6 overflow-y-auto h-full">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
 
-                  <ul className="space-y-2 sm:space-y-3">
-                    {feedbackDigitalMark.map((feedback, index) => (
-                      <li key={index} className="flex items-start text-gray-300">
-                        <span className="mr-2 sm:mr-3 text-green-400 text-base sm:text-lg flex-shrink-0">•</span>
-                        <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
-                      </li>
-                    ))}
-                  </ul>
+                      <h3 className="flex items-center text-lg sm:text-xl font-semibold text-green-400">
+                        <TrendingUp className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                        For Marketing Experts
+                      </h3>
 
-                  {feedbackDigitalMark.length === 0 && (
-                    <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
-                      No marketing feedback available
+
+                      <div className="flex items-center gap-3">
+                        {!isFromToken && !isSpecialToken && isProUser && (
+                          <button
+                            onClick={() => { handleShareFeedback('marketing'); trackEvent("Ad_Feedback_Shared", window.location.href, userDetails?.email?.toString()) }}
+                            className="flex items-center py-1 px-2 gap-2 rounded-md text-xs font-medium text-green-400 bg-green-400/10 border border-green-400 hover:bg-green-400/10 hover:text-white transition-all cursor-pointer"
+                          >
+                            <Share2 className="w-3 h-3 flex-shrink-0" />
+                          </button>
+                        )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                          </TooltipTrigger>
+                          <TooltipContent className="w-50 bg-[#2b2b2b]">
+                            <p> Collected insights and improvement suggestions specifically for
+                              marketing experts — covering campaign strategy, messaging,
+                              targeting, and overall performance.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
-            {/* Designer feedback and Digital Marketing Feedback - Mobile Responsive */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {/* Designer feedback */}
-              <div
-                className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                style={{ transition: "all 0.3s", maxHeight: "300px" }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
-                }}
-              >
-                <div className="p-4 sm:p-6 overflow-y-auto h-full">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="flex items-center gap-3">
+                    <ul className="space-y-2 sm:space-y-3">
+                      {feedbackDigitalMark.map((feedback, index) => (
+                        <li key={index} className="flex items-start text-gray-300">
+                          <span className="mr-2 sm:mr-3 text-green-400 text-base sm:text-lg flex-shrink-0">•</span>
+                          <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {feedbackDigitalMark.length === 0 && (
+                      <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
+                        No marketing feedback available
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Designer feedback */}
+                <div
+                  className="bg-[#171717]  rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                  style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                  }}
+                >
+                  <div className="p-4 sm:p-6 overflow-y-auto h-full">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+
                       <h3 className="flex items-center text-lg sm:text-xl font-semibold text-blue-400">
                         <TrendingUp className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                         For Designers
                       </h3>
 
-                      <button
-                        className="flex items-center py-1 px-2 gap-2 rounded-md text-xs font-medium text-blue-400 bg-blue-400/10 border border-blue-400 hover:bg-blue-400/10 hover:text-white transition-all"
-                      >
-                        <Share2 className="w-3 h-3 flex-shrink-0" />
-                        <span>Share</span>
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {!isFromToken && !isSpecialToken && isProUser && (
+                          <button
+                            onClick={() => { handleShareFeedback('designer'); trackEvent("Ad_Feedback_Shared", window.location.href, userDetails?.email?.toString()) }}
+                            className="flex items-center py-1 px-2 gap-2 rounded-md text-xs font-medium text-blue-400 bg-blue-400/10 border border-blue-400 hover:bg-blue-400/10 hover:text-white transition-all cursor-pointer"
+                          >
+                            <Share2 className="w-3 h-3 flex-shrink-0" />
+                          </button>
+                        )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                          </TooltipTrigger>
+                          <TooltipContent className="w-50 bg-[#2b2b2b]">
+                            <p>Design tips and suggestions to improve the visual appeal and user experience of your ad.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
-                      </TooltipTrigger>
-                      <TooltipContent className="w-50 bg-[#2b2b2b]">
-                        <p>Design tips and suggestions to improve the visual appeal and user experience of your ad.</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <ul className="space-y-2 sm:space-y-3">
+                      {feedbackDesigner.map((feedback, index) => (
+                        <li key={index} className="flex items-start text-gray-300">
+                          <span className="mr-2 sm:mr-3 text-green-400 text-base sm:text-lg flex-shrink-0">•</span>
+                          <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
+                        </li>
+                      ))}
+                    </ul>
 
+                    {feedbackDesigner.length === 0 && (
+                      <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
+                        No designer feedback available
+                      </div>
+                    )}
                   </div>
-
-                  <ul className="space-y-2 sm:space-y-3">
-                    {feedbackDigitalMark.map((feedback, index) => (
-                      <li key={index} className="flex items-start text-gray-300">
-                        <span className="mr-2 sm:mr-3 text-green-400 text-base sm:text-lg flex-shrink-0">•</span>
-                        <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {feedbackDigitalMark.length === 0 && (
-                    <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
-                      No marketing feedback available
-                    </div>
-                  )}
                 </div>
               </div>
+            </div>
 
-              {/* Digital Marketing Feedback */}
+            {/* Ad age predictor and platforms - Mobile Responsive */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Ad Age Predictor */}
               <div
-                className="bg-black border border-[#2b2b2b] rounded-xl sm:rounded-2xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                className="bg-black  rounded-3xl sm:rounded-4xl shadow-lg shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
                 style={{ transition: "all 0.3s", maxHeight: "300px" }}
                 onMouseEnter={e => {
                   e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -2675,42 +2998,159 @@ export default function ResultsPage() {
               >
                 <div className="p-4 sm:p-6 overflow-y-auto h-full">
                   <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h3 className="flex items-center text-lg sm:text-xl font-semibold text-green-400">
-                      <TrendingUp className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                      For Marketing Experts
+                    <h3 className="flex items-center text-lg sm:text-xl font-semibold ">
+                      <Calendar className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-primary" />
+                      Ad Age Predictor
                     </h3>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                       </TooltipTrigger>
                       <TooltipContent className="w-50 bg-[#2b2b2b]">
-                        <p>Strategic marketing advice on messaging, audience targeting, conversion optimization, and campaign effectiveness.</p>
+                        <p>Analysis of when your ad was likely created based on design trends, visual style, and aesthetic elements.</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
 
-                  <ul className="space-y-2 sm:space-y-3">
-                    {feedbackDigitalMark.map((feedback, index) => (
-                      <li key={index} className="flex items-start text-gray-300">
-                        <span className="mr-2 sm:mr-3 text-green-400 text-base sm:text-lg flex-shrink-0">•</span>
-                        <span className="text-sm sm:text-base leading-relaxed">{feedback}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Ad Age Predictor */}
+                  {(apiData as any)?.ad_age_predictor && typeof (apiData as any).ad_age_predictor === 'object' ? (
+                    <div className="space-y-6">
+                      <div className="flex flex-wrap gap-4 sm:gap-6">
+                        {(apiData as any)?.ad_age_predictor?.predicted_year && (
+                          <div className="text-base sm:text-lg bg-[#171717] rounded-2xl sm:rounded-3xl p-4 flex-1">
+                            <p className="font-medium text-white">Predicted Year:</p>{" "}
+                            <p className="text-primary font-bold">
+                              {(apiData as any).ad_age_predictor.predicted_year}
+                            </p>
+                          </div>
+                        )}
 
-                  {feedbackDigitalMark.length === 0 && (
-                    <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm sm:text-base">
-                      No marketing feedback available
+                        {(apiData as any)?.ad_age_predictor?.modernity_score && (
+                          <div className="text-base sm:text-lg text-white bg-[#171717] rounded-2xl sm:rounded-3xl p-4 flex-1">
+                            <p className="font-medium text-white">Modernity Score:</p>{" "}
+                            <p className="text-primary font-bold">
+                              {(apiData as any).ad_age_predictor.modernity_score}%
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {/* Explanation */}
+                      {(apiData as any)?.ad_age_predictor?.explanation && (
+                        <p className="text-sm sm:text-base text-white leading-relaxed bg-[#171717] rounded-2xl sm:rounded-3xl p-4 mt-2">
+                          {(apiData as any).ad_age_predictor.explanation}
+                        </p>
+                      )}
+                    </div>
+
+                  ) : (
+                    <div className="text-white/70 text-center py-6 sm:py-8 text-sm sm:text-base">
+                      No ad age predictor available
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* Platforms - Combined Card */}
+              <div
+                className="bg-black  rounded-3xl sm:rounded-4xl shadow-lg p-4 sm:p-6 shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                }}
+              >
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-2">
+                  <MonitorCheckIcon className="text-primary h-5 w-5" />
+                  <h3 className="text-lg sm:text-xl font-semibold text-white">Platforms</h3>
+                </div>
+
+                <div className="space-y-4">
+
+                  {/* Suitable For */}
+                  {Array.isArray((apiData as any)?.platform_suits) && (apiData as any).platform_suits.length > 0 && (
+                    <div>
+                      {/* <p className="text-sm font-medium text-white mb-3">Suitable For</p> */}
+
+                      <div className="space-y-2 bg-[#171717] rounded-2xl sm:rounded-3xl p-4">
+                        {(apiData as any).platform_suits.map((item: any, index: number) => (
+                          <div key={index} className="flex items-center gap-4 ">
+
+                            {/* Progress Bar Container */}
+                            <div className="flex-1 bg-[#2b2b2b] h-8 rounded-full relative overflow-hidden max-w-[400px]">
+
+                              {/* Progress Fill */}
+                              <div
+                                className="h-full bg-[#9ad066] rounded-full transition-all duration-700 flex items-center pl-3"
+                                style={{ width: `${item.suitable_score}%` }}
+                              >
+                                {/* Platform Name INSIDE */}
+                                <span className="text-green-900 font-semibold text-sm">
+                                  {item.platform}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Percentage */}
+                            <span className="text-[#9ad066] font-semibold text-xl">
+                              {item.suitable_score}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Not Suitable For */}
+                  {Array.isArray((apiData as any)?.platform_notsuits) && (apiData as any).platform_notsuits.length > 0 && (
+                    <div>
+                      {/* <p className="text-sm font-medium text-white mb-3">Not Suitable For</p> */}
+
+                      <div className="space-y-2 bg-[#171717] rounded-2xl sm:rounded-3xl p-4">
+                        {(apiData as any).platform_notsuits.map((item: any, index: number) => (
+                          <div key={index} className="flex items-center gap-4 ">
+
+                            {/* Progress Bar Container */}
+                            <div className="flex-1 bg-[#2b2b2b] h-8 rounded-full relative overflow-hidden max-w-[400px]">
+
+                              {/* Progress Fill */}
+                              <div
+                                className="h-full bg-[#d87a7a] rounded-full transition-all duration-700 flex items-center pl-3"
+                                style={{ width: `${item.notsuitable_score}%` }}
+                              >
+                                {/* Platform Name INSIDE */}
+                                <span className="text-red-900 font-semibold text-sm">
+                                  {item.platform}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Percentage */}
+                            <span className="text-[#d87a7a] font-semibold text-xl">
+                              {item.notsuitable_score}%
+                            </span>
+
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No Data */}
+                  {(!Array.isArray((apiData as any)?.platform_suits) || (apiData as any).platform_suits.length === 0) &&
+                    (!Array.isArray((apiData as any)?.platform_notsuits) || (apiData as any).platform_notsuits.length === 0) && (
+                      <p className="text-center text-white/60 py-8 text-sm">No platform data available</p>
+                    )}
+                </div>
+              </div>
+
             </div>
 
             {/* Ad Creative Suggestions - Mobile Optimized */}
             {apiData.next_ad_idea_based_on_this_post && apiData.next_ad_idea_based_on_this_post.length > 0 && (
               <div
-                className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]"
+                className="bg-black rounded-3xl sm:rounded-4xl shadow-lg shadow-white/10 "
                 style={{ transition: "all 0.3s" }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -2747,7 +3187,7 @@ export default function ResultsPage() {
                     {/* Left Column */}
                     <div className="space-y-4 sm:space-y-6">
                       {/* Headline Idea */}
-                      <div className="bg-gradient-to-br from-green-600/10 to-green-800/10 rounded-xl p-4 sm:p-6 border border-green-600/20">
+                      <div className="bg-gradient-to-br from-green-600/10 to-green-800/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-green-600/20">
                         <h4 className="text-base sm:text-lg font-semibold text-green-400 mb-2 sm:mb-3 flex items-center">
                           <Type className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
                           Headline Idea
@@ -2758,7 +3198,7 @@ export default function ResultsPage() {
                       </div>
 
                       {/* Short Caption */}
-                      <div className="bg-gradient-to-br from-blue-600/10 to-blue-800/10 rounded-xl p-4 sm:p-6 border border-blue-600/20">
+                      <div className="bg-gradient-to-br from-blue-600/10 to-blue-800/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-blue-600/20">
                         <h4 className="text-base sm:text-lg font-semibold text-blue-400 mb-2 sm:mb-3 flex items-center">
                           <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
                           Short Caption
@@ -2770,7 +3210,7 @@ export default function ResultsPage() {
                     </div>
 
                     {/* Right Column - Visual Idea */}
-                    <div className="bg-gradient-to-br from-purple-600/10 to-purple-800/10 rounded-xl p-4 sm:p-6 border border-purple-600/20 flex flex-col items-start text-left">
+                    <div className="bg-gradient-to-br from-purple-600/10 to-purple-800/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-purple-600/20 flex flex-col items-start text-left">
                       <Lightbulb className="w-10 h-10 sm:w-12 sm:h-12 text-purple-400 mb-3 sm:mb-4" />
                       <h4 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">
                         Visual Idea
@@ -2788,7 +3228,7 @@ export default function ResultsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-[28.5%_41%_28.5%] gap-2 sm:gap-4 w-full">
               {/* Technical Metrics (30%) */}
               <div
-                className="bg-black rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                className="bg-black rounded-3xl sm:rounded-4xl p-4 sm:p-6  hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
                 style={{ transition: "all 0.3s" }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -2798,7 +3238,10 @@ export default function ResultsPage() {
                 }}
               >
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <h4 className="text-base sm:text-lg font-semibold text-white">Technical Metrics</h4>
+                  <h3 className="text-lg sm:text-xl font-bold flex items-center">
+                    <Cpu className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                    Technical Metrics
+                  </h3>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
@@ -2910,9 +3353,9 @@ export default function ResultsPage() {
               <div className="lg:col-span-1 flex justify-center">
                 <div className="w-full">
                   <ProOverlay message="Upgrade to Pro to unlock advanced engagement analytics and performance insights.">
-                    <div className="w-full bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 p-4 sm:p-6 flex flex-col hover:scale-[1.01] transition-all duration-300">
+                    <div className="w-full bg-black rounded-3xl sm:rounded-4xl shadow-lg shadow-white/10 p-4 sm:p-6 flex flex-col hover:scale-[1.01] transition-all duration-300">
                       <div className="flex items-center justify-between mb-4 sm:mb-6">
-                        <h3 className="text-xl sm:text-2xl font-bold flex items-center">
+                        <h3 className="text-lg sm:text-xl font-bold flex items-center">
                           <MousePointerClick className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
                           Engagement Metrics
                         </h3>
@@ -2968,7 +3411,7 @@ export default function ResultsPage() {
                       <div className="space-y-3 sm:space-y-4 flex-1">
                         {/* Engagement Score */}
                         <div
-                          className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
+                          className="bg-[#121212] rounded-xl sm:rounded-2xl  p-3 sm:p-4  transition-all duration-300"
                           onMouseEnter={(e) => {
                             const score = apiData.engagement_score || 0;
                             const color =
@@ -3032,7 +3475,7 @@ export default function ResultsPage() {
                             return (
                               <div
                                 key={i}
-                                className="bg-[#121212] rounded-xl p-3 sm:p-4 border border-[#2b2b2b] transition-all duration-300"
+                                className="bg-[#121212] rounded-xl sm:rounded-2xl p-3 sm:p-4  transition-all duration-300"
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.boxShadow =
                                     colorClass.includes("red")
@@ -3070,7 +3513,7 @@ export default function ResultsPage() {
               </div>
 
               {/* Performance Composition Chart */}
-              <div className="bg-black rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 relative overflow-hidden h-full flex flex-col"
+              <div className="bg-black rounded-3xl sm:rounded-4xl shadow-2xl p-4 sm:p-6 relative overflow-hidden h-full flex flex-col"
                 style={{ transition: "all 0.3s" }}
                 onMouseEnter={e => {
                   e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -3080,7 +3523,8 @@ export default function ResultsPage() {
                 }}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-base sm:text-lg font-semibold text-white ">
+                  <h2 className="text-base sm:text-lg font-bold flex items-center">
+                    <BarChart3 className="mr-1 h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
                     Performance Composition
                   </h2>
                   <Tooltip>
@@ -3156,7 +3600,7 @@ export default function ResultsPage() {
             </div>
 
             {/* Ad Copy Generator - Mobile Optimized */}
-            <div className="bg-black rounded-2xl sm:rounded-3xl shadow-lg shadow-white/10 border border-[#2b2b2b]">
+            <div className="bg-black rounded-3xl sm:rounded-4xl shadow-lg shadow-white/10 ">
               <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
                 {/* Top: Title */}
                 <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -3202,7 +3646,7 @@ export default function ResultsPage() {
                         {filteredAdCopies.map((adCopy, index) => (
                           <div
                             key={index}
-                            className="bg-[#121212] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                            className="bg-[#171717] rounded-3xl sm:rounded-4xl p-4 sm:p-6  hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
                             style={{ transition: "all 0.3s" }}
                             onMouseEnter={e => {
                               e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900"
@@ -3255,7 +3699,7 @@ export default function ResultsPage() {
                             {safeArray(apiData?.ad_copies).slice(1).map((adCopy, index) => (
                               <div
                                 key={index + 1}
-                                className="bg-[#121212] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2b2b2b] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+                                className="bg-[#171717] rounded-3xl sm:rounded-4xl p-4 sm:p-6  hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
                                 style={{ transition: "all 0.3s" }}
                                 onMouseEnter={e => {
                                   e.currentTarget.style.boxShadow = "0 0 14px 4px #DB4900"
@@ -3299,7 +3743,7 @@ export default function ResultsPage() {
                   </div>
 
                   {/* Right: Trending Tags Section - Mobile Optimized */}
-                  <div className="lg:w-[30%] w-full bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[#222] rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between"
+                  <div className="lg:w-[30%] w-full bg-[#171717]  rounded-3xl sm:rounded-4xl p-4 sm:p-6 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between"
                     style={{ transition: "all 0.3s" }}
                     onMouseEnter={e => {
                       e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
@@ -3527,9 +3971,21 @@ export default function ResultsPage() {
             performanceScore={apiData?.score_out_of_100 || 0}
             goStatus={(apiData?.go_no_go as "Go" | "No Go") || "No Go"}
             industry={apiData?.industry || "N/A"}
-            bestSuit={platformSuitability.map(p => p.platform)}
+            bestSuit={platformSuitability.filter(p => p.suitable).map(p => p.platform)}
             website={apiData?.agency_website || "adalyze.app"}
             adImage={images.length > 0 ? images[0] : logo.src}
+          />
+          <ShareAdResultFeedback
+            id="ad-feedback-card"
+            adImage={images.length > 0 ? images[0] : logo.src}
+            feedback={feedbackDigitalMark}
+            AdName={apiData?.title || "Ad Analysis"}
+          />
+          <ShareAdResultFeedback
+            id="ad-feedback-card-designer"
+            adImage={images.length > 0 ? images[0] : logo.src}
+            feedback={feedbackDesigner}
+            AdName={apiData?.title || "Ad Analysis"}
           />
         </div>
 
@@ -3555,6 +4011,16 @@ export default function ResultsPage() {
         </div>
       )}
 
+      {isProUser && (
+        Number(apiData?.ad_upload_id) > 0 && (
+          <AdalyzeChatBot
+            adUploadId={Number(apiData.ad_upload_id)}
+            userName={userDetails?.name || ""}
+            userImage={userDetails?.imgname || ""}
+          />
+        )
+      )}
+
       {isFromToken && (
         <footer className=" h-[50px] w-full bg-black flex items-center justify-center text-xs text-white/70 print:hidden">
           <div className="flex flex-col items-center gap-1">
@@ -3566,6 +4032,51 @@ export default function ResultsPage() {
           </div>
         </footer>
       )}
+
+      {/* Platform Explanations Dialog */}
+      <Dialog open={isExplanationDialogOpen} onOpenChange={setIsExplanationDialogOpen}>
+        <DialogContent className="bg-black  max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white text-xl font-semibold">
+              {selectedPlatformExplanation?.type === 'suitable' ? 'Suitable Platforms' : 'Not Suitable Platforms'} - Explanations
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {selectedPlatformExplanation?.type === 'suitable' && Array.isArray((apiData as any)?.platform_suits) && (
+              (apiData as any).platform_suits.map((item: any, index: number) => (
+                <div key={index} className="pb-4 border-b border-[#2b2b2b] last:border-b-0 last:pb-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="inline-flex items-center gap-2 bg-green-600/20 border border-green-600/40 text-green-400 px-3 py-1 rounded-md text-sm font-medium">
+                      {item.platform} - {item.suitable_score}%
+                    </div>
+                  </div>
+                  {item.explanation && (
+                    <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                      {item.explanation}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+            {selectedPlatformExplanation?.type === 'notsuitable' && Array.isArray((apiData as any)?.platform_notsuits) && (
+              (apiData as any).platform_notsuits.map((item: any, index: number) => (
+                <div key={index} className="pb-4 border-b border-[#2b2b2b] last:border-b-0 last:pb-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="inline-flex items-center gap-2 bg-red-600/20 border border-red-600/40 text-red-400 px-3 py-1 rounded-md text-sm font-medium">
+                      {item.platform} - {item.notsuitable_score}%
+                    </div>
+                  </div>
+                  {item.explanation && (
+                    <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                      {item.explanation}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   )
 }

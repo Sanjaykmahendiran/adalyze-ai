@@ -49,6 +49,7 @@ const AdCard = ({ ad, onViewReport }: { ad: RecentAd; onViewReport: (adId: strin
           {(() => {
             if (!ad.platforms) return []
 
+            
             try {
               // Try to parse as JSON first (for array format)
               const parsed = JSON.parse(ad.platforms)

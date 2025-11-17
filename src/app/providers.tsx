@@ -75,7 +75,7 @@ export function Providers() {
         const deviceType = isMobile() ? "Mobile" : "Desktop";
         const eventName = `Page_View_${deviceType}`;
         
-        // trackEvent(eventName, url, Cookies.get("email") || null);
+        trackEvent(eventName, url, Cookies.get("email") || null);
       }
     }
   }, [pathname, searchParams]);

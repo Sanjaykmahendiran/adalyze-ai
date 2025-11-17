@@ -31,32 +31,18 @@ const LoginPage = () => {
   const [referralCode, setReferralCode] = useState("");
 
 
-    const onSubmit = async (data: LoginFormData) => {
-      setLoading(true);
-      try {
-        let loginData;
+  const onSubmit = async (data: LoginFormData) => {
+    setLoading(true);
+    try {
+      let loginData;
 
-        if (data.token) {
-          loginData = await login({ google_token: data.token });
-        } else if (data.nouptoken) {
-          loginData = await login({ nouptoken: data.nouptoken });
-        } else {
-          loginData = await login(data);
-        }
-
-        if (loginData.status === "success" && loginData.user) {
-          const user = loginData.user;
-          
-          // Check if registration is incomplete (customize fields as needed)
-          if ((!user.name || !user.type || !user.city) && (data.token || data.nouptoken)) {
-            setShowStep2(true);
-            setEmailStep2(user.email);
-            setUserIdStep2(user.user_id.toString());
-            setSourceFromParams(""); // pass/derive if you need more context from params or response
-            setReferralCode(""); // pass from URL if needed (optionally set from searchParams)
-            setLoading(false);
-            return;
-          }
+      if (data.token) {
+        loginData = await login({ google_token: data.token });
+      } else if (data.nouptoken) {
+        loginData = await login({ nouptoken: data.nouptoken });
+      } else {
+        loginData = await login(data);
+      }
 
           Cookies.set("userId", user.user_id.toString(), { expires: 7 });
           Cookies.set("email", user.email, { expires: 7 });
@@ -66,38 +52,57 @@ const LoginPage = () => {
           let eventName = "Login_completed";
           if (data.token) eventName = "google_login_completed"; 
           else if (data.nouptoken) eventName = "email_confirmation_login_completed";
+      if (loginData.status === "success" && loginData.user) {
+        const user = loginData.user;
 
-          trackEvent(eventName, window.location.href, user.email);
-          toast.success("Login successful!");
+        // Check if registration is incomplete (customize fields as needed)
+        if ((!user.name || !user.type || !user.city) && (data.token || data.nouptoken)) {
+          setShowStep2(true);
+          setEmailStep2(user.email);
+          setUserIdStep2(user.user_id.toString());
+          setSourceFromParams(""); // pass/derive if you need more context from params or response
+          setReferralCode(""); // pass from URL if needed (optionally set from searchParams)
+          setLoading(false);
+          return;
+        }
 
-          // ✅ Get redirect page param (if exists)
-          const redirectPage = searchParams.get("page");
+        Cookies.set("userId", user.user_id.toString(), { expires: 7 });
+        Cookies.set("email", user.email, { expires: 7 });
+        let eventName = "Login_completed";
+        if (data.token) eventName = "google_login_completed";
+        else if (data.nouptoken) eventName = "email_confirmation_login_completed";
 
-          if (redirectPage) {
-            router.push(`/${redirectPage}`);
-            return; // ✅ stop further routing logic
-          }
+        trackEvent(eventName, window.location.href, user.email);
+        toast.success("Login successful!");
 
-          // ✅ Default logic (as before)
-          if (user.payment_status === 0) {
-            if (user.fretra_status === 1) {
-              router.push("/dashboard");
-            } else {
-              router.push("/pricing");
-            }
-          } else {
+        // ✅ Get redirect page param (if exists)
+        const redirectPage = searchParams.get("page");
+
+        if (redirectPage) {
+          router.push(`/${redirectPage}`);
+          return; // ✅ stop further routing logic
+        }
+
+        // ✅ Default logic (as before)
+        if (user.payment_status === 0) {
+          if (user.fretra_status === 1) {
             router.push("/dashboard");
+          } else {
+            router.push("/pricing");
           }
         } else {
-          toast.error(loginData.message || "Login failed. Please check your credentials.");
+          router.push("/dashboard");
         }
-      } catch (error) {
-        console.error("Login error:", error);
-        toast.error("Something went wrong. Please try again.");
-      } finally {
-        setLoading(false);
+      } else {
+        toast.error(loginData.message || "Login failed. Please check your credentials.");
       }
-    };
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   useEffect(() => {

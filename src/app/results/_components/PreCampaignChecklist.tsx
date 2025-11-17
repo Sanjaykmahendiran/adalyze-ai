@@ -3,28 +3,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-    CheckCircle2,
-    AlertCircle,
-    Plus,
-    Check,
-    Edit3,
-    Globe,
-    Link as LinkIcon,
-    BarChart3,
-    Puzzle,
-    Users,
-    Zap,
-    Circle,
-    Eye,
-    Target,
-    Wallet,
+    CheckCircle2, AlertCircle, Check, Globe, Link as LinkIcon, BarChart3, Users, Zap, Circle, Eye, Target, Wallet,
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
 import { axiosInstance } from "@/configs/axios";
+import Image from "next/image";
+import ChecklistStaticImage from "@/assets/result-checklist-static.webp"
 
 type StatusAPI = "done" | "not_done";
 
@@ -43,16 +30,9 @@ type APIChecklistItem = {
     format?: EvidenceFormat; // new optional field from API
 };
 
-type LeftInfoBullet = {
-    icon: React.ReactNode;
-    text: string;
-    colorClass?: string;
-};
-
 type LeftInfo = {
     title: string;
     intro: string;
-    bullets: LeftInfoBullet[];
     tip?: string;
 };
 
@@ -64,19 +44,9 @@ type Props = {
 const defaultLeftInfo: LeftInfo = {
     title: "Why Pre-Campaign Checklist Matters",
     intro:
-        "Every successful campaign starts with a solid foundation. The Adalyze AI Pre-Campaign Checklist ensures that you’ve covered all technical and strategic aspects before launching ads — reducing wasted spend and improving ad performance.",
-    bullets: [
-        { icon: <Globe className="w-5 h-5" />, text: "Validate landing pages, audiences, and tracking accuracy.", colorClass: "text-green-500" },
-        { icon: <BarChart3 className="w-5 h-5" />, text: "Prevent budget loss from missing setup or tracking issues.", colorClass: "text-yellow-500" },
-        { icon: <Zap className="w-5 h-5" />, text: "Launch confidently knowing your data is accurate.", colorClass: "text-blue-500" },
-    ],
+        "A successful campaign begins with making sure every detail is ready. The Adalyze AI Pre-Campaign Checklist helps confirm that your landing pages, audiences, and tracking are accurate, preventing budget loss from setup issues. It ensures your data is reliable so you can launch with confidence and maximize performance.",
     tip: "💬 Tip: Completing this checklist improves conversion tracking and data reliability by over 70% across campaigns.",
 };
-
-function statusIcon(status: StatusAPI) {
-    if (status === "done") return <CheckCircle2 className="w-6 h-6 text-green-500" />;
-    return <AlertCircle className="w-6 h-6 text-yellow-500" />;
-}
 
 function itemIconBySlug(slug: string) {
     const s = slug.toLowerCase();
@@ -441,36 +411,41 @@ export default function PreCampaignChecklist({
     return (
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 ">
             {/* Left Info Section */}
-            <section className="md:col-span-1 bg-black rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col justify-between">
-                <div>
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="bg-primary/20 p-3 rounded-xl">
-                            <Zap className="w-7 h-7 text-primary" />
-                        </div>
-                        <h2 className="text-xl font-semibold text-primary">{defaultLeftInfo.title}</h2>
-                    </div>
+            <section className="md:col-span-1 bg-black rounded-3xl sm:rounded-4xl overflow-hidden shadow-xl ">
 
-                    <p className="text-white/80 text-sm leading-relaxed mb-6">{defaultLeftInfo.intro}</p>
+                {/* Image Section */}
+                <div className="relative w-full aspect-video overflow-hidden">
 
-                    <ul className="space-y-4 text-sm text-white/70">
-                        {defaultLeftInfo.bullets.map((b, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                                <span className="text-primary mt-0.5">{b.icon}</span>
-                                <span>{b.text}</span>
-                            </li>
-                        ))}
-                    </ul>
+                    {/* Image */}
+                    <Image
+                        src={ChecklistStaticImage}  
+                        alt="Pre-Campaign Checklist Metrics"
+                        fill
+                        className="object-cover"
+                    />
+
+                    {/* Black Bottom Gradient */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent"></div>
                 </div>
 
-                {defaultLeftInfo.tip ? (
-                    <div className="mt-4 border-t border-white/80 pt-6 text-white/60 text-xs">
-                        <p>{defaultLeftInfo.tip}</p>
-                    </div>
-                ) : null}
+                {/* Content */}
+                <div className="p-4 sm:p-6">
+
+                    {/* Title */}
+                    <h2 className="text-lg sm:text-xl font-bold text-primary mb-2 leading-snug">
+                        Why Pre-Campaign Checklist Matters Everytime?
+                    </h2>
+
+                    {/* Body Text */}
+                    <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                        {defaultLeftInfo.intro}
+                    </p>
+                </div>
             </section>
 
+
             {/* Right Checklist Section */}
-            <section className="md:col-span-2 bg-black rounded-3xl p-4 sm:p-6 shadow-2xl">
+            <section className="md:col-span-2 bg-black rounded-3xl sm:rounded-4xl p-4 sm:p-6 shadow-2xl">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                     <div>
@@ -513,7 +488,7 @@ export default function PreCampaignChecklist({
                                 return (
                                     <div
                                         key={item.checklist_id}
-                                        className="flex items-center justify-between gap-4 bg-[#171717] p-3 sm:p-4 rounded-lg border border-transparent hover:border-primary/40 transition"
+                                        className="flex items-center justify-between gap-4 bg-[#171717] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-transparent hover:border-primary/40 transition"
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl text-primary">{itemIconBySlug(item.slug)}</span>
@@ -531,7 +506,7 @@ export default function PreCampaignChecklist({
                                                 <div className="flex flex-col gap-2">
                                                     {/* View evidence (Eye) */}
                                                     <button
-                                                        className="bg-blue-600/20 text-blue-300 hover:text-white p-1 rounded-lg flex items-center justify-center"
+                                                        className="bg-blue-600/20 text-blue-300 hover:text-white p-1 rounded-lg flex items-center justify-center cursor-pointer"
                                                         aria-label="View evidence"
                                                         title="View evidence"
                                                         onClick={() => openViewer(item)}
@@ -553,7 +528,7 @@ export default function PreCampaignChecklist({
 
                                                     {/* Mark Done */}
                                                     <button
-                                                        className="bg-green-600/20 text-green-300 hover:text-white p-1 rounded-lg flex items-center justify-center"
+                                                        className="bg-green-600/20 text-green-300 hover:text-white p-1 rounded-lg flex items-center justify-center cursor-pointer"
                                                         aria-label="Mark done"
                                                         title="Mark done"
                                                         onClick={() => openMarkDone(item)}
@@ -593,7 +568,8 @@ export default function PreCampaignChecklist({
             {showViewer && viewerItem ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                     <div className="w-full max-w-2xl bg-[#171717] border border-primary rounded-xl p-4 sm:p-6 relative backdrop-blur-sm">
-                        <h3 className="text-white font-semibold text-lg mb-4">Evidence</h3>
+                    <h3 className="text-white font-semibold text-lg">{viewerItem.title} {""} Evidence</h3>
+                    <p className="text-white/70 text-sm mb-4">{viewerItem.description}</p>
 
                         {(() => {
                             const kind = getEvidenceKind(viewerItem.evidence_url, viewerItem.format);

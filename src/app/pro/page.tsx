@@ -649,7 +649,7 @@ const ProPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className={`grid gap-6 sm:gap-8 max-w-5xl mx-auto ${activePlans.length === 1 ? 'grid-cols-1 max-w-md' :
+                            <div className={`grid gap-6 sm:gap-8 max-w-5xl mx-auto items-stretch ${activePlans.length === 1 ? 'grid-cols-1 max-w-md' :
                                 activePlans.length === 2 ? 'grid-cols-1 lg:grid-cols-2' :
                                     activePlans.length === 3 ? 'grid-cols-1 lg:grid-cols-3' :
                                         'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
@@ -659,14 +659,14 @@ const ProPage: React.FC = () => {
                                     const isPopular = index === 1 && activePlans.length >= 2 // Mark second plan as popular if we have 2+ plans
 
                                     return (
-                                        <div key={plan.package_id}>
+                                        <div key={plan.package_id} className="h-full flex">
                                             <div
-                                                className={`bg-black rounded-lg p-6 sm:p-8 relative shadow-lg shadow-white/5 border hover:scale-[1.02] transition-all duration-300 flex flex-col w-full ${isPopular ? 'border-primary' : 'border-[#2a2a2a]'
+                                                className={`bg-black rounded-3xl py-6 sm:py-8 px-3 sm:px-5 relative shadow-lg shadow-white/5 border-3 hover:scale-[1.02] transition-all duration-300 flex flex-col w-full h-full ${isPopular ? 'border-primary' : 'border-[#3d3d3d]'
                                                     }`}
                                             >
                                                 {/* Popular Badge */}
                                                 {isPopular && (
-                                                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                                                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                                                         <Badge className="bg-primary text-white px-3 sm:px-4 py-1 text-xs sm:text-sm">
                                                             Most Popular
                                                         </Badge>
@@ -682,37 +682,56 @@ const ProPage: React.FC = () => {
                                                     </div>
                                                 )}
 
-                                                <div className="flex-1">
+                                                <div className="bg-[#171717] rounded-3xl p-4">
                                                     {/* Plan name with One Time text or billing dropdown in justify-between */}
                                                     {selectedPackageType === 1 && plan.package_id === 1 ? (
-                                                        <div className="flex justify-between items-center mb-3">
-                                                            <h3 className="text-lg sm:text-xl font-semibold">
-                                                                {plan.plan_name}
-                                                            </h3>
+                                                        <div className="flex justify-between items-center mb-6">
+                                                            <div className="flex flex-col">
+                                                                <h3 className="text-lg sm:text-xl font-semibold">
+                                                                    {plan.plan_name}
+                                                                </h3>
+                                                                {plan.type === 1 && (
+                                                                    <p className="text-sm text-white/70">
+                                                                        Best Pick for Single Brand
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                             <div className="text-sm text-white/80">
                                                                 One Time
                                                             </div>
                                                         </div>
                                                     ) : (selectedPackageType === 1 && (plan.package_id === 2 || plan.package_id === 3)) || (selectedPackageType === 2 && plan.package_id !== 1) ? (
-                                                        <div className="flex justify-between items-center mb-3">
-                                                            <h3 className="text-lg sm:text-xl font-semibold">
-                                                                {plan.plan_name}
-                                                            </h3>
+                                                        <div className="flex justify-between items-center mb-6">
+                                                            <div className="flex flex-col">
+                                                                <h3 className="text-lg sm:text-xl font-semibold">
+                                                                    {plan.plan_name}
+                                                                </h3>
+                                                                {plan.type === 1 && (
+                                                                    <p className="text-sm text-white/70">
+                                                                        Best Pick for Single Brand
+                                                                    </p>
+                                                                )}
+                                                                {plan.type === 2 && (
+                                                                    <p className="text-sm text-white/70">
+                                                                        Best Pick for Multi Brand
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                             <Select
                                                                 value={getBillingPeriod(plan.package_id)}
                                                                 onValueChange={(value) => setBillingPeriodForPlan(plan.package_id, value as BillingPeriod)}
                                                             >
-                                                                <SelectTrigger className="w-32 py-2 text-sm bg-[#171717] text-white">
+                                                                <SelectTrigger className="w-32 py-2 text-sm bg-[#3d3d3d] border-none text-white">
                                                                     <SelectValue />
                                                                 </SelectTrigger>
-                                                                <SelectContent className="bg-[#171717]">
-                                                                    <SelectItem value="monthly" className="text-white hover:bg-[#171717]">
+                                                                <SelectContent className="bg-[#3d3d3d] border-none">
+                                                                    <SelectItem value="monthly" className="text-white hover:bg-[#171717] ">
                                                                         Monthly
                                                                     </SelectItem>
-                                                                    <SelectItem value="half-yearly" className="text-white hover:bg-[#171717]">
+                                                                    <SelectItem value="half-yearly" className="text-white hover:bg-[#171717] border-none">
                                                                         Half-Yearly
                                                                     </SelectItem>
-                                                                    <SelectItem value="yearly" className="text-white hover:bg-[#171717]">
+                                                                    <SelectItem value="yearly" className="text-white hover:bg-[#171717] border-none">
                                                                         Yearly
                                                                     </SelectItem>
                                                                 </SelectContent>
@@ -736,13 +755,13 @@ const ProPage: React.FC = () => {
                                                                 const priceInfo = getPriceDisplay(plan)
                                                                 return (
                                                                     <div>
-                                                                        <div className="flex items-center gap-3 mb-2">
+                                                                        <div className="flex items-center gap-3 mb-6">
                                                                             {priceInfo.hasDiscount && (
                                                                                 <span className="text-lg sm:text-xl text-white/60 line-through">
                                                                                     {priceInfo.originalPrice}
                                                                                 </span>
                                                                             )}
-                                                                            <span className="text-2xl sm:text-3xl font-bold text-white">
+                                                                            <span className="text-3xl sm:text-4xl font-bold text-white">
                                                                                 {priceInfo.discountedPrice}
                                                                             </span>
                                                                             {/* Savings Badge */}
@@ -752,20 +771,28 @@ const ProPage: React.FC = () => {
                                                                                 </Badge>
                                                                             )}
                                                                         </div>
-                                                                        <div className="text-base sm:text-lg text-gray-300">
-                                                                            <span className="text-green-600 font-semibold">
-                                                                                Ad Credits: {plan.package_id === 1
+                                                                        <div className=" flex items-center gap-2 mb-6">
+                                                                            <span
+                                                                                className="inline-block bg-primary/30 text-primary text-sm font-semibold px-3 py-1 rounded-full"
+                                                                            >
+                                                                                Ad Credits:{" "}
+                                                                                {plan.package_id === 1
                                                                                     ? (plan.ads_limit === "Unlimited" ? "Unlimited" : plan.ads_limit)
                                                                                     : calculateAdsLimit(plan.ads_limit, getBillingPeriod(plan.package_id))
-                                                                                } </span> |
-                                                                            Validity: {plan.package_id === 1
-                                                                                ? `${plan.valid_till} days`
-                                                                                : getBillingPeriod(plan.package_id) === 'monthly'
+                                                                                }
+                                                                            </span>
+
+                                                                            <span className="inline-block bg-primary/30 text-primary text-sm font-semibold px-3 py-1 rounded-full">
+                                                                                Validity:{" "}
+                                                                                {plan.package_id === 1
                                                                                     ? `${plan.valid_till} days`
-                                                                                    : getBillingPeriod(plan.package_id) === 'half-yearly'
-                                                                                        ? '6 months'
-                                                                                        : '12 months'
-                                                                            }
+                                                                                    : getBillingPeriod(plan.package_id) === 'monthly'
+                                                                                        ? `${plan.valid_till} days`
+                                                                                        : getBillingPeriod(plan.package_id) === 'half-yearly'
+                                                                                            ? '6 months'
+                                                                                            : '12 months'
+                                                                                }
+                                                                            </span>
                                                                         </div>
                                                                     </div>
                                                                 )
@@ -773,9 +800,9 @@ const ProPage: React.FC = () => {
                                                         </div>
                                                     )}
 
-                                                    <div className="mt-auto">
+                                                    <div className="mt-auto px-3 sm:px-5">
                                                         <Button
-                                                            className={`w-full text-sm sm:text-base ${isPopular
+                                                            className={`w-full text-base sm:text-lg py-6 rounded-xl ${isPopular
                                                                 ? 'bg-primary hover:bg-primary/90'
                                                                 : 'bg-primary hover:bg-primary/90'
                                                                 }`}
@@ -801,6 +828,9 @@ const ProPage: React.FC = () => {
                                                                 </>
                                                             )}
                                                         </Button>
+                                                        <p className="text-xs text-white/70 text-center mt-2">
+                                                            No Credit Card Required
+                                                        </p>
                                                     </div>
 
                                                     {!razorpayLoaded && !currencyLoading && (
@@ -808,23 +838,23 @@ const ProPage: React.FC = () => {
                                                             Loading payment gateway...
                                                         </p>
                                                     )}
-
-                                                    <div className="mt-6">
-                                                        <h3 className="text-lg sm:text-xl font-semibold  mb-3">Features</h3>
-                                                        <ul className="space-y-2 sm:space-y-4 mb-6 sm:mb-8">
-                                                            {planFeatures.map((feature, featureIndex) => (
-                                                                <li
-                                                                    key={`${feature.text}-${featureIndex}`}
-                                                                    className="flex items-start gap-3 text-sm sm:text-base"
-                                                                >
-                                                                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
-                                                                    <span className="leading-relaxed">{feature.text}</span>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
+                                                </div>
+                                                <div className="mt-6">
+                                                    <h3 className="text-lg sm:text-xl font-semibold text-primary mb-3">What's Included ?</h3>
+                                                    <ul className="space-y-2 sm:space-y-4 mb-6 sm:mb-8">
+                                                        {planFeatures.map((feature, featureIndex) => (
+                                                            <li
+                                                                key={`${feature.text}-${featureIndex}`}
+                                                                className="flex items-start gap-3 text-sm sm:text-base"
+                                                            >
+                                                                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5" />
+                                                                <span className="leading-relaxed">{feature.text}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
                                                 </div>
                                             </div>
+
                                         </div>
                                     )
                                 })}

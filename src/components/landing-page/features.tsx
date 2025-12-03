@@ -2,16 +2,15 @@
 
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
+import Image from "next/image"
 import Features1 from "@/assets/landing-page/features/Features1.webp"
 import Features2 from "@/assets/landing-page/features/Features2.webp"
 import Features3 from "@/assets/landing-page/features/Features3.webp"
-import Features4 from "@/assets/landing-page/features/Features4.webp"
-import Features5 from "@/assets/landing-page/features/Features5.webp"
+
 import Features1Mobile from "@/assets/landing-page/features/Features1-mobile.webp"
 import Features2Mobile from "@/assets/landing-page/features/Features2-mobile.webp"
 import Features3Mobile from "@/assets/landing-page/features/Features3-mobile.webp"
-import Features4Mobile from "@/assets/landing-page/features/Features4-mobile.webp"
-import Features5Mobile from "@/assets/landing-page/features/Features5-mobile.webp"
+
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -98,11 +97,14 @@ export default function FeaturesSection() {
                     className={`flex justify-center lg:flex-none ${isEven ? "lg:order-1" : "lg:order-2"
                       }`}
                   >
-                    <div className="w-full bounce-slow max-w-2xl h-60 sm:h-72 lg:h-80 flex items-center justify-center shadow-md mx-auto">
-                      <img
-                        src={isMobile ? feature.mobileImage.src : feature.desktopImage.src}
+                    <div className="w-full bounce-slow max-w-2xl aspect-[16/10] sm:aspect-[16/9] lg:aspect-[16/9] flex items-center justify-center shadow-md mx-auto relative">
+                      <Image
+                        src={isMobile ? feature.mobileImage : feature.desktopImage}
                         alt={feature.title}
-                        className="w-full h-full object-cover rounded-lg"
+                        fill
+                        loading="lazy"
+                        className="object-cover rounded-lg"
+                        sizes="(max-width: 1024px) 100vw, 50vw"
                       />
                     </div>
                   </motion.div>

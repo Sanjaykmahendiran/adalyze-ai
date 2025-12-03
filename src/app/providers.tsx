@@ -14,24 +14,42 @@ export function Providers() {
 
   // create session id on first render (per tab) and clear on tab close
   useEffect(() => {
-    // create if not present
-    getSessionId();
+    // Defer session management to improve FCP
+    const initSession = () => {
+      // create if not present
+      getSessionId();
 
-    const handleBeforeUnload = () => {
-      // clear only if you truly want to remove session on tab close
-      clearSessionId();
+      const handleBeforeUnload = () => {
+        // clear only if you truly want to remove session on tab close
+        clearSessionId();
+      };
+
+      window.addEventListener("beforeunload", handleBeforeUnload);
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    // Defer after initial render
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        const id = (window as any).requestIdleCallback(initSession, { timeout: 1000 });
+        return () => {
+          window.removeEventListener("beforeunload", () => clearSessionId());
+          if (id) (window as any).cancelIdleCallback(id);
+        };
+      } else {
+        const timeoutId = setTimeout(initSession, 50);
+        return () => {
+          clearTimeout(timeoutId);
+          window.removeEventListener("beforeunload", () => clearSessionId());
+        };
+      }
+    }
   }, []);
 
   // page view tracking: keep GTM as-is and also send API Page_View
   useEffect(() => {
     if (pathname) {
-      const url = `${window.location.origin}${pathname}${
-        searchParams?.toString() ? `?${searchParams}` : ""
-      }`;
+      const url = `${window.location.origin}${pathname}${searchParams?.toString() ? `?${searchParams}` : ""
+        }`;
 
       // keep GTM pageview (your existing code)
       pageview(url);
@@ -65,16 +83,16 @@ export function Providers() {
           const userAgent = typeof window !== "undefined" ? window.navigator.userAgent : "";
           const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
           const isMobileUserAgent = mobileRegex.test(userAgent);
-          
+
           // Also check window width (mobile if width <= 768px)
           const isMobileWidth = typeof window !== "undefined" && window.innerWidth <= 768;
-          
+
           return isMobileUserAgent || isMobileWidth;
         };
 
         const deviceType = isMobile() ? "Mobile" : "Desktop";
         const eventName = `Page_View_${deviceType}`;
-        
+
         trackEvent(eventName, url, Cookies.get("email") || null);
       }
     }

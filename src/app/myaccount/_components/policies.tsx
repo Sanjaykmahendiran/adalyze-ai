@@ -62,9 +62,9 @@ export default function PolicyComponent() {
 
   return (
     <div className="w-full  shadow  rounded-2xl lg:mt-6">
-      <div className="w-full px-0 sm:px-12 py-8">
+      <div className="w-full py-8">
         <Tabs defaultValue="privacy" className="w-full rounded-[20px]">
-          <TabsList className="flex bg-black h-12 text-black w-full sm:w-[40rem] justify-start rounded-full overflow-x-auto">
+          <TabsList className="flex bg-black h-12 text-black w-full  justify-start rounded-full overflow-x-auto">
             <TabsTrigger value="privacy"
               className="font-semibold rounded-[20px] flex-grow h-10 px-2 py-1 text-center sm:text-left md:p-0 lg:text-sm md:text-xs font-medium bg-transparent data-[state=active]:bg-primary hover:bg-[#171717]">
               Privacy Policy
@@ -84,7 +84,7 @@ export default function PolicyComponent() {
           ) : (
             <>
               <TabsContent value="privacy">
-                <div className="mt-6 flex justify-center">
+                <div className="mt-6 flex justify-center bg-black p-4 rounded-2xl">
                   <div className="max-w-[800px] w-full">
                     <HtmlRenderer htmlContent={privacy} />
                   </div>
@@ -92,7 +92,7 @@ export default function PolicyComponent() {
               </TabsContent>
 
               <TabsContent value="return">
-                <div className="mt-6 flex justify-center">
+                <div className="mt-6 flex justify-center bg-black p-4 rounded-2xl">
                   <div className="max-w-[800px] w-full">
                     <HtmlRenderer htmlContent={returnPolicy} />
                   </div>
@@ -100,7 +100,7 @@ export default function PolicyComponent() {
               </TabsContent>
 
               <TabsContent value="terms">
-                <div className="mt-6 flex justify-center">
+                <div className="mt-6 flex justify-center bg-black p-4 rounded-2xl">
                   <div className="max-w-[800px] w-full">
                     <HtmlRenderer htmlContent={termsConditions} />
                   </div>

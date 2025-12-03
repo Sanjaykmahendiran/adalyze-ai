@@ -275,8 +275,8 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
                         exit={{ opacity: 0, scale: 0.7 }}
                         transition={{ duration: 0.25 }}
                         onClick={() => setIsOpen(true)}
-                        className="fixed right-3 sm:right-4 bottom-16 sm:bottom-20 z-[999]
-              w-16 h-16 sm:w-20 sm:h-20 
+                        className="fixed left-3 right-auto sm:right-4 sm:left-auto bottom-2 sm:bottom-20 z-[999]
+              w-20 h-20 sm:w-20 sm:h-20 
               flex items-center justify-center text-white 
                cursor-pointer bounce-slow"
                         aria-label="Open chat"

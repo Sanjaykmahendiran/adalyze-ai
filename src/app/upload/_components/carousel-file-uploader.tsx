@@ -94,15 +94,15 @@ export function CarouselFileUploader({
   const validateAndSetFiles = useCallback((newFiles: File[]) => {
     const validTypes = ["image/jpeg", "image/png", "image/jpg"]
     const invalidFiles = newFiles.filter(file =>
-      !validTypes.includes(file.type) || file.size > 3 * 1024 * 1024
+      !validTypes.includes(file.type) || file.size > 5 * 1024 * 1024
     )
 
     if (invalidFiles.length > 0) {
-      toast.error(`${invalidFiles.length} file(s) skipped. Please upload valid JPG/PNG under 3MB`)
+      toast.error(`${invalidFiles.length} file(s) skipped. Please upload valid JPG/PNG under 5MB`)
     }
 
     const validFiles = newFiles.filter(file =>
-      validTypes.includes(file.type) && file.size <= 3 * 1024 * 1024
+      validTypes.includes(file.type) && file.size <= 5 * 1024 * 1024
     )
 
     const totalFiles = files.length + validFiles.length
@@ -423,7 +423,7 @@ export function CarouselFileUploader({
       <p className="text-gray-200 font-medium text-sm sm:text-base">
         Click to upload <span className="text-gray-300">or drag and drop</span>
       </p>
-      <p className="mt-1 text-xs sm:text-sm text-gray-300">PNG, JPG, JPEG (max. 3 MB each)</p>
+      <p className="mt-1 text-xs sm:text-sm text-gray-300">PNG, JPG, JPEG (max. 5 MB each)</p>
       <p className="mt-1 text-xs sm:text-sm text-gray-500">Upload 3-7 images</p>
     </div>
   )}

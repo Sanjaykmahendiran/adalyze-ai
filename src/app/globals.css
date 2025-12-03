@@ -240,3 +240,17 @@
 #download-report .bg-black {
   page-break-inside: avoid;
 }
+
+/* Shine animation for progress bars */
+@keyframes shine {
+  0% {
+    transform: translateX(-200%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-20deg);
+  }
+}
+
+.animate-shine {
+  animation: shine 2s infinite;
+}

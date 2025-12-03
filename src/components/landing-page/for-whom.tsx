@@ -158,7 +158,7 @@ export default function ForWhomSection() {
                                 }}
                             >
                                 <div
-                                    className="w-80 h-96 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-cover bg-center relative"
+                                    className="w-80 aspect-[5/6] rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-cover bg-center relative"
                                     style={{ backgroundImage: `url(${member.image.src})` }}
                                 >
                                     {/* Dark overlay for readability */}

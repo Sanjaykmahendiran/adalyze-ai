@@ -5,12 +5,8 @@ import Cookies from "js-cookie"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
-  Upload, Crown, MessageCircle, User, Facebook, Instagram, FileImage, X, GitCompareArrows, Calendar, User2Icon, CalendarIcon, ClockIcon, ArrowRightIcon,
-  MessageSquare,
-  LayoutPanelLeft,
-  Eye,
-  Linkedin,
-  Share,
+  Upload, Crown, MessageCircle, User, Facebook, Instagram, FileImage, X, GitCompareArrows, Calendar,
+  MessageSquare, LayoutPanelLeft, Eye, Linkedin,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import UserLayout from "@/components/layouts/user-layout"
@@ -31,7 +27,7 @@ import IncreaseROI from "@/assets/dashboard/increase-roi.png"
 import TalkToExpert from "@/assets/dashboard/talk-to-expert.png"
 import Image from "next/image"
 import toast from "react-hot-toast"
-import { CaseStudy, Dashboard2Data, DashboardData, Top10Ad, TrendingAd, TrendingAdsResponse } from "./types"
+import { CaseStudy, Dashboard2Data, DashboardData, Top10Ad, TrendingAd } from "./types"
 import AdCard from "./_components/ad-card"
 import LimitReached from "@/assets/limit-reached.webp"
 import ExpertConsultationPopup from "@/components/expert-form"
@@ -50,7 +46,7 @@ const platformIcons = {
 // Helper function to parse platforms
 const parsePlatforms = (platformsString: string | undefined): string[] => {
   if (!platformsString) return []
-  
+
   try {
     // Try to parse as JSON first (for array format)
     const parsed = JSON.parse(platformsString)
@@ -219,13 +215,13 @@ export default function Dashboard() {
   }
 
   // Top 10 Ads card renderer
-  const renderAdCard = (ad: Top10Ad, index: number) => {
-    const platformList = parsePlatforms(ad.platforms);
+  const renderAdCard = (ad: Top10Ad, index: number, listType: string = 'ad') => {
+    const platformList = parsePlatforms(ad.top_platform || ad.platforms);
     const dateFormatted = formatDate(ad.uploaded_on);
 
     return (
       <div
-        key={ad.ad_id}
+        key={`${listType}-${ad.ad_id}-${index}`}
         className="bg-black border border-[#3d3d3d] rounded-lg overflow-hidden hover:shadow-xl hover:shadow-[#db4900]/10 group hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300"
       >
         <div className="relative">
@@ -272,7 +268,7 @@ export default function Dashboard() {
                   FileImage;
                 return (
                   <Icon
-                    key={idx}
+                    key={`${ad.ad_id}-platform-${idx}-${platform}`}
                     className="w-3 h-3 sm:w-4 sm:h-4 text-[#db4900]"
                     aria-label={platform}
                   />
@@ -571,7 +567,7 @@ export default function Dashboard() {
               dashboard2Data.global_insights.map((insight, index) => {
                 return (
                   <div
-                    key={insight.id}
+                    key={`insight-popup-${insight.id || index}-${index}`}
                     className="border-l-4 border-[#db4900] bg-black pl-4 pr-3 py-3 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.01]"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -761,7 +757,7 @@ export default function Dashboard() {
   return (
     <UserLayout userDetails={userDetails}>
       {loading ? <DashboardLoadingSkeleton /> : (
-        <div className="min-h-screen max-w-7xl mx-auto text-white pb-20 sm:pb-5">
+        <div className="min-h-screen max-w-7xl mx-auto text-white pb-20 sm:pb-5 overflow-x-auto">
           <div className="p-4 sm:p-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
@@ -1247,7 +1243,7 @@ export default function Dashboard() {
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-gray-400">
+                        <div className="text-center py-8 text-white/50">
                           <p>No case studies available</p>
                         </div>
                       )}

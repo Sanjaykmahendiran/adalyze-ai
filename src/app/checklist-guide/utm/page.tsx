@@ -21,7 +21,7 @@ import IntroImage from "@/assets/checklist/lp-intro-section.webp";
 import ChecklistHeade from "../header/page";
 import { motion } from "framer-motion";
 import dashboard from "@/assets/Landing-page/agencies.webp";
-import utm from "@/assets/Landing-page/step1.png";
+import utm from "@/assets/Landing-page/step1.webp";
 
 const MobileFriendlyLandingPage: React.FC = () => {
   return (

@@ -12,16 +12,16 @@ const LandingPageFooter = () => {
         <div className="flex flex-col items-center md:items-start gap-4 sm:gap-6 w-full">
           {/* Social Media Icons */}
           <div className="flex flex-wrap justify-center md:justify-start gap-3 sm:gap-4">
-            <Link href="https://www.facebook.com/profile.php?id=61579156799875" target="_blank" aria-label="Facebook">
+            <Link href="https://www.facebook.com/profile.php?id=61579156799875" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
               <Facebook className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
             </Link>
-            <Link href="https://x.com/adalyzeai" target="_blank" aria-label="Twitter">
+            <Link href="https://x.com/adalyzeai" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
               <Twitter className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
             </Link>
-            <Link href="https://www.instagram.com/adalyzeai" target="_blank" aria-label="Instagram">
+            <Link href="https://www.instagram.com/adalyzeai" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
               <Instagram className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
             </Link>
-            <Link href="https://www.linkedin.com/company/adalyze-ai/" target="_blank" aria-label="LinkedIn">
+            <Link href="https://www.linkedin.com/company/adalyze-ai/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
               <Linkedin className="w-5 h-5 sm:w-6 sm:h-6 hover:text-gray-300 transition" />
             </Link>
           </div>
@@ -54,8 +54,24 @@ const LandingPageFooter = () => {
         {/* Right Section: Contact & Buttons */}
         <div className="text-center md:text-right w-full md:mr-10">
           <h3 className="text-lg sm:text-xl font-bold text-primary mb-2">Contact</h3>
-          <a href="mailto:support@adalyze.app" className="text-sm hover:text-primary block mb-4 sm:mb-6">
-            support@adalyze.app
+          {/* Obfuscated email to protect from spam harvesters */}
+          <a 
+            href="mailto:support@adalyze.app" 
+            className="text-sm hover:text-primary block mb-4 sm:mb-6"
+            onClick={(e) => {
+              // Additional protection: decode on click (base64 encoded mailto link)
+              e.preventDefault();
+              window.location.href = atob('bWFpbHRvOnN1cHBvcnRAYWRhbHl6ZS5hcHA=');
+            }}
+            onMouseEnter={(e) => {
+              // Decode email on hover for better UX
+              const link = e.currentTarget;
+              if (link.textContent && link.textContent.includes('@')) {
+                link.textContent = atob('c3VwcG9ydEBhZGFseXplLmFwcA==');
+              }
+            }}
+          >
+            <span className="[unicode-bidi:bidi-override;direction:rtl]">ppa.ezylada@tropus</span>
           </a>
         </div>
       </div>

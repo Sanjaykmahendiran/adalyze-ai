@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:optimized": "node scripts/strip-image-metadata.js && next build",
+    "optimize-images": "node scripts/strip-image-metadata.js",
     "start": "next start",
     "lint": "next lint"
   },
@@ -39,6 +41,7 @@
     "cmdk": "^1.1.1",
     "cookieconsent": "^3.1.1",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.3.0",
     "embla-carousel-react": "^8.6.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.24",
@@ -86,6 +89,7 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.1",
     "eslint-config-next": "15.2.2",
+    "sharp": "^0.33.5",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3"
   }

@@ -57,7 +57,8 @@ export default function MobileVideoSection() {
     return (
         <section
             ref={sectionRef}
-            className="new-hero relative sm:hidden flex flex-col items-center justify-center w-full overflow-hidden  py-24 px-4 md:px-12"
+            className="new-hero relative sm:hidden flex flex-col items-center justify-center w-full overflow-hidden py-24 px-4 md:px-12"
+            style={{ position: 'relative' }}
         >
 
             {/* Perspective wrapper */}

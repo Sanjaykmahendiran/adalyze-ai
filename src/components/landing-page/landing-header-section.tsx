@@ -46,6 +46,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
   const [scrollDirection, setScrollDirection] = useState("down");
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
 
   // New state and refs for auto-hide functionality
@@ -58,8 +59,15 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
     ? [bannerData.typeword3, bannerData.typeword1, bannerData.typeword4, bannerData.typeword2]
     : ["Loading..."];
 
+  // Set mounted state to prevent hydration mismatches
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Set up viewport height tracking for mobile with proper calculations
   useEffect(() => {
+    if (!isMounted) return;
+    
     const updateViewportHeight = () => {
       const height = window.visualViewport?.height || window.innerHeight;
       setViewportHeight(height);
@@ -77,16 +85,20 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
         window.visualViewport.removeEventListener("resize", updateViewportHeight);
       }
     };
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -94,7 +106,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  }, [isMounted]);
 
   // Typewriter effect (unchanged)
   useEffect(() => {
@@ -176,6 +188,12 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
     if (videoRef.current) {
       try {
         if (videoRef.current.paused) {
+          // Load video source if not already loaded (lazy load on first play)
+          if (!videoRef.current.src && videoRef.current.readyState === 0) {
+            videoRef.current.load();
+            // Wait a bit for video to start loading
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
           await videoRef.current.play();
           setIsPlaying(true);
           startHideControlsTimer();
@@ -283,7 +301,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
             <Squares
               direction="diagonal"
               speed={0.5}
-              squareSize={isMobile ? 20 : 40}
+              squareSize={isMounted && isMobile ? 20 : 40}
               borderColor="#1a1a1a"
               hoverFillColor="#0d0d0d"
             />
@@ -315,12 +333,14 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
 
         <Header />
 
-        {isMobile ? (
+        <div suppressHydrationWarning>
+          {isMounted && isMobile ? (
           <div
             className="relative z-10 w-full flex flex-col mt-8"
             style={{
-              minHeight: `${viewportHeight}px`, // total mobile viewport
+              minHeight: viewportHeight > 0 ? `${viewportHeight}px` : '100vh', // total mobile viewport
             }}
+            suppressHydrationWarning
           >
             {/* Content section - 80% viewport */}
             <div
@@ -385,9 +405,7 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
 
             </div>
           </div>
-
-
-        ) : (
+          ) : (
           <div className="relative z-10 w-full container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-38 pb-6 sm:pb-8 md:pb-12 lg:pb-16 flex flex-col items-center">
             <div className="pt-8">
               <div className="flex items-center justify-center px-3 py-0.5 mb-2 rounded-full bg-[#db4900]/10 text-[#db4900] font-medium text-sm">
@@ -463,8 +481,10 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
             <div className="w-full max-w-sm sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-6xl mx-auto mt-6 sm:mt-8 md:mt-12 lg:mt-16 relative z-10 px-2 sm:px-4 md:px-8 lg:px-12 xl:px-24">
               <div className="relative flex items-center justify-center w-full">
                 <>
-                  <motion.div
+                  <motion.img
                     key={`top-left-${scrollDirection}`}
+                    src={image3.src || "/placeholder.svg"}
+                    alt="Floating Image 1"
                     initial={{
                       opacity: 0.3,
                       y: 100,
@@ -480,20 +500,13 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                       rotate: scrollDirection === "down" ? -15 : -30,
                     }}
                     transition={{ duration: 1.2, ease: "easeOut" }}
-                    className="absolute -top-12 md:-top-16 lg:-top-20 xl:-top-34 -left-12 md:-left-16 lg:-left-24 xl:-left-52 z-5 pointer-events-none hidden md:block"
-                  >
-                    <div className="relative">
-                      <img
-                        src={image3.src || "/placeholder.svg"}
-                        alt="Floating Image 1"
-                        className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 xl:w-48 xl:h-48 2xl:w-56 2xl:h-56 object-cover rounded-xl lg:rounded-2xl xl:rounded-3xl shadow-2xl border-2 border-white/20"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 rounded-xl lg:rounded-2xl xl:rounded-3xl" />
-                    </div>
-                  </motion.div>
+                    className="absolute -top-12 md:-top-16 lg:-top-20 xl:-top-34 -left-12 md:-left-16 lg:-left-24 xl:-left-52 z-5 pointer-events-none hidden md:block w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 xl:w-48 xl:h-48 2xl:w-56 2xl:h-56 object-cover rounded-xl lg:rounded-2xl xl:rounded-3xl shadow-2xl border-2 border-white/20"
+                  />
 
-                  <motion.div
+                  <motion.img
                     key={`top-right-${scrollDirection}`}
+                    src={image1.src || "/placeholder.svg"}
+                    alt="Floating Image 2"
                     initial={{
                       opacity: 0.3,
                       y: 100,
@@ -509,20 +522,13 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                       rotate: scrollDirection === "down" ? 12 : 30,
                     }}
                     transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
-                    className="absolute -top-8 md:-top-12 lg:-top-16 xl:-top-30 -right-8 md:-right-12 lg:-right-20 xl:-right-58 z-5 pointer-events-none hidden md:block"
-                  >
-                    <div className="relative">
-                      <img
-                        src={image1.src || "/placeholder.svg"}
-                        alt="Floating Image 2"
-                        className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 xl:w-48 xl:h-48 2xl:w-56 2xl:h-56 object-cover rounded-xl lg:rounded-2xl xl:rounded-3xl shadow-2xl border-2 border-white/20"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 rounded-xl lg:rounded-2xl xl:rounded-3xl" />
-                    </div>
-                  </motion.div>
+                    className="absolute -top-8 md:-top-12 lg:-top-16 xl:-top-30 -right-8 md:-right-12 lg:-right-20 xl:-right-58 z-5 pointer-events-none hidden md:block w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 xl:w-48 xl:h-48 2xl:w-56 2xl:h-56 object-cover rounded-xl lg:rounded-2xl xl:rounded-3xl shadow-2xl border-2 border-white/20"
+                  />
 
-                  <motion.div
+                  <motion.img
                     key={`bottom-left-${scrollDirection}`}
+                    src={image2.src || "/placeholder.svg"}
+                    alt="Floating Image 3"
                     initial={{
                       opacity: 0.3,
                       y: -100,
@@ -538,20 +544,13 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                       rotate: scrollDirection === "down" ? 8 : 20,
                     }}
                     transition={{ duration: 1.2, delay: 0.4, ease: "easeOut" }}
-                    className="absolute -bottom-4 md:-bottom-8 lg:-bottom-16 xl:-bottom-0 -left-12 md:-left-20 lg:-left-36 xl:-left-52 z-5 pointer-events-none hidden md:block"
-                  >
-                    <div className="relative">
-                      <img
-                        src={image2.src || "/placeholder.svg"}
-                        alt="Floating Image 3"
-                        className="w-14 h-14 md:w-20 md:h-20 lg:w-30 lg:h-30 xl:w-44 xl:h-44 2xl:w-52 2xl:h-52 object-cover rounded-xl lg:rounded-2xl xl:rounded-3xl shadow-2xl border-2 border-white/20"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 rounded-xl lg:rounded-2xl xl:rounded-3xl" />
-                    </div>
-                  </motion.div>
+                    className="absolute -bottom-4 md:-bottom-8 lg:-bottom-16 xl:-bottom-0 -left-12 md:-left-20 lg:-left-36 xl:-left-52 z-5 pointer-events-none hidden md:block w-14 h-14 md:w-20 md:h-20 lg:w-30 lg:h-30 xl:w-44 xl:h-44 2xl:w-52 2xl:h-52 object-cover rounded-xl lg:rounded-2xl xl:rounded-3xl shadow-2xl border-2 border-white/20"
+                  />
 
-                  <motion.div
+                  <motion.img
                     key={`bottom-right-${scrollDirection}`}
+                    src={image4.src || "/placeholder.svg"}
+                    alt="Floating Image 4"
                     initial={{
                       opacity: 0.3,
                       y: -100,
@@ -567,17 +566,8 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                       rotate: scrollDirection === "down" ? -10 : -20,
                     }}
                     transition={{ duration: 1.2, delay: 0.6, ease: "easeOut" }}
-                    className="absolute -bottom-8 md:-bottom-12 lg:-bottom-20 xl:-bottom-0 -right-16 md:-right-24 lg:-right-44 xl:-right-62 z-5 pointer-events-none hidden md:block"
-                  >
-                    <div className="relative">
-                      <img
-                        src={image4.src || "/placeholder.svg"}
-                        alt="Floating Image 4"
-                        className="w-18 h-18 md:w-28 md:h-28 lg:w-36 lg:h-36 xl:w-52 xl:h-52 2xl:w-60 2xl:h-60 object-cover rounded-xl lg:rounded-2xl xl:rounded-3xl shadow-2xl border-2 border-white/20"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 rounded-xl lg:rounded-2xl xl:rounded-3xl" />
-                    </div>
-                  </motion.div>
+                    className="absolute -bottom-8 md:-bottom-12 lg:-bottom-20 xl:-bottom-0 -right-16 md:-right-24 lg:-right-44 xl:-right-62 z-5 pointer-events-none hidden md:block w-18 h-18 md:w-28 md:h-28 lg:w-36 lg:h-36 xl:w-52 xl:h-52 2xl:w-60 2xl:h-60 object-cover rounded-xl lg:rounded-2xl xl:rounded-3xl shadow-2xl border-2 border-white/20"
+                  />
                 </>
 
                 <div
@@ -588,13 +578,29 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
                   onMouseMove={handleMouseMove}
                   onClick={togglePlay}
                 >
+                  {/* Poster image as LCP element - loads immediately with mobile support */}
+                  <picture style={{ display: isPlaying ? 'none' : 'block' }}>
+                    <source
+                      media="(max-width: 768px)"
+                      srcSet="https://adalyze.app/uploads/thumbnail-mobile.webp"
+                    />
+                    <img
+                      src="https://adalyze.app/uploads/thumbnail.webp"
+                      alt="Adalyze AI Video Preview"
+                      className="w-full h-full object-cover rounded-xl sm:rounded-2xl md:rounded-3xl"
+                      fetchPriority="high"
+                      loading="eager"
+                      width={1920}
+                      height={1080}
+                    />
+                  </picture>
                   <video
                     ref={videoRef}
                     className="w-full h-full object-cover rounded-xl sm:rounded-2xl md:rounded-3xl"
                     poster="https://adalyze.app/uploads/thumbnail.webp"
                     playsInline
-                    preload="metadata"
-                    {...({ fetchPriority: "high" } as React.VideoHTMLAttributes<HTMLVideoElement>)}
+                    preload="none"
+                    style={{ display: isPlaying ? 'block' : 'none' }}
                   >
                     <source src="https://adalyze.app/uploads/video.mp4" type="video/mp4" />
                   </video>
@@ -628,7 +634,8 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
               </div>
             </div>
           </div>
-        )}
+          )}
+        </div>
       </div>
     </main>
   );

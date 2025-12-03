@@ -22,12 +22,12 @@ import ChecklistHeade from "../header/page";
 import { motion } from "framer-motion";
 
 // Import your principle images
-import principle1 from "@/assets/Landing-page/step1.png";
-import principle2 from "@/assets/Landing-page/step2.png";
-import principle3 from "@/assets/Landing-page/step3.png";
-import principle4 from "@/assets/Landing-page/step1.png";
-import principle5 from "@/assets/Landing-page/step2.png";
-import principle6 from "@/assets/Landing-page/step3.png";
+import principle1 from "@/assets/Landing-page/step1.webp";
+import principle2 from "@/assets/Landing-page/step2.webp";
+import principle3 from "@/assets/Landing-page/step3.webp";
+import principle4 from "@/assets/Landing-page/step1.webp";
+import principle5 from "@/assets/Landing-page/step2.webp";
+import principle6 from "@/assets/Landing-page/step3.webp";
 
 const textVariants = {
   hiddenLeft: { x: -100, opacity: 0 },

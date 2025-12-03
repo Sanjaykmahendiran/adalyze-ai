@@ -120,8 +120,19 @@ const useScrollDirection = () => {
   const [scrollDirection, setScrollDirection] = useState<"up" | "down">("up")
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isAtTop, setIsAtTop] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
+    // Set initial scroll position after mount to prevent hydration mismatch
+    const initialScrollY = window.scrollY
+    setIsAtTop(initialScrollY <= 10)
+    setLastScrollY(initialScrollY)
+  }, [])
+
+  useEffect(() => {
+    if (!isMounted) return
+    
     const handleScroll = () => {
       const currentScrollY = window.scrollY
       setIsAtTop(currentScrollY <= 10)
@@ -136,9 +147,9 @@ const useScrollDirection = () => {
     }
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [lastScrollY])
+  }, [lastScrollY, isMounted])
 
-  return { scrollDirection, isAtTop }
+  return { scrollDirection, isAtTop: isMounted ? isAtTop : true }
 }
 
 export default function Header() {
@@ -258,6 +269,7 @@ export default function Header() {
                 onClick={closeBanner}
                 className="flex-shrink-0 text-white hover:text-gray-200 transition-colors duration-200 ml-1 sm:ml-2 cursor-pointer"
                 aria-label="Close banner"
+                suppressHydrationWarning
               >
                 <X className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
               </button>

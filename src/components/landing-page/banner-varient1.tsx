@@ -47,7 +47,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ image, alt, duration }) => (
     data-aos="fade-up"
     data-aos-duration={duration}
   >
-    <div className="w-62 h-82 rounded-full overflow-hidden shadow-xl border-4 border-white">
+    <div className="w-62 aspect-square rounded-full overflow-hidden shadow-xl border-4 border-white">
       <img
         src={image.src}
         alt={alt}

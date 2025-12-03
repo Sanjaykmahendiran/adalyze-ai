@@ -6,9 +6,16 @@ import { trackEvent } from "@/lib/eventTracker"
 // Custom hook for intersection observer
 const useInView = (options = {}): [React.RefObject<HTMLDivElement | null>, boolean] => {
     const [isInView, setIsInView] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isMounted) return;
+        
         const observer = new IntersectionObserver(
             ([entry]) => {
                 setIsInView(entry.isIntersecting);
@@ -21,9 +28,9 @@ const useInView = (options = {}): [React.RefObject<HTMLDivElement | null>, boole
         return () => {
             if (ref.current) observer.unobserve(ref.current);
         };
-    }, []);
+    }, [isMounted, options]);
 
-    return [ref, isInView];
+    return [ref, isMounted ? isInView : false];
 };
 
 // Animated Counter Component
@@ -151,6 +158,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
                 window.open('/register', '_blank', 'noopener,noreferrer');
                 trackEvent("LP_Counter_button_clicked", window.location.href);
             }}
+            suppressHydrationWarning
         >
             <div
                 className={`z-10 rounded-2xl sm:rounded-3xl text-left bg-black px-4 sm:px-5 md:px-6 py-4 sm:py-5 flex flex-col justify-between transition-all duration-300

@@ -8,13 +8,11 @@ import MobileBeforeAdalyze from "@/assets/Landing-page/old-way-mobile.webp"
 import MobileAfterAdalyze from "@/assets/Landing-page/new-way-mobile.webp"
 import { Button } from "../ui/button"
 import { motion } from "framer-motion"
-import { useRouter } from "next/navigation"
 import { CheckCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { trackEvent } from "@/lib/eventTracker"
 
 const WorkflowSection = ({ ButtonText }: { ButtonText: string }) => {
-  const router = useRouter()
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {

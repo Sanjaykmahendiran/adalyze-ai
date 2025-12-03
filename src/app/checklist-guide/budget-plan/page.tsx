@@ -2,11 +2,11 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, Gauge, Wallet } from "lucide-react";
+import { AlertTriangle, CheckCircle2,} from "lucide-react";
 import ChecklistHeade from "../header/page";
 import Image from "next/image";
 import IntroImage from "@/assets/checklist/lp-intro-section.webp";
-import principle1 from "@/assets/Landing-page/step1.png";
+import principle1 from "@/assets/Landing-page/step1.webp";
 
 const BudgetPlanPage: React.FC = () => {
   return (

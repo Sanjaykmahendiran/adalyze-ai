@@ -37,27 +37,29 @@ interface BannerData {
   counter: number;
 }
 
-// Dynamic sections
-// Header continues to SSR; it now accepts props but UI/behavior remain unchanged
-const LandingPageHeader = dynamic(() => import("@/components/landing-page/landing-header-section"), { ssr: true });
-const ClientSection = dynamic(() => import("@/components/landing-page/client-section"), { ssr: false });
-const OldWayNewWay = dynamic(() => import("@/components/landing-page/oldway-newway"), { ssr: false });
-const FeaturesSection = dynamic(() => import("@/components/landing-page/features"), { ssr: false });
-const CTASection = dynamic(() => import("@/components/landing-page/cta-section"), { ssr: false });
-const Testimonials = dynamic(() => import("@/components/landing-page/testimonials"), { ssr: false });
-const FAQSection = dynamic(() => import("@/components/landing-page/faq-section"), { ssr: false });
-const WorkflowSection = dynamic(() => import("@/components/landing-page/workflow"), { ssr: false });
-const LandingPageFooter = dynamic(() => import("@/components/landing-page/landing-page-footer"), { ssr: false });
-const PromotionalPopup = dynamic(() => import("@/components/landing-page/promotional-card"), { ssr: false });
-const CaseStudySection = dynamic(() => import("@/components/landing-page/case-study-section"), { ssr: false });
+// Only import critical above-the-fold components directly
+import LandingPageHeader from "@/components/landing-page/landing-header-section";
+
+// Dynamically import below-the-fold components to improve FCP
+const PartnerLogos = dynamic(() => import("@/components/landing-page/PartnerLogos"), { ssr: true });
+const WhyWeFoundSection = dynamic(() => import("@/components/landing-page/why-we-found"), { ssr: true });
+const ClientSection = dynamic(() => import("@/components/landing-page/client-section"), { ssr: true });
+const OldWayNewWay = dynamic(() => import("@/components/landing-page/oldway-newway"), { ssr: true });
+const FeaturesSection = dynamic(() => import("@/components/landing-page/features"), { ssr: true });
+const Counter = dynamic(() => import("@/components/landing-page/lp-counter"), { ssr: true });
+const WorkflowSection = dynamic(() => import("@/components/landing-page/workflow"), { ssr: true });
+const MobileVideoSection = dynamic(() => import("@/components/landing-page/mobile-video-section"), { ssr: true });
+const IssuesBeforeAfter = dynamic(() => import("@/components/landing-page/issues-before-after"), { ssr: true });
+const Testimonials = dynamic(() => import("@/components/landing-page/testimonials"), { ssr: true });
+const CaseStudySection = dynamic(() => import("@/components/landing-page/case-study-section"), { ssr: true });
+const FAQSection = dynamic(() => import("@/components/landing-page/faq-section"), { ssr: true });
+const CTASection = dynamic(() => import("@/components/landing-page/cta-section"), { ssr: true });
+const LandingPageFooter = dynamic(() => import("@/components/landing-page/landing-page-footer"), { ssr: true });
+
+// Conditionally-used components - already dynamic
 const ForWhom = dynamic(() => import("@/components/landing-page/for-whom"), { ssr: false });
-const AiAdMistakes = dynamic(() => import("@/components/landing-page/ai-ad-mistakes"), { ssr: false });
-const PartnerLogos = dynamic(() => import("@/components/landing-page/PartnerLogos"), { ssr: false });
-const Counter = dynamic(() => import("@/components/landing-page/lp-counter"), { ssr: false });
-const WhyWeFoundSection = dynamic(() => import("@/components/landing-page/why-we-found"), { ssr: false });
 const EcommBanner = dynamic(() => import("@/components/landing-page/banner-varient1"), { ssr: false });
-const MobileVideoSection = dynamic(() => import("@/components/landing-page/mobile-video-section"), { ssr: false });
-const IssuesBeforeAfter = dynamic(() => import("@/components/landing-page/issues-before-after"), { ssr: false });
+const PromotionalPopup = dynamic(() => import("@/components/landing-page/promotional-card"), { ssr: false });
 
 
 const LandingPage = () => {
@@ -72,6 +74,7 @@ const LandingPage = () => {
   const [buttonText, setButtonText] = useState("");
 
   useEffect(() => {
+    // Defer banner data fetch to improve FCP - don't block initial render
     const fetchBannerData = async () => {
       try {
         const baseUrl = "https://adalyzeai.xyz/App/api.php?gofor=livebanner";
@@ -86,7 +89,16 @@ const LandingPage = () => {
         setIsLoadingBanner(false);
       }
     };
-    fetchBannerData();
+
+    // Defer API call to improve FCP - use requestIdleCallback with longer timeout
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(fetchBannerData, { timeout: 2000 });
+      } else {
+        // Fallback: delay by 100ms to let FCP render first
+        setTimeout(fetchBannerData, 100);
+      }
+    }
   }, [variant]);
 
   // UI state
@@ -94,13 +106,27 @@ const LandingPage = () => {
   const [showPromotionalPopup, setShowPromotionalPopup] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPartnerLogosVisible, setIsPartnerLogosVisible] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [hasTrackedHalfPage, setHasTrackedHalfPage] = useState(false);
 
   const chatRef = useRef<HTMLDivElement | null>(null);
   const tickingRef = useRef(false);
   const partnerLogosRef = useRef<HTMLDivElement | null>(null);
 
+  // Set mounted state after hydration to prevent hydration mismatches
+  // Use requestAnimationFrame to defer non-critical state updates
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      requestAnimationFrame(() => {
+        setIsMounted(true);
+      });
+    }
+  }, []);
+
   // Smooth hash scrolling
   useEffect(() => {
+    if (!isMounted) return;
+
     const scrollToHash = () => {
       const hash = typeof window !== "undefined" ? window.location.hash : "";
       if (!hash) return;
@@ -108,7 +134,10 @@ const LandingPage = () => {
       const target = document.getElementById(sectionId);
       if (target) {
         setTimeout(() => {
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          // Use manual scroll calculation instead of scrollIntoView to avoid container position warning
+          const offset = 80; // header height offset
+          const targetPosition = target.getBoundingClientRect().top + window.scrollY - offset;
+          window.scrollTo({ top: targetPosition, behavior: "smooth" });
         }, 50);
       }
     };
@@ -116,24 +145,44 @@ const LandingPage = () => {
     scrollToHash();
     window.addEventListener("hashchange", scrollToHash, { passive: true });
     return () => window.removeEventListener("hashchange", scrollToHash);
-  }, []);
+  }, [isMounted]);
 
-  // Scroll handling (back to top)
+  // Scroll handling (back to top) - deferred to improve FCP
   useEffect(() => {
+    if (!isMounted) return; // Wait for mount before setting up scroll handler
+
     const onScroll = () => {
       if (tickingRef.current) return;
       tickingRef.current = true;
 
       requestAnimationFrame(() => {
         const currentY = window.scrollY || 0;
+        const documentHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+        const viewportHeight = window.innerHeight;
+        const halfPageHeight = (documentHeight - viewportHeight) / 2;
+
         setShowScrollToTop(currentY > window.innerHeight);
+
+        // Track when user crosses half of the page
+        if (!hasTrackedHalfPage && currentY >= halfPageHeight) {
+          trackEvent("LP_Half_page_Crossed", window.location.href);
+          setHasTrackedHalfPage(true);
+        }
+
         tickingRef.current = false;
       });
     };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    // Defer scroll listener setup to improve FCP
+    const timeoutId = setTimeout(() => {
+      window.addEventListener("scroll", onScroll, { passive: true });
+    }, 200);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [isMounted, hasTrackedHalfPage]);
 
   // Chat toggle
   const toggleChat = useCallback(() => setIsChatOpen((v) => !v), []);
@@ -173,8 +222,10 @@ const LandingPage = () => {
     };
   }, [isChatOpen]);
 
-  // Prevent horizontal scroll on medium screens without changing layout
+  // Prevent horizontal scroll on medium screens without changing layout - deferred
   useEffect(() => {
+    if (!isMounted) return; // Wait for mount
+
     const root = document.documentElement;
     const body = document.body;
 
@@ -191,18 +242,25 @@ const LandingPage = () => {
       }
     };
 
-    applyOverflowRule();
-    window.addEventListener("resize", applyOverflowRule, { passive: true });
+    // Defer to improve FCP
+    const timeoutId = setTimeout(() => {
+      applyOverflowRule();
+      window.addEventListener("resize", applyOverflowRule, { passive: true });
+    }, 100);
+
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener("resize", applyOverflowRule);
       // Cleanup: remove any style overrides
       root.style.overflowX = "";
       body.style.overflowX = "";
     };
-  }, []);
+  }, [isMounted]);
 
-  // Intersection Observer for PartnerLogos visibility
+  // Intersection Observer for PartnerLogos visibility - deferred to improve FCP
   useEffect(() => {
+    if (!isMounted) return; // Wait for mount before setting up observer
+
     let observer: IntersectionObserver | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
     let retryTimeoutId: NodeJS.Timeout | null = null;
@@ -217,7 +275,7 @@ const LandingPage = () => {
     const checkVisibility = () => {
       if (!partnerLogosRef.current) {
         // Retry after a short delay if ref is not ready
-        retryTimeoutId = setTimeout(checkVisibility, 100);
+        retryTimeoutId = setTimeout(checkVisibility, 200);
         return;
       }
 
@@ -252,7 +310,8 @@ const LandingPage = () => {
       window.addEventListener("scroll", scrollHandler, { passive: true });
     };
 
-    timeoutId = setTimeout(checkVisibility, 100);
+    // Defer observer setup to improve FCP
+    timeoutId = setTimeout(checkVisibility, 300);
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
@@ -264,7 +323,7 @@ const LandingPage = () => {
         observer.unobserve(partnerLogosRef.current);
       }
     };
-  }, []);
+  }, [isMounted]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -295,7 +354,7 @@ const LandingPage = () => {
         {/* <AiAdMistakes category={variant} /> */}
         <Testimonials category={variant} />
         <CaseStudySection category={variant} />
-        <FAQSection ButtonText={buttonText} category={variant || "general"} />
+        <FAQSection ButtonText={buttonText} category={variant || ""} />
         {/* <BlogSection /> */}
         <CTASection ButtonText={buttonText} />
         <LandingPageFooter />
@@ -307,10 +366,11 @@ const LandingPage = () => {
           {!isChatOpen && (
             <motion.div
               key="chat-toggle-wrapper"
-              className={`fixed transition-all duration-300 right-3 sm:right-4 z-50 ${buttonText && isPartnerLogosVisible
-                  ? "bottom-24 md:bottom-4"
-                  : "bottom-3 sm:bottom-4"
+              className={`fixed transition-all duration-300 right-3 sm:right-4 z-50 ${isMounted && buttonText && isPartnerLogosVisible
+                ? "bottom-24 md:bottom-4"
+                : "bottom-3 sm:bottom-4"
                 }`}
+              suppressHydrationWarning
             >
               <motion.button
                 key="chat-toggle"
@@ -322,7 +382,7 @@ const LandingPage = () => {
                 className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg hover:shadow-xl transition-all bg-card touch-manipulation cursor-pointer"
                 aria-label="Open Info Assistant chat"
               >
-                <Image src={ChatIcon} alt="Chat" width={56} height={56} className="w-full h-full" priority />
+                <Image src={ChatIcon} alt="Chat" width={56} height={56} className="w-full h-full object-contain" priority />
               </motion.button>
             </motion.div>
           )}
@@ -334,14 +394,15 @@ const LandingPage = () => {
             <motion.div
               key="chat-panel"
               ref={chatRef}
-              className={`fixed right-2 w-[92vw] sm:w-[360px] md:w-[400px] max-w-sm z-50 transition-all duration-300 ${buttonText && isPartnerLogosVisible
-                  ? "bottom-20 md:bottom-1"
-                  : "bottom-1"
+              className={`fixed right-2 w-[92vw] sm:w-[360px] md:w-[400px] max-w-sm z-50 transition-all duration-300 ${isMounted && buttonText && isPartnerLogosVisible
+                ? "bottom-20 md:bottom-1"
+                : "bottom-1"
                 }`}
               initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
               animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
+              suppressHydrationWarning
             >
               <LoginChatCard onClose={toggleChat} />
             </motion.div>
@@ -369,8 +430,8 @@ const LandingPage = () => {
       {showPromotionalPopup && <PromotionalPopup />}
 
       {/* Fixed Mobile CTA Button */}
-      {buttonText && isPartnerLogosVisible && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+      {isMounted && buttonText && isPartnerLogosVisible && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden" suppressHydrationWarning>
           <div className="bg-card backdrop-blur-sm border-t border-border shadow-lg px-4 py-3 flex flex-col items-center">
             <Button
               onClick={() => {

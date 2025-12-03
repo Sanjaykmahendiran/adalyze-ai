@@ -133,7 +133,7 @@ const PricingHelp: React.FC = () => {
                             className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg hover:shadow-xl transition-all bg-white touch-manipulation"
                             aria-label="Open Info Assistant chat"
                         >
-                            <Image src={ChatIcon} alt="Chat" width={56} height={56} className="w-full h-full" priority />
+                            <Image src={ChatIcon} alt="Adalyze AI Chat Icon" width={56} height={56} className="w-full h-full" priority />
                         </motion.button>
                     )}
                 </AnimatePresence>

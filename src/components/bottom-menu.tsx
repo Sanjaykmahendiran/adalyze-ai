@@ -8,8 +8,6 @@ import {
   Split,
   MonitorPlay,
   Zap,
-  X,
-  Plus,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -23,7 +21,7 @@ const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: MonitorPlay, label: "MyAds", path: "/my-ads" },
   { icon: UploadCloud, label: "Upload", path: "/upload" },
-    { icon: Split, label: "A/B Test", path: "/ab-test" },
+  { icon: Split, label: "A/B Test", path: "/ab-test" },
   { icon: Zap, label: "Pro", path: "/pro" },
 ];
 
@@ -48,16 +46,14 @@ export function BottomMenu() {
                       className="flex flex-col items-center transition-all duration-200"
                     >
                       <item.icon
-                        className={`h-6 w-6 stroke-[2] ${
-                          isActive ? "text-[#db4900]" : "text-gray-300"
-                        }`}
+                        className={`h-6 w-6 stroke-[2] ${isActive ? "text-[#db4900]" : "text-gray-300"
+                          }`}
                       />
                       <span
-                        className={`text-[10px] mt-1 ${
-                          isActive
+                        className={`text-[10px] mt-1 ${isActive
                             ? "text-[#db4900] font-medium"
                             : "text-gray-300"
-                        }`}
+                          }`}
                       >
                         {item.label}
                       </span>
@@ -87,19 +83,17 @@ export function BottomMenu() {
                       className="flex flex-col items-center transition-all duration-200"
                     >
                       <item.icon
-                        className={`h-6 w-6 stroke-[2] ${
-                          isActive
+                        className={`h-6 w-6 stroke-[2] ${isActive
                             ? "text-[#db4900] fill-[#db4900]"
                             : "text-gray-300"
-                        }`}
+                          }`}
                         fill={isActive ? "currentColor" : "none"}
                       />
                       <span
-                        className={`text-[10px] mt-1 ${
-                          isActive
+                        className={`text-[10px] mt-1 ${isActive
                             ? "text-[#db4900] font-medium"
                             : "text-gray-300"
-                        }`}
+                          }`}
                       >
                         {item.label}
                       </span>

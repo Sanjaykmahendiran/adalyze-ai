@@ -11,20 +11,20 @@ const HtmlRenderer: React.FC<Props> = ({ htmlContent, className = "" }) => {
   const [sanitizedHtml, setSanitizedHtml] = useState<string>("");
 
   useEffect(() => {
-    const sanitizeHtml = async () => {
-      if (typeof window !== 'undefined') {
-        const DOMPurify = (await import('dompurify')).default; // dynamic import
-        const cleanHtml = DOMPurify.sanitize(htmlContent);
-        if (cleanHtml !== '<p><br></p>') {
-          setSanitizedHtml(cleanHtml);
-        } else {
-          setSanitizedHtml('');
-        }
+    const sanitize = async () => {
+      if (typeof window !== "undefined") {
+        const mod = await import("dompurify");
+        const DOMPurify = mod.default || mod; // <-- handles both export styles
+
+        const clean = DOMPurify.sanitize(htmlContent);
+
+        setSanitizedHtml(clean === "<p><br></p>" ? "" : clean);
       }
     };
 
-    sanitizeHtml();
+    sanitize();
   }, [htmlContent]);
+
 
   return (
     <div

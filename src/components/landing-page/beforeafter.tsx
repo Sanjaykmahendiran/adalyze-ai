@@ -51,17 +51,17 @@ export const BeforeAfter: React.FC<Props> = ({
 
   return (
     <div
-      className={`relative overflow-hidden w-full cursor-ew-resize select-none ${className}`}
+      className={`relative overflow-hidden w-full aspect-square cursor-ew-resize select-none ${className}`}
       onPointerMove={pointerMove ? handlePointerMove : undefined}
     >
       {/* Before Image */}
       <div
-        className="absolute top-0 left-0 h-full overflow-hidden border-r-2 border-gray-200"
+        className="absolute top-0 left-0 h-full overflow-hidden border-r-2 border-gray-200 aspect-square"
         style={{ width: `${rangeValue}%` }}
       >
         <img
           src={beforeImage}
-          alt="before"
+          alt="Adalyze AI Before Image"
           className="h-full w-full object-cover"
         />
       </div>
@@ -69,7 +69,7 @@ export const BeforeAfter: React.FC<Props> = ({
       {/* After Image */}
       <img
         src={afterImage}
-        alt="after"
+        alt="Adalyze AI After Image"
         className="h-full w-full object-cover block"
       />
 

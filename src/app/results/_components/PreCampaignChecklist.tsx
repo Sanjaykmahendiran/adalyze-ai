@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     CheckCircle2, AlertCircle, Check, Globe, Link as LinkIcon, BarChart3, Users, Zap, Circle, Eye, Target, Wallet,
+    Plus,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -349,8 +350,8 @@ export default function PreCampaignChecklist({
         const data = await res.json();
         // Try common fields that could contain the URL
         const url = data?.url || data?.image_url || data?.data?.url || data?.result?.url || "";
-        if (!url) {
-            throw new Error("Image upload did not return a URL");
+        if (data.error) {
+            throw new Error(data.error);
         }
         return url as string;
     };
@@ -425,7 +426,7 @@ export default function PreCampaignChecklist({
 
                     {/* Image */}
                     <Image
-                        src={ChecklistStaticImage}  
+                        src={ChecklistStaticImage}
                         alt="Pre-Campaign Checklist Metrics"
                         fill
                         className="object-cover"
@@ -444,7 +445,7 @@ export default function PreCampaignChecklist({
                     </h2>
 
                     {/* Body Text */}
-                    <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                    <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
                         {defaultLeftInfo.intro}
                     </p>
                 </div>
@@ -457,7 +458,7 @@ export default function PreCampaignChecklist({
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
-                            Your Campaign Readiness
+                            Prepare Your Campaign Checklist
                         </h1>
                         <p className="text-white/70 text-sm mt-1">
                             Complete these key steps before launching to ensure accurate performance tracking.
@@ -467,7 +468,7 @@ export default function PreCampaignChecklist({
 
                 {/* Loading / Error */}
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 animate-pulse">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-pulse">
                         {[...Array(6)].map((_, i) => (
                             <div
                                 key={i}
@@ -489,17 +490,27 @@ export default function PreCampaignChecklist({
                 ) : (
                     <>
                         {/* Checklist Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {items.map((item) => {
                                 const isDone = item.status === "done";
                                 return (
                                     <div
                                         key={item.checklist_id}
-                                        className="flex items-center justify-between gap-4 bg-[#171717] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-transparent hover:border-primary/40 transition"
+                                        className="flex items-center justify-between gap-4 bg-[#171717] p-3 sm:p-4 rounded-2xl sm:rounded-3xl hover:border-primary/40 transition"
+                                        style={{ transition: "all 0.3s" }}
+                                        onMouseEnter={e => {
+                                            e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                                        }}
+                                        onMouseLeave={e => {
+                                            e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                                        }}
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl text-primary">{itemIconBySlug(item.slug)}</span>
-                                            <div>
+                                            <div
+                                                onClick={isDone ? () => openViewer(item) : undefined}
+                                                className={isDone ? "cursor-pointer" : "cursor-default"}
+                                            >
                                                 <p className="font-medium text-white flex items-center gap-2 mb-1">
                                                     {item.title}
                                                 </p>
@@ -513,34 +524,36 @@ export default function PreCampaignChecklist({
                                                 <div className="flex flex-col gap-2">
                                                     {/* View evidence (Eye) */}
                                                     <button
-                                                        className="bg-blue-600/20 text-blue-300 hover:text-white p-1 rounded-lg flex items-center justify-center cursor-pointer"
+                                                        className="bg-green-600/20 text-green-300 hover:text-white text-xs p-1 rounded-lg flex items-center justify-center gap-1 cursor-pointer"
                                                         aria-label="View evidence"
                                                         title="View evidence"
                                                         onClick={() => openViewer(item)}
                                                     >
-                                                        <Eye className="w-5 h-5" />
+                                                        <Check className="w-4 h-4" />
+                                                        Done
                                                     </button>
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-col gap-2">
                                                     {/* Add Task removed/commented */}
                                                     {/* <button
-                              className="bg-primary/20 text-primary hover:text-primary/80 p-1 rounded-lg flex items-center justify-center"
-                              aria-label="Add task"
-                              title="Add task"
-                              onClick={() => openAddTask(item.checklist_id)}
-                              >
-                              <Plus className="w-5 h-5" />
-                              </button> */}
+                                                        className="bg-primary/20 text-primary hover:text-primary/80 p-1 rounded-lg flex items-center justify-center"
+                                                        aria-label="Add task"
+                                                        title="Add task"
+                                                        onClick={() => openAddTask(item.checklist_id)}
+                                                        >
+                                                        <Plus className="w-5 h-5" />
+                                                        </button> */}
 
                                                     {/* Mark Done */}
                                                     <button
-                                                        className="bg-green-600/20 text-green-300 hover:text-white p-1 rounded-lg flex items-center justify-center cursor-pointer"
+                                                        className="bg-[#2b2b2b] text-white hover:text-white text-xs px-2 py-1 rounded-lg flex items-center justify-center gap-1 cursor-pointer"
                                                         aria-label="Mark done"
                                                         title="Mark done"
                                                         onClick={() => openMarkDone(item)}
                                                     >
-                                                        <Check className="w-5 h-5" />
+                                                        <Plus className="w-4 h-4 text-white" />
+                                                        Add
                                                     </button>
                                                 </div>
                                             )}
@@ -573,10 +586,10 @@ export default function PreCampaignChecklist({
 
             {/* Evidence Viewer Modal */}
             {showViewer && viewerItem ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-full max-w-2xl bg-[#171717] border border-primary rounded-xl p-4 sm:p-6 relative backdrop-blur-sm">
-                    <h3 className="text-white font-semibold text-lg">{viewerItem.title} {""} Evidence</h3>
-                    <p className="text-white/70 text-sm mb-4">{viewerItem.description}</p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm ">
+                    <div className="w-full max-w-2xl bg-[#171717] border border-primary rounded-xl p-4 sm:p-6 relative">
+                        <h3 className="text-white font-semibold text-lg">{viewerItem.title} {""} Evidence</h3>
+                        <p className="text-white/70 text-sm mb-4">{viewerItem.description}</p>
 
                         {(() => {
                             const kind = getEvidenceKind(viewerItem.evidence_url, viewerItem.format);
@@ -603,7 +616,7 @@ export default function PreCampaignChecklist({
                                     <a
                                         href={val}
                                         target="_blank"
-                                        rel="noreferrer"
+                                        rel="noopener noreferrer"
                                         className="text-primary underline break-all"
                                     >
                                         {val}
@@ -702,9 +715,9 @@ export default function PreCampaignChecklist({
                                                 }}
                                             />
                                             {screenshotFile ? (
-                                                <p className="text-xs text-gray-400">Selected: {screenshotFile.name}</p>
+                                                <p className="text-xs text-white/70">Selected: {screenshotFile.name}</p>
                                             ) : evidenceUrl ? (
-                                                <p className="text-xs text-gray-400 break-all">Current: {evidenceUrl}</p>
+                                                <p className="text-xs text-white/70 break-all">Current: {evidenceUrl}</p>
                                             ) : null}
                                             {screenshotError ? (
                                                 <p className="text-xs text-red-400">{screenshotError}</p>

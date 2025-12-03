@@ -530,7 +530,7 @@ const ProPage: React.FC = () => {
                                 <div className="w-32 h-16 sm:w-40 sm:h-20 md:w-52 md:h-[104px] relative">
                                     <Image
                                         src={logo}
-                                        alt="Adalyze AI Pro"
+                                        alt="Adalyze AI"
                                         fill
                                         className="object-contain"
                                         priority

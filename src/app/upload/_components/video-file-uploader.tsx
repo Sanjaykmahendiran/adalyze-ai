@@ -77,8 +77,8 @@ export function VideoUploader({
       toast.error("Please upload a valid video file (MP4, AVI, MOV, WMV, FLV, WEBM)")
       return
     }
-    if (file.size > 40 * 1024 * 1024) {
-      toast.error("File size must be under 40MB")
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("File size must be under 100MB")
       return
     }
 
@@ -167,7 +167,7 @@ export function VideoUploader({
         >
           <Upload className="w-12 sm:w-16 h-12 sm:h-16 text-primary mx-auto mb-3 sm:mb-4" />
           <p className="text-gray-200 font-medium text-sm sm:text-base">Click to upload or drag & drop</p>
-          <p className="mt-2 text-xs sm:text-sm text-gray-300">MP4, AVI, MOV, WMV, FLV, WEBM (max. 40 MB)</p>
+          <p className="mt-2 text-xs sm:text-sm text-gray-300">MP4, AVI, MOV, WMV, FLV, WEBM (max. 100 MB)</p>
         </div>
       )}
 

@@ -1,15 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react"
 import { BeforeAfter } from "@/components/landing-page/beforeafter";
 import { motion } from "framer-motion";
-import After1 from "@/assets/Landing-page/before-after/after-1.jpg"
-import After2 from "@/assets/Landing-page/before-after/after-2.jpg"
-import After3 from "@/assets/Landing-page/before-after/after-3.jpg"
-import Before1 from "@/assets/Landing-page/before-after/before-1.jpg"
-import Before2 from "@/assets/Landing-page/before-after/before-2.jpg"
-import Before3 from "@/assets/Landing-page/before-after/before-3.jpg"
+import After1 from "@/assets/Landing-page/before-after/after-1.webp"
+import After2 from "@/assets/Landing-page/before-after/after-2.webp"
+import After3 from "@/assets/Landing-page/before-after/after-3.webp"
+import Before1 from "@/assets/Landing-page/before-after/before-1.webp"
+import Before2 from "@/assets/Landing-page/before-after/before-2.webp"
+import Before3 from "@/assets/Landing-page/before-after/before-3.webp"
+import MobileBefore1 from "@/assets/Landing-page/before-after/before-1-mobile.webp"
+import MobileBefore2 from "@/assets/Landing-page/before-after/before-2-mobile.webp"
+import MobileBefore3 from "@/assets/Landing-page/before-after/before-3-mobile.webp"
+import MobileAfter1 from "@/assets/Landing-page/before-after/after-1-mobile.webp"
+import MobileAfter2 from "@/assets/Landing-page/before-after/after-2-mobile.webp"
+import MobileAfter3 from "@/assets/Landing-page/before-after/after-3-mobile.webp"
+
 
 export default function IssuesBeforeAfter() {
+    const [isMobile, setIsMobile] = useState(false)
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 1024)
+        handleResize()
+        window.addEventListener("resize", handleResize)
+        return () => window.removeEventListener("resize", handleResize)
+    }, [])
     const comparisons = [
         {
             title: "Ad Visual Optimization",
@@ -18,7 +34,9 @@ export default function IssuesBeforeAfter() {
             after_ctr: "13.2%",
             after_score: "90",
             before: Before1,
+            mobileBefore: MobileBefore1,
             after: After1,
+            mobileAfter: MobileAfter1,
         },
         {
             title: "Audience Targeting Precision",
@@ -27,7 +45,9 @@ export default function IssuesBeforeAfter() {
             after_ctr: "12.8%",
             after_score: "88",
             before: Before2,
+            mobileBefore: MobileBefore2,
             after: After2,
+            mobileAfter: MobileAfter2,
         },
         {
             title: "Creative Performance Insights",
@@ -36,7 +56,9 @@ export default function IssuesBeforeAfter() {
             after_ctr: "13.5%",
             after_score: "92",
             before: Before3,
+            mobileBefore: MobileBefore3,
             after: After3,
+            mobileAfter: MobileAfter3,
         },
     ];
 
@@ -65,8 +87,8 @@ export default function IssuesBeforeAfter() {
                     >
                         <div className="w-full rounded-t-xl overflow-hidden">
                             <BeforeAfter
-                                beforeImage={item.before.src}
-                                afterImage={item.after.src}
+                                beforeImage={isMobile ? item.mobileBefore.src : item.before.src}
+                                afterImage={isMobile ? item.mobileAfter.src : item.after.src}
                             />
                         </div>
                         <div className="w-full p-4">

@@ -37,14 +37,10 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${poppins.variable} antialiased`}>
-          <Suspense>
-          <div className="bg-[#171717]">
-            {children}
-          </div>
-          </Suspense>
-      </body>
-    </html>
+    <Suspense>
+      <div className="bg-[#171717]">
+        {children}
+      </div>
+    </Suspense>
   );
 }

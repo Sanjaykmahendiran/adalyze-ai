@@ -10,6 +10,7 @@ type TestimonialType = {
   name: string
   designation: string
   src: string
+  srcMobile?: string
   category: string
 }
 
@@ -35,6 +36,7 @@ export default function Testimonials({ category }: { category: string }) {
             name: item.name,
             designation: item.company ? `${item.role} at ${item.company}` : item.role,
             src: item.imgname,
+            srcMobile: item.imgname_mobile,
             category: item.category
           }))
 

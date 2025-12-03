@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CustomSearchDropdown } from "@/components/ui/custom-search-dropdown"
 import { CountrySelector } from "@/components/ui/country-selector"
-import { X, Lock, ChevronDown, Search } from "lucide-react"
+import { X, Lock, ChevronDown, Search, Info } from "lucide-react"
 import { AnalyzingOverlay } from "../../components/analyzing-overlay"
 import ABFileUploadCard from "./_components/file-uploader"
 import AdNameInput from "./_components/AdNameInput"
@@ -20,6 +20,7 @@ import { trackEvent } from "@/lib/eventTracker"
 import { Industry } from "../upload/type"
 import { generateAdToken } from "@/lib/tokenUtils"
 import Footer from "@/components/footer"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 // FreeTrailOverlay component - same pattern as upload page
 const FreeTrailOverlay = ({
@@ -795,7 +796,21 @@ export default function AdComparisonUpload() {
 
                                         {/* Objective */}
                                         <div className="space-y-2">
-                                            <Label className="text-white/70 font-semibold">Objective</Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-white/70 font-semibold">Objective</Label>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-3">
+                                                        <p>
+                                                            Objective defines the main goal of your ad. Choose Awareness to reach more people,
+                                                            Engagement to get interactions, Traffic to send users to your site, Leads to collect
+                                                            customer details, or Sales to drive purchases.
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                             <Select value={objective} onValueChange={setObjective}>
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder="Select objective" />
@@ -812,7 +827,23 @@ export default function AdComparisonUpload() {
 
                                         {/* Funnel Stage */}
                                         <div className="space-y-2">
-                                            <Label className="text-white/70 font-semibold">Funnel Stage</Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-white/70 font-semibold">Funnel Stage</Label>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-2">
+                                                        <p className="font-semibold text-white">What is Funnel Stage?</p>
+                                                        <p>
+                                                            Funnel Stage indicates how familiar your audience is with your brand.
+                                                            Cold Audience includes people who have never interacted with you.
+                                                            Warm Audience includes people who have shown interest or engaged with your content.
+                                                            Retargeting/Hot refers to high-intent users who already know your brand and are close to converting.
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                             <Select value={funnelStage} onValueChange={setFunnelStage}>
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder="Select funnel stage" />

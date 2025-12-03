@@ -67,7 +67,7 @@ const FloatingChat = () => {
         >
           <Image
             src={isMobile ? MobileChatIcon : ChatIcon}
-            alt="Chat Icon"
+            alt="Adalyze AI Chat Icon"
             width={60}
             height={60}
             className="w-10 h-10 sm:w-12 sm:h-12"

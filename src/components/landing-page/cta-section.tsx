@@ -4,10 +4,20 @@ import Image from "next/image"
 import { ArrowRight, Check } from "lucide-react"
 import { motion } from "framer-motion"
 import PromoImg from "@/assets/Landing-page/above-cta.webp"
+import PromoImgMobile from "@/assets/Landing-page/above-cta-mobile.webp"
 import { Button } from "../ui/button"
 import { trackEvent } from "@/lib/eventTracker"
+import { useEffect, useState } from "react"
 
 export default function CTASection({ ButtonText }: { ButtonText: string }) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024)
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   const features = [
     "Data-Driven Insights",
@@ -108,7 +118,7 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
         </motion.div>
 
         {/* Right Content – Image */}
-        <div className="w-full md:w-1/2 md:overflow-x-hidden">
+        <div className="w-full md:w-1/2 overflow-hidden">
           <motion.div
             className="relative flex justify-center"
             initial={{ opacity: 0, y: 30 }}
@@ -118,13 +128,13 @@ export default function CTASection({ ButtonText }: { ButtonText: string }) {
           >
             <div className="relative w-[90%] max-w-2xl sm:max-w-lg md:max-w-xl translate-x-2 sm:translate-x-4 md:translate-x-12 lg:translate-x-16">
               <Image
-                src={PromoImg || "/placeholder.svg"}
+                src={isMobile ? PromoImgMobile : PromoImg}
                 alt="Adalye AI Assistant"
-                className="rounded-lg object-contain w-full h-auto"
+                className="rounded-lg object-cover w-full h-auto"
                 width={800}
                 height={500}
                 sizes="(max-width: 768px) 90vw, 45vw"
-                priority
+                loading="lazy"
               />
             </div>
           </motion.div>

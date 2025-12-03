@@ -207,7 +207,7 @@ export default function ClientSection({ category, counter, CounterText }: { cate
           <LazyLoadSection className="overflow-hidden h-[40px] sm:h-[48px] lg:h-[64px]">
             <div className="overflow-hidden">
               <div className="flex animate-scroll-left space-x-12 w-max">
-                {[...firstRow, ...firstRow].map((company, i) => {
+                {firstRow.map((company, i) => {
                   const uniqueKey = `${company.client_id}-${i}`;
                   const hasError = imageErrors.has(company.client_id);
                   return (
@@ -216,6 +216,31 @@ export default function ClientSection({ category, counter, CounterText }: { cate
                         <Image
                           src={company.logo_url}
                           alt={company.client_name}
+                          width={160}
+                          height={32}
+                          sizes="(max-width: 768px) 120px, (max-width: 1024px) 160px, 200px"
+                          loading="lazy"
+                          className="h-[40px] sm:h-[48px] lg:h-[64px] w-auto object-contain opacity-80"
+                          onError={() => {
+                            setImageErrors(prev => new Set([...prev, company.client_id]));
+                          }}
+                        />
+                      ) : (
+                        <span className="text-sm text-gray-300 whitespace-nowrap">{company.client_name}</span>
+                      )}
+                    </div>
+                  );
+                })}
+                {/* Duplicate for seamless loop - only render once in DOM */}
+                {firstRow.map((company, i) => {
+                  const uniqueKey = `${company.client_id}-dup-${i}`;
+                  const hasError = imageErrors.has(company.client_id);
+                  return (
+                    <div key={uniqueKey} className="flex items-center justify-center px-4" aria-hidden="true">
+                      {company.logo_url && !hasError ? (
+                        <Image
+                          src={company.logo_url}
+                          alt=""
                           width={160}
                           height={32}
                           sizes="(max-width: 768px) 120px, (max-width: 1024px) 160px, 200px"
@@ -240,7 +265,7 @@ export default function ClientSection({ category, counter, CounterText }: { cate
             <LazyLoadSection className="overflow-hidden h-[40px] sm:h-[48px] lg:h-[64px]">
               <div className="overflow-hidden">
                 <div className="flex animate-scroll-right space-x-12 w-max">
-                  {[...secondRow, ...secondRow].map((company, i) => {
+                  {secondRow.map((company, i) => {
                     const uniqueKey = `${company.client_id}-${i}`;
                     const hasError = imageErrors.has(company.client_id);
                     return (
@@ -249,6 +274,31 @@ export default function ClientSection({ category, counter, CounterText }: { cate
                           <Image
                             src={company.logo_url}
                             alt={company.client_name}
+                            width={160}
+                            height={32}
+                            sizes="(max-width: 768px) 120px, (max-width: 1024px) 160px, 200px"
+                            loading="lazy"
+                            className="h-[40px] sm:h-[48px] lg:h-[64px] w-auto object-contain opacity-80"
+                            onError={() => {
+                              setImageErrors(prev => new Set([...prev, company.client_id]));
+                            }}
+                          />
+                        ) : (
+                          <span className="text-sm text-gray-300 whitespace-nowrap">{company.client_name}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* Duplicate for seamless loop - only render once in DOM */}
+                  {secondRow.map((company, i) => {
+                    const uniqueKey = `${company.client_id}-dup-${i}`;
+                    const hasError = imageErrors.has(company.client_id);
+                    return (
+                      <div key={uniqueKey} className="flex items-center justify-center px-4" aria-hidden="true">
+                        {company.logo_url && !hasError ? (
+                          <Image
+                            src={company.logo_url}
+                            alt=""
                             width={160}
                             height={32}
                             sizes="(max-width: 768px) 120px, (max-width: 1024px) 160px, 200px"

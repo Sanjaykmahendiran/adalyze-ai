@@ -16,6 +16,7 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const accordionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Fetch FAQ data from API
@@ -43,9 +44,14 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
     fetchFAQs();
   }, []);
 
+  // Set mounted state after hydration to prevent hydration mismatches
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Intersection Observer for scroll animations (both directions)
   useEffect(() => {
-    if (faqs.length === 0) return;
+    if (!isMounted || faqs.length === 0) return;
 
     const observers: IntersectionObserver[] = [];
 
@@ -84,13 +90,22 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
     return () => {
       observers.forEach((observer) => observer.disconnect());
     };
-  }, [faqs]);
+  }, [faqs, isMounted]);
 
   const toggleAccordion = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
   const getAnimationStyle = (index: number) => {
+    // During SSR and initial render, use default styles to prevent hydration mismatch
+    if (!isMounted) {
+      return {
+        opacity: 0.1,
+        transform: 'scale(0.75)',
+        transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+      };
+    }
+
     const isVisible = visibleItems.includes(index);
 
     let opacity = 0.1;
@@ -139,7 +154,9 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
               <button className="inline-flex items-center gap-2 text-lg text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 bg-[#db4900] hover:bg-orange-700"
                 onClick={() => {
                   trackEvent("LP_FAQ_button_clicked", window.location.href);
+                  window.open("/faq", "_blank", "noopener,noreferrer");
                 }}
+                suppressHydrationWarning
               >
                 {ButtonText}
               </button>
@@ -189,17 +206,11 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
                         }`}
                     />
                   </button>
-
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === index
-                      ? "max-h-96 opacity-100"
-                      : "max-h-0 opacity-0"
-                      }`}
-                  >
+                  {openIndex === index && (
                     <p className="px-6 pb-6 text-white/80 leading-relaxed">
                       {faq.answer}
                     </p>
-                  </div>
+                  )}
                 </div>
               ))
             )}

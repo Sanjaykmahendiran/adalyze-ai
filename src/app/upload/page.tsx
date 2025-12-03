@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CustomSearchDropdown } from "@/components/ui/custom-search-dropdown"
 import { CountrySelector } from "@/components/ui/country-selector"
-import { X, Image, LayoutList, PlaySquare, Lock, TriangleAlert, ChevronDown, Search } from "lucide-react"
+import { X, Image, LayoutList, PlaySquare, Lock, TriangleAlert, ChevronDown, Search, Info } from "lucide-react"
 import { AnalyzingOverlay } from "../../components/analyzing-overlay"
 import { SingleFileUploader } from "./_components/single-file-uploader"
 import { CarouselFileUploader } from "./_components/carousel-file-uploader"
@@ -26,6 +26,7 @@ import { generateAdToken } from "@/lib/tokenUtils"
 import Footer from "@/components/footer"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import UploadLoadingSkeleton from "@/components/Skeleton-loading/upload-loading"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Move FreeTrailOverlay outside to prevent re-creation on every render
 const FreeTrailOverlay = ({
@@ -124,6 +125,7 @@ export default function UploadPage() {
     const [singleImageUrl, setSingleImageUrl] = useState<string | null>(null)
     const [isSingleUploading, setIsSingleUploading] = useState(false)
     const [singleUploadProgress, setSingleUploadProgress] = useState(0)
+    const [extractedText, setExtractedText] = useState<string | null>(null)
 
     // Carousel ad states
     const [carouselFiles, setCarouselFiles] = useState<File[]>([])
@@ -132,6 +134,8 @@ export default function UploadPage() {
     const [carouselUploadProgress, setCarouselUploadProgress] = useState(0)
     // Track mapping between files and their uploaded URLs
     const carouselFileUrlMapRef = useRef<Map<File, string>>(new Map())
+    // Track extracted_text for each carousel file
+    const carouselExtractedTextMapRef = useRef<Map<File, string>>(new Map())
 
     // Video ad states
     const [videoFile, setVideoFile] = useState<File | null>(null)
@@ -409,6 +413,7 @@ export default function UploadPage() {
             if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
                 toast.success('File uploaded successfully!')
                 setSingleImageUrl(result.fileUrl)
+                setExtractedText(result.extracted_text)
                 trackEvent("Single_File_Uploaded", window.location.href, userDetails?.email?.toString())
             } else {
                 throw new Error(result.message || 'Upload failed')
@@ -442,6 +447,7 @@ export default function UploadPage() {
             // Clear everything
             setCarouselImageUrls([])
             fileUrlMap.clear()
+            carouselExtractedTextMapRef.current.clear()
             return
         }
 
@@ -486,6 +492,7 @@ export default function UploadPage() {
 
             // Check which files need uploading
             const filesToActuallyUpload = filesToUpload.filter(file => !fileUrlMap.has(file))
+            const extractedTextMap = carouselExtractedTextMapRef.current
 
             // If all files are already uploaded, just reorder
             if (filesToActuallyUpload.length === 0) {
@@ -493,13 +500,24 @@ export default function UploadPage() {
                 clearInterval(progressInterval)
                 setCarouselUploadProgress(100)
                 setCarouselImageUrls(existingUrls)
+
+                // For carousel, get extracted_text from the first image in current order
+                if (filesToUpload.length > 0) {
+                    const firstFile = filesToUpload[0]
+                    const firstFileExtractedText = extractedTextMap.get(firstFile)
+                    if (firstFileExtractedText) {
+                        setExtractedText(firstFileExtractedText)
+                    }
+                }
+
                 setIsCarouselUploading(false)
                 setCarouselUploadProgress(0)
                 return
             }
 
             // Upload only new files sequentially to maintain order
-            for (const file of filesToActuallyUpload) {
+            for (let i = 0; i < filesToActuallyUpload.length; i++) {
+                const file = filesToActuallyUpload[i]
                 const formData = new FormData()
                 formData.append('file', file)
                 formData.append('user_id', userId)
@@ -517,6 +535,10 @@ export default function UploadPage() {
                 if (result.status === "Ads Uploaded Successfully" && result.fileUrl) {
                     // Store the mapping
                     fileUrlMap.set(file, result.fileUrl)
+                    // Store extracted_text for this file
+                    if (result.extracted_text) {
+                        extractedTextMap.set(file, result.extracted_text)
+                    }
                 } else {
                     throw new Error(result.message || 'Upload failed')
                 }
@@ -524,6 +546,15 @@ export default function UploadPage() {
 
             // Build the complete URL array in the order of filesToUpload
             const uploadedUrls = filesToUpload.map(file => fileUrlMap.get(file)!).filter(Boolean)
+
+            // For carousel, get extracted_text from the first image in the current order
+            if (filesToUpload.length > 0) {
+                const firstFile = filesToUpload[0]
+                const firstFileExtractedText = extractedTextMap.get(firstFile)
+                if (firstFileExtractedText) {
+                    setExtractedText(firstFileExtractedText)
+                }
+            }
 
             clearInterval(progressInterval)
             setCarouselUploadProgress(100)
@@ -537,6 +568,7 @@ export default function UploadPage() {
             setCarouselFiles([])
             setCarouselImageUrls([])
             fileUrlMap.clear()
+            carouselExtractedTextMapRef.current.clear()
             trackEvent("Carousel_Files_Upload_Failed", window.location.href, userDetails?.email?.toString())
             throw err
         } finally {
@@ -608,6 +640,7 @@ export default function UploadPage() {
                 setVideoFilePath(result.video_url)
                 setVideoTranscript(result.transcript)
                 setVideoDuration(result.meta.duration)
+                setExtractedText(result.extracted_text)
                 setIsVideoUploaded(true)
                 trackEvent("Video_File_Uploaded", window.location.href, userDetails?.email?.toString())
             } else {
@@ -713,6 +746,11 @@ export default function UploadPage() {
                 funnel_stage: targetData?.funnelStage,
             }
 
+            // Only include extracted_text for single and carousel, not for video
+            if (activeTab !== "video" && extractedText) {
+                analyzeData.extracted_text = extractedText
+            }
+
             // Add media
             if (activeTab === "single") analyzeData.images = [singleImageUrl]
             if (activeTab === "carousel") analyzeData.images = carouselImageUrls
@@ -746,11 +784,11 @@ export default function UploadPage() {
 
             if (result && result.success) {
                 localStorage.setItem('analysisResults', JSON.stringify(result))
-                
+
                 // Track ad upload with proper parameters
                 const adId = result.data.ad_upload_id.toString();
                 const adType = activeTab === "single" ? "image" : activeTab === "carousel" ? "image" : "video";
-                
+
                 // Get file size based on active tab
                 let fileSize: number | undefined;
                 if (activeTab === "single" && singleFile) {
@@ -760,11 +798,11 @@ export default function UploadPage() {
                 } else if (activeTab === "video" && videoFile) {
                     fileSize = videoFile.size;
                 }
-                
+
                 // Track with both GTM and GA4
                 trackAdUploadGTM(adId);
                 trackAdUpload(adId, adType, fileSize);
-                
+
                 const eventName = isFreeTrailUser ? `free_trail_user_${activeTab}_Ad_Analyzed` : `${activeTab}_Ad_Analyzed`
                 trackEvent(eventName, window.location.href, userDetails?.email?.toString())
                 // Generate token for the ad_id with user_id
@@ -1158,7 +1196,21 @@ export default function UploadPage() {
 
                                         {/* Objective */}
                                         <div className="space-y-2">
-                                            <Label className="text-white/70 font-semibold">Objective</Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-white/70 font-semibold">Objective</Label>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-3">
+                                                        <p>
+                                                            Objective defines the main goal of your ad. Choose Awareness to reach more people,
+                                                            Engagement to get interactions, Traffic to send users to your site, Leads to collect
+                                                            customer details, or Sales to drive purchases.
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                             <Select value={objective} onValueChange={setObjective}>
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder="Select objective" />
@@ -1175,7 +1227,23 @@ export default function UploadPage() {
 
                                         {/* Funnel Stage */}
                                         <div className="space-y-2">
-                                            <Label className="text-white/70 font-semibold">Funnel Stage</Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-white/70 font-semibold">Funnel Stage</Label>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="w-64 bg-[#2b2b2b] text-xs text-gray-200 p-4 rounded-lg space-y-2">
+                                                        <p className="font-semibold text-white">What is Funnel Stage?</p>
+                                                        <p>
+                                                            Funnel Stage indicates how familiar your audience is with your brand.
+                                                            Cold Audience includes people who have never interacted with you.
+                                                            Warm Audience includes people who have shown interest or engaged with your content.
+                                                            Retargeting/Hot refers to high-intent users who already know your brand and are close to converting.
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                             <Select value={funnelStage} onValueChange={setFunnelStage}>
                                                 <SelectTrigger className="w-full bg-black border-[#3d3d3d] text-white">
                                                     <SelectValue placeholder="Select funnel stage" />

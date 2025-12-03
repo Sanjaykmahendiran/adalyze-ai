@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Search, Eye, Facebook, Instagram, MessageCircle, FileImage, Upload, Loader2, Linkedin, TrendingUp, TrendingDown, Share, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,16 @@ import MyAdsSkeleton from "@/components/Skeleton-loading/myads-loading"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
 import Cookies from "js-cookie";
 
+// NEW: shadcn pagination
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+    PaginationEllipsis,
+} from "@/components/ui/pagination"
 
 // Define the API response interface
 interface AdsApiResponse {
@@ -67,7 +77,6 @@ function parsePlatforms(raw: string): string[] {
     let list: string[] = [];
 
     try {
-        // First try to parse as JSON
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
             list = parsed.map((p) => String(p).trim().toLowerCase());
@@ -75,11 +84,9 @@ function parsePlatforms(raw: string): string[] {
             list = parsed.split(",").map((p) => p.trim().toLowerCase());
         }
     } catch {
-        // Fallback: split by comma and clean up
         list = raw.split(",").map((p) => p.trim().toLowerCase());
     }
 
-    // Map aliases and remove duplicates
     return Array.from(
         new Set(
             list
@@ -88,8 +95,6 @@ function parsePlatforms(raw: string): string[] {
         )
     );
 }
-
-
 
 // Function to format date
 function formatDate(dateString: string) {
@@ -105,6 +110,7 @@ export default function MyAdsPage() {
     const { userDetails } = useFetchUserDetails()
     const userId = Cookies.get('userId')
     const router = useRouter()
+
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedPlatform, setSelectedPlatform] = useState("all")
     const [ads, setAds] = useState<Ad[]>([])
@@ -124,32 +130,52 @@ export default function MyAdsPage() {
     // Initialize with default safe values
     const [activeTab, setActiveTab] = useState<"ads" | "ab-ads">("ads");
     const [currentPage, setCurrentPage] = useState(1);
+    const [isInitialized, setIsInitialized] = useState(false);
+    const prevFiltersRef = useRef({ searchTerm, selectedPlatform, scoreFilter, adTypeFilter, selectedBrandId });
 
-    // Hydrate from sessionStorage after mount
+    // Initialize from sessionStorage on mount only and clear URL query params
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            // Restore tab
-            const savedTab = sessionStorage.getItem('my-ads-active-tab');
-            if (savedTab === "ab-ads" || savedTab === "ads") {
-                setActiveTab(savedTab);
+        if (typeof window === "undefined" || isInitialized) return;
+
+        const savedTab = sessionStorage.getItem("my-ads-active-tab") as "ads" | "ab-ads" | null;
+        const tabToUse = savedTab === "ads" || savedTab === "ab-ads" ? savedTab : "ads";
+
+        const storageKey = tabToUse === "ab-ads" ? "my-ads-page-ab" : "my-ads-page-ads";
+        const savedPageStr = sessionStorage.getItem(storageKey);
+        const pageToUse = savedPageStr ? Math.max(1, parseInt(savedPageStr, 10) || 1) : 1;
+
+        setActiveTab(tabToUse);
+        setCurrentPage(pageToUse);
+        setIsInitialized(true);
+    }, [isInitialized]);
+
+    // Clear URL query parameters whenever they appear
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        
+        // Clear query params if they exist
+        if (window.location.search) {
+            const cleanUrl = window.location.pathname;
+            if (window.location.href !== window.location.origin + cleanUrl) {
+                router.replace(cleanUrl, { scroll: false });
             }
-            // Restore page for the tab
-            const storageKey = savedTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
-            const savedPage = sessionStorage.getItem(storageKey);
-            if (savedPage) setCurrentPage(parseInt(savedPage, 10));
         }
-    }, []);
+    }, [router, currentPage, activeTab]);
 
     // Use the new ad navigation hook
     const { navigateToAdResults, navigateToABResults } = useAdNavigation()
 
-    // Function to handle tab switching with session storage
+    // Handle tab switching with session storage only
     const handleTabChange = (tab: "ads" | "ab-ads") => {
         if (typeof window !== 'undefined') {
+            // Save current tab's page
             const currentStorageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
             sessionStorage.setItem(currentStorageKey, currentPage.toString());
 
+            // Save new tab
             sessionStorage.setItem('my-ads-active-tab', tab);
+
+            // Restore page for the new tab
             const newStorageKey = tab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
             const savedPage = sessionStorage.getItem(newStorageKey);
             const pageToRestore = savedPage ? parseInt(savedPage, 10) : 1;
@@ -162,7 +188,17 @@ export default function MyAdsPage() {
         }
     };
 
-    // Pagination states - initialize from sessionStorage to preserve page when navigating back
+    // Helper function to handle page changes with persistence
+    const handlePageChange = useCallback((newPage: number) => {
+        if (typeof window !== 'undefined') {
+            const storageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads';
+            sessionStorage.setItem(storageKey, newPage.toString());
+            sessionStorage.setItem('my-ads-active-tab', activeTab);
+        }
+        setCurrentPage(newPage);
+    }, [activeTab]);
+
+    // Pagination states
     const itemsPerPage = 12;
     const [totalAds, setTotalAds] = useState(0);
     const [totalAbAds, setTotalAbAds] = useState(0);
@@ -204,39 +240,29 @@ export default function MyAdsPage() {
                 setClientBrandsLoading(false)
             }
         }
-
         fetchBrands()
-    }, [userId, userDetails?.type])
+    }, [userId, userDetails?.type, userDetails?.user_id])
 
     // Helper function to build API URL with filters
-    // Only sends filter parameters to API when a specific filter is selected (not "all" or empty)
     const buildAdsListUrl = (offset: number, limit: number) => {
         if (!userId) return ''
 
         const baseUrl = `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&offset=${offset}&limit=${limit}`
         const params: string[] = []
 
-        // Only add brand_id parameter if a specific brand is selected (not empty and not "All Brands")
         if (selectedBrandId && selectedBrandId.trim() !== "" && selectedBrandId !== "All Brands") {
             params.push(`brand_id=${encodeURIComponent(selectedBrandId)}`)
         }
-
-        // Only add platform parameter if a specific platform is selected (not "all")
         if (selectedPlatform && selectedPlatform.trim() !== "" && selectedPlatform !== "all") {
             params.push(`platform=${encodeURIComponent(selectedPlatform)}`)
         }
-
-        // Only add score parameter if a specific score range is selected (not "all")
         if (scoreFilter && scoreFilter.trim() !== "" && scoreFilter !== "all") {
             params.push(`score=${encodeURIComponent(scoreFilter)}`)
         }
-
-        // Only add ad_type parameter if a specific ad type is selected (not "all")
         if (adTypeFilter && adTypeFilter.trim() !== "" && adTypeFilter !== "all") {
             params.push(`ad_type=${encodeURIComponent(adTypeFilter)}`)
         }
 
-        // Only append filter parameters if any filters are selected
         return params.length > 0 ? `${baseUrl}&${params.join('&')}` : baseUrl
     }
 
@@ -244,13 +270,10 @@ export default function MyAdsPage() {
     const fetchAllAds = async () => {
         try {
             if (!userId) return
-
-            // Fetch all user's ads with a high limit (replace 1000 with larger value if needed)
             const url = buildAdsListUrl(0, 1000)
             if (!url) return
 
             const response = await fetch(url)
-
             if (!response.ok) {
                 throw new Error('Failed to fetch all ads')
             }
@@ -267,7 +290,6 @@ export default function MyAdsPage() {
     const fetchAds = async () => {
         setLoading(true)
         try {
-
             if (!userId) {
                 toast.error('Please login to view your ads')
                 router.push('/login')
@@ -282,7 +304,6 @@ export default function MyAdsPage() {
             }
 
             const response = await fetch(url)
-
             if (!response.ok) {
                 throw new Error('Failed to fetch ads')
             }
@@ -290,7 +311,6 @@ export default function MyAdsPage() {
             const data: AdsApiResponse = await response.json()
             setAds(data.ads)
             setTotalAds(data.total)
-            // Removed fetchAllAds() from here to prevent double API call
         } catch (error) {
             console.error('Error fetching ads:', error)
             toast.error('Failed to load ads. Please try again.')
@@ -299,17 +319,22 @@ export default function MyAdsPage() {
         }
     }
 
+    // Check if any filters are active
+    const hasActiveFilters = searchTerm !== "" || selectedPlatform !== "all" ||
+        scoreFilter !== "all" || adTypeFilter !== "all"
+
     // Fetch ads when page loads, pagination changes, or filters change
     useEffect(() => {
         if (activeTab === "ads") {
-            fetchAds();
-            // Only fetch all ads for client filtering if a filter or search is active, and we haven't fetched them yet
-            if (hasActiveFilters && allAds.length === 0) {
+            // Always fetch all ads for consistent client-side pagination
+            if (allAds.length === 0) {
                 fetchAllAds();
             }
+            // Also fetch paginated data for display (but we'll use allAds for pagination)
+            fetchAds();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, selectedPlatform, scoreFilter, adTypeFilter, selectedBrandId, activeTab]);
+    }, [currentPage, selectedPlatform, scoreFilter, adTypeFilter, selectedBrandId, activeTab])
 
     // Fetch A/B ads from API
     const fetchAbAds = async () => {
@@ -323,7 +348,6 @@ export default function MyAdsPage() {
             }
 
             const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=abadslist&user_id=${userId}`)
-
             if (!response.ok) {
                 throw new Error('Failed to fetch A/B ads')
             }
@@ -360,27 +384,21 @@ export default function MyAdsPage() {
         if (activeTab === "ab-ads") {
             fetchAbAds()
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab])
-
-    // Check if any filters are active
-    const hasActiveFilters = searchTerm !== "" || selectedPlatform !== "all" ||
-        scoreFilter !== "all" || adTypeFilter !== "all"
 
     // Fixed filtering logic for regular ads (only used when filters are active)
     // Use allAds for filtering to include all results, not just current page
     const filteredAds = hasActiveFilters ? allAds.filter((ad) => {
-        // Search filter - check if search term matches ad name (case insensitive)
         const matchesSearch = searchTerm === "" ||
             ad.ads_name.toLowerCase().includes(searchTerm.toLowerCase())
 
-        // Platform filter - properly parse platforms and check
         let matchesPlatform = true
         if (selectedPlatform !== "all") {
             const platformList = parsePlatforms(ad.platforms)
             matchesPlatform = platformList.includes(selectedPlatform)
         }
 
-        // Score filter - check score ranges
         let matchesScore = true
         if (scoreFilter !== "all") {
             switch (scoreFilter) {
@@ -401,7 +419,6 @@ export default function MyAdsPage() {
             }
         }
 
-        // Ad Type filter
         let matchesAdType = true
         if (adTypeFilter !== "all") {
             matchesAdType = ad.ads_type.toLowerCase() === adTypeFilter.toLowerCase()
@@ -413,10 +430,71 @@ export default function MyAdsPage() {
     // Filter A/B ads based on search term
     const filteredAbAds = abAds.filter((abAdPair) => {
         if (searchTerm === "") return true
-
-        return abAdPair.ad_a.ads_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        return (
+            abAdPair.ad_a.ads_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             abAdPair.ad_b.ads_name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
     })
+
+    // When filters are active, use client-side pagination on filtered results
+    // Otherwise, display the ads directly from API (already paginated)
+    const totalPagesForAds = hasActiveFilters
+        ? Math.ceil(filteredAds.length / itemsPerPage)
+        : Math.ceil(totalAds / itemsPerPage)
+
+    const totalPagesForAbAds = searchTerm !== ""
+        ? Math.ceil(filteredAbAds.length / itemsPerPage)
+        : Math.ceil(totalAbAds / itemsPerPage)
+
+    // For regular ads: always use client-side pagination for consistency
+    // - If filters are active: paginate filtered results
+    // - If no filters: paginate allAds (fetched once, then paginated client-side)
+    const displayAds = hasActiveFilters
+        ? filteredAds.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+        : allAds.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+    // For A/B ads: always use client-side pagination since we fetch all A/B ads at once
+    const displayAbAds = searchTerm !== ""
+        ? filteredAbAds.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+        : abAds.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+    // Save current page + tab to sessionStorage whenever they change
+    useEffect(() => {
+        if (!isInitialized) return; // Don't save until initialized
+        
+        if (typeof window !== 'undefined') {
+            const storageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads'
+            sessionStorage.setItem(storageKey, currentPage.toString())
+            sessionStorage.setItem("my-ads-active-tab", activeTab)
+        }
+    }, [currentPage, activeTab, isInitialized])
+
+    // Reset to page 1 when filters actually change (but not when tab changes or on initial mount)
+    useEffect(() => {
+        if (!isInitialized) {
+            // Store initial filter values
+            prevFiltersRef.current = { searchTerm, selectedPlatform, scoreFilter, adTypeFilter, selectedBrandId };
+            return;
+        }
+
+        // Check if any filter actually changed
+        const filtersChanged =
+            prevFiltersRef.current.searchTerm !== searchTerm ||
+            prevFiltersRef.current.selectedPlatform !== selectedPlatform ||
+            prevFiltersRef.current.scoreFilter !== scoreFilter ||
+            prevFiltersRef.current.adTypeFilter !== adTypeFilter ||
+            prevFiltersRef.current.selectedBrandId !== selectedBrandId;
+
+        if (filtersChanged) {
+            setCurrentPage(1);
+            if (typeof window !== 'undefined') {
+                const storageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads'
+                sessionStorage.setItem(storageKey, '1')
+            }
+            // Update ref with new values
+            prevFiltersRef.current = { searchTerm, selectedPlatform, scoreFilter, adTypeFilter, selectedBrandId };
+        }
+    }, [searchTerm, selectedPlatform, scoreFilter, adTypeFilter, selectedBrandId, isInitialized, activeTab])
 
     const renderAdCard = (ad: Ad) => {
         const platformList = parsePlatforms(ad.platforms)
@@ -438,7 +516,6 @@ export default function MyAdsPage() {
                         className="w-full aspect-square object-cover transform group-hover:scale-105 transition-all duration-300"
                         onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
                     />
-
                 </div>
 
                 <div className="p-3 sm:p-4">
@@ -466,7 +543,6 @@ export default function MyAdsPage() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4">
-                        {/* Left side - Ad Score (conditionally rendered) */}
                         <div className="flex items-center">
                             {ad.score > 0 ? (
                                 <div className="text-sm sm:text-base text-gray-300">
@@ -477,10 +553,8 @@ export default function MyAdsPage() {
                             )}
                         </div>
 
-                        {/* Right side - Date */}
                         <p className="text-xs text-gray-400">{dateFormatted}</p>
                     </div>
-
 
                     <div className="flex gap-2 items-center">
                         <div className="flex-1 min-w-0">
@@ -703,48 +777,10 @@ export default function MyAdsPage() {
         )
     }
 
-    // Calculate total pages based on total count from API or filtered results
-    const totalPagesForAds = hasActiveFilters
-        ? Math.ceil(filteredAds.length / itemsPerPage)
-        : Math.ceil(totalAds / itemsPerPage)
-
-    const totalPagesForAbAds = searchTerm !== ""
-        ? Math.ceil(filteredAbAds.length / itemsPerPage)
-        : Math.ceil(totalAbAds / itemsPerPage)
-
-    // When filters are active, use client-side pagination on filtered results
-    // Otherwise, display the ads directly from API (already paginated)
-    const displayAds = hasActiveFilters
-        ? filteredAds.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-        : ads
-
-    const displayAbAds = searchTerm !== ""
-        ? filteredAbAds.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-        : abAds
-
-    // Save current page to sessionStorage whenever it changes
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const storageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads'
-            sessionStorage.setItem(storageKey, currentPage.toString())
-        }
-    }, [currentPage, activeTab])
-
-    // Reset to page 1 when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-        // Save the reset to sessionStorage
-        if (typeof window !== 'undefined') {
-            const storageKey = activeTab === 'ab-ads' ? 'my-ads-page-ab' : 'my-ads-page-ads'
-            sessionStorage.setItem(storageKey, '1')
-        }
-    }, [searchTerm, selectedPlatform, scoreFilter, adTypeFilter, activeTab]);
-
-
     return (
         <UserLayout userDetails={userDetails}>
             {loading ? <MyAdsSkeleton /> : (
-                <div className="w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-28  pt-4">
+                <div className="w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-28 pt-4">
                     <div className="mb-6 sm:mb-8">
                         <div>
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -756,7 +792,7 @@ export default function MyAdsPage() {
                                 </div>
                                 <Button
                                     onClick={() => router.push(activeTab === "ads" ? "/upload" : "/ab-test")}
-                                    className="bg-[#db4900] hover:bg-[#db4900]/90 flex items-center justify-center w-full sm:w-auto"
+                                    className="bg-[#db4900] hover:bg[#db4900]/90 flex items-center justify-center w-full sm:w-auto"
                                 >
                                     <Upload className="h-4 w-4" />
                                     <span className="ml-2">
@@ -944,7 +980,6 @@ export default function MyAdsPage() {
                     {/* Ads Tab */}
                     {activeTab === "ads" && (
                         <>
-                            {/* No ads message */}
                             {(hasActiveFilters ? filteredAds.length === 0 : ads.length === 0) && !loading && (
                                 <div className="text-center py-12">
                                     <div className="w-42 h-42 mb-4 mx-auto flex items-center justify-center">
@@ -987,7 +1022,6 @@ export default function MyAdsPage() {
                                 </div>
                             )}
 
-                            {/* Ads Grid */}
                             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-24">
                                 {displayAds.map(renderAdCard)}
                             </div>
@@ -998,7 +1032,6 @@ export default function MyAdsPage() {
                     {activeTab === "ab-ads" && (
                         <>
                             {userDetails?.fretra_status === 1 ? (
-                                // Upgrade Prompt for Free Users
                                 <div className="text-center py-16 bg-[#1a1a1a] border border-[#3d3d3d] rounded-lg">
                                     <h2 className="text-2xl font-bold text-white mb-4">Upgrade to Pro</h2>
                                     <p className="text-gray-300 mb-6">
@@ -1015,14 +1048,12 @@ export default function MyAdsPage() {
                                 </div>
                             ) : (
                                 <>
-                                    {/* Loading state for A/B ads */}
                                     {abLoading ? (
                                         <div className="flex justify-center py-12">
                                             <Loader2 className="h-8 w-8 animate-spin text-[#db4900]" />
                                         </div>
                                     ) : (
                                         <>
-                                            {/* No A/B ads message */}
                                             {filteredAbAds.length === 0 && !abLoading && (
                                                 <div className="text-center py-12">
                                                     <div className="w-42 h-42 mb-4 mx-auto flex items-center justify-center">
@@ -1060,7 +1091,6 @@ export default function MyAdsPage() {
                                                 </div>
                                             )}
 
-                                            {/* A/B Ads Grid */}
                                             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 pb-24">
                                                 {displayAbAds.map(renderAbAdCard)}
                                             </div>
@@ -1071,44 +1101,74 @@ export default function MyAdsPage() {
                         </>
                     )}
 
-                    {/* Pagination */}
+                    {/* Pagination (shadcn) */}
                     {((activeTab === "ads" && totalPagesForAds > 1) ||
                         (activeTab === "ab-ads" && totalPagesForAbAds > 1)) && (
                             <div className="flex flex-col sm:flex-row justify-center items-center mt-6 sm:mt-8 gap-2 sm:gap-2">
-                                <Button
-                                    variant="outline"
-                                    className="border-[#3d3d3d] bg-transparent hover:bg-[#3d3d3d] text-white w-full sm:w-auto"
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage(prev => prev - 1)}
-                                >
-                                    <span className="hidden sm:inline">Previous</span>
-                                    <span className="sm:hidden">← Prev</span>
-                                </Button>
+                                <Pagination className="gap-2">
+                                    <PaginationContent>
+                                        {/* Previous */}
+                                        <PaginationItem>
+                                            <PaginationPrevious
+                                                href="#"
+                                                aria-disabled={currentPage === 1}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (currentPage > 1) handlePageChange(currentPage - 1);
+                                                }}
+                                                className={[
+                                                    "border-[#3d3d3d] bg-[#3d3d3d] hover:bg-[#3d3d3d] text-white w-full sm:w-auto",
+                                                    currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                                                ].join(" ")}
+                                            />
+                                        </PaginationItem>
 
-                                <div className="flex gap-1 sm:gap-2 overflow-x-auto max-w-full">
-                                    {Array.from({ length: activeTab === "ads" ? totalPagesForAds : totalPagesForAbAds }, (_, i) => (
-                                        <Button
-                                            key={i}
-                                            variant={currentPage === i + 1 ? "default" : "outline"}
-                                            className={`border-[#3d3d3d] min-w-[36px] sm:min-w-[40px] ${currentPage === i + 1 ? "bg-[#db4900] text-white" : "bg-transparent hover:bg-[#3d3d3d] text-white"}`}
-                                            onClick={() => setCurrentPage(i + 1)}
-                                        >
-                                            {i + 1}
-                                        </Button>
-                                    ))}
-                                </div>
+                                        {/* Page numbers (show all like your current UI) */}
+                                        {Array.from(
+                                            { length: activeTab === "ads" ? totalPagesForAds : totalPagesForAbAds },
+                                            (_, i) => i + 1
+                                        ).map((n) => (
+                                            <PaginationItem key={n} >
+                                                <PaginationLink
+                                                    href="#"
+                                                    isActive={currentPage === n}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        handlePageChange(n);
+                                                    }}
+                                                    className={[
+                                                        "border-[#3d3d3d] bg-[#3d3d3d] hover:bg-[#3d3d3d] text-white",
+                                                        currentPage === n ? "bg-[#db4900] text-white" : ""
+                                                    ].join(" ")}
+                                                >
+                                                    {n}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        ))}
 
-                                <Button
-                                    variant="outline"
-                                    className="border-[#3d3d3d] bg-transparent hover:bg-[#3d3d3d] text-white w-full sm:w-auto"
-                                    disabled={currentPage === (activeTab === "ads" ? totalPagesForAds : totalPagesForAbAds)}
-                                    onClick={() => setCurrentPage(prev => prev + 1)}
-                                >
-                                    <span className="hidden sm:inline">Next</span>
-                                    <span className="sm:hidden">Next →</span>
-                                </Button>
+                                        {/* Next */}
+                                        <PaginationItem>
+                                            <PaginationNext
+                                                href="#"
+                                                aria-disabled={
+                                                    currentPage === (activeTab === "ads" ? totalPagesForAds : totalPagesForAbAds)
+                                                }
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const max = activeTab === "ads" ? totalPagesForAds : totalPagesForAbAds;
+                                                    if (currentPage < max) handlePageChange(currentPage + 1);
+                                                }}
+                                                className={[
+                                                    "border-[#3d3d3d] bg-[#3d3d3d] hover:bg-[#3d3d3d] text-white w-full sm:w-auto",
+                                                    currentPage === (activeTab === "ads" ? totalPagesForAds : totalPagesForAbAds)
+                                                        ? "pointer-events-none opacity-50"
+                                                        : ""
+                                                ].join(" ")}
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
                             </div>
-
                         )}
 
                     {/* Floating Action Button - Desktop Only */}
@@ -1119,21 +1179,15 @@ export default function MyAdsPage() {
                         >
                             <Plus className="w-6 h-6" />
                         </button>
-
                         {/* Tooltip */}
                         <span className="absolute right-14 bottom-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100
-                                bg-black text-white text-xs px-3 py-1 rounded-lg shadow-lg border border-[#2a2a2a]
-                            transition-all duration-300 whitespace-nowrap">
+              bg-black text-white text-xs px-3 py-1 rounded-lg shadow-lg border border-[#2a2a2a]
+              transition-all duration-300 whitespace-nowrap">
                             Upload
                         </span>
                     </div>
-
-
-
-
                 </div>
             )}
         </UserLayout>
     )
-
 }

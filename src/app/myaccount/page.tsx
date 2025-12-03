@@ -172,7 +172,7 @@ export default function MyAccount() {
       {/* Desktop View */}
       <div className="hidden md:flex min-h-screen max-w-7xl mx-auto flex-col md:flex-row overflow-x-hidden">
         <aside className="fixed h-screen w-[320px] max-w-full p-4 space-y-2 overflow-x-hidden">
-          <h1 className="text-xl font-semibold text-white mb-6">My Account</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-white mb-6">My Account</h1>
           {cards.map((card, index) => (
             <Card
               key={card.id}

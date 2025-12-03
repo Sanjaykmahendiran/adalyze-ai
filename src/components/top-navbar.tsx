@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, Bell, X, Copy, Check, FileImage, Infinity } from "lucide-react";
+import {X, Copy, Check, FileImage, Infinity } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,7 +60,7 @@ export const TopNavbar = ({ userDetails }: TopNavbarProps) => {
             <Link href="/dashboard" className="flex items-center">
               <Image
                 src={logo}
-                alt="Logo"
+                alt="Adalyze AI Logo"
                 className="h-8 w-auto object-contain"
                 priority
               />

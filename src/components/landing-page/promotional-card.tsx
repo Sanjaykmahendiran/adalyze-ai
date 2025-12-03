@@ -5,7 +5,7 @@ import Image from "next/image"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import popupImage from "@/assets/Landing-page/Popup.jpg"
+import popupImage from "@/assets/Landing-page/Popup.webp"
 import { motion, AnimatePresence } from "framer-motion"
 
 export default function PromotionalPopup() {
@@ -73,7 +73,7 @@ export default function PromotionalPopup() {
                         <div className="relative w-full h-48 sm:h-56">
                             <Image
                                 src={popupImage}
-                                alt="Offer Image"
+                                alt="Adalyze AI Offer Image"
                                 fill
                                 className="object-cover object-center"
                                 priority

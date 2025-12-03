@@ -22,7 +22,7 @@ export default function ABFileUploadCard({
   title,
   file,
   onFileChange,
-  type, 
+  type,
   imageUrl,
   isUploading = false,
   uploadProgress = 0,
@@ -62,8 +62,8 @@ export default function ABFileUploadCard({
       toast.error("Please upload a valid image (JPG, JPEG, PNG)")
       return
     }
-    if (file.size > 3  * 1024 * 1024) {
-      toast.error("File size must be under 3MB")
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be under 10MB")
       return
     }
     onFileChange(file)
@@ -151,10 +151,10 @@ export default function ABFileUploadCard({
         /* Case 3: Empty drop zone */
         <div
           className={`flex flex-col items-center justify-center text-center rounded-xl bg-[#2b2b2b] p-6 cursor-pointer transition-all duration-300 ${isUploading
-              ? "cursor-not-allowed opacity-50"
-              : isDragging
-                ? "border-4 border-dashed border-gray-400 scale-105"
-                : "hover:bg-[#1f1f1f]"
+            ? "cursor-not-allowed opacity-50"
+            : isDragging
+              ? "border-4 border-dashed border-gray-400 scale-105"
+              : "hover:bg-[#1f1f1f]"
             }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -178,7 +178,7 @@ export default function ABFileUploadCard({
           </p>
           {!isUploading && (
             <p className="mt-2 text-xs text-gray-400">
-              PNG, JPG, JPEG (max. 3 MB)
+              PNG, JPG, JPEG (max. 10 MB)
             </p>
           )}
         </div>

@@ -2,10 +2,13 @@
 
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { Upload, Cpu, RefreshCcw } from "lucide-react"
-import workflow1 from "@/assets/Landing-page/step1.png"
-import workflow2 from "@/assets/Landing-page/step2.png"
-import workflow3 from "@/assets/Landing-page/step3.png"
+import workflow1 from "@/assets/Landing-page/step1.webp"
+import workflow2 from "@/assets/Landing-page/step2.webp"
+import workflow3 from "@/assets/Landing-page/step3.webp"
+import MobileWorkflow1 from "@/assets/Landing-page/step-1-mobile.webp"
+import MobileWorkflow2 from "@/assets/Landing-page/step-2-mobile.webp"
+import MobileWorkflow3 from "@/assets/Landing-page/step-3-mobile.webp"
+import { useEffect, useState } from "react"
 
 const textVariants = {
   hiddenLeft: { x: -100, opacity: 0 },
@@ -20,6 +23,14 @@ const imageVariants = {
 }
 
 const WorkflowSection = () => {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024)
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
   const steps = [
     {
       stepNumber: "01",
@@ -27,7 +38,7 @@ const WorkflowSection = () => {
       description:
         "Easily submit your ad creative - whether it's an image, video, or copy—from any platform and get instant AI-powered evaluation.",
       image: workflow1,
-      icon: Upload,
+      mobileImage: MobileWorkflow1,
       alt: "Upload ad creative",
     },
     {
@@ -36,7 +47,7 @@ const WorkflowSection = () => {
       description:
         "Adalyze AI assesses your ad against benchmarks, generates a performance score, and surfaces key weaknesses.",
       image: workflow2,
-      icon: Cpu,
+      mobileImage: MobileWorkflow2,
       alt: "AI analyzing ad performance",
     },
     {
@@ -45,7 +56,7 @@ const WorkflowSection = () => {
       description:
         "Receive tailored recommendations, apply improvements, and re-run analysis to continuously boost effectiveness.",
       image: workflow3,
-      icon: RefreshCcw,
+      mobileImage: MobileWorkflow3,
       alt: "Ad optimization loop",
     },
   ]
@@ -107,10 +118,10 @@ const WorkflowSection = () => {
                     >
                       <div className="relative w-full h-56 sm:h-64">
                         <Image
-                          src={step.image || "/placeholder.svg"}
+                          src={isMobile ? step.mobileImage : step.image}
                           alt={step.alt}
                           fill
-                          className="object-contain"
+                          className="object-cover"
                           sizes="(max-width: 768px) 100vw, 384px"
                           priority={index === 0}
                         />
@@ -153,7 +164,7 @@ const WorkflowSection = () => {
                     >
                       <div className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 overflow-visible">
                         <Image
-                          src={step.image || "/placeholder.svg"}
+                          src={isMobile ? step.mobileImage : step.image}
                           alt={step.alt}
                           fill
                           className="object-contain"

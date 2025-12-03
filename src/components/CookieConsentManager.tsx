@@ -1,18 +1,39 @@
 "use client";
 
 import { useEffect } from "react";
-import "cookieconsent/build/cookieconsent.min.css";
 import { GTM_ID, GA4_MEASUREMENT_ID } from "@/lib/gtm";
 import { sendCookieConsent, createConsentData, getExistingConsent } from "@/services/cookieConsentService";
 
 export default function CookieConsentManager() {
   useEffect(() => {
-    // Always load GA4/GTM scripts for cookie-less tracking
-    // This ensures page views and events work without cookies
-    loadTrackingScriptsCookieLess();
+    // Defer all non-critical operations to improve FCP
+    // Use requestIdleCallback or setTimeout to defer after initial render
+    const initCookieConsent = () => {
+      // Load cookieconsent CSS asynchronously to prevent render blocking
+      // Use media='print' trick to load CSS without blocking render
+      if (!document.getElementById('cookieconsent-css')) {
+        const link = document.createElement('link');
+        link.id = 'cookieconsent-css';
+        link.rel = 'stylesheet';
+        // Load from node_modules path (Next.js will handle this)
+        link.href = 'https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css';
+        link.media = 'print';
+        link.onload = () => { 
+          if (link.media) link.media = 'all'; 
+        };
+        document.head.appendChild(link);
+      }
 
-    // Only import cookieconsent on client
-    import("cookieconsent").then(async () => {
+      // Defer GA4/GTM scripts loading to reduce initial HTTP requests
+      // Load after page is interactive to improve performance
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(loadTrackingScriptsCookieLess, { timeout: 3000 });
+      } else {
+        setTimeout(loadTrackingScriptsCookieLess, 2000);
+      }
+
+      // Only import cookieconsent on client
+      import("cookieconsent").then(async () => {
       if (typeof window !== "undefined" && (window as any).cookieconsent) {
         // First check if user has already made a choice via API (getExistingConsent)
         // This is the primary source of truth
@@ -41,6 +62,18 @@ export default function CookieConsentManager() {
         initializeCookieBanner();
       }
     });
+    };
+
+    // Defer initialization to improve FCP - wait for page to be interactive
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        // Use requestIdleCallback if available (better for performance)
+        (window as any).requestIdleCallback(initCookieConsent, { timeout: 2000 });
+      } else {
+        // Fallback to setTimeout for browsers without requestIdleCallback
+        setTimeout(initCookieConsent, 100);
+      }
+    }
   }, []);
 
   const initializeCookieBanner = () => {
@@ -147,6 +180,7 @@ export default function CookieConsentManager() {
       ga.id = 'ga4-script-cookieless';
       ga.src = `https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`;
       ga.async = true;
+      ga.defer = true;
       document.head.appendChild(ga);
 
       const inline = document.createElement("script");
@@ -204,6 +238,7 @@ export default function CookieConsentManager() {
       ga.id = 'ga4-script';
       ga.src = `https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`;
       ga.async = true;
+      ga.defer = true;
       document.head.appendChild(ga);
 
       const inline = document.createElement("script");
@@ -218,7 +253,15 @@ export default function CookieConsentManager() {
     }
 
     // Meta Pixel (only load when cookies are accepted)
-    if (!document.getElementById('meta-pixel-script')) {
+    // Check if script already exists or fbq is already initialized to prevent duplicate initialization
+    if (typeof window === 'undefined') return;
+    
+    const win = window as any;
+    const scriptExists = document.getElementById('meta-pixel-script');
+    const fbqExists = win.fbq && typeof win.fbq === 'function';
+    
+    // Only load if script doesn't exist and fbq is not already initialized
+    if (!scriptExists && !fbqExists) {
       const fb = document.createElement("script");
       fb.id = 'meta-pixel-script';
       fb.innerHTML = `

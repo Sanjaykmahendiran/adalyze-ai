@@ -22,8 +22,9 @@ interface BrandData {
   brand_name: string
   email: string
   mobile: string
-  logo_url: string
+  logo_url: string 
   logo_hash: string
+  website?: string
   verified: number
   locked: number
   status: number
@@ -57,11 +58,20 @@ export default function YourBrand({
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Edit mode state
+  const [isEditingBrand, setIsEditingBrand] = useState(false)
+
+  // Check if brand data exists
+  const hasBrandData = brandData && brandData.brand_id
+
 
   // Fetch brand data on component mount
   useEffect(() => {
     if (userDetails?.brand && typeof userDetails.brand === 'object' && userDetails.brand.brand_id) {
       fetchBrandData(userDetails.brand.brand_id)
+    } else {
+      // If no brand reference in userDetails, enable edit mode for creating new brand
+      setIsEditingBrand(true)
     }
   }, [userDetails?.brand])
 
@@ -80,12 +90,18 @@ export default function YourBrand({
         setWebsite(data.website || "")
         setImagePreview(data.logo_url || "")
         setUploadedImageUrl(data.logo_url || "")
+        // Disable edit mode when data is successfully loaded
+        setIsEditingBrand(false)
       } else {
         toast.error("Failed to fetch brand data")
+        // Enable edit mode if fetch failed (no brand data)
+        setIsEditingBrand(true)
       }
     } catch (error) {
       console.error("Error fetching brand data:", error)
       toast.error("Network error while fetching brand data")
+      // Enable edit mode on error (no brand data)
+      setIsEditingBrand(true)
     } finally {
       setIsLoading(false)
     }
@@ -196,6 +212,8 @@ export default function YourBrand({
         toast.success("Brand updated successfully")
         // Refresh brand data
         await fetchBrandData(brandData.brand_id)
+        // Exit edit mode
+        setIsEditingBrand(false)
       } else {
         toast.error(data.message || "Failed to update brand")
       }
@@ -209,130 +227,210 @@ export default function YourBrand({
 
   return (
     <div className="container mx-auto py-6 px-4 min-h-screen lg:mt-6">
-          <Card className="rounded-2xl w-full p-4 sm:p-6 bg-black border-none shadow-gray-900/20">
-            <div className="space-y-6">
-              <h1 className="text-2xl font-semibold hidden sm:block text-white">Your Brand</h1>
-              <div className="space-y-8 sm:grid sm:grid-cols-1">
-                {/* Profile Image Upload */}
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="relative">
-                    <div
-                      onClick={handleEditImageClick}
-                      className="w-32 h-32 rounded-full overflow-hidden bg-[#171717] border-2 border-[#3d3d3d] flex items-center justify-center">
-                      {imagePreview ? (
-                        <Image
-                          src={imagePreview}
-                          alt="Profile"
-                          width={128}
-                          height={128}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-gray-400 text-4xl">
-                          {brandName ? brandName.charAt(0).toUpperCase() : "B"}
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleEditImageClick}
-                      className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 shadow-lg transition-colors"
-                      aria-label="Edit profile image"
-                    >
-                      <Camera className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                   accept=".jpg,.jpeg,image/jpeg"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                  <p className="text-sm text-gray-400">
-                    (JPG or JPEG)
-                  </p>
-                  {isUploadingImage && (
-                    <p className="text-sm text-blue-400">
-                      Uploading image...
-                    </p>
-                  )}
-                </div>
+      <Card className="rounded-2xl w-full p-4 sm:p-6 bg-black border-none shadow-gray-900/20">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-semibold text-white">
+              {isEditingBrand ? (hasBrandData ? "Edit Brand" : "Create Brand") : "Brand Information"}
+            </h1>
+            {!isEditingBrand && hasBrandData && (
+              <Button
+                onClick={() => setIsEditingBrand(true)}
+                className="text-white"
+              >
+                Edit
+              </Button>
+            )}
+          </div>
 
-                {/* Form Fields */}
-                <div className="space-y-4">
-                  {isLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div className="text-gray-400">Loading brand data...</div>
-                    </div>
+          {!isEditingBrand && hasBrandData ? (
+            // Display Brand Data as List
+            <div className="space-y-4">
+              {/* Brand Logo Display */}
+              <div className="flex flex-col items-center space-y-4 mb-6">
+                <div className="w-32 h-32 rounded-full overflow-hidden bg-[#171717] border-2 border-[#3d3d3d] flex items-center justify-center">
+                  {imagePreview ? (
+                    <Image
+                      src={imagePreview}
+                      alt="Brand Logo"
+                      width={128}
+                      height={128}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <>
-                      {/* Brand Name */}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <Label htmlFor="brandName" className="text-gray-100 text-sm font-medium sm:w-[200px]">Brand Name</Label>
-                        <Input
-                          id="brandName"
-                          placeholder="Enter brand name"
-                          value={brandName}
-                          onChange={(e) => setBrandName(e.target.value)}
-                          className="border-none bg-[#171717] text-white placeholder:text-gray-400 w-full focus:border-blue-400"
-                        />
-                      </div>
-
-                      {/* Brand Email */}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <Label htmlFor="brandEmail" className="text-gray-100 text-sm font-medium sm:w-[200px]">Email</Label>
-                        <Input
-                          id="brandEmail"
-                          type="email"
-                          placeholder="Enter brand email"
-                          value={brandEmail}
-                          onChange={(e) => setBrandEmail(e.target.value)}
-                          className="border-none bg-[#171717] text-white placeholder:text-gray-400 w-full focus:border-blue-400"
-                        />
-                      </div>
-
-                      {/* Brand Mobile */}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <Label htmlFor="brandMobile" className="text-gray-100 text-sm font-medium sm:w-[200px]">Mobile Number</Label>
-                        <Input
-                          id="brandMobile"
-                          type="tel"
-                          placeholder="Enter mobile number"
-                          value={brandMobile}
-                          onChange={(e) => setBrandMobile(e.target.value)}
-                          className="border-none bg-[#171717] text-white placeholder:text-gray-400 w-full focus:border-blue-400"
-                        />
-                      </div>
-
-                      {/* Website */}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <Label htmlFor="website" className="text-gray-100 text-sm font-medium sm:w-[200px]">Website</Label>
-                        <Input
-                          id="website"
-                          placeholder="Enter website"
-                          value={website}
-                          onChange={(e) => setWebsite(e.target.value)}
-                          className="border-none bg-[#171717] text-white placeholder:text-gray-400 w-full focus:border-blue-400"
-                        />
-                      </div>
-                    </>
+                    <div className="text-gray-400 text-4xl">
+                      {brandName ? brandName.charAt(0).toUpperCase() : "B"}
+                    </div>
                   )}
-                </div>
-
-                {/* Update Button */}
-                <div className="flex justify-center sm:justify-end mt-4">
-                  <Button
-                    className="w-full sm:w-auto text-white"
-                    onClick={handleSubmit}
-                    disabled={isLoading || !brandData}
-                  >
-                    {isLoading ? "Updating..." : "Update Brand"}
-                  </Button>
                 </div>
               </div>
+
+              {/* Brand Data Display */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { label: "Brand Name", value: brandName },
+                  { label: "Email", value: brandEmail },
+                  { label: "Mobile Number", value: brandMobile },
+                  { label: "Website", value: website },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col p-3 rounded-lg bg-[#171717] border border-[#3d3d3d] hover:border-[#db4900] transition"
+                  >
+                    <Label className="text-primary text-sm tracking-wide uppercase">
+                      {item.label}
+                    </Label>
+                    <p className="text-white text-base font-medium mt-1 break-words">
+                      {item.value || "NA"}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </Card>
+          ) : (
+            // Edit/Create Brand Form
+            <div className="space-y-8 sm:grid sm:grid-cols-1">
+              {/* Brand Logo Upload */}
+              <div className="flex flex-col items-center space-y-4">
+                <div className="relative">
+                  <div
+                    onClick={handleEditImageClick}
+                    className="w-32 h-32 rounded-full overflow-hidden bg-[#171717] border-2 border-[#3d3d3d] flex items-center justify-center">
+                    {imagePreview ? (
+                      <Image
+                        src={imagePreview}
+                        alt="Brand Logo"
+                        width={128}
+                        height={128}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-4xl">
+                        {brandName ? brandName.charAt(0).toUpperCase() : "B"}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleEditImageClick}
+                    className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 shadow-lg transition-colors"
+                    aria-label="Edit brand logo"
+                  >
+                    <Camera className="w-5 h-5" />
+                  </button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,image/jpeg"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <p className="text-sm text-gray-400">
+                  (JPG or JPEG)
+                </p>
+                {isUploadingImage && (
+                  <p className="text-sm text-blue-400">
+                    Uploading image...
+                  </p>
+                )}
+              </div>
+
+              {/* Form Fields */}
+              <div className="space-y-4">
+                {isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="text-gray-400">Loading brand data...</div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Brand Name */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <Label htmlFor="brandName" className="text-gray-100 text-sm font-medium sm:w-[200px]">Brand Name</Label>
+                      <Input
+                        id="brandName"
+                        placeholder="Enter brand name"
+                        value={brandName}
+                        onChange={(e) => setBrandName(e.target.value)}
+                        className="border-none bg-[#171717] text-white placeholder:text-gray-400 w-full focus:border-blue-400"
+                      />
+                    </div>
+
+                    {/* Brand Email */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <Label htmlFor="brandEmail" className="text-gray-100 text-sm font-medium sm:w-[200px]">Email</Label>
+                      <Input
+                        id="brandEmail"
+                        type="email"
+                        placeholder="Enter brand email"
+                        value={brandEmail}
+                        onChange={(e) => setBrandEmail(e.target.value)}
+                        className="border-none bg-[#171717] text-white placeholder:text-gray-400 w-full focus:border-blue-400"
+                      />
+                    </div>
+
+                    {/* Brand Mobile */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <Label htmlFor="brandMobile" className="text-gray-100 text-sm font-medium sm:w-[200px]">Mobile Number</Label>
+                      <Input
+                        id="brandMobile"
+                        type="tel"
+                        placeholder="Enter mobile number"
+                        value={brandMobile}
+                        onChange={(e) => setBrandMobile(e.target.value)}
+                        className="border-none bg-[#171717] text-white placeholder:text-gray-400 w-full focus:border-blue-400"
+                      />
+                    </div>
+
+                    {/* Website */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <Label htmlFor="website" className="text-gray-100 text-sm font-medium sm:w-[200px]">Website</Label>
+                      <Input
+                        id="website"
+                        placeholder="Enter website"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
+                        className="border-none bg-[#171717] text-white placeholder:text-gray-400 w-full focus:border-blue-400"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Update and Cancel Buttons */}
+              <div className="flex justify-center sm:justify-end gap-3 mt-4">
+                {hasBrandData && (
+                  <Button
+                    variant="outline"
+                    className="sm:w-auto"
+                    onClick={() => {
+                      setIsEditingBrand(false)
+                      // Reset to original brand data
+                      if (brandData) {
+                        setBrandName(brandData.brand_name || "")
+                        setBrandEmail(brandData.email || "")
+                        setBrandMobile(brandData.mobile || "")
+                        setWebsite(brandData.website || "")
+                        setImagePreview(brandData.logo_url || "")
+                        setUploadedImageUrl(brandData.logo_url || "")
+                      }
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  className="w-full sm:w-auto text-white"
+                  onClick={handleSubmit}
+                  disabled={isLoading || !brandData}
+                >
+                  {isLoading ? "Updating..." : hasBrandData ? "Update Brand" : "Create Brand"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   )
 }

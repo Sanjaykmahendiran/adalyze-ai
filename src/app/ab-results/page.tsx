@@ -6,19 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
     Lock, Trophy, RefreshCw, Sparkles, Search, AlertTriangle, PenTool,
-    CheckCircle, XCircle, Eye, Heart, FileText, Target, Palette, Award, ImageIcon, TrendingUp,
-    ChevronLeft, ChevronRight, Zap, Shield, Activity, BarChart3, Camera, Type, Layout, DollarSign,
-    Users,
-    ArrowLeft,
-    Info,
-    TrendingDown,
-    Copy,
-    Trash2,
-    Loader2,
-    MessageSquare,
-    MousePointerClick,
-    Lightbulb,
-    ArrowRight,
+    CheckCircle, XCircle, FileText, Target, TrendingUp,
+    ChevronLeft, ChevronRight, Zap, Shield, BarChart3, Type, ArrowLeft, Info, TrendingDown, Copy,
+    Trash2, Loader2, MessageSquare, MousePointerClick, Lightbulb, ArrowRight,
 } from "lucide-react";
 import Chart from 'chart.js/auto'
 import Image from "next/image";

@@ -11,6 +11,7 @@ type Testimonial = {
   name: string;
   designation: string;
   src: string;
+  srcMobile?: string;
 };
 
 export const AnimatedTestimonials = ({
@@ -74,9 +75,9 @@ export const AnimatedTestimonials = ({
                 onClick={handlePrev}
               >
                 <div className="relative w-20 h-20 overflow-hidden">
-                  {hasValidImage(testimonials[(active - 1 + testimonials.length) % testimonials.length].src) ? (
+                  {hasValidImage(testimonials[(active - 1 + testimonials.length) % testimonials.length].srcMobile || testimonials[(active - 1 + testimonials.length) % testimonials.length].src) ? (
                     <Image
-                      src={testimonials[(active - 1 + testimonials.length) % testimonials.length].src}
+                      src={testimonials[(active - 1 + testimonials.length) % testimonials.length].srcMobile || testimonials[(active - 1 + testimonials.length) % testimonials.length].src}
                       alt={testimonials[(active - 1 + testimonials.length) % testimonials.length].name}
                       width={80}
                       height={80}
@@ -104,9 +105,9 @@ export const AnimatedTestimonials = ({
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                     className="absolute inset-0"
                   >
-                    {hasValidImage(testimonials[active].src) ? (
+                    {hasValidImage(testimonials[active].srcMobile || testimonials[active].src) ? (
                       <Image
-                        src={testimonials[active].src}
+                        src={testimonials[active].srcMobile || testimonials[active].src}
                         alt={testimonials[active].name}
                         width={128}
                         height={128}
@@ -130,9 +131,9 @@ export const AnimatedTestimonials = ({
                 onClick={handleNext}
               >
                 <div className="relative w-20 h-20 overflow-hidden">
-                  {hasValidImage(testimonials[(active + 1) % testimonials.length].src) ? (
+                  {hasValidImage(testimonials[(active + 1) % testimonials.length].srcMobile || testimonials[(active + 1) % testimonials.length].src) ? (
                     <Image
-                      src={testimonials[(active + 1) % testimonials.length].src}
+                      src={testimonials[(active + 1) % testimonials.length].srcMobile || testimonials[(active + 1) % testimonials.length].src}
                       alt={testimonials[(active + 1) % testimonials.length].name}
                       width={80}
                       height={80}
@@ -166,22 +167,13 @@ export const AnimatedTestimonials = ({
             <p className="text-sm text-white mb-4">
               {testimonials[active].designation}
             </p>
-            <motion.p className="text-sm text-gray-300 leading-relaxed text-center text-justify tracking-normal leading-relaxed">
-              {testimonials[active].quote.split(" ").map((word, index) => (
-                <motion.span
-                  key={index}
-                  initial={{ filter: "blur(10px)", opacity: 0, y: 5 }}
-                  animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.2,
-                    ease: "easeInOut",
-                    delay: 0.02 * index,
-                  }}
-                  className="inline-block"
-                >
-                  {word}&nbsp;
-                </motion.span>
-              ))}
+            <motion.p
+              className="text-sm text-gray-300 leading-relaxed text-center text-justify tracking-normal leading-relaxed"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+              {testimonials[active].quote}
             </motion.p>
           </motion.div>
 
@@ -207,7 +199,7 @@ export const AnimatedTestimonials = ({
       <div className="hidden md:block">
         <div className="relative grid grid-cols-1 md:grid-cols-2 gap-20">
           <div>
-            <div className="relative h-80 w-full">
+            <div className="relative aspect-square w-full max-w-sm mx-auto">
               <AnimatePresence>
                 {testimonials.map((testimonial, index) => (
                   <motion.div
@@ -244,9 +236,10 @@ export const AnimatedTestimonials = ({
                       <Image
                         src={testimonial.src}
                         alt={testimonial.name}
-                        width={400}
-                        height={400}
+                        width={240}
+                        height={240}
                         draggable={false}
+                        loading="lazy"
                         className="h-full w-full rounded-3xl object-cover object-center"
                       />
                     ) : (
@@ -288,30 +281,13 @@ export const AnimatedTestimonials = ({
               <p className="text-sm text-white">
                 {testimonials[active].designation}
               </p>
-              <motion.p className="text-base text-gray-300 mt-4 mb-8">
-                {testimonials[active].quote.split(" ").map((word, index) => (
-                  <motion.span
-                    key={index}
-                    initial={{
-                      filter: "blur(10px)",
-                      opacity: 0,
-                      y: 5,
-                    }}
-                    animate={{
-                      filter: "blur(0px)",
-                      opacity: 1,
-                      y: 0,
-                    }}
-                    transition={{
-                      duration: 0.2,
-                      ease: "easeInOut",
-                      delay: 0.02 * index,
-                    }}
-                    className="inline-block"
-                  >
-                    {word}&nbsp;
-                  </motion.span>
-                ))}
+              <motion.p
+                className="text-base text-gray-300 mt-4 mb-8"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                {testimonials[active].quote}
               </motion.p>
             </motion.div>
             <div className="flex gap-4 pt-12 md:pt-0 justify-center">

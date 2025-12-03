@@ -100,6 +100,7 @@ export interface Top10Ad {
   match_score: string
   uniqueness: string
   platforms: string
+  top_platform?: string
   uploaded_on: string
   weighted_rank: number
   user_id: number

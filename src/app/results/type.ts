@@ -5,6 +5,7 @@ export interface AdCopy {
 }
 
 export interface ApiResponse {
+  modernity_score: any;
   targeting_compare_json: any;
   suggested_interests: any;
   target_match_score: any;
@@ -17,8 +18,17 @@ export interface ApiResponse {
   competitor_uniqueness_text: string;
   suggested_test_budget_in_usd: string;
   suggested_test_duration_days: any;
+  estimated_cpl_usd?: string;
+  cost_for_10k_reach_usd?: string;
   top_3_audience: string[];
   spend_recommendation_strategy_tip: string;
+  optimal_spend_distribution?: {
+    facebook?: string;
+    linkedin?: string;
+    instagram?: string;
+    twitter_x?: string;
+    [key: string]: string | undefined;
+  };
   ad_id: number;
   title: string;
   ad_type: string;
@@ -107,6 +117,9 @@ export interface ApiResponse {
   readability_clarity_meter: number;
   competitor_uniqueness_meter: number;
   traffic_efficiency_index: number;
+  quick_compliance_score: number;
+  quick_compliance_verdict: string;
+  quick_compliance_summary: string;
   created_date: string;
   ad_copies: Array<{
     platform: string;
@@ -120,4 +133,5 @@ export interface ApiResponse {
     short_caption: string;
   }>;
   "10_trending_tags_relatedto_ad": string[];
+  heatmapstatus: number;
 }

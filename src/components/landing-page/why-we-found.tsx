@@ -61,14 +61,19 @@ export default function WhyWeFoundSection() {
                     },
                 }}
             >
-                {features.map((feature, index) => (
+                {features.map((feature, index) => {
+                    // Use deterministic rotation based on index to prevent hydration mismatch
+                    // This creates variation while being consistent between server and client
+                    const rotation = ((index * 17) % 30) - 15; // Deterministic rotation between -15 and 15
+                    
+                    return (
                     <motion.div
                         key={feature}
                         variants={{
                             hidden: {
                                 y: -200,
                                 opacity: 0,
-                                rotate: Math.random() * 30 - 15,
+                                rotate: rotation,
                             },
                             visible: {
                                 y: 0,
@@ -86,12 +91,13 @@ export default function WhyWeFoundSection() {
                             position: "relative",
                         }}
                     >
-                        <div className="bg-gradient-to-br from-[#0b0b0b] via-[#121212] to-[#1a1a1a] rounded-3xl px-4 py-2 md:px-6 md:py-3 flex items-center text-white text-base md:text-lg font-normal leading-tight">
+                        <div className="bg-gradient-to-br from-[#0b0b0b] via-[#121212] to-[#1a1a1a] rounded-3xl px-4 py-2 md:px-6 md:py-3 flex items-center text-white text-xs sm:text-sm md:text-lg font-normal leading-tight">
                             <span className="mr-2">{feature}</span>
                         </div>
                         <span className="absolute inset-0 rounded-3xl bg-gradient-to-r from-primary/10 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 blur-[2px] transition-opacity duration-700" />
                     </motion.div>
-                ))}
+                    );
+                })}
             </motion.div>
         </section>
     );

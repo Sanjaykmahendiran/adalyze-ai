@@ -59,8 +59,20 @@ export default function EmailConfirmationPage() {
                     <a
                         href="mailto:support@adalyze.app"
                         className="text-[#db4900] hover:underline break-all"
+                        onClick={(e) => {
+                            // Additional protection: decode on click (base64 encoded mailto link)
+                            e.preventDefault();
+                            window.location.href = atob('bWFpbHRvOnN1cHBvcnRAYWRhbHl6ZS5hcHA=');
+                        }}
+                        onMouseEnter={(e) => {
+                            // Decode email on hover for better UX
+                            const link = e.currentTarget;
+                            if (link.textContent && link.textContent.includes('@')) {
+                                link.textContent = atob('c3VwcG9ydEBhZGFseXplLmFwcA==');
+                            }
+                        }}
                     >
-                        support@adalyze.app
+                        <span className="[unicode-bidi:bidi-override;direction:rtl]">ppa.ezylada@tropus</span>
                     </a>
                 </p>
             </div>

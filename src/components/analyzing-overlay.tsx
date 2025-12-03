@@ -59,7 +59,7 @@ export function AnalyzingOverlay() {
         </div>
 
         {/* Fun Fact Card */}
-        <div className="bg-[#121212] rounded-2xl border border-gray-800 p-6 shadow-2xl max-w-lg">
+        <div className="bg-[#121212] rounded-2xl border border-[#171717] p-6 shadow-2xl max-w-lg">
           <h3 className="mb-3 text-sm font-semibold text-primary uppercase tracking-wide">Did you know?</h3>
           <p className="text-gray-300 leading-relaxed">{funFacts[factIndex]}</p>
         </div>

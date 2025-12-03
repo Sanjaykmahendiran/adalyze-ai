@@ -134,10 +134,10 @@ export default function CaseStudySection({ category }: { category: string }) {
                                     }}
                                 >
                                     {/* Banner */}
-                                    <div className="h-40 bg-[#2b2b2b] relative flex items-center justify-center shine-effect">
-                                        {caseStudy.banner_image_url ? (
+                                    <div className="aspect-[16/9] bg-[#2b2b2b] relative flex items-center justify-center shine-effect">
+                                        {caseStudy.banner_image_url_mobile || caseStudy.banner_image_url ? (
                                             <Image
-                                                src={caseStudy.banner_image_url}
+                                                src={caseStudy.banner_image_url_mobile || caseStudy.banner_image_url}
                                                 alt={caseStudy.title}
                                                 fill
                                                 className="object-cover"
@@ -221,7 +221,7 @@ export default function CaseStudySection({ category }: { category: string }) {
                         }}
                     >
                         {/* Banner */}
-                        <div className="h-40 bg-[#2b2b2b] relative flex items-center justify-center shine-effect">
+                        <div className="aspect-[16/9] bg-[#2b2b2b] relative flex items-center justify-center shine-effect">
                             {caseStudy.banner_image_url ? (
                                 <Image
                                     src={caseStudy.banner_image_url}

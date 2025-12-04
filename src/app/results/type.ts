@@ -114,6 +114,8 @@ export interface ApiResponse {
   go_no_go: string;
   ad_fatigue_score: string[];
   best_day_time_to_post: string;
+  campaign_schedule_recommendation: string;
+  campaign_objective_recommendation: string;
   readability_clarity_meter: number;
   competitor_uniqueness_meter: number;
   traffic_efficiency_index: number;
@@ -134,4 +136,6 @@ export interface ApiResponse {
   }>;
   "10_trending_tags_relatedto_ad": string[];
   heatmapstatus: number;
+  recommended_run_days: string;
+  optimal_ad_schedule: string;
 }

@@ -2474,7 +2474,7 @@ export default function ResultsPage() {
                 </div>
               </div>
 
-              {/* Readability, Best Days & Time, Uniqueness, Ad Fatigue arranged by rows */}
+              {/* Readability, Ad Run Schedule, Uniqueness, Ad Fatigue arranged by rows */}
               <div className="lg:col-span-4 lg:flex lg:flex-col lg:h-full">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:h-full">
                   {/* Row 1 - Col 1: Readability (hidden on small to preserve previous behavior) */}
@@ -2519,7 +2519,7 @@ export default function ResultsPage() {
                     </div>
                   </div>
 
-                  {/* Row 1 - Col 2: Best Days & Time */}
+                  {/* Row 1 - Col 2: Ad Run Schedule */}
                   <div>
                     <div
                       className="bg-black px-4 py-4 rounded-3xl sm:rounded-4xl h-full hover:scale-[1.01] transition-all duration-300"
@@ -2532,66 +2532,92 @@ export default function ResultsPage() {
                       }}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-white font-semibold text-xl">Best Posting Time</h3>
+                        <h3 className="text-white font-semibold text-xl">campaign Run Schedule</h3>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-help flex-shrink-0" />
                           </TooltipTrigger>
                           <TooltipContent className="w-50 bg-[#2b2b2b]">
                             <p>
-                              AI-analyzed optimal timing for posting your ad based on your target
-                              audience's online behavior patterns, platform algorithms, and
-                              industry best practices to maximize reach and engagement.
+                              AI-recommended days and schedule pattern for running your ads based on
+                              audience behavior, platform delivery patterns, and best practices to
+                              keep performance consistent over time.
                             </p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
 
-                      <p className="text-white/50 text-sm mb-4">
-                        Best days and times to post your ads.
+                      <p className="text-white/50 text-sm mb-4">  
+                        Campaign run schedule recommendations.
                       </p>
 
-                      {/* ✅ Days & Times Logic */}
+                      {/* ✅ Ad Run Schedule Logic (using campaign_schedule_recommendation JSON) */}
                       {(() => {
-                        let text = apiData?.best_day_time_to_post || "";
+                        const raw = (apiData as any)?.campaign_schedule_recommendation;
+                        let schedule: any = null;
 
-                        let dayPart = "";
-                        let timePart = "";
+                        try {
+                          if (raw) {
+                            const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+                            schedule = Array.isArray(parsed) ? parsed[0] : parsed;
+                          }
+                        } catch {
+                          schedule = null;
+                        }
 
-                        if (text.includes(",")) {
-                          // Format: "Monday, 10 AM - 2 PM"
-                          [dayPart, timePart] = text.split(",");
-                        } else if (text.includes("between")) {
-                          // Format: "Weekdays between 10 AM - 2 PM"
-                          const [days, times] = text.split("between");
-                          dayPart = days.trim();
-                          timePart = times.trim();
-                        } else {
-                          // Only one string, no comma or between
-                          dayPart = text.trim();
+                        const budgetType = schedule?.budget_type_recommendation || "";
+                        const runDays = schedule?.recommended_run_days || "";
+                        const runTime = schedule?.recommended_run_time || "";
+
+                        if (!schedule) {
+                          return (
+                            <p className="text-sm text-white/60">
+                              No campaign schedule recommendation available.
+                            </p>
+                          );
                         }
 
                         return (
-                          <div className="flex flex-row items-start sm:items-center gap-6">
-                            {/* Days */}
+                          <div className="flex flex-wrap items-center justify-between">
+                            {/* Budget Type */}
                             <div>
-                              <h4 className="text-white text-sm mb-2 font-medium">Days</h4>
+                              <h4 className="text-white text-sm mb-2 font-medium">Budget Type</h4>
                               <div className="flex flex-wrap gap-2 max-w-full overflow-hidden">
-                                {dayPart && (
-                                  <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-xs whitespace-nowrap">
-                                    {dayPart}
+                                {budgetType ? (
+                                  <Badge className="bg-purple-600/20 text-purple-300 border-purple-600/40 text-xs whitespace-nowrap">
+                                    {budgetType}
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-purple-600/20 text-purple-300 border-purple-600/40 text-xs whitespace-nowrap">
+                                    ---
                                   </Badge>
                                 )}
                               </div>
                             </div>
 
-                            {/* Times */}
+                            {/* Run Days */}
                             <div>
-                              <h4 className="text-white text-sm mb-2 font-medium">Times</h4>
+                              <h4 className="text-white text-sm mb-2 font-medium">Run Days</h4>
                               <div className="flex flex-wrap gap-2 max-w-full overflow-hidden">
-                                {timePart ? (
+                                {runDays ? (
+                                  <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-xs whitespace-nowrap">
+                                    {runDays}
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-xs whitespace-nowrap">
+                                    ---
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Run Time */}
+                            <div>
+                              <h4 className="text-white text-sm mb-2 font-medium">Run Time</h4>
+                              <div className="flex flex-wrap gap-2 max-w-full overflow-hidden">
+                                {runTime ? (
                                   <Badge className="bg-green-600/20 text-green-400 border-green-600/30 text-xs whitespace-nowrap">
-                                    {timePart}
+                                    {runTime}
                                   </Badge>
                                 ) : (
                                   <Badge className="bg-green-600/20 text-green-400 border-green-600/30 text-xs whitespace-nowrap">
@@ -3389,117 +3415,108 @@ export default function ResultsPage() {
                 )}
               </div>
 
-              {/* Platforms - Combined Card */}
+              {/* Campaign Objective Recommendation Card */}
               <div
-                className="bg-black  rounded-3xl sm:rounded-4xl shadow-lg p-4 sm:p-6 shadow-white/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
-                style={{ transition: "all 0.3s", maxHeight: "300px" }}
+                className="bg-black rounded-3xl sm:rounded-4xl shadow-lg p-5 sm:p-6 hover:scale-[1.01] transition-all duration-300"
                 onMouseEnter={e => {
-                  e.currentTarget.style.boxShadow = "0 0 8px 2px #DB4900";
+                  e.currentTarget.style.boxShadow = "0 0 12px 3px #DB4900";
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.05)";
+                  e.currentTarget.style.boxShadow = "0 0 10px rgba(255,255,255,0.06)";
                 }}
               >
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-2">
-                  <MonitorCheckIcon className="text-primary h-5 w-5" />
-                  <h3 className="text-lg sm:text-xl font-semibold text-white">Platforms</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <MonitorCheckIcon className="text-primary h-5 w-5" />
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">
+                      Campaign Objective Recommendation
+                    </h3>
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-5 h-5 text-gray-400 hover:text-white transition cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-[#2b2b2b] max-w-xs text-white p-3 rounded-xl border border-white/10 shadow-xl">
+                      <p className="text-sm leading-relaxed">
+                        AI-generated suggestions for the best campaign objective to achieve your marketing goals.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
+                {(() => {
+                  const raw = (apiData as any)?.campaign_objective_recommendation;
+                  let parsed: any = null;
 
-                <div className="space-y-2  rounded-2xl sm:rounded-3xl p-4">
-                  {/* Suitable For */}
-                  {Array.isArray((apiData as any)?.platform_suits) && (apiData as any).platform_suits.length > 0 && (
-                    <div>
-                      <div className="space-y-2 ">
-                        {(apiData as any).platform_suits.map((item: any, index: number) => (
-                          <Tooltip key={index}>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-4 cursor-pointer">
-                                {/* Progress Bar Container */}
-                                <div className="flex-1 bg-[#2b2b2b] h-8 rounded-full relative overflow-hidden max-w-[400px]">
-                                  {/* Progress Fill */}
-                                  <div
-                                    className="h-full bg-[#9ad066] rounded-full transition-all duration-700 flex items-center pl-3"
-                                    style={{ width: `${item.suitable_score}%` }}
-                                  >
-                                    {/* Platform Name INSIDE */}
-                                    <span className="text-green-900 font-semibold text-sm">
-                                      {item.platform}
-                                    </span>
-                                  </div>
-                                </div>
+                  try {
+                    parsed = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
+                  } catch {
+                    parsed = null;
+                  }
 
-                                {/* Percentage */}
-                                <span className="text-[#9ad066] font-semibold text-xl">
-                                  {item.suitable_score}%
-                                </span>
-                              </div>
-                            </TooltipTrigger>
-                            {item.explanation && (
-                              <TooltipContent
-                                className="bg-[#2b2b2b] text-white max-w-xs sm:max-w-md p-3 text-xs border border-[#3d3d3d]"
-                                side="top"
-                              >
-                                <p className="font-semibold text-green-400 mb-1">{item.platform} - {item.suitable_score}%</p>
-                                <p>{item.explanation}</p>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        ))}
+                  const data = Array.isArray(parsed) ? parsed[0] : parsed;
+
+                  if (!data) {
+                    return (
+                      <p className="text-center text-white/60 py-4 text-sm">
+                        No campaign objective recommendation available.
+                      </p>
+                    );
+                  }
+
+                  const scoreItems = [
+                    { label: "Awareness", value: data.awareness_score },
+                    { label: "Consideration", value: data.consideration_score },
+                    { label: "Conversion", value: data.conversion_score },
+                  ];
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Suggested Objective */}
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-1 inline-flex items-center gap-1.5 mb-3">
+                        <span className="text-sm text-white/80">Suggested:</span>
+                        <span className="text-primary font-bold text-sm sm:text-base">
+                          {data.suggested_campaign_objective}
+                        </span>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Not Suitable For */}
-                  {Array.isArray((apiData as any)?.platform_notsuits) && (apiData as any).platform_notsuits.length > 0 && (
-                    <div>
-                      <div className="space-y-2 ">
-                        {(apiData as any).platform_notsuits.map((item: any, index: number) => (
-                          <Tooltip key={index}>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-4 cursor-pointer">
-                                {/* Progress Bar Container */}
-                                <div className="flex-1 bg-[#2b2b2b] h-8 rounded-full relative overflow-hidden max-w-[400px]">
-
-                                  {/* Progress Fill */}
-                                  <div
-                                    className="h-full bg-[#d87a7a] rounded-full transition-all duration-700 flex items-center pl-3"
-                                    style={{ width: `${item.notsuitable_score}%` }}
-                                  >
-                                    {/* Platform Name INSIDE */}
-                                    <span className="text-red-900 font-semibold text-sm">
-                                      {item.platform}
-                                    </span>
+                      {/* Scores */}
+                      <div className="space-y-3 pt-2">
+                        {scoreItems.map(
+                          (item) =>
+                            typeof item.value === "number" && (
+                              <Tooltip key={item.label}>
+                                <TooltipTrigger asChild>
+                                  <div className="w-full h-6 bg-[#262626] rounded-full overflow-hidden cursor-pointer">
+                                    <div
+                                      className="h-full bg-primary rounded-full transition-all duration-500 flex items-center"
+                                      style={{
+                                        width: `${Math.max(0, Math.min(100, item.value))}%`,
+                                      }}
+                                    >
+                                      <div className="flex w-full items-center justify-between px-3 text-[10px] sm:text-xs font-medium text-black/80">
+                                        <span className="text-sm text-white/80">{item.label}</span>
+                                        <span className="text-sm text-white/80">{item.value}%</span>
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                                {/* Percentage */}
-                                <span className="text-[#d87a7a] font-semibold text-xl">
-                                  {item.notsuitable_score}%
-                                </span>
-                              </div>
-                            </TooltipTrigger>
-                            {item.explanation && (
-                              <TooltipContent
-                                className="bg-[#2b2b2b] text-white max-w-xs sm:max-w-md p-3 text-xs border border-[#3d3d3d]"
-                                side="top"
-                              >
-                                <p className="font-semibold text-red-400 mb-1">{item.platform} - {item.notsuitable_score}%</p>
-                                <p>{item.explanation}</p>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        ))}
+                                </TooltipTrigger>
+                                {data?.objective_brief && (
+                                  <TooltipContent className="bg-[#2b2b2b] text-white max-w-xs text-xs border border-[#3d3d3d]">
+                                    <p className="font-semibold mb-1">Summary</p>
+                                    <p>{data.objective_brief}</p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            )
+                        )}
                       </div>
-                    </div>
-                  )}
 
-                  {/* No Data */}
-                  {(!Array.isArray((apiData as any)?.platform_suits) || (apiData as any).platform_suits.length === 0) &&
-                    (!Array.isArray((apiData as any)?.platform_notsuits) || (apiData as any).platform_notsuits.length === 0) && (
-                      <p className="text-center text-white/60 py-8 text-sm">No platform data available</p>
-                    )}
-                </div>
+                    </div>
+                  );
+                })()}
               </div>
+
 
             </div>
 

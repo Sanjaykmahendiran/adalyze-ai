@@ -50,50 +50,49 @@
   --font-poppins: 'Poppins', sans-serif;
   --radius: 0.5rem;
 
-  /* Light theme colors */
-  --background: #171717;
-  --foreground: #ffffff;
-  --card: #121212;
-  --card-foreground: #ffffff;
-  --popover: #121212;
-  --popover-foreground: #ffffff;
-  --primary: #db4900;
+  /* Light theme colors - inversions of dark theme */
+  --background: #f5f5f5; /* Page background */
+  --foreground: #111827; /* Main text color (gray-900) */
+  --card: #ffffff; /* Card background (white) */
+  --card-foreground: #111827; /* Card text (gray-900) */
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #db4900; /* Keep primary unchanged */
   --primary-foreground: #ffffff;
-  --secondary: #2b2b2b;
-  --secondary-foreground: hsl(222.2 47.4% 11.2%);
-  --muted: #333333;
-  --muted-foreground: #bbbbbb;
-  --accent: #3b3b3b;
-  --accent-foreground: #ffffff;
+  --secondary: #f3f4f6; /* Secondary background (gray-100, was #171717 in dark) */
+  --secondary-foreground: #111827;
+  --muted: #e5e7eb; /* Muted background (gray-200, was #1f1f1f in dark) */
+  --muted-foreground: #6b7280; /* Muted text (gray-500, was white/50 in dark) */
+  --accent: #d1d5db; /* Accent/border (gray-300, was #3d3d3d in dark) */
+  --accent-foreground: #111827;
   --destructive: #ff4444;
   --destructive-foreground: #ffffff;
-  --border: #2b2b2b;
-  --input: #121212;
+  --border: #d1d5db; /* Border color (gray-300, was #3d3d3d in dark) */
+  --input: #ffffff;
   --ring: #db4900;
-
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: hsl(210 40% 98%);
-  --card: #ffffff;
-  --card-foreground: hsl(210 40% 98%);
-  --popover: #ffffff;
-  --popover-foreground: hsl(210 40% 98%);
-  --primary: #db4900;
-  --primary-foreground: hsl(210 40% 98%);
-  --secondary: hsl(217.2 32.6% 17.5%);
-  --secondary-foreground: hsl(210 40% 98%);
-  --muted: hsl(217.2 32.6% 17.5%);
-  --muted-foreground: hsl(215 20.2% 65.1%);
-  --accent: hsl(217.2 32.6% 17.5%);
-  --accent-foreground: hsl(210 40% 98%);
-  --destructive: hsl(0 62.8% 30.6%);
-  --destructive-foreground: hsl(210 40% 98%);
-  --border: hsl(217.2 32.6% 17.5%);
-  --input: hsl(217.2 32.6% 17.5%);
-  --ring: hsl(142.1 61.1% 50.6%);
-
+  /* Dark theme colors - based on current dashboard colors */
+  --background: #171717; /* Page background (was #171717) */
+  --foreground: #ffffff; /* Main text color (white) */
+  --card: #000000; /* Card background (black) */
+  --card-foreground: #ffffff; /* Card text (white) */
+  --popover: #121212;
+  --popover-foreground: #ffffff;
+  --primary: #db4900; /* Keep primary unchanged */
+  --primary-foreground: #ffffff;
+  --secondary: #171717; /* Secondary background (was #171717) */
+  --secondary-foreground: #ffffff;
+  --muted: #1f1f1f; /* Muted/hover background (was #1f1f1f) */
+  --muted-foreground: rgba(255, 255, 255, 0.5); /* Muted text (white/50) */
+  --accent: #3d3d3d; /* Accent/border (was #3d3d3d) */
+  --accent-foreground: #ffffff;
+  --destructive: #ff4444;
+  --destructive-foreground: #ffffff;
+  --border: #3d3d3d; /* Border color (was #3d3d3d) */
+  --input: #121212;
+  --ring: #db4900;
 }
 
 @layer base {

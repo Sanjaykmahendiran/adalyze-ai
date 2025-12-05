@@ -222,7 +222,7 @@ export default function Dashboard() {
     return (
       <div
         key={`${listType}-${ad.ad_id}-${index}`}
-        className="bg-black border border-[#3d3d3d] rounded-lg overflow-hidden hover:shadow-xl hover:shadow-[#db4900]/10 group hover:scale-105 shadow-lg shadow-white/5 transition-all duration-300"
+        className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-xl hover:shadow-primary/10 group hover:scale-105 shadow-lg shadow-black/5 dark:shadow-white/5 transition-all duration-300"
       >
         <div className="relative">
           <img
@@ -236,7 +236,7 @@ export default function Dashboard() {
 
           {/* Position Badge */}
           <div className="absolute top-2 left-2">
-            <Badge className="bg-[#db4900] text-white text-sm font-bold px-2 py-1 rounded ">
+            <Badge className="bg-primary text-foreground text-sm font-bold px-2 py-1 rounded ">
               #{index + 1}
             </Badge>
           </div>
@@ -244,7 +244,7 @@ export default function Dashboard() {
           {/* Weighed Rank Badge */}
           {ad.weighted_rank > 0 && (
             <div className="absolute top-2 right-2">
-              <Badge className="bg-white text-lg font-semibold text-primary shadow-xl shadow-[#db4900]/20">
+              <Badge className="bg-white text-lg font-semibold text-primary shadow-xl shadow-primary/20">
                 {ad.weighted_rank}
               </Badge>
             </div>
@@ -254,7 +254,7 @@ export default function Dashboard() {
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between mb-2">
             <h3
-              className="font-medium text-sm truncate text-white"
+              className="font-medium text-sm truncate text-foreground"
               title={ad.ads_name || "Untitled Ad"}
               style={{ maxWidth: "70%" }}
             >
@@ -269,7 +269,7 @@ export default function Dashboard() {
                 return (
                   <Icon
                     key={`${ad.ad_id}-platform-${idx}-${platform}`}
-                    className="w-3 h-3 sm:w-4 sm:h-4 text-[#db4900]"
+                    className="w-3 h-3 sm:w-4 sm:h-4 text-primary"
                     aria-label={platform}
                   />
                 );
@@ -281,7 +281,7 @@ export default function Dashboard() {
             <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 hover:bg-blue-600/30 text-xs">
               {ad.ads_type}
             </Badge>
-            <p className="text-xs text-gray-300">{dateFormatted}</p>
+            <p className="text-xs text-muted-foreground">{dateFormatted}</p>
           </div>
 
           <div className="flex gap-2 items-center">
@@ -290,7 +290,7 @@ export default function Dashboard() {
                 onClick={() => handleTop10AdViewReport(String(ad.ad_id), String(ad.user_id))}
                 size="sm"
                 variant="outline"
-                className="w-full text-[#db4900] border-[#db4900] hover:bg-[#db4900] hover:text-white transition-colors text-xs sm:text-sm"
+                className="w-full text-primary border-primary hover:bg-primary hover:text-foreground transition-colors text-xs sm:text-sm"
               >
                 <Eye className="w-3 h-3 mr-1" />
                 View Report
@@ -471,12 +471,12 @@ export default function Dashboard() {
     const showLimitMessage = isAdsLimitZero && !isPlanExpiredStatus
 
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-[#171717] rounded-2xl max-w-2xl w-full p-4 sm:p-6 relative flex flex-col sm:flex-row gap-4 sm:gap-6 mx-4">
+      <div className="fixed inset-0 bg-black/70 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-secondary rounded-2xl max-w-2xl w-full p-4 sm:p-6 relative flex flex-col sm:flex-row gap-4 sm:gap-6 mx-4">
           {/* Close button */}
           <button
             onClick={() => setShowLimitPopup(false)}
-            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors cursor-pointer"
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -494,10 +494,10 @@ export default function Dashboard() {
           <div className="flex-1 space-y-3 sm:space-y-4">
             <div className="flex items-start space-x-3">
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-[#db4900]">
+                <h3 className="text-lg sm:text-xl font-bold text-primary">
                   {showExpiredMessage ? "Plan Expired" : "Ads Limit Reached"}
                 </h3>
-                <p className="text-sm text-gray-300">
+                <p className="text-sm text-muted-foreground">
                   {showExpiredMessage ? "Your subscription has ended" : "No more ads remaining"}
                 </p>
               </div>
@@ -510,7 +510,7 @@ export default function Dashboard() {
               }
             </p>
 
-            <ul className="text-sm text-gray-300 space-y-1 sm:space-y-2 list-disc list-inside">
+            <ul className="text-sm text-muted-foreground space-y-1 sm:space-y-2 list-disc list-inside">
               <li>Unlimited ad uploads</li>
               <li>Advanced analytics</li>
               <li>A/B testing features</li>
@@ -521,13 +521,13 @@ export default function Dashboard() {
               <Button
                 onClick={() => setShowLimitPopup(false)}
                 variant="outline"
-                className="text-gray-300 hover:text-white hover:border-white transition-all duration-300"
+                className="text-muted-foreground hover:text-foreground hover:border-foreground transition-all duration-300"
               >
                 Maybe Later
               </Button>
               <Button
                 onClick={handleUpgradeToPro}
-                className="bg-[#db4900] hover:bg-[#ff5722] text-white font-semibold flex-1 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30"
+                className="bg-primary hover:bg-[#ff5722] text-foreground font-semibold flex-1 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30"
               >
                 <Crown className="w-4 h-4 mr-2" />
                 {showExpiredMessage ? "Renew Subscription" : "Add Credits"}
@@ -541,19 +541,19 @@ export default function Dashboard() {
 
   const AllGlobalInsightsPopup = () => {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-[#171717] rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden p-4 sm:p-6 relative mx-4">
+      <div className="fixed inset-0 bg-black/70 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-secondary rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden p-4 sm:p-6 relative mx-4">
           {/* Close button */}
           <button
             onClick={() => setShowAllGlobalInsightsPopup(false)}
-            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors cursor-pointer z-10"
+            className="absolute top-4 right-4 text-foreground/50 hover:text-foreground transition-colors cursor-pointer z-10"
           >
             <X className="w-5 h-5" />
           </button>
 
           {/* Header */}
           <div className="mb-6">
-            <h3 className="text-xl sm:text-2xl font-bold text-[#db4900] mb-2">
+            <h3 className="text-xl sm:text-2xl font-bold text-primary mb-2">
               All Global Insights
             </h3>
             <p className="text-sm text-gray-300">
@@ -568,16 +568,16 @@ export default function Dashboard() {
                 return (
                   <div
                     key={`insight-popup-${insight.id || index}-${index}`}
-                    className="border-l-4 border-[#db4900] bg-black pl-4 pr-3 py-3 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.01]"
+                    className="border-l-4 border-primary bg-card pl-4 pr-3 py-3 rounded-md space-y-2 transition-all duration-300 hover:bg-muted hover:border-[#ff5722] hover:scale-[1.01]"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-white text-sm flex-1">{insight.content}</p>
+                      <p className="text-foreground text-sm flex-1">{insight.content}</p>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-white/50 text-xs">
+                      <p className="text-muted-foreground text-xs">
                         {insight.source}
                       </p>
-                      <p className="text-white/50 text-xs">
+                      <p className="text-muted-foreground text-xs">
                         Global Insight #{insight.id}
                       </p>
                     </div>
@@ -585,10 +585,10 @@ export default function Dashboard() {
                 );
               })
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-white/80">
+              <div className="flex flex-col items-center justify-center py-12 text-foreground/80">
                 <MessageSquare className="w-16 h-16 text-primary mb-4" />
                 <p className="text-lg mb-4 text-center">No global insights available</p>
-                <p className="text-sm text-white/60 text-center mb-4">
+                <p className="text-sm text-foreground/60 text-center mb-4">
                   Upload your first ad to get global insights
                 </p>
                 <Button
@@ -596,7 +596,7 @@ export default function Dashboard() {
                     setShowAllGlobalInsightsPopup(false)
                     handleUploadClick()
                   }}
-                  className="bg-[#db4900] hover:bg-[#ff5722] text-white px-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
+                  className="bg-primary hover:bg-[#ff5722] text-foreground px-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 hover:scale-105"
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Ad
@@ -616,18 +616,18 @@ export default function Dashboard() {
 
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-        <div className="bg-black rounded-3xl max-w-2xl w-full p-6 sm:p-8 relative border-2 border-[#db4900]/40 shadow-2xl shadow-[#db4900]/30 mx-4">
+        <div className="bg-card rounded-3xl max-w-2xl w-full p-6 sm:p-8 relative border-2 border-primary/40 shadow-2xl shadow-primary/30 mx-4">
           {/* Confetti/Celebration Background Effect */}
           <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-            <div className="absolute -top-12 -left-12 w-24 h-24 bg-[#db4900]/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -top-12 -left-12 w-24 h-24 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
             <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-[#ff5722]/20 rounded-full blur-3xl animate-pulse delay-150"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#db4900]/10 rounded-full blur-3xl"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
           </div>
 
           {/* Close button */}
           <button
             onClick={() => setShowUpgradePopup(false)}
-            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors z-10"
+            className="absolute top-4 right-4 text-foreground/50 hover:text-foreground transition-colors z-10"
           >
             <X className="w-6 h-6" />
           </button>
@@ -636,32 +636,32 @@ export default function Dashboard() {
 
             {/* Title */}
             <div className="text-center mb-6">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2 bg-gradient-to-r from-[#db4900] via-[#ff5722] to-[#db4900] bg-clip-text text-transparent animate-gradient">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2 bg-gradient-to-r from-primary via-[#ff5722] to-primary bg-clip-text text-transparent animate-gradient">
                 Congratulations!
               </h2>
-              <p className="text-lg sm:text-xl text-white/90 font-semibold">
+              <p className="text-lg sm:text-xl text-foreground/90 font-semibold">
                 You've upgraded to {packageName} Plan
               </p>
             </div>
 
             {/* Features Unlocked Section */}
-            <div className="bg-black/40 rounded-2xl p-4 sm:p-6 mb-6 border border-[#db4900]/30">
-              <h3 className="text-lg sm:text-xl font-bold text-[#db4900] mb-4 text-center">
+            <div className="bg-card/40 rounded-2xl p-4 sm:p-6 mb-6 border border-primary/30">
+              <h3 className="text-lg sm:text-xl font-bold text-primary mb-4 text-center">
                 🔓 New Features Unlocked
               </h3>
 
               <div className="space-y-4">
                 {hasTop10Ads && (
-                  <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] rounded-xl p-4 border-l-4 border-[#db4900] transform hover:scale-105 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-muted to-muted/80 rounded-xl p-4 border-l-4 border-primary transform hover:scale-105 transition-all duration-300">
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-10 h-10 bg-[#db4900]/20 rounded-full flex items-center justify-center mt-1">
-                        <Eye className="w-5 h-5 text-[#db4900]" />
+                      <div className="flex-shrink-0 w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mt-1">
+                        <Eye className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-white font-semibold text-base sm:text-lg mb-1">
+                        <h4 className="text-foreground font-semibold text-base sm:text-lg mb-1">
                           Top 10 Ads Access
                         </h4>
-                        <p className="text-gray-300 text-sm">
+                        <p className="text-muted-foreground text-sm">
                           View the highest performing ads on adalyze AI. Learn from the best and get inspired for your campaigns.
                         </p>
                       </div>
@@ -670,16 +670,16 @@ export default function Dashboard() {
                 )}
 
                 {hasTrendingAds && (
-                  <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] rounded-xl p-4 border-l-4 border-[#ff5722] transform hover:scale-105 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-muted to-muted/80 rounded-xl p-4 border-l-4 border-[#ff5722] transform hover:scale-105 transition-all duration-300">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-10 h-10 bg-[#ff5722]/20 rounded-full flex items-center justify-center mt-1">
                         <MessageSquare className="w-5 h-5 text-[#ff5722]" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-white font-semibold text-base sm:text-lg mb-1">
+                        <h4 className="text-foreground font-semibold text-base sm:text-lg mb-1">
                           Top 10 Trending Ads Access
                         </h4>
-                        <p className="text-gray-300 text-sm">
+                        <p className="text-muted-foreground text-sm">
                           Stay ahead with real-time trending advertisements. Track viral campaigns and market trends.
                         </p>
                       </div>
@@ -691,7 +691,7 @@ export default function Dashboard() {
 
             {/* CTA Section */}
             <div className="text-center space-y-3">
-              <p className="text-gray-300 text-sm">
+              <p className="text-muted-foreground text-sm">
                 Start exploring your new features now!
               </p>
 
@@ -702,7 +702,7 @@ export default function Dashboard() {
                       setShowUpgradePopup(false);
                       router.push('/top10ads');
                     }}
-                    className="bg-[#db4900] hover:bg-[#ff5722] text-white font-semibold px-6 py-4 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
+                    className="bg-primary hover:bg-[#ff5722] text-foreground font-semibold px-6 py-4 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 hover:scale-105"
                   >
                     <Eye className="w-5 h-5 mr-2" />
                     View Top 10 Ads
@@ -715,7 +715,7 @@ export default function Dashboard() {
                       setShowUpgradePopup(false);
                       router.push('/top10trendingads');
                     }}
-                    className="bg-[#ff5722] hover:bg-[#db4900] text-white font-semibold px-6 py-4 transition-all duration-300 hover:shadow-lg hover:shadow-[#ff5722]/30 hover:scale-105"
+                    className="bg-[#ff5722] hover:bg-primary text-foreground font-semibold px-6 py-4 transition-all duration-300 hover:shadow-lg hover:shadow-[#ff5722]/30 hover:scale-105"
                   >
                     <MessageSquare className="w-5 h-5 mr-2" />
                     View Trending Ads
@@ -741,11 +741,11 @@ export default function Dashboard() {
   if (error) {
     return (
       <UserLayout userDetails={userDetails}>
-        <div className="min-h-screen text-white flex items-center justify-center p-4">
+        <div className="min-h-screen text-foreground flex items-center justify-center p-4">
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl font-bold text-red-400 mb-2">Error Loading Dashboard</h2>
-            <p className="text-gray-300 mb-4 text-sm sm:text-base">{error}</p>
-            <Button onClick={() => window.location.reload()} className="bg-[#db4900] hover:bg-[#ff5722] transition-colors duration-300">
+            <p className="text-muted-foreground mb-4 text-sm sm:text-base">{error}</p>
+            <Button onClick={() => window.location.reload()} className="bg-primary hover:bg-[#ff5722] transition-colors duration-300">
               Retry
             </Button>
           </div>
@@ -757,15 +757,15 @@ export default function Dashboard() {
   return (
     <UserLayout userDetails={userDetails}>
       {loading ? <DashboardLoadingSkeleton /> : (
-        <div className="min-h-screen max-w-7xl mx-auto text-white pb-20 sm:pb-5 overflow-x-auto">
+        <div className="min-h-screen max-w-7xl mx-auto  pb-20 sm:pb-5 overflow-x-auto">
           <div className="p-4 sm:p-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
               <div className="flex flex-col items-start gap-4">
                 {/* Greeting */}
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-white/80">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-foreground/80">
                   Hello,{" "}
-                  <span className="text-white">
+                  <span className="text-foreground">
                     {userDetails?.name || "User"}
                   </span>
                 </h1>
@@ -776,7 +776,7 @@ export default function Dashboard() {
 
                     {/* Account Badge + Upgrade Link */}
                     <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center bg-primary border-2 border-primary px-3 py-1 rounded-full hover:bg-[#db4900]/10 transition-all duration-300 group">
+                      <div className="flex items-center bg-primary border-2 border-primary px-3 py-1 rounded-full hover:bg-primary/10 transition-all duration-300 group">
                         <Crown className="w-4 h-4 text-white mr-2 group-hover:text-[#ff5722] transition-colors duration-300" />
                         <span className="text-white text-sm font-medium group-hover:text-[#ff5722] transition-colors duration-300">
                           {accountType === "Pro"
@@ -793,7 +793,7 @@ export default function Dashboard() {
                       ) && (
                           <span
                             onClick={handleUpgradeToPro}
-                            className="text-[#db4900] text-sm font-medium underline cursor-pointer hover:text-[#ff5722] transition-colors duration-300"
+                            className="text-primary text-sm font-medium underline cursor-pointer hover:text-[#ff5722] transition-colors duration-300"
                           >
                             {Number(userDetails?.ads_limit) === 0
                               ? "Add Credits"
@@ -810,7 +810,7 @@ export default function Dashboard() {
                           onValueChange={handleBrandChange}
                           disabled={clientBrandsLoading}
                         >
-                          <SelectTrigger className="w-full sm:w-[180px] bg-black text-white border border-[#171717] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#db4900]">
+                          <SelectTrigger className="w-full sm:w-[180px] bg-card text-foreground border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                             <SelectValue
                               placeholder={
                                 clientBrandsLoading
@@ -851,7 +851,7 @@ export default function Dashboard() {
               <div className="hidden md:flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
                 <Button
                   onClick={handleUploadClick}
-                  className="bg-[#db4900] hover:bg-[#ff5722] text-white px-4 sm:px-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
+                  className="bg-primary hover:bg-[#ff5722] text-white px-4 sm:px-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 hover:scale-105"
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Ad
@@ -873,7 +873,7 @@ export default function Dashboard() {
                       onValueChange={handleBrandChange}
                       disabled={clientBrandsLoading}
                     >
-                      <SelectTrigger className="min-w-[220px] bg-black text-white border border-[#171717] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#db4900]">
+                      <SelectTrigger className="min-w-[220px] bg-card text-foreground border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                         <SelectValue placeholder={clientBrandsLoading ? "Loading..." : (clientBrands.length === 0 ? "No clients" : "Select client")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -927,39 +927,39 @@ export default function Dashboard() {
                 {/* Sidebar Cards (Mobile: Grid 3, Desktop: Single Column) */}
                 <div className="order-1 lg:order-2 grid sm:grid-cols-3 grid-cols-1 gap-2 sm:gap-4 lg:block lg:space-y-6">
                   {/* Best Platform */}
-                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
+                  <div className="bg-card rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20  group">
                     <div className="flex items-center gap-3 h-full">
                       <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                         <img src={BestPlatform.src} alt={dashboardData?.TopPlatform || "Platform"} className="w-full h-full object-contain" />
                       </div>
                       <div>
-                        <p className="text-white/60 text-sm lg:text-lg group-hover:text-white/80 transition-colors duration-300">Best Platform</p>
+                        <p className="text-foreground/60 text-sm lg:text-lg group-hover:text-foreground/80 transition-colors duration-300">Best Platform</p>
                         <p className="text-primary font-semibold text-sm lg:text-lg group-hover:text-[#ff5722] transition-colors duration-300">{dashboardData?.TopPlatform || "Instagram"}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Total A/B Tests */}
-                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
+                  <div className="bg-card rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20  group">
                     <div className="flex items-center gap-3 h-full">
                       <div className="w-16 h-16 lg:w-20 lg:h-20 flex items-center justify-center rounded-full group-hover:scale-110 transition-transform duration-300">
                         <img src={TotalAb.src} alt="A/B Tests" className="w-full h-full object-contain" />
                       </div>
                       <div>
-                        <p className="text-white/60 text-sm lg:text-lg group-hover:text-white/80 transition-colors duration-300">Total A/B Tests</p>
+                        <p className="text-foreground/60 text-sm lg:text-lg group-hover:text-foreground/80 transition-colors duration-300">Total A/B Tests</p>
                         <p className="text-primary font-bold text-lg lg:text-2xl group-hover:text-[#ff5722] transition-colors duration-300">{String(dashboardData?.["A/BTested"] || "0").padStart(2, "0")}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Last Analyzed On */}
-                  <div className="bg-black rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
+                  <div className="bg-card rounded-2xl px-3 py-4 flex items-center lg:h-[calc((100%-3rem)/3)] transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20  group">
                     <div className="flex items-center gap-3 h-full">
                       <div className="w-16 h-16 lg:w-20 lg:h-20 flex items-center justify-center rounded-full group-hover:scale-110 transition-transform duration-300">
                         <img src={LastAnalyzed.src} alt="Calendar" className="w-full h-full object-contain" />
                       </div>
                       <div>
-                        <p className="text-white/60 text-sm lg:text-lg group-hover:text-white/80 transition-colors duration-300">Last Analyzed On</p>
+                        <p className="text-foreground/60 text-sm lg:text-lg group-hover:text-foreground/80 transition-colors duration-300">Last Analyzed On</p>
                         <p className="text-primary font-bold text-sm lg:text-lg group-hover:text-[#ff5722] transition-colors duration-300">
                           {dashboardData?.LastAnalysedOn && dashboardData.LastAnalysedOn !== "-"
                             ? new Date(dashboardData.LastAnalysedOn).toLocaleDateString("en-GB", {
@@ -976,20 +976,20 @@ export default function Dashboard() {
 
                 {/* Recent Ads Section */}
                 <div className="order-2 lg:order-1 lg:col-span-3">
-                  <div className="bg-black rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300">
+                  <div className="bg-card rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300">
                     {/* Header */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between ">
-                        <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white mb-1">Recent Ads</h2>
+                        <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-foreground mb-1">Recent Ads</h2>
                         <Button
                           onClick={handleMyAdsClick}
                           variant="ghost"
-                          className="self-start sm:self-auto text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] transition-all duration-300 text-sm"
+                          className="self-start sm:self-auto text-primary hover:bg-primary/20 hover:text-[#ff5722] transition-all duration-300 text-sm"
                         >
                           View All
                         </Button>
                       </div>
-                      <p className="text-white/50 text-sm">Latest campaigns in adalyze AI</p>
+                      <p className="text-muted-foreground text-sm">Latest campaigns in adalyze AI</p>
                     </div>
 
 
@@ -1014,12 +1014,12 @@ export default function Dashboard() {
                               ))}
                         </>
                       ) : (
-                        <div className="col-span-1 sm:col-span-2 flex flex-col items-center justify-center py-8 sm:py-10 text-white/80">
+                        <div className="col-span-1 sm:col-span-2 flex flex-col items-center justify-center py-8 sm:py-10 text-foreground/80">
                           <LayoutPanelLeft className="w-12 h-12 sm:w-16 sm:h-16 mb-4 text-primary" />
                           <p className="text-base sm:text-lg mb-4">No recent ads found</p>
                           <Button
                             onClick={handleUploadClick}
-                            className="bg-[#db4900] hover:bg-[#ff5722] text-white px-4 sm:px-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
+                            className="bg-primary hover:bg-[#ff5722] text-foreground px-4 sm:px-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 hover:scale-105"
                           >
                             <Upload className="w-4 h-4 mr-2" />
                             Upload Ad
@@ -1035,24 +1035,24 @@ export default function Dashboard() {
               <div className="col-span-full grid grid-cols-1 lg:grid-cols-6 gap-6">
                 {/* Global Insights - takes 2 columns */}
                 <div className="lg:col-span-2 h-full">
-                  <div className="bg-black rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group">
+                  <div className="bg-card rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 group">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-white font-semibold text-lg sm:text-xl transition-colors duration-300">
+                      <h3 className="text-foreground font-semibold text-lg sm:text-xl transition-colors duration-300">
                         Global Insights
                       </h3>
                       {dashboard2Data?.global_insights && dashboard2Data.global_insights.length > 0 && (
                         <Button
                           onClick={() => setShowAllGlobalInsightsPopup(true)}
                           variant="ghost"
-                          className="self-start sm:self-auto text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] transition-all duration-300 text-sm"
+                          className="self-start sm:self-auto text-primary hover:bg-primary/20 hover:text-[#ff5722] transition-all duration-300 text-sm"
                         >
                           View All
                         </Button>
                       )}
                     </div>
 
-                    <p className="text-white/50 text-sm mb-4 transition-colors duration-300">
+                    <p className="text-muted-foreground text-sm mb-4 transition-colors duration-300">
                       Latest global insights for your ads
                     </p>
 
@@ -1063,20 +1063,20 @@ export default function Dashboard() {
                           return (
                             <div
                               key={insight.id}
-                              className="border-l-4 border-[#db4900] bg-[#171717] px-2 py-2 rounded-md space-y-2 transition-all duration-300 hover:bg-[#1f1f1f] hover:border-[#ff5722] hover:scale-[1.02] "
+                              className="border-l-4 border-primary bg-secondary px-2 py-2 rounded-md space-y-2 transition-all duration-300 hover:bg-muted hover:border-[#ff5722] hover:scale-[1.02] "
                             >
-                              <p className="text-white text-sm">{insight.content}</p>
-                              <p className="text-white/50 text-xs">{insight.source}</p>
+                              <p className="text-foreground text-sm">{insight.content}</p>
+                              <p className="text-muted-foreground text-xs">{insight.source}</p>
                             </div>
                           );
                         })
                       ) : (
-                        <div className="flex flex-col items-center justify-center py-8 sm:py-10 text-white/80">
+                        <div className="flex flex-col items-center justify-center py-8 sm:py-10 text-foreground/80">
                           <MessageSquare className="w-14 h-14 sm:w-18 sm:h-18 text-primary mb-4" />
                           <p className="text-base sm:text-lg mb-4 text-center">Upload your 1st AD for Global Insights</p>
                           <Button
                             onClick={handleUploadClick}
-                            className="bg-[#db4900] hover:bg-[#ff5722] text-white px-4 sm:px-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#db4900]/30 hover:scale-105"
+                            className="bg-primary hover:bg-[#ff5722] text-foreground px-4 sm:px-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 hover:scale-105"
                           >
                             <Upload className="w-4 h-4 mr-2" />
                             Upload Ad
@@ -1091,16 +1091,16 @@ export default function Dashboard() {
                 <div className="lg:col-span-2 h-full">
                   <div className="space-y-4 sm:space-y-6 h-full flex flex-col">
                     {/* CTR Average */}
-                    <div className="bg-black px-3 py-3 sm:px-4 sm:py-4 rounded-2xl flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
-                      <h3 className="text-white font-semibold text-lg sm:text-xl mb-1 transition-colors duration-300">
+                    <div className="bg-card px-3 py-3 sm:px-4 sm:py-4 rounded-2xl flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20  group">
+                      <h3 className="text-foreground font-semibold text-lg sm:text-xl mb-1 transition-colors duration-300">
                         CTR Average
                       </h3>
-                      <p className="text-white/50 text-sm mb-3 sm:mb-4 transition-colors duration-300">
+                      <p className="text-muted-foreground text-sm mb-3 sm:mb-4 transition-colors duration-300">
                         Shows how often users click ads.
                       </p>
 
                       <div className="flex items-center justify-between">
-                        <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#db4900] px-2 sm:px-4 transition-colors duration-300 group-hover:text-[#ff5722]">
+                        <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary px-2 sm:px-4 transition-colors duration-300 group-hover:text-[#ff5722]">
                           {dashboard2Data?.estimated_ctr || 0}%
                         </div>
                         <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-26 lg:h-26 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
@@ -1114,16 +1114,16 @@ export default function Dashboard() {
                     </div>
 
                     {/* Impression */}
-                    <div className="bg-black px-3 py-3 sm:px-4 sm:py-4 rounded-2xl flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
-                      <h3 className="text-white font-semibold text-lg sm:text-xl mb-1 sm:mb-2 transition-colors duration-300 group-hover:text-primary">
+                    <div className="bg-card px-3 py-3 sm:px-4 sm:py-4 rounded-2xl flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20  group">
+                      <h3 className="text-foreground font-semibold text-lg sm:text-xl mb-1 sm:mb-2 transition-colors duration-300 group-hover:text-primary">
                         Impression
                       </h3>
-                      <p className="text-white/50 text-sm mb-3 sm:mb-4 transition-colors duration-300 group-hover:text-white/70">
+                      <p className="text-muted-foreground text-sm mb-3 sm:mb-4 transition-colors duration-300 group-hover:text-foreground/70">
                         Number of times ads are shown to users.
                       </p>
 
                       <div className="flex items-center justify-between">
-                        <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#db4900] transition-colors duration-300 group-hover:text-[#ff5722]">
+                        <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary transition-colors duration-300 group-hover:text-[#ff5722]">
                           {dashboard2Data?.predicted_reach
                             ? `${(dashboard2Data.predicted_reach / 1000).toFixed(1)}K`
                             : "00"}
@@ -1144,17 +1144,17 @@ export default function Dashboard() {
                 <div className="lg:col-span-2 h-full">
                   <div className="bg-gradient-to-br from-orange-500/80 to-orange-600 rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/30  group">
                     {/* Header */}
-                    <h3 className="text-white font-semibold text-lg sm:text-xl mb-2 transition-colors duration-300">
+                    <h3 className="text-foreground font-semibold text-lg sm:text-xl mb-2 transition-colors duration-300">
                       Conversion Rate
                     </h3>
 
                     {/* Description */}
-                    <p className="text-white/90 text-sm mb-4 leading-relaxed transition-colors duration-300">
+                    <p className="text-foreground/90 text-sm mb-4 leading-relaxed transition-colors duration-300">
                       Percentage of users converting after ads.
                     </p>
 
                     {/* Main Metric */}
-                    <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 tracking-tight transition-transform duration-300 group-hover:scale-110 origin-left">
+                    <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-4 sm:mb-6 tracking-tight transition-transform duration-300 group-hover:scale-110 origin-left">
                       {dashboard2Data?.conversion_probability || 0}%
                     </div>
 
@@ -1174,18 +1174,18 @@ export default function Dashboard() {
               <div className="col-span-full grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Adalyze Impacts */}
                 <div className="lg:col-span-2 h-full">
-                  <div className="bg-black rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group">
+                  <div className="bg-card rounded-2xl p-4 sm:p-6 h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 group">
                     <div className="mb-4 sm:mb-6  ">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-lg sm:text-xl font-semibold text-white group-hover:text-white transition-colors duration-300">Adalyze AI Impacts</h2>
+                        <h2 className="text-lg sm:text-xl font-semibold text-foreground group-hover:text-foreground transition-colors duration-300">Adalyze AI Impacts</h2>
                         <Button
                           variant="ghost"
                           onClick={() => router.push("/case-study?type=dashboard")}
-                          className="text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] text-sm transition-all duration-300">
+                          className="text-primary hover:bg-primary/20 hover:text-[#ff5722] text-sm transition-all duration-300">
                           View All
                         </Button>
                       </div>
-                      <p className="text-white/50 text-sm mt-1 group-hover:text-white/70 transition-colors duration-300">
+                      <p className="text-muted-foreground text-sm mt-1 group-hover:text-foreground/70 transition-colors duration-300">
                         Know the recent success stories of Adalyze AI
                       </p>
                     </div>
@@ -1196,11 +1196,11 @@ export default function Dashboard() {
                           <div
                             key={caseStudy.cs_id}
                             onClick={() => router.push(`/case-study-detail?cs_id=${caseStudy.cs_id}&type=dashboard`)}
-                            className="bg-[#171717] rounded-xl sm:rounded-2xl px-3 py-4 sm:px-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1 cursor-pointer transition-all duration-300 hover:bg-[#1f1f1f] hover:scale-[1.02] hover:shadow-lg hover:shadow-[#db4900]/20 group/case"
+                            className="bg-secondary rounded-xl sm:rounded-2xl px-3 py-4 sm:px-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1 cursor-pointer transition-all duration-300 hover:bg-muted hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 group/case"
                           >
                             {/* Icon/Visual Section */}
                             <div className="flex-shrink-0 w-full sm:w-auto">
-                              <div className="relative w-full h-32 sm:w-40 sm:h-24 lg:w-54 lg:h-38 rounded-lg sm:rounded-2xl border-4 border-[#3d3d3d] flex items-center justify-center transition-colors duration-300 overflow-hidden">
+                              <div className="relative w-full h-32 sm:w-40 sm:h-24 lg:w-54 lg:h-38 rounded-lg sm:rounded-2xl border-4 border-border flex items-center justify-center transition-colors duration-300 overflow-hidden">
                                 <Image
                                   src={caseStudy.banner_image_url}
                                   alt="Case study"
@@ -1212,30 +1212,30 @@ export default function Dashboard() {
                             {/* Content Section */}
                             <div className="flex-grow">
                               <div className="flex items-center gap-3 mb-1">
-                                <div className="text-xs bg-[#db4900] text-white px-2 sm:px-3 py-1 mb-2 rounded-full group-hover/case:bg-[#ff5722] transition-colors duration-300">
+                                <div className="text-xs bg-primary text-foreground px-2 sm:px-3 py-1 mb-2 rounded-full group-hover/case:bg-[#ff5722] transition-colors duration-300">
                                   {caseStudy.industry}
                                 </div>
                               </div>
-                              <h3 className="font-bold text-base sm:text-lg text-white mb-1 group-hover/case:text-[#db4900] transition-colors duration-300">
+                              <h3 className="font-bold text-base sm:text-lg text-foreground mb-1 group-hover/case:text-primary transition-colors duration-300">
                                 {caseStudy.title.length > 50 ? `${caseStudy.title.substring(0, 50)}...` : caseStudy.title}
                               </h3>
-                              <p className="text-sm text-gray-300 mb-3 sm:mb-4 group-hover/case:text-white/80 transition-colors duration-300">
+                              <p className="text-sm text-muted-foreground mb-3 sm:mb-4 group-hover/case:text-foreground/80 transition-colors duration-300">
                                 {caseStudy.outcome.length > 100 ? `${caseStudy.outcome.substring(0, 100)}...` : caseStudy.outcome}
                               </p>
                               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#3e3e3e] rounded-full flex items-center justify-center transition-colors duration-300">
-                                    <User className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-accent rounded-full flex items-center justify-center transition-colors duration-300">
+                                    <User className="w-3 h-3 sm:w-4 sm:h-4 text-foreground" />
                                   </div>
                                   <div>
-                                    <p className="text-xs font-medium text-white">{caseStudy.testimonial_name}</p>
-                                    <p className="text-xs text-white/50">{caseStudy.testimonial_role}</p>
+                                    <p className="text-xs font-medium text-foreground">{caseStudy.testimonial_name}</p>
+                                    <p className="text-xs text-muted-foreground">{caseStudy.testimonial_role}</p>
                                   </div>
                                 </div>
-                                <div className="flex items-center text-white/50 gap-2 justify-start sm:justify-end">
-                                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white/50" />
+                                <div className="flex items-center text-muted-foreground gap-2 justify-start sm:justify-end">
+                                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                                   <div className="text-left">
-                                    <p className="text-xs text-white">{formatDate(caseStudy.created_at)}</p>
+                                    <p className="text-xs text-foreground">{formatDate(caseStudy.created_at)}</p>
                                   </div>
                                 </div>
                               </div>
@@ -1243,7 +1243,7 @@ export default function Dashboard() {
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-white/50">
+                        <div className="text-center py-8 text-muted-foreground">
                           <p>No case studies available</p>
                         </div>
                       )}
@@ -1255,7 +1255,7 @@ export default function Dashboard() {
                 <div className="lg:col-span-1 h-full flex-1">
                   <div className="space-y-4 sm:space-y-6 h-full flex flex-col">
                     {/* Increase ROI */}
-                    <div className="bg-black rounded-2xl p-3 sm:p-4 text-left flex-1 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/20  group">
+                    <div className="bg-card rounded-2xl p-3 sm:p-4 text-left flex-1 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20  group">
                       <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-30 lg:h-30 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                         <img
                           src={IncreaseROI.src}
@@ -1263,13 +1263,13 @@ export default function Dashboard() {
                           className="w-full h-full"
                         />
                       </div>
-                      <h3 className="text-[#db4900] font-bold text-xl sm:text-2xl group-hover:text-[#ff5722] transition-colors duration-300">Increase ROI</h3>
-                      <p className="text-white/50 text-sm sm:text-md mb-1 flex-1 group-hover:text-white/70 transition-colors duration-300">
+                      <h3 className="text-primary font-bold text-xl sm:text-2xl group-hover:text-[#ff5722] transition-colors duration-300">Increase ROI</h3>
+                      <p className="text-muted-foreground text-sm sm:text-md mb-1 flex-1 group-hover:text-foreground/70 transition-colors duration-300">
                         Know how to use Adalyze AI & increase your ROI
                       </p>
                       <Button
                         onClick={handleViewIdea}
-                        className="bg-primary text-sm sm:text-md text-white font-medium mt-auto w-fit self-start transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                        className="bg-primary text-sm sm:text-md text-foreground font-medium mt-auto w-fit self-start transition-all duration-300 hover:scale-105 hover:shadow-lg"
                       >
                         View Ideas
                       </Button>
@@ -1284,12 +1284,12 @@ export default function Dashboard() {
                           className="w-full h-full"
                         />
                       </div>
-                      <h3 className="text-gray-800 font-bold text-xl sm:text-2xl group-hover:text-[#db4900] transition-colors duration-300">Talk to Expert</h3>
+                      <h3 className="text-gray-800 font-bold text-xl sm:text-2xl group-hover:text-primary transition-colors duration-300">Talk to Expert</h3>
                       <p className="text-[#3d3d3d] text-sm sm:text-md mb-2 flex-1 group-hover:text-gray-700 transition-colors duration-300">
                         Get Advise from an AD expert & improve results
                       </p>
                       <Button
-                        className="bg-[#db4900] text-sm sm:text-md text-white hover:bg-[#ff5722] font-medium mt-auto w-fit self-start transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#db4900]/30"
+                        className="bg-primary text-sm sm:text-md text-foreground hover:bg-[#ff5722] font-medium mt-auto w-fit self-start transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/30"
                         onClick={() => setShowExpertPopup(true)}
                       >
                         Let's Talk
@@ -1302,21 +1302,21 @@ export default function Dashboard() {
               {/* Row 5 - Top 10 Ads */}
               {(userDetails?.package_id === 2 || userDetails?.package_id === 3 || userDetails?.package_id === 4) && (
                 <div className="col-span-full">
-                  <div className="bg-black rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10">
+                  <div className="bg-card rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10">
                     <div className="mb-4 sm:mb-6">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-lg sm:text-xl font-semibold text-white transition-colors duration-300">
+                        <h2 className="text-lg sm:text-xl font-semibold text-foreground transition-colors duration-300">
                           Top 10 Ads
                         </h2>
                         <Button
                           variant="ghost"
                           onClick={() => router.push("/top10ads")}
-                          className="text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] text-sm transition-all duration-300"
+                          className="text-primary hover:bg-primary/20 hover:text-[#ff5722] text-sm transition-all duration-300"
                         >
                           View All Ads
                         </Button>
                       </div>
-                      <p className="text-white/50 text-sm mt-1 transition-colors duration-300">
+                      <p className="text-muted-foreground text-sm mt-1 transition-colors duration-300">
                         Discover the highest performing ads on adalyze AI
                       </p>
                     </div>
@@ -1339,15 +1339,15 @@ export default function Dashboard() {
               {/* Row 6 - Top 10 Trending Ads */}
               {userDetails?.package_id === 3 || userDetails?.package_id === 4 && (
                 <div className="col-span-full pb-12 sm:pb-18">
-                  <div className="bg-black rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10">
+                  <div className="bg-card rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10">
                     <div className="mb-4 sm:mb-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h2 className="text-lg sm:text-xl font-semibold text-white transition-colors duration-300">
+                          <h2 className="text-lg sm:text-xl font-semibold text-foreground transition-colors duration-300">
                             Top 10 Trending Ads
                           </h2>
                           {trendingTimeFrame && (
-                            <p className="text-white/40 text-xs mt-0.5">
+                            <p className="text-foreground/40 text-xs mt-0.5">
                               {trendingTimeFrame}
                             </p>
                           )}
@@ -1355,12 +1355,12 @@ export default function Dashboard() {
                         <Button
                           variant="ghost"
                           onClick={() => router.push("/top10trendingads")}
-                          className="text-[#db4900] hover:bg-[#db4900]/20 hover:text-[#ff5722] text-sm transition-all duration-300"
+                          className="text-primary hover:bg-primary/20 hover:text-[#ff5722] text-sm transition-all duration-300"
                         >
                           View All Ads
                         </Button>
                       </div>
-                      <p className="text-white/50 text-sm mt-1 transition-colors duration-300">
+                      <p className="text-muted-foreground text-sm mt-1 transition-colors duration-300">
                         Discover the most trending ads on adalyze AI
                       </p>
                     </div>
@@ -1387,7 +1387,7 @@ export default function Dashboard() {
       <div className="fixed bottom-24 right-6 z-50 md:hidden">
         <button
           onClick={handleUploadClick}
-          className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md bg-[#db4900]/40 text-white  shadow-lg hover:bg-[#db4900]/30 hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-[#db4900]/30"
+          className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md bg-primary/40 text-foreground  shadow-lg hover:bg-primary/30 hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-primary/30"
         >
           <Upload className="w-4 h-4 font-bold" />
           <span className="text-sm font-semibold">Upload Ad</span>
@@ -1412,7 +1412,7 @@ export default function Dashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm"
             onClick={() => setShowAddBrandPopup(false)}
           />
           {/* Popup Content */}

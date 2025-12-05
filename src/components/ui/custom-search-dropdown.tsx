@@ -248,11 +248,11 @@ export function CustomSearchDropdown({
         onClick={handleTriggerClick}
         onTouchEnd={handleTriggerTouch}
         className={cn(
-          "w-full px-4 py-3 text-sm bg-black text-white rounded-md",
-          "placeholder-white/50 focus:outline-none focus:border-orange-500",
+          "w-full px-4 py-3 text-sm bg-card text-foreground rounded-md",
+          "placeholder-muted-foreground focus:outline-none focus:border-orange-500",
           "transition-colors flex items-center justify-between",
           "border border-transparent hover:border-orange-500/50",
-          "active:bg-black/80",
+          "active:bg-card/80",
           disabled && "opacity-50 cursor-not-allowed",
           triggerClassName
         )}
@@ -264,12 +264,12 @@ export function CustomSearchDropdown({
           cursor: "pointer",
         }}
       >
-        <span className={value ? "text-white" : "text-white/50"}>
+        <span className={value ? "text-foreground" : "text-muted-foreground"}>
           {loading ? "Loading..." : displayValue}
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 text-white/50 transition-transform",
+            "h-4 w-4 text-muted-foreground transition-transform",
             isOpen && "transform rotate-180"
           )}
         />
@@ -278,7 +278,7 @@ export function CustomSearchDropdown({
       {/* Mobile Modal Popup */}
       {isOpen && (isMobile || forceModal) && isMounted && createPortal(
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/20 dark:bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4"
           style={{ zIndex: 100000 }}
           onClick={() => {
             if (forceModal) {
@@ -295,7 +295,7 @@ export function CustomSearchDropdown({
           <div
             ref={dropdownRef}
             className={cn(
-              "bg-black rounded-xl w-full max-w-md h-[50vh] flex flex-col",
+              "bg-card rounded-xl w-full max-w-md h-[50vh] flex flex-col",
               containerClassName
             )}
             onClick={(e) => e.stopPropagation()}
@@ -305,23 +305,23 @@ export function CustomSearchDropdown({
               zIndex: 100001,
             }}
           >
-            <div className="p-4 border-b border-gray-600">
+            <div className="p-4 border-b border-border">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-white font-semibold">{placeholder || "Select"}</h3>
+                <h3 className="text-foreground font-semibold">{placeholder || "Select"}</h3>
                 <button
                   type="button"
                   onClick={() => {
                     setIsOpen(false)
                     setSearchTerm("")
                   }}
-                  className="text-gray-400 hover:text-white"
+                  className="text-muted-foreground hover:text-foreground"
                   aria-label="Close"
                 >
                   ✕
                 </button>
               </div>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -333,7 +333,7 @@ export function CustomSearchDropdown({
                     }
                   }}
                   placeholder={searchPlaceholder}
-                  className="w-full pl-9 pr-3 py-3 text-sm bg-[#171717] border border-gray-600 text-white rounded-md placeholder-white/70 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full pl-9 pr-3 py-3 text-sm bg-secondary border border-border text-foreground rounded-md placeholder-muted-foreground focus:outline-none focus:border-orange-500 transition-colors"
                   autoComplete="off"
                 />
               </div>
@@ -354,7 +354,7 @@ export function CustomSearchDropdown({
                       handleSelect(option)
                     }}
                     className={cn(
-                      "w-full text-left p-3 hover:bg-[#2b2b2b] rounded-lg text-white transition-colors",
+                      "w-full text-left p-3 hover:bg-muted rounded-lg text-foreground transition-colors",
                       value === option.name && "bg-orange-500/10 text-orange-500"
                     )}
                     style={{ WebkitTapHighlightColor: "transparent" }}
@@ -363,7 +363,7 @@ export function CustomSearchDropdown({
                   </button>
                 ))
               ) : (
-                <div className="px-4 py-4 text-sm text-white/80 text-center">
+                <div className="px-4 py-4 text-sm text-foreground/80 text-center">
                   {searchTerm.trim() ? `No results for \"${searchTerm}\"` : "No options available"}
                 </div>
               )}
@@ -378,7 +378,7 @@ export function CustomSearchDropdown({
         <div
           ref={dropdownRef}
           className={cn(
-            "absolute z-[9999] w-full bg-black border border-orange-500/20 shadow-lg",
+            "absolute z-[9999] w-full bg-card border border-orange-500/20 shadow-lg",
             "max-h-60 flex flex-col",
             positionAbove ? "bottom-full mb-1 rounded-b-md rounded-t-xl" : "top-full mt-1 rounded-t-md rounded-b-xl",
             containerClassName
@@ -401,7 +401,7 @@ export function CustomSearchDropdown({
           {/* Search Input */}
           <div className="p-2 border-b border-orange-500/20">
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -416,7 +416,7 @@ export function CustomSearchDropdown({
                 onTouchEnd={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
                 placeholder={searchPlaceholder}
-                className="w-full pl-8 pr-3 py-2 text-sm bg-[#171717] text-white rounded-md placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                className="w-full pl-8 pr-3 py-2 text-sm bg-secondary text-foreground rounded-md placeholder-muted-foreground focus:outline-none focus:border-orange-500 transition-colors"
                 autoComplete="off"
               />
             </div>
@@ -441,7 +441,7 @@ export function CustomSearchDropdown({
                     handleSelect(option)
                   }}
                   className={cn(
-                    "w-full px-4 py-2 text-sm text-left text-white hover:bg-orange-500/10",
+                    "w-full px-4 py-2 text-sm text-left text-foreground hover:bg-orange-500/10",
                     "transition-colors border-b border-orange-500/10 last:border-b-0",
                     value === option.name && "bg-orange-500/10 text-orange-500"
                   )}
@@ -453,7 +453,7 @@ export function CustomSearchDropdown({
                 </button>
               ))
             ) : (
-              <div className="px-4 py-3 text-sm text-gray-400 text-center">
+              <div className="px-4 py-3 text-sm text-muted-foreground text-center">
                 {searchTerm.trim() ? `No results for "${searchTerm}"` : "No options available"}
               </div>
             )}

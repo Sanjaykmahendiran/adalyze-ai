@@ -161,7 +161,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                     {getSelectedLabels().slice(0, 6).map((label, index) => (
                       <Badge
                         key={selectedValues[index]}
-                        className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] flex items-center gap-1")}
+                        className={cn("bg-secondary text-foreground border-foreground/1 hover:bg-accent flex items-center gap-1")}
                       >
                         {label}
                         <X
@@ -175,7 +175,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                       </Badge>
                     ))}
                     {selectedValues.length > 6 && (
-                      <Badge className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] ml-2")}>
+                      <Badge className={cn("bg-secondary text-foreground border-foreground/1 hover:bg-accent ml-2")}>
                         {`+ ${selectedValues.length - 6} more`}
                       </Badge>
                     )}
@@ -194,7 +194,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
 
             {isModalOpen && (
               <div
-                className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-[100000]"
+                className="fixed inset-0 bg-black/20 dark:bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-[100000]"
                 onClick={() => {
                   setIsModalOpen(false)
                   setSearchInput("")
@@ -203,11 +203,11 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
               >
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-black rounded-xl w-full max-w-md h-[60vh] flex flex-col"
+                  className="bg-card rounded-xl w-full max-w-md h-[60vh] flex flex-col"
                 >
-                  <div className="p-4 border-b border-white/50">
+                  <div className="p-4 border-b border-border">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-white font-semibold">Select Countries</h3>
+                      <h3 className="text-foreground font-semibold">Select Countries</h3>
                       <button
                         type="button"
                         onClick={() => {
@@ -215,14 +215,14 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                           setSearchInput("")
                           setIsSearching(false)
                         }}
-                        className="text-white/80 hover:text-white"
+                        className="text-muted-foreground hover:text-foreground"
                         aria-label="Close"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <input
                         ref={searchInputRef}
                         type="text"
@@ -236,7 +236,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                           }
                         }}
                         placeholder="Search countries..."
-                        className="w-full pl-9 pr-3 py-3 text-sm bg-[#171717] text-white rounded-md placeholder-white/70 focus:outline-none focus:border-orange-500 transition-colors"
+                        className="w-full pl-9 pr-3 py-3 text-sm bg-secondary text-foreground rounded-md placeholder-muted-foreground focus:outline-none focus:border-orange-500 transition-colors"
                         autoComplete="off"
                         autoFocus
                       />
@@ -244,9 +244,9 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                   </div>
                   <div className="flex-1 overflow-y-auto p-2">
                     {loading ? (
-                      <div className="px-4 py-4 text-sm text-gray-400 text-center">Loading...</div>
+                      <div className="px-4 py-4 text-sm text-muted-foreground text-center">Loading...</div>
                     ) : options.length === 0 ? (
-                      <div className="px-4 py-4 text-sm text-gray-400 text-center">No countries found.</div>
+                      <div className="px-4 py-4 text-sm text-muted-foreground text-center">No countries found.</div>
                     ) : (
                       <>
                         {/* Show selected items first */}
@@ -268,7 +268,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                               key={`selected-${option.id}-${option.type}`}
                               type="button"
                               onClick={() => toggleOption(option.value)}
-                              className="w-full text-left text-white flex items-center gap-2 mb-1"
+                              className="w-full text-left text-foreground flex items-center gap-2 mb-1"
                             >
                               <div className="flex h-4 w-4 items-center justify-center rounded-sm border border-primary bg-primary text-primary-foreground">
                                 <CheckIcon className="h-4 w-4" />
@@ -286,7 +286,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                               key={`${option.id}-${option.type}`}
                               type="button"
                               onClick={() => toggleOption(option.value)}
-                              className="w-full text-left py-1 rounded-lg transition-colors text-white hover:bg-[#2b2b2b] flex items-center gap-2 mb-1"
+                              className="w-full text-left py-1 rounded-lg transition-colors text-foreground hover:bg-muted flex items-center gap-2 mb-1"
                             >
                               <div className="flex h-4 w-4 items-center justify-center rounded-sm border border-primary opacity-50">
                                 <CheckIcon className="h-4 w-4 invisible" />
@@ -299,7 +299,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                     )}
                   </div>
                   {/* Footer with actions */}
-                  <div className="border-t border-white/50">
+                  <div className="border-t border-border">
                     <div className="flex items-center justify-between">
                       {selectedValues.length > 0 && (
                         <button
@@ -308,7 +308,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                             setIsModalOpen(false)
                             handleCloseModal()
                           }}
-                          className="flex-1 py-3 text-sm cursor-pointer hover:bg-[#2b2b2b] text-white"
+                          className="flex-1 py-3 text-sm cursor-pointer hover:bg-muted text-foreground"
                         >
                           close
                         </button>
@@ -318,7 +318,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                         onClick={() => {
                           handleAdd()
                         }}
-                        className="flex-1 py-3 text-sm cursor-pointer hover:bg-[#2b2b2b] max-w-full text-white"
+                        className="flex-1 py-3 text-sm cursor-pointer hover:bg-muted max-w-full text-foreground"
                       >
                         Add
                       </button>
@@ -351,7 +351,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                       {getSelectedLabels().slice(0, 6).map((label, index) => (
                         <Badge
                           key={selectedValues[index]}
-                          className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] flex items-center gap-1")}
+                          className={cn("bg-secondary text-foreground border-foreground/1 hover:bg-accent flex items-center gap-1")}
                         >
                           {label}
                           <X
@@ -365,7 +365,7 @@ export const CountrySelector = React.forwardRef<HTMLButtonElement, CountrySelect
                         </Badge>
                       ))}
                       {selectedValues.length > 6 && (
-                        <Badge className={cn("bg-[#171717] text-white border-foreground/1 hover:bg-[#3d3d3d] ml-2")}>
+                        <Badge className={cn("bg-secondary text-foreground border-foreground/1 hover:bg-accent ml-2")}>
                           {`+ ${selectedValues.length - 6} more`}
                         </Badge>
                       )}

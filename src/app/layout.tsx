@@ -53,8 +53,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Theme initialization script - prevents flash of wrong theme */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const theme = localStorage.getItem('adalyze-theme') || 'dark';
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <title>Adalyze AI | Smart Ad Analysis for Agencies & Marketers</title>
         <meta
           name="description"
@@ -134,21 +151,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
 
         {/* Critical CSS - inlined to prevent render blocking */}
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            /* Critical above-the-fold styles - prevents FOUC */
-            html { font-family: system-ui, -apple-system, sans-serif; }
-            body { 
-              margin: 0; 
-              background: #171717; 
-              color: #f9fafb; 
-              font-family: var(--font-poppins, system-ui, -apple-system, sans-serif);
-            }
-            .bg-background { background-color: #171717; }
-            /* Prevent layout shift during font load */
-            * { box-sizing: border-box; }
-          `
-        }} />
+
 
         {/* Normalize www and non-www URLs - redirect www to non-www - deferred to prevent blocking */}
         <script
@@ -265,46 +268,46 @@ export default function RootLayout({
 
       <body className={`${poppins.variable} antialiased`}>
         {/* Critical content renders first */}
-        <Suspense fallback={null}>
-          <GoogleOAuthProvider clientId="543832771103-mjordts3br5jlop5dj8q9m16nijjupuu.apps.googleusercontent.com">
-            {children}
-          </GoogleOAuthProvider>
+        <Providers>
+          <Suspense fallback={null}>
+            <GoogleOAuthProvider clientId="543832771103-mjordts3br5jlop5dj8q9m16nijjupuu.apps.googleusercontent.com">
+              {children}
+            </GoogleOAuthProvider>
 
-          {/* Non-critical components load after initial render */}
+            {/* Non-critical components load after initial render */}
 
-          <CookieConsentManager />
-          <Providers />
+            <CookieConsentManager />
 
-
-          {/* Toaster loads after page is interactive */}
-          <Toaster
-            position="top-center"
-            reverseOrder={false}
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: "#000000",
-                color: "#f9fafb",
-                fontFamily: "var(--font-poppins)",
-                border: "1px solid #db4900",
-              },
-              success: {
+            {/* Toaster loads after page is interactive */}
+            <Toaster
+              position="top-center"
+              reverseOrder={false}
+              toastOptions={{
+                duration: 3000,
                 style: {
                   background: "#000000",
-                  color: "#16a34a",
+                  color: "#f9fafb",
+                  fontFamily: "var(--font-poppins)",
                   border: "1px solid #db4900",
                 },
-              },
-              error: {
-                style: {
-                  background: "#000000",
-                  color: "#dc2626",
-                  border: "1px solid #db4900",
+                success: {
+                  style: {
+                    background: "#000000",
+                    color: "#16a34a",
+                    border: "1px solid #db4900",
+                  },
                 },
-              },
-            }}
-          />
-        </Suspense>
+                error: {
+                  style: {
+                    background: "#000000",
+                    color: "#dc2626",
+                    border: "1px solid #db4900",
+                  },
+                },
+              }}
+            />
+          </Suspense>
+        </Providers>
       </body>
     </html>
   );

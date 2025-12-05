@@ -26,7 +26,7 @@ const AdCard = ({ ad, onViewReport }: { ad: RecentAd; onViewReport: (adId: strin
 return (
     <div
       onClick={() => onViewReport(ad.ad_id.toString())}
-      className="bg-[#171717] rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group cursor-pointer"
+      className="bg-secondary rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-[#db4900]/10 group cursor-pointer"
     >
       {/* Left Image */}
       <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 aspect-square overflow-hidden flex-shrink-0">
@@ -42,7 +42,7 @@ return (
       {/* Middle Content */}
       <div className="flex-1 flex flex-col justify-center gap-0.5 sm:gap-1 min-w-0">
         <p className="text-xs sm:text-sm lg:text-md text-[#db4900]">{ad.ads_type || "Unknown Type"}</p>
-        <h3 className="text-white font-semibold text-sm sm:text-base line-clamp-1">
+        <h3 className="text-foreground font-semibold text-sm sm:text-base line-clamp-1">
           {ad.ads_name ? (ad.ads_name.length > 15 ? ad.ads_name.slice(0, 15) + "..." : ad.ads_name) : "Untitled Ad"}
         </h3>
         <div className="flex gap-1 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
@@ -68,7 +68,7 @@ return (
           })().map((platform: string, index: number) => (
             <span
               key={index}
-              className="bg-[#3d3d3d] text-gray-300 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full"
+              className="bg-accent text-muted-foreground text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full"
             >
               {platform}
             </span>

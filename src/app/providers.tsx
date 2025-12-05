@@ -7,10 +7,32 @@ import { pageview } from "@/lib/gtm";
 import { trackEvent } from "@/lib/eventTracker";
 import { getSessionId, clearSessionId } from "@/lib/sessionManager";
 import Cookies from "js-cookie";
+import { ThemeProvider } from "next-themes";
 
-export function Providers() {
+export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Ensure dark theme is applied on initial mount and prevent system theme
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const root = document.documentElement;
+      const storedTheme = localStorage.getItem('adalyze-theme');
+      
+      // If no theme is stored, default to dark and apply it
+      if (!storedTheme) {
+        localStorage.setItem('adalyze-theme', 'dark');
+        root.classList.add('dark');
+      } else if (storedTheme === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      
+      // Ensure system theme preference is ignored
+      root.setAttribute('data-theme', storedTheme || 'dark');
+    }
+  }, []);
 
   // create session id on first render (per tab) and clear on tab close
   useEffect(() => {
@@ -98,5 +120,17 @@ export function Providers() {
     }
   }, [pathname, searchParams]);
 
-  return null;
+  return (
+    <ThemeProvider 
+      attribute="class" 
+      defaultTheme="dark" 
+      enableSystem={false}
+      disableTransitionOnChange={false}
+      storageKey="adalyze-theme"
+      themes={['light', 'dark']}
+      forcedTheme={undefined}
+    >
+      {children}
+    </ThemeProvider>
+  );
 }

@@ -68,7 +68,7 @@ export function Sidebar({ userDetails }: SidebarProps) {
   return (
     <aside
       ref={asideRef}
-      className="flex flex-col items-center relative overflow-y-auto w-full px-1 py-1 bg-black"
+      className="flex flex-col items-center relative overflow-y-auto w-full px-1 py-1 bg-card"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       {userDetails && getMenus().map(({ href, icon: Icon, label }) => {
@@ -79,14 +79,14 @@ export function Sidebar({ userDetails }: SidebarProps) {
             href={href}
             className={`group w-full flex flex-col items-center justify-center p-2 mb-1 font-medium rounded-md
             ${active
-                ? "active-link text-white bg-[#db4900]/30"
-                : "text-gray-300 hover:bg-[#121212] hover:text-[#db4900]"
+                ? "active-link text-foreground bg-[#db4900]/30"
+                : "text-muted-foreground hover:bg-secondary hover:text-[#db4900]"
               }`}
           >
             <Icon
               className={`h-6 w-6 ${active
                 ? "text-[#db4900]"
-                : "text-gray-300 group-hover:text-[#db4900]"} `}
+                : "text-muted-foreground group-hover:text-[#db4900]"} `}
               strokeWidth={active ? 2 : 1}
             />
             <span className="text-[11px] pt-[0.3rem] text-center font-semibold">

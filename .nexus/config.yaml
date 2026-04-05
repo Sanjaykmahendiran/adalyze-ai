@@ -1,0 +1,104 @@
+config_version: '1.1'
+nexus_plugin_version: 2.23.2
+project:
+  name: adalyze-ai
+  type: web-app
+  stack:
+    backend: php
+    frontend: nextjs
+    database: postgresql
+  slug: adalyze-ai
+engagement:
+  type: mvp
+  overrides:
+    planning_phases: []
+    pipeline_stages: []
+    validation_level: ''
+    token_budget: ''
+    max_feedback_loops: 0
+pipelines:
+  standard:
+    stages:
+    - ba
+    - governance
+    - architect
+    - lead
+    - dev
+    - qa
+  lean:
+    stages:
+    - ba
+    - architect
+    - lead
+    - dev
+    - qa
+  fast:
+    stages:
+    - feasibility
+    - architect
+    - lead
+    - dev
+  bugfix:
+    stages:
+    - architect
+    - lead
+    - dev
+    - qa
+  hotfix:
+    stages:
+    - lead
+    - dev
+validation:
+  backend:
+    build: echo 'no build step required (PHP)'
+    lint: echo 'no lint command configured'
+    test: echo 'no test command configured'
+  frontend:
+    build: cd frontend && npm run build
+    lint: echo 'no lint command configured'
+infrastructure:
+  mode: workspace
+platform:
+  name: claude
+  plan: max-5x
+  capabilities:
+    opus_available: true
+    independent_limits: true
+    extended_thinking: true
+smes:
+- ai-engineering-sme
+models:
+  director: opus
+  ba: sonnet
+  governance: haiku
+  architect: sonnet
+  lead: sonnet
+  dev: opus
+  qa: sonnet
+  sme: haiku
+  cross-cutting: haiku
+execution:
+  max_feedback_loops: 3
+  auto_validate_after_dev: true
+  record_to_infrastructure: true
+autonomous:
+  mode: disabled
+  safety:
+    pause_on_escalation: true
+    pause_on_validation_fail: true
+    max_autonomous_stages: 20
+    notify_on_complete: true
+workspace:
+  registry_path: /Users/mugunthansrinivasan/Project/.nexus-workspace/workspace.yaml
+perception:
+  enabled: true
+  authority: suggest
+  stream_prefix: adalyze-ai
+  cooldown_seconds: 300
+  max_cascade_depth: 1
+  max_concurrent_dispatches: 2
+  consumer_group: adalyze-ai-perception
+  sources:
+    pipeline_events: true
+    git_hooks: true
+    temporal_schedules: true

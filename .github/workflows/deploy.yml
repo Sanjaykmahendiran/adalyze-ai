@@ -42,22 +42,24 @@ jobs:
 
       - name: Deploy to dev (develop branch)
         if: github.ref == 'refs/heads/develop'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: appleboy/scp-action@v0.1.7
         with:
-          server: ${{ secrets.CPANEL_FTP_HOST }}
+          host: ${{ secrets.CPANEL_FTP_HOST }}
           username: ${{ secrets.CPANEL_FTP_USER }}
           password: ${{ secrets.CPANEL_FTP_PASS }}
-          local-dir: out/
-          server-dir: ${{ secrets.CPANEL_DEV_PATH }}
-          dangerous-clean-slate: false
+          source: "out/*"
+          target: ${{ secrets.CPANEL_DEV_PATH }}
+          strip_components: 1
+          rm: false
 
       - name: Deploy to prod (main branch)
         if: github.ref == 'refs/heads/main'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: appleboy/scp-action@v0.1.7
         with:
-          server: ${{ secrets.CPANEL_FTP_HOST }}
+          host: ${{ secrets.CPANEL_FTP_HOST }}
           username: ${{ secrets.CPANEL_FTP_USER }}
           password: ${{ secrets.CPANEL_FTP_PASS }}
-          local-dir: out/
-          server-dir: ${{ secrets.CPANEL_PROD_PATH }}
-          dangerous-clean-slate: false
+          source: "out/*"
+          target: ${{ secrets.CPANEL_PROD_PATH }}
+          strip_components: 1
+          rm: false

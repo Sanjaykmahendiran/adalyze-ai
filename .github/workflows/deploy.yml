@@ -51,6 +51,7 @@ jobs:
           target: ${{ secrets.CPANEL_DEV_PATH }}
           strip_components: 1
           rm: false
+          debug: true
 
       - name: Deploy to prod (main branch)
         if: github.ref == 'refs/heads/main'

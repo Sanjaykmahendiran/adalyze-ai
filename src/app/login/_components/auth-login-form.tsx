@@ -9,6 +9,7 @@ import { Toaster } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import GoogleSignInButton from "@/app/login/_components/GoogleSign-In";
 import toast from "react-hot-toast";
+import { forgotPasswordOtp, verifyOtp, resetPassword } from "@/services/authService";
 
 interface LoginFormData {
   email: string;
@@ -79,14 +80,12 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
 
     setResetLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=forgot_otp&email=${encodeURIComponent(email)}`);
-      const result = await response.json();
-
-      if (result.user_id) {
+      const result = await forgotPasswordOtp({ email });
+      if (result.data?.user_id) {
         toast.success("Verification code sent to your email!");
         setCodeSent(true);
       } else {
-        toast.error(result.message || "Failed to send verification code");
+        toast.error(result.data?.message || result.message || "Failed to send verification code");
       }
     } catch (error) {
       console.error('Send code error:', error);
@@ -108,15 +107,13 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
 
     setResetLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=forgot_verify_otp&email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
-      const result = await response.json();
-
-      if (result.message === "OTP is success") {
+      const result = await verifyOtp({ email, otp });
+      if (result.data?.message === "OTP is success" || result.message === "OTP is success") {
         toast.success("OTP verified successfully!");
         setVerifiedEmail(email);
         setStep("resetPassword");
       } else {
-        toast.error(result.message || "Invalid verification code");
+        toast.error(result.data?.message || result.message || "Invalid verification code");
       }
     } catch (error) {
       console.error('Verify OTP error:', error);
@@ -135,10 +132,12 @@ const AuthLoginForm = ({ onSubmit, loading }: AuthLoginFormProps) => {
 
     setResetLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=updatepassword&email=${encodeURIComponent(verifiedEmail)}&password=${encodeURIComponent(data.newPassword)}&confirmpassword=${encodeURIComponent(data.confirmPassword)}`);
-      const result = await response.json();
-
-      if (result.message === 'Password Updated Successfully') {
+      const result = await resetPassword({
+        email: verifiedEmail,
+        password: data.newPassword,
+        confirmpassword: data.confirmPassword,
+      });
+      if (result.data?.message === 'Password Updated Successfully' || result.message === 'Password Updated Successfully') {
         toast.success("Password updated successfully!");
         setStep("success");
         // Redirect to login after 2 seconds

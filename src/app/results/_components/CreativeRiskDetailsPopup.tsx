@@ -92,7 +92,7 @@ export default function CreativeRiskDetailsPopup({
 
         setLoading(true)
         try {
-            const response = await fetch("https://adalyzeai.xyz/App/compliance.php", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/compliance.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

@@ -217,7 +217,7 @@ export default function PreCampaignChecklist({
         try {
             setLoading(true);
             setErr(null);
-            const url = `https://adalyzeai.xyz/App/api.php?gofor=prechecklistlist&ad_upload_id=${adUploadId}`;
+            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=prechecklistlist&ad_upload_id=${adUploadId}`;
             const res = await fetch(url, { method: "GET", cache: "no-store" });
             const data = await res.json();
             if (data?.status && Array.isArray(data?.data)) {
@@ -265,7 +265,7 @@ export default function PreCampaignChecklist({
     //   };
     //
     //   try {
-    //     const res = await fetch("https://adalyzeai.xyz/App/api.php", {
+    //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
     //       method: "POST",
     //       headers: { "Content-Type": "application/json" },
     //       body: JSON.stringify(payload),
@@ -341,7 +341,7 @@ export default function PreCampaignChecklist({
             type: "checklist-evidence",
         };
 
-        const res = await fetch("https://adalyzeai.xyz/App/api.php", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -392,7 +392,7 @@ export default function PreCampaignChecklist({
                 evidence_url: finalEvidence,
             };
 
-            const res = await fetch("https://adalyzeai.xyz/App/api.php", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

@@ -105,7 +105,7 @@ export default function GuidePage() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=guideslist')
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=guideslist`)
         const guidesData = await response.json() as Guide[]
         setGuides(guidesData.filter(guide => guide.status === 1))
       } catch (err) {

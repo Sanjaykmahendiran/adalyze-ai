@@ -37,7 +37,7 @@ export default function Blogs() {
       try {
         setLoading(true)
         const response = await fetch(
-          "https://adalyzeai.xyz/App/api.php?gofor=blogslist"
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=blogslist`
         )
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
         const data = await response.json()

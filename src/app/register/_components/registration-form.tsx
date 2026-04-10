@@ -263,7 +263,7 @@ export default function RegistrationForm() {
     setIsCheckingReferral(true);
     try {
       const response = await fetch(
-        `https://adalyzeai.xyz/App/api.php?gofor=usergetbyref&referral_code=${code}`
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=usergetbyref&referral_code=${code}`
       );
 
       if (response.ok) {
@@ -322,7 +322,7 @@ export default function RegistrationForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -348,7 +348,7 @@ export default function RegistrationForm() {
         // Call addidentifier API after step 1 completion
         try {
           const cookieId = Cookies.get('cookie_id') || '';
-          const addIdentifierResponse = await fetch("https://adalyzeai.xyz/App/api.php", {
+          const addIdentifierResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -440,7 +440,7 @@ export default function RegistrationForm() {
         payload.utm_term = utmTerm;
       }
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

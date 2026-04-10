@@ -244,9 +244,9 @@ export default function Interact() {
     const load = async () => {
       try {
         const [a, b, c] = await Promise.all([
-          fetch(`https://adalyzeai.xyz/App/api.php?gofor=userhelplist&user_id=${userId}`).then((r) => r.json()),
-          fetch(`https://adalyzeai.xyz/App/api.php?gofor=userfeedbacklist&user_id=${userId}`).then((r) => r.json()),
-          fetch(`https://adalyzeai.xyz/App/api.php?gofor=userexptalkreqlist&user_id=${userId}`).then((r) => r.json()),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userhelplist&user_id=${userId}`).then((r) => r.json()),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userfeedbacklist&user_id=${userId}`).then((r) => r.json()),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userexptalkreqlist&user_id=${userId}`).then((r) => r.json()),
         ])
         setSupport(Array.isArray(a?.data) ? a.data : [])
         setFeedbacks(Array.isArray(b?.data) ? b.data : [])
@@ -271,7 +271,7 @@ export default function Interact() {
     try {
       if (!userId) return
 
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=fulladsnamelist&user_id=${userId}`
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=fulladsnamelist&user_id=${userId}`
       const response = await fetch(url)
       const result = await response.json()
 
@@ -291,7 +291,7 @@ export default function Interact() {
     try {
       setLoading(true)
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -311,7 +311,7 @@ export default function Interact() {
         setSupportFormData({ name: "", email: "", category: "", message: "", imgname: "" })
         setShowSupportDialog(false)
         // Reload support data
-        const res = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=userhelplist&user_id=${userId}`)
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userhelplist&user_id=${userId}`)
         const data = await res.json()
         setSupport(Array.isArray(data?.data) ? data.data : [])
       }
@@ -335,7 +335,7 @@ export default function Interact() {
     try {
       setLoading(true)
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -352,7 +352,7 @@ export default function Interact() {
         setFeedbackFormData({ ad_upload_id: "", rating: "", comments: "" })
         setShowFeedbackDialog(false)
         // Reload feedback data
-        const res = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=userfeedbacklist&user_id=${userId}`)
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userfeedbacklist&user_id=${userId}`)
         const data = await res.json()
         setFeedbacks(Array.isArray(data?.data) ? data.data : [])
       }
@@ -368,7 +368,7 @@ export default function Interact() {
     try {
       setLoading(true)
 
-      const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -386,7 +386,7 @@ export default function Interact() {
         toast.success("Expert call request submitted successfully!")
         setShowExpertDialog(false)
         // Reload expert data
-        const res = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=userexptalkreqlist&user_id=${userId}`)
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userexptalkreqlist&user_id=${userId}`)
         const result = await res.json()
         setExperts(Array.isArray(result?.data) ? result.data : [])
       } else {

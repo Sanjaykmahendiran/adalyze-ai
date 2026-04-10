@@ -14,7 +14,7 @@ import { Camera } from "lucide-react"
 import Image from "next/image"
 
 // Base URL configuration
-export const BASE_URL = "https://adalyzeai.xyz/App/api.php"
+export const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`
 
 interface BrandData {
   brand_id: number

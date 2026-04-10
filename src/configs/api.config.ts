@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-    DEFAULT_BASE_URL: 'https://adalyzeai.xyz/App/api.php',
+    DEFAULT_BASE_URL: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`,
   } as const;
   
   export const CONTENT_TYPES = {

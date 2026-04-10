@@ -111,7 +111,7 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                 type: "Brand",
             }
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(imageUploadPayload),
@@ -198,7 +198,7 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
                     logo_url: logoUrl,
                 }
 
-            const response = await fetch("https://adalyzeai.xyz/App/api.php", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

@@ -26,7 +26,7 @@ const VersionCard: React.FC = () => {
     useEffect(() => {
         const fetchVersions = async () => {
             try {
-                const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=versionlist');
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=versionlist`);
                 if (!response.ok) throw new Error('Failed to fetch versions');
                 const data = await response.json();
                 setVersions(data);

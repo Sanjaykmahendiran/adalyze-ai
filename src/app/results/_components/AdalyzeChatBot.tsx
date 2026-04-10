@@ -114,7 +114,7 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
         });
 
         try {
-            const res = await fetch("https://adalyzeai.xyz/App/askadalyze.php", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/askadalyze.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ad_upload_id: adUploadId, question: "" })
@@ -139,7 +139,7 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
             setLoading(true);
             try {
                 const historyRes = await fetch(
-                    `https://adalyzeai.xyz/App/api.php?gofor=getchathistory&ad_upload_id=${adUploadId}`,
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=getchathistory&ad_upload_id=${adUploadId}`,
                     { cache: 'no-store' }
                 );
 
@@ -230,7 +230,7 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
             setLoading(true);
 
             try {
-                const res = await fetch("https://adalyzeai.xyz/App/askadalyze.php", {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/askadalyze.php`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ ad_upload_id: adUploadId, question })
@@ -565,7 +565,7 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
                             throw new Error('User ID not found');
                         }
 
-                        const response = await fetch('https://adalyzeai.xyz/App/api.php', {
+                        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({

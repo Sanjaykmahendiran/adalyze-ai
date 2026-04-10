@@ -273,9 +273,9 @@ const ProPage: React.FC = () => {
         const fetchData = async () => {
             try {
                 const [pricingRes, faqRes, testiRes] = await Promise.all([
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=packages"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=faqlist"),
-                    fetch("https://adalyzeai.xyz/App/api.php?gofor=testilist"),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=packages`),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=faqlist`),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=testilist`),
                 ])
 
                 if (!pricingRes.ok || !faqRes.ok || !testiRes.ok) {
@@ -375,7 +375,7 @@ const ProPage: React.FC = () => {
     // Payment verification function
     const verifyPayment = async (paymentData: RazorpayResponse, selectedPlan: PricingPlan) => {
         try {
-            const response = await fetch('https://adalyzeai.xyz/App/verify.php', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/verify.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -454,7 +454,7 @@ const ProPage: React.FC = () => {
 
         try {
             // Fetch Razorpay key from API
-            const configResponse = await fetch('https://adalyzeai.xyz/App/api.php?gofor=config');
+            const configResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=config`);
             const configData = await configResponse.json();
 
             if (!configResponse.ok || !configData.rzpaykey) {
@@ -496,7 +496,7 @@ const ProPage: React.FC = () => {
             setLastOrderType(orderType);
 
             // Create order
-            const orderResponse = await fetch('https://adalyzeai.xyz/App/razorpay.php', {
+            const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/razorpay.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

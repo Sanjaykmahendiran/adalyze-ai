@@ -30,7 +30,7 @@ export default function FAQSection() {
         const fetchFAQs = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('https://adalyzeai.xyz/App/api.php?gofor=prefaqlist');
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=prefaqlist`);
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch FAQs');

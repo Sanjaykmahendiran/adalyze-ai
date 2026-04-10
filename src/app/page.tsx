@@ -77,7 +77,7 @@ const LandingPage = () => {
     // Defer banner data fetch to improve FCP - don't block initial render
     const fetchBannerData = async () => {
       try {
-        const baseUrl = "https://adalyzeai.xyz/App/api.php?gofor=livebanner";
+        const baseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=livebanner`;
         const url = variant && variant !== "default" ? `${baseUrl}&variant=${variant}` : baseUrl;
         const response = await fetch(url);
         const data = await response.json();

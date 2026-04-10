@@ -28,7 +28,7 @@ export default function AboutUsPage() {
     useEffect(() => {
         const fetchPrivacyPolicy = async () => {
             try {
-                const response = await fetch("https://adalyzeai.xyz/App/api.php?gofor=about");
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=about`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

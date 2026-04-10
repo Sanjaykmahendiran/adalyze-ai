@@ -96,7 +96,7 @@ export default function SupportPage() {
   // fetchFAQs: now takes an argument for isInitial
   const fetchFAQs = async (isInitialLoad = false) => {
     try {
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=faqlist&category=${selectedCategory}&search=${searchTerm}`;
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=faqlist&category=${selectedCategory}&search=${searchTerm}`;
       const response = await fetch(url);
       const data = await response.json();
       setFaqs(data || []);
@@ -117,7 +117,7 @@ export default function SupportPage() {
       const userId = Cookies.get('userId');
       if (!userId) return;
 
-      const url = `https://adalyzeai.xyz/App/api.php?gofor=fulladsnamelist&user_id=${userId}`;
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=fulladsnamelist&user_id=${userId}`;
       const response = await fetch(url);
       const result = await response.json();
 
@@ -146,7 +146,7 @@ export default function SupportPage() {
       setLoading(true)
       const userId = Cookies.get('userId')
 
-      const response = await fetch('https://adalyzeai.xyz/App/api.php', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ export default function SupportPage() {
       setLoading(true)
       const userId = Cookies.get('userId')
 
-      const response = await fetch('https://adalyzeai.xyz/App/api.php', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ export default function SupportPage() {
       setLoading(true)
       const userId = Cookies.get('userId')
 
-      const response = await fetch('https://adalyzeai.xyz/App/api.php', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

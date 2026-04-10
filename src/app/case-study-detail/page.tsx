@@ -88,7 +88,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
   // Client-side fetch functions
   const fetchAllCaseStudies = () => {
-    return fetch("https://adalyzeai.xyz/App/api.php?gofor=casestudylist", {
+    return fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=casestudylist`, {
       cache: 'no-store'
     })
       .then(response => {
@@ -104,7 +104,7 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
   const fetchCaseStudyById = (slug: string) => {
     return fetch(
-      `https://adalyzeai.xyz/App/api.php?gofor=getcasestudy&slug=${slug}`,
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=getcasestudy&slug=${slug}`,
       { cache: 'no-store' }
     )
       .then(response => {

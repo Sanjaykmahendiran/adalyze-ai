@@ -152,7 +152,7 @@ export default function MyAdsPage() {
             if (!userId) return
 
             const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=0&limit=12`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=0&limit=12`
             )
 
             if (!response.ok) {
@@ -174,7 +174,7 @@ export default function MyAdsPage() {
             if (!userId || !brandId) return
 
             const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=brandslist&user_id=${userId}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userId}`
             )
             if (!response.ok) throw new Error('Failed to fetch brand stats')
             const data: BrandStats[] = await response.json()
@@ -203,7 +203,7 @@ export default function MyAdsPage() {
 
             const offset = (currentPage - 1) * itemsPerPage
             const response = await fetch(
-                `https://adalyzeai.xyz/App/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=${offset}&limit=${itemsPerPage}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=${offset}&limit=${itemsPerPage}`
             )
 
             if (!response.ok) {
@@ -752,7 +752,7 @@ export default function MyAdsPage() {
                                                 setIsDeleting(true)
                                                 try {
                                                     const response = await fetch(
-                                                        `https://adalyzeai.xyz/App/api.php?gofor=deletebrand&brand_id=${brandId}`,
+                                                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=deletebrand&brand_id=${brandId}`,
                                                         { method: "DELETE" }
                                                     )
                                                     const result = await response.json()

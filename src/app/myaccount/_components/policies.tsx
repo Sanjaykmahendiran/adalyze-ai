@@ -38,9 +38,9 @@ export default function PolicyComponent() {
     const fetchPolicies = async () => {
       try {
         const [privacyRes, returnRes, termsRes] = await Promise.all([
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=privacypolicy'),
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=returnpolicy'),
-          fetch('https://adalyzeai.xyz/App/api.php?gofor=termsandconditions')
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=privacypolicy`),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=returnpolicy`),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=termsandconditions`)
         ]);
 
         const privacyData = await privacyRes.text();

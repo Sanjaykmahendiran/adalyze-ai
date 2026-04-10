@@ -37,6 +37,7 @@ import AdPerformancePost from "@/components/share-result"
 import ShareAdResultFeedback from "@/components/share-feedback"
 import AdalyzeChatBot from "./_components/AdalyzeChatBot"
 import SimilarAdsPopup from "./_components/SimilarAdsPopup"
+import FixThisAdDrawer from "./_components/FixThisAdDrawer"
 import CreativeRiskDetailsPopup from "./_components/CreativeRiskDetailsPopup"
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
@@ -82,6 +83,7 @@ export default function ResultsPage() {
   // Scroll to Top button visibility
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [showMoreGoReasons, setShowMoreGoReasons] = useState(false);
+  const [showFixDrawer, setShowFixDrawer] = useState(false)
   const [selectedPlatformExplanation, setSelectedPlatformExplanation] = useState<{ platform: string; explanation: string; type: 'suitable' | 'notsuitable' } | null>(null);
   const [isExplanationDialogOpen, setIsExplanationDialogOpen] = useState(false);
   const chartRef = useRef<HTMLCanvasElement>(null)
@@ -549,7 +551,7 @@ export default function ResultsPage() {
     setDeleteLoading(true)
 
     try {
-      const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=deletead&ad_upload_id=${adId}`)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=deletead&ad_upload_id=${adId}`)
 
       if (!response.ok) {
         throw new Error('Failed to delete ad')
@@ -597,7 +599,7 @@ export default function ResultsPage() {
 
       if (heatmapStatus === 1) {
         // If heatmapstatus is 1, call GET endpoint
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=getheatmap&ad_upload_id=${adId}`)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=getheatmap&ad_upload_id=${adId}`)
 
         if (!response.ok) {
           throw new Error('Failed to fetch heatmap')
@@ -624,7 +626,7 @@ export default function ResultsPage() {
         }
       } else {
         // If heatmapstatus is 0 or undefined, call POST endpoint (default behavior)
-        const response = await fetch('https://adalyzeai.xyz/App/heatmap.php', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/heatmap.php`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -676,7 +678,7 @@ export default function ResultsPage() {
             userIdParam = `&user_id=${userIdFromToken}`;
           }
         }
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
         if (!response.ok) throw new Error('Failed to fetch ad details');
         const result = await response.json();
         if (!result.success) throw new Error(result.message || 'API returned error');
@@ -712,7 +714,7 @@ export default function ResultsPage() {
         if (userDetails?.user_id) {
           userIdParam = `&user_id=${userDetails.user_id}`;
         }
-        const response = await fetch(`https://adalyzeai.xyz/App/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
         if (!response.ok) throw new Error('Failed to fetch ad details');
         const result = await response.json();
         if (!result.success) throw new Error(result.message || 'API returned error');
@@ -2145,6 +2147,16 @@ export default function ResultsPage() {
                         <Button size="sm" variant="link" className="px-3 text-xs text-primary py-1 h-7" onClick={() => setShowMoreGoReasons(true)}>View more</Button>
                       </div>
                     </div>
+                    {/* Fix This Ad — only for No Go */}
+                    {apiData?.go_no_go === "No Go" && (
+                      <button
+                        onClick={() => setShowFixDrawer(true)}
+                        className="mt-3 w-full py-2.5 rounded-xl font-semibold text-sm bg-primary text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                      >
+                        ✨ Fix This Ad
+                      </button>
+                    )}
+
                     {/* Modal dialog for full reasons */}
                     <Dialog open={showMoreGoReasons} onOpenChange={setShowMoreGoReasons}>
                       <DialogContent className="bg-black min-w-2xl border border-primary">
@@ -4441,6 +4453,16 @@ export default function ResultsPage() {
         onClose={() => setViewSimilarAdsOpen(false)}
         similarAds={similarAds}
         userDetails={userDetails}
+      />
+
+      {/* Fix This Ad Drawer */}
+      <FixThisAdDrawer
+        open={showFixDrawer}
+        onClose={() => setShowFixDrawer(false)}
+        adUploadId={apiData?.ad_upload_id}
+        userId={userDetails?.user_id}
+        originalImageUrl={apiData?.images?.[0]}
+        originalScore={apiData?.score_out_of_100}
       />
 
       {/* Creative Risk Details Popup */}

@@ -1,12 +1,12 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Force HTTPS (production domain only — no-op on dev subdomain)
-    RewriteCond %{HTTPS} off
-    RewriteCond %{HTTP:X-Forwarded-SSL} !on
-    RewriteCond %{HTTP_HOST} ^(www\.)?adalyzeai\.xyz$ [NC]
+    # Canonical: force HTTPS + www
+    # Fires when: HTTP (not HTTPS) OR bare domain (no www) — except /.well-known/
+    RewriteCond %{HTTPS} off [OR]
+    RewriteCond %{HTTP_HOST} ^adalyzeai\.xyz$ [NC]
     RewriteCond %{REQUEST_URI} !^/\.well-known/
-    RewriteRule ^(.*)$ https://adalyzeai.xyz/$1 [R=301,L]
+    RewriteRule ^(.*)$ https://www.adalyzeai.xyz/$1 [R=301,L]
 
     # Pass Authorization header to PHP
     RewriteCond %{HTTP:Authorization} .

@@ -124,10 +124,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://adalyze.app" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://adalyze.app" />
 
-        {/* Preconnect to API domain for faster data fetching */}
-        <link rel="preconnect" href="https://adalyzeai.xyz" />
-        <link rel="dns-prefetch" href="https://adalyzeai.xyz" />
-
         {/* Preconnect to external domains - defer to improve FCP */}
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />

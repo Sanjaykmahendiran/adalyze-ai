@@ -54,10 +54,11 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
   const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mouseMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get typewriter words from bannerData prop
+  // Get typewriter words from bannerData prop — filter out any undefined/null fields
   const words = bannerData
-    ? [bannerData.typeword3, bannerData.typeword1, bannerData.typeword4, bannerData.typeword2]
-    : ["Loading..."];
+    ? [bannerData.typeword3, bannerData.typeword1, bannerData.typeword4, bannerData.typeword2].filter((w): w is string => !!w)
+    : [];
+  // Fall back to empty so typewriter is simply inactive when no data
 
   // Set mounted state to prevent hydration mismatches
   useEffect(() => {
@@ -108,11 +109,12 @@ export default function LandingPageHeader({ bannerData, isLoading }: LandingPage
     return () => window.removeEventListener("resize", checkMobile);
   }, [isMounted]);
 
-  // Typewriter effect (unchanged)
+  // Typewriter effect
   useEffect(() => {
-    if (!bannerData) return;
+    if (!bannerData || words.length === 0) return;
 
-    const currentWord = words[wordIndex];
+    const currentWord = words[wordIndex % words.length];
+    if (!currentWord) return;
     let timeout: NodeJS.Timeout;
     if (charIndex < currentWord.length) {
       setIsTyping(true);

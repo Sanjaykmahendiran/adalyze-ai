@@ -98,7 +98,7 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
 
     console.log("Sending cookie consent:", payload);
 
-    const response = await axiosInstance.post("", payload, {
+    const response = await axiosInstance.post("/api.php", payload, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -127,7 +127,7 @@ export async function getCookieConsent(cookieId?: string): Promise<GetConsentRes
     // Use provided cookieId, or get from cookies, or generate new one
     const id = cookieId || getCookieId();
     
-    const response = await axiosInstance.get("", {
+    const response = await axiosInstance.get("/api.php", {
       params: {
         gofor: "getconsent",
         cookie_id: id,

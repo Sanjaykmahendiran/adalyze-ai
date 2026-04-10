@@ -80,7 +80,10 @@ const LandingPage = () => {
         const baseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=livebanner`;
         const url = variant && variant !== "default" ? `${baseUrl}&variant=${variant}` : baseUrl;
         const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
+        // Validate shape — must have at least one typeword field
+        if (!data || typeof data !== "object" || !data.typeword1) throw new Error("Invalid banner data");
         setBannerData(data);
         setIsLoadingBanner(false);
         setButtonText(data.pcta);

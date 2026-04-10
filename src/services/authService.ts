@@ -2,7 +2,7 @@ import { axiosInstance } from "@/configs/axios";
 
 export const login = async (payload: any) => {
   try {
-    const response = await axiosInstance.get("", {
+    const response = await axiosInstance.get("/api.php", {
       params: {
         gofor: "login",
         ...(payload.nouptoken && { nouptoken: payload.nouptoken }),

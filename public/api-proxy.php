@@ -24,11 +24,11 @@ unset($_GET['_proxy_path']);
 $query = $_GET ? '?' . http_build_query($_GET) : '';
 
 // Route to the correct backend based on which frontend host is serving this request.
-// prod (www.adalyzeai.xyz / adalyzeai.xyz) → api.evraapp.top
+// prod (www.adalyzeai.xyz / adalyzeai.xyz) → www.evraapp.top
 // dev  (dev.adalyzeai.xyz / anything else)  → dev.evraapp.top
 $host            = $_SERVER['HTTP_HOST'] ?? '';
 $isProd          = in_array($host, ['www.adalyzeai.xyz', 'adalyzeai.xyz'], true);
-$backendBase     = $isProd ? 'https://api.evraapp.top/api' : 'https://dev.evraapp.top/api';
+$backendBase     = $isProd ? 'https://www.evraapp.top/api' : 'https://dev.evraapp.top/api';
 $upstream        = rtrim($backendBase, '/') . '/' . ltrim($proxy_path, '/') . $query;
 
 // ── Read request ─────────────────────────────────────────────────────────────────

@@ -27,6 +27,7 @@ import Footer from "@/components/footer"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import UploadLoadingSkeleton from "@/components/Skeleton-loading/upload-loading"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { getBrands } from "@/services/brandService"
 
 // Move FreeTrailOverlay outside to prevent re-creation on every render
 const FreeTrailOverlay = ({
@@ -334,11 +335,7 @@ export default function UploadPage() {
     const fetchBrands = async () => {
         setLoadingBrands(true)
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userId}`)
-            if (!response.ok) {
-                throw new Error('Failed to fetch brands')
-            }
-            const data = await response.json()
+            const data = await getBrands(userId)
             setBrands(data)
         } catch (error) {
             console.error('Error fetching brands:', error)

@@ -34,6 +34,7 @@ import ExpertConsultationPopup from "@/components/expert-form"
 import { Badge } from "@/components/ui/badge"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import { MainStatCard } from "./_components/main-status-card"
+import { getBrands } from "@/services/brandService"
 
 const platformIcons = {
   facebook: Facebook,
@@ -311,9 +312,7 @@ export default function Dashboard() {
     const fetchBrands = async () => {
       try {
         setClientBrandsLoading(true)
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userId}`)
-        if (!resp.ok) throw new Error('Failed to fetch brands list')
-        const data = await resp.json()
+        const data = await getBrands(userId)
         const normalized = Array.isArray(data)
           ? data.map((b: any) => ({ brand_id: Number(b.brand_id), brand_name: String(b.brand_name || 'Unnamed') }))
           : []

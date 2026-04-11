@@ -19,6 +19,8 @@ import AverageScore from "@/assets/dashboard/average-score.png"
 import TotalSuggestions from "@/assets/dashboard/total-suggestion.png"
 import UserLayout from "@/components/layouts/user-layout"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { getBrands, deleteBrand } from "@/services/brandService"
+import type { BrandWithStats } from "@/types/api"
 
 // Define the API response interface
 interface AdsApiResponse {
@@ -41,24 +43,6 @@ interface Ad {
     go_nogo?: string
 }
 
-// Brand stats interface from brandslist API (used in @page.tsx)
-interface BrandStats {
-    brand_id: number
-    user_id: number
-    brand_name: string
-    website: string
-    email: string
-    mobile: string
-    logo_url: string
-    verified: number
-    created_date: string
-    upload_count: number
-    average_score: number
-    latest_score: number
-    last_analysis_date: string
-    go_count: number
-    no_go_count: number
-}
 
 // Define the A/B Ad interface
 
@@ -133,7 +117,7 @@ export default function MyAdsPage() {
     const [loading, setLoading] = useState(true)
     const [scoreFilter, setScoreFilter] = useState("all")
     const [adTypeFilter, setAdTypeFilter] = useState("all")
-    const [brandStats, setBrandStats] = useState<BrandStats | null>(null)
+    const [brandStats, setBrandStats] = useState<BrandWithStats | null>(null)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
 
@@ -173,11 +157,7 @@ export default function MyAdsPage() {
             const userId = Cookies.get('userId')
             if (!userId || !brandId) return
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userId}`
-            )
-            if (!response.ok) throw new Error('Failed to fetch brand stats')
-            const data: BrandStats[] = await response.json()
+            const data = await getBrands(userId)
             const current = Array.isArray(data)
                 ? data.find((b) => String(b.brand_id) === String(brandId))
                 : null
@@ -751,11 +731,7 @@ export default function MyAdsPage() {
                                                 if (!brandId) return
                                                 setIsDeleting(true)
                                                 try {
-                                                    const response = await fetch(
-                                                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=deletebrand&brand_id=${brandId}`,
-                                                        { method: "DELETE" }
-                                                    )
-                                                    const result = await response.json()
+                                                    const result = await deleteBrand(brandId)
                                                     if (result?.response === "Brand deleted successfully") {
                                                         toast.success("Brand deleted successfully!")
                                                         setShowDeleteModal(false)

@@ -12,9 +12,8 @@ import toast from "react-hot-toast"
 import Cookies from "js-cookie"
 import { Camera } from "lucide-react"
 import Image from "next/image"
-
-// Base URL configuration
-export const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`
+import { getBrand, editBrand } from "@/services/brandService"
+import { uploadImage } from "@/services/uploadService"
 
 interface BrandData {
   brand_id: number
@@ -79,9 +78,8 @@ export default function YourBrand({
   const fetchBrandData = async (brandId: number) => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${BASE_URL}?gofor=getbrand&brand_id=${brandId}`)
-      const data = await response.json()
-      
+      const data = await getBrand(brandId)
+
       if (data.brand_id) {
         setBrandData(data)
         setBrandName(data.brand_name || "")
@@ -110,20 +108,9 @@ export default function YourBrand({
   // Handle image upload to server
   const uploadImageToServer = async (base64Data: string) => {
     setIsUploadingImage(true)
-    const payload = {
-      gofor: "image_upload",
-      imgname: base64Data,
-      type: "brand",
-    }
 
     try {
-      const response = await fetch(BASE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      const data = await response.json()
+      const data = await uploadImage({ imgname: base64Data, type: "brand" })
 
       if (data.success === true) {
         toast.success("Brand image uploaded successfully")
@@ -188,34 +175,25 @@ export default function YourBrand({
       return
     }
 
-    const payload = {
-      gofor: "editbrands",
-      brand_id: brandData.brand_id.toString(),
-      user_id: brandData.user_id.toString(),
-      brand_name: brandName,
-      email: brandEmail,
-      mobile: brandMobile,
-      logo_url: uploadedImageUrl || brandData.logo_url,
-      website: website,
-    }
-
     try {
-      const response = await fetch(BASE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const result = await editBrand({
+        brand_id: brandData.brand_id.toString(),
+        user_id: brandData.user_id.toString(),
+        brand_name: brandName,
+        email: brandEmail,
+        mobile: brandMobile,
+        logo_url: uploadedImageUrl || brandData.logo_url,
+        website: website,
       })
 
-      const data = await response.json()
-
-      if (response.ok && data.success === true) {
+      if (result?.success === true || result?.status === "success") {
         toast.success("Brand updated successfully")
         // Refresh brand data
         await fetchBrandData(brandData.brand_id)
         // Exit edit mode
         setIsEditingBrand(false)
       } else {
-        toast.error(data.message || "Failed to update brand")
+        toast.error(result?.message || "Failed to update brand")
       }
     } catch (error) {
       console.error("Brand update error:", error)

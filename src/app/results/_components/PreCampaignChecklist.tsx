@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import ChecklistStaticImage from "@/assets/result-checklist-static.webp"
+import { uploadImage } from "@/services/uploadService"
 
 type StatusAPI = "done" | "not_done";
 
@@ -335,21 +336,9 @@ export default function PreCampaignChecklist({
             reader.readAsDataURL(file);
         });
 
-        const payload = {
-            gofor: "image_upload",
-            imgname: base64, // raw base64 (no data: prefix)
-            type: "checklist-evidence",
-        };
-
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
+        const data = await uploadImage({ imgname: base64, type: "checklist-evidence" })
         // Try common fields that could contain the URL
-        const url = data?.url || data?.image_url || data?.data?.url || data?.result?.url || "";
+        const url = (data as any)?.url || (data as any)?.image_url || (data as any)?.data?.url || (data as any)?.result?.url || "";
         if (data.error) {
             throw new Error(data.error);
         }

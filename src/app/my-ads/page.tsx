@@ -14,6 +14,7 @@ import UserLayout from "@/components/layouts/user-layout"
 import MyAdsSkeleton from "@/components/Skeleton-loading/myads-loading"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
 import Cookies from "js-cookie";
+import { getBrands } from "@/services/brandService"
 
 // NEW: shadcn pagination
 import {
@@ -227,9 +228,7 @@ export default function MyAdsPage() {
         const fetchBrands = async () => {
             try {
                 setClientBrandsLoading(true)
-                const resp = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`)
-                if (!resp.ok) throw new Error('Failed to fetch brands list')
-                const data = await resp.json()
+                const data = await getBrands(userDetails!.user_id)
                 const normalized = Array.isArray(data)
                     ? data.map((b: any) => ({ brand_id: Number(b.brand_id), brand_name: String(b.brand_name || 'Unnamed') }))
                     : []

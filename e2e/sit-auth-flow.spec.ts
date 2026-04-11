@@ -175,7 +175,9 @@ test.describe("Dashboard Access (authenticated)", () => {
     const apiCalls: string[] = [];
     page.on("request", (req) => {
       const url = req.url();
-      if (url.includes("evraapp.top") && url.includes("user_id")) {
+      // Proxy routes REST calls through dev.adalyzeai.xyz/api/* (same-origin).
+      // Match both the proxy path and the legacy direct-to-evraapp.top pattern.
+      if ((url.includes("adalyzeai.xyz/api/") || url.includes("evraapp.top")) && url.includes("user_id")) {
         apiCalls.push(url);
       }
     });
@@ -201,7 +203,8 @@ test.describe("Dashboard Access (authenticated)", () => {
     const profileCalls: string[] = [];
     page.on("request", (req) => {
       const url = req.url();
-      if (url.includes("evraapp.top/api/user")) {
+      // Proxy routes through adalyzeai.xyz/api/user; also catch legacy direct calls.
+      if (url.includes("adalyzeai.xyz/api/user") || url.includes("evraapp.top/api/user")) {
         profileCalls.push(url);
       }
     });
@@ -430,8 +433,10 @@ test.describe("userId Cookie Propagation", () => {
   }) => {
     const apiRequests: string[] = [];
     page.on("request", (req) => {
-      if (req.url().includes("dev.evraapp.top")) {
-        apiRequests.push(req.url());
+      const url = req.url();
+      // Proxy routes REST calls through adalyzeai.xyz/api/* — match that and legacy direct.
+      if (url.includes("adalyzeai.xyz/api/") || url.includes("dev.evraapp.top")) {
+        apiRequests.push(url);
       }
     });
 

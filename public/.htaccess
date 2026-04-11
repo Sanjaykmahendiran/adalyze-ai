@@ -1,6 +1,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Handle CORS preflight (OPTIONS) before anything else — return 200 immediately
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+
     # Canonical: force HTTPS + www
     # Fires when: HTTP (not HTTPS) OR bare domain (no www) — except /.well-known/
     RewriteCond %{HTTPS} off [OR]
@@ -35,13 +39,14 @@ Options -Indexes
     Header unset Content-Type
 </FilesMatch>
 
-# CORS headers for PHP API files (needed on production where App/ lives here)
+# CORS headers for PHP API files
+# "always" ensures headers fire on ALL responses including OPTIONS (204/200) and errors
 <FilesMatch "\.php$">
-    Header set Access-Control-Allow-Origin "*"
-    Header set Access-Control-Allow-Methods "GET, POST, PUT, OPTIONS, PATCH, DELETE"
-    Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, Token"
-    Header set Access-Control-Expose-Headers "Token"
-    Header set Content-Type "application/json; charset=utf-8"
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, OPTIONS, PATCH, DELETE"
+    Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, Token"
+    Header always set Access-Control-Expose-Headers "Token"
+    Header always set Access-Control-Max-Age "3600"
 </FilesMatch>
 
 # php -- BEGIN cPanel-generated handler, do not edit

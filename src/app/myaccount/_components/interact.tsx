@@ -26,44 +26,10 @@ import { Search, ReceiptText, Plus, X } from "lucide-react"
 import Cookies from "js-cookie"
 import toast from "react-hot-toast"
 import ExpertConsultationPopup from "@/components/expert-form"
+import { getUserHelpList, getUserFeedbackList, getUserExpertTalkList, getFullAdsList, submitSupportRequest, submitFeedback, submitExpertCallRequest } from "@/services/supportService"
+import type { SupportItem, FeedbackItem, ExpertTalkItem } from "@/types/api"
 
-type SupportItem = {
-  help_id: number
-  email: string | null
-  user_id: number
-  category: string | null
-  description: string | null
-  comments?: string | null
-  estatus?: string | null
-  status?: number | string | null
-  created_date?: string | null
-  user_name?: string | null
-}
-
-type FeedbackItem = {
-  fbid: number
-  user_id: number
-  ad_upload_id?: number
-  rating?: number
-  comments?: string | null
-  status?: number | string | null
-  created_date?: string | null
-  user_name?: string | null
-  ads_name?: string | null
-}
-
-type ExpertItem = {
-  exptalk_id: number
-  user_id: number
-  prefdate?: string | null
-  preftime?: string | null
-  comments?: string | null
-  estatus?: string | null
-  status?: number | string | null
-  created_date?: string | null
-  modified_date?: string | null
-  user_name?: string | null
-}
+type ExpertItem = ExpertTalkItem
 
 function classForEstatus(v?: string | null) {
   const s = String(v ?? "").toLowerCase()
@@ -196,17 +162,12 @@ function formatDisplayDate(date?: string | null) {
     .replace(/\s/g, " ").replace(/\./g, "") // Remove period from short months
 }
 
-interface Ad {
-  ad_id: number
-  ads_name: string
-}
-
 export default function Interact() {
   const [activeTab, setActiveTab] = useState("support")
   const [support, setSupport] = useState<SupportItem[]>([])
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
   const [experts, setExperts] = useState<ExpertItem[]>([])
-  const [ads, setAds] = useState<Ad[]>([])
+  const [ads, setAds] = useState<import("@/types/api").SupportAd[]>([])
   const [loading, setLoading] = useState(false)
   const userId = Cookies.get("userId") || "5"
 
@@ -244,13 +205,13 @@ export default function Interact() {
     const load = async () => {
       try {
         const [a, b, c] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userhelplist&user_id=${userId}`).then((r) => r.json()),
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userfeedbacklist&user_id=${userId}`).then((r) => r.json()),
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userexptalkreqlist&user_id=${userId}`).then((r) => r.json()),
+          getUserHelpList(userId),
+          getUserFeedbackList(userId),
+          getUserExpertTalkList(userId),
         ])
-        setSupport(Array.isArray(a?.data) ? a.data : [])
-        setFeedbacks(Array.isArray(b?.data) ? b.data : [])
-        setExperts(Array.isArray(c?.data) ? c.data : [])
+        setSupport(a)
+        setFeedbacks(b)
+        setExperts(c)
       } catch {
         setSupport([])
         setFeedbacks([])
@@ -268,20 +229,10 @@ export default function Interact() {
   }, [showFeedbackDialog])
 
   const fetchAds = async () => {
+    if (!userId) return
     try {
-      if (!userId) return
-
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=fulladsnamelist&user_id=${userId}`
-      const response = await fetch(url)
-      const result = await response.json()
-
-      if (result.status && Array.isArray(result.data)) {
-        setAds(result.data)
-      } else {
-        setAds([])
-      }
-    } catch (error) {
-      console.error("Error fetching ads:", error)
+      setAds(await getFullAdsList(userId))
+    } catch {
       setAds([])
     }
   }
@@ -290,33 +241,18 @@ export default function Interact() {
     e.preventDefault()
     try {
       setLoading(true)
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          gofor: "needhelp",
-          user_id: userId,
-          description: supportFormData.message,
-          email: supportFormData.email,
-          category: supportFormData.category,
-          imgname: supportFormData.imgname || ""
-        })
+      await submitSupportRequest({
+        user_id: userId,
+        description: supportFormData.message,
+        email: supportFormData.email,
+        category: supportFormData.category,
+        imgname: supportFormData.imgname || "",
       })
-
-      if (response.ok) {
-        toast.success("Support request submitted successfully!")
-        setSupportFormData({ name: "", email: "", category: "", message: "", imgname: "" })
-        setShowSupportDialog(false)
-        // Reload support data
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userhelplist&user_id=${userId}`)
-        const data = await res.json()
-        setSupport(Array.isArray(data?.data) ? data.data : [])
-      }
-    } catch (error) {
-      console.error("Error submitting support request:", error)
+      toast.success("Support request submitted successfully!")
+      setSupportFormData({ name: "", email: "", category: "", message: "", imgname: "" })
+      setShowSupportDialog(false)
+      setSupport(await getUserHelpList(userId))
+    } catch {
       toast.error("Failed to submit support request. Please try again.")
     } finally {
       setLoading(false)
@@ -325,39 +261,23 @@ export default function Interact() {
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Validate rating is required
     if (!feedbackFormData.rating || feedbackFormData.rating === "") {
       toast.error("Please select a rating")
       return
     }
-
     try {
       setLoading(true)
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gofor: "feedback",
-          user_id: userId,
-          ad_upload_id: feedbackFormData.ad_upload_id,
-          rating: feedbackFormData.rating,
-          comments: feedbackFormData.comments,
-        }),
+      await submitFeedback({
+        user_id: userId,
+        ad_upload_id: feedbackFormData.ad_upload_id,
+        rating: feedbackFormData.rating,
+        comments: feedbackFormData.comments,
       })
-
-      if (response.ok) {
-        toast.success("Feedback submitted successfully!")
-        setFeedbackFormData({ ad_upload_id: "", rating: "", comments: "" })
-        setShowFeedbackDialog(false)
-        // Reload feedback data
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userfeedbacklist&user_id=${userId}`)
-        const data = await res.json()
-        setFeedbacks(Array.isArray(data?.data) ? data.data : [])
-      }
-    } catch (error) {
-      console.error("Error submitting feedback:", error)
+      toast.success("Feedback submitted successfully!")
+      setFeedbackFormData({ ad_upload_id: "", rating: "", comments: "" })
+      setShowFeedbackDialog(false)
+      setFeedbacks(await getUserFeedbackList(userId))
+    } catch {
       toast.error("Failed to submit feedback. Please try again.")
     } finally {
       setLoading(false)
@@ -367,33 +287,16 @@ export default function Interact() {
   const handleExpertCallSubmit = async (data: { prefdate: string; preftime: string; comments: string }) => {
     try {
       setLoading(true)
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          gofor: "exptalkrequest",
-          user_id: userId,
-          prefdate: data.prefdate,
-          preftime: data.preftime,
-          comments: data.comments
-        })
+      await submitExpertCallRequest({
+        user_id: userId,
+        prefdate: data.prefdate,
+        preftime: data.preftime,
+        comments: data.comments,
       })
-
-      if (response.ok) {
-        toast.success("Expert call request submitted successfully!")
-        setShowExpertDialog(false)
-        // Reload expert data
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=userexptalkreqlist&user_id=${userId}`)
-        const result = await res.json()
-        setExperts(Array.isArray(result?.data) ? result.data : [])
-      } else {
-        throw new Error('Failed to submit request')
-      }
+      toast.success("Expert call request submitted successfully!")
+      setShowExpertDialog(false)
+      setExperts(await getUserExpertTalkList(userId))
     } catch (error) {
-      console.error("Error submitting expert call request:", error)
       toast.error("Failed to submit expert call request. Please try again.")
       throw error
     } finally {

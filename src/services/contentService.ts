@@ -45,3 +45,15 @@ export const getTestimonials = async (): Promise<Testimonial[]> => {
   if (!res.ok) throw new Error(`testilist failed: ${res.status}`);
   return res.json() as Promise<Testimonial[]>;
 };
+
+export const getFaqsFiltered = async (
+  category: string,
+  search: string
+): Promise<FAQ[]> => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=faqlist&category=${encodeURIComponent(category)}&search=${encodeURIComponent(search)}`
+  );
+  if (!res.ok) throw new Error(`faqlist (filtered) failed: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+};

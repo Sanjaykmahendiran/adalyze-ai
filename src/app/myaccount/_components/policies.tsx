@@ -3,6 +3,7 @@
 import HtmlRenderer from "@/components/html-renderer";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getPrivacyPolicy, getReturnPolicy, getTermsAndConditions } from "@/services/supportService";
 
 const PoliciesSkeleton = () => (
   <div className="mt-6 space-y-4 animate-pulse">
@@ -37,16 +38,11 @@ export default function PolicyComponent() {
   useEffect(() => {
     const fetchPolicies = async () => {
       try {
-        const [privacyRes, returnRes, termsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=privacypolicy`),
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=returnpolicy`),
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=termsandconditions`)
+        const [privacyData, returnData, termsData] = await Promise.all([
+          getPrivacyPolicy(),
+          getReturnPolicy(),
+          getTermsAndConditions(),
         ]);
-
-        const privacyData = await privacyRes.text();
-        const returnData = await returnRes.text();
-        const termsData = await termsRes.text();
-
         setPrivacy(privacyData);
         setReturnPolicy(returnData);
         setTermsConditions(termsData);

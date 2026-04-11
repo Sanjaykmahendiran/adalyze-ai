@@ -14,6 +14,9 @@ import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import UserLayout from "@/components/layouts/user-layout"
 import SupportPageSkeleton from "@/components/Skeleton-loading/SupportPageSkeleton"
 import ExpertConsultationPopup from "@/components/expert-form"
+import { getFaqsFiltered } from "@/services/contentService"
+import { getFullAdsList, submitSupportRequest, submitExpertCallRequest, submitFeedback } from "@/services/supportService"
+import type { SupportRequestPayload, ExpertCallPayload, FeedbackPayload } from "@/types/api"
 
 interface FAQ {
   faq_id: number
@@ -24,15 +27,10 @@ interface FAQ {
   created_date: string
 }
 
-interface Ad {
-  ad_id: number
-  ads_name: string
-}
-
 export default function SupportPage() {
   const { userDetails } = useFetchUserDetails()
   const [faqs, setFaqs] = useState<FAQ[]>([])
-  const [ads, setAds] = useState<Ad[]>([])
+  const [ads, setAds] = useState<import("@/types/api").SupportAd[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("General");
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
@@ -96,10 +94,8 @@ export default function SupportPage() {
   // fetchFAQs: now takes an argument for isInitial
   const fetchFAQs = async (isInitialLoad = false) => {
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=faqlist&category=${selectedCategory}&search=${searchTerm}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      setFaqs(data || []);
+      const data = await getFaqsFiltered(selectedCategory, searchTerm);
+      setFaqs(data);
     } catch (error) {
       console.error("Error fetching FAQs:", error);
       setFaqs([]);
@@ -116,16 +112,8 @@ export default function SupportPage() {
     try {
       const userId = Cookies.get('userId');
       if (!userId) return;
-
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=fulladsnamelist&user_id=${userId}`;
-      const response = await fetch(url);
-      const result = await response.json();
-
-      if (result.status && Array.isArray(result.data)) {
-        setAds(result.data);
-      } else {
-        setAds([]);
-      }
+      const data = await getFullAdsList(userId);
+      setAds(data);
     } catch (error) {
       console.error("Error fetching ads:", error);
       setAds([]);
@@ -145,26 +133,16 @@ export default function SupportPage() {
     try {
       setLoading(true)
       const userId = Cookies.get('userId')
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gofor: "needhelp",
-          user_id: userId,
-          description: formData.message,
-          email: formData.email,
-          category: formData.category,
-          imgname: formData.imgname || ""
-        })
-      })
-
-      if (response.ok) {
-        toast.success('Support request submitted successfully!')
-        setFormData({ name: "", email: "", category: "", message: "", imgname: "" })
+      const payload: SupportRequestPayload = {
+        user_id: userId || "",
+        description: formData.message,
+        email: formData.email,
+        category: formData.category,
+        imgname: formData.imgname || "",
       }
+      await submitSupportRequest(payload)
+      toast.success('Support request submitted successfully!')
+      setFormData({ name: "", email: "", category: "", message: "", imgname: "" })
     } catch (error) {
       console.error("Error submitting support request:", error)
       toast.error('Failed to submit support request. Please try again.')
@@ -177,27 +155,15 @@ export default function SupportPage() {
     try {
       setLoading(true)
       const userId = Cookies.get('userId')
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gofor: "exptalkrequest",
-          user_id: userId,
-          prefdate: data.prefdate,
-          preftime: data.preftime,
-          comments: data.comments
-        })
-      })
-
-      if (response.ok) {
-        toast.success('Expert call request submitted successfully!')
-        setShowExpertDialog(false)
-      } else {
-        throw new Error('Failed to submit request')
+      const payload: ExpertCallPayload = {
+        user_id: userId || "",
+        prefdate: data.prefdate,
+        preftime: data.preftime,
+        comments: data.comments,
       }
+      await submitExpertCallRequest(payload)
+      toast.success('Expert call request submitted successfully!')
+      setShowExpertDialog(false)
     } catch (error) {
       console.error("Error submitting expert call request:", error)
       toast.error('Failed to submit expert call request. Please try again.')
@@ -212,26 +178,16 @@ export default function SupportPage() {
     try {
       setLoading(true)
       const userId = Cookies.get('userId')
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gofor: "feedback",
-          user_id: userId,
-          ad_upload_id: feedbackData.ad_upload_id,
-          rating: feedbackData.rating,
-          comments: feedbackData.comments
-        })
-      })
-
-      if (response.ok) {
-        toast.success('Feedback submitted successfully!')
-        setFeedbackData({ ad_upload_id: "", rating: "", comments: "" })
-        setShowFeedbackDialog(false)
+      const payload: FeedbackPayload = {
+        user_id: userId || "",
+        ad_upload_id: feedbackData.ad_upload_id || "0",
+        rating: feedbackData.rating,
+        comments: feedbackData.comments,
       }
+      await submitFeedback(payload)
+      toast.success('Feedback submitted successfully!')
+      setFeedbackData({ ad_upload_id: "", rating: "", comments: "" })
+      setShowFeedbackDialog(false)
     } catch (error) {
       console.error("Error submitting feedback:", error)
       toast.error('Failed to submit feedback. Please try again.')

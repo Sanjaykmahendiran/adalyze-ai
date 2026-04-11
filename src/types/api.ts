@@ -654,3 +654,88 @@ export interface LocationResult {
   name: string;
   [key: string]: unknown;
 }
+
+// ── Sprint 5 additions ────────────────────────────────────────────────────────
+
+// ── Support service ───────────────────────────────────────────────────────────
+
+export interface SupportAd {
+  ad_id: number;
+  ads_name: string;
+}
+
+export interface SupportAdListResponse {
+  status: boolean;
+  data?: SupportAd[];
+}
+
+export interface SupportItem {
+  help_id: number;
+  email: string | null;
+  user_id: number;
+  category: string | null;
+  description: string | null;
+  comments?: string | null;
+  estatus?: string | null;
+  status?: number | string | null;
+  created_date?: string | null;
+  user_name?: string | null;
+}
+
+export interface FeedbackItem {
+  fbid: number;
+  user_id: number;
+  ad_upload_id?: number;
+  rating?: number;
+  comments?: string | null;
+  status?: number | string | null;
+  created_date?: string | null;
+  user_name?: string | null;
+  ads_name?: string | null;
+}
+
+export interface ExpertTalkItem {
+  exptalk_id: number;
+  user_id: number;
+  prefdate?: string | null;
+  preftime?: string | null;
+  comments?: string | null;
+  estatus?: string | null;
+  status?: number | string | null;
+  created_date?: string | null;
+  modified_date?: string | null;
+  user_name?: string | null;
+}
+
+export interface UserListResponse<T> {
+  data?: T[];
+}
+
+export interface SupportRequestPayload {
+  user_id: string;
+  description: string;
+  email: string;
+  category: string;
+  imgname?: string;
+}
+
+export interface FeedbackPayload {
+  user_id: string;
+  ad_upload_id: string;
+  rating: string;
+  comments: string;
+}
+
+export interface ExpertCallPayload {
+  user_id: string;
+  prefdate: string;
+  preftime: string;
+  comments: string;
+}
+
+// ── Reference data service (Sprint 5 geo) ────────────────────────────────────
+
+export interface GeoItem {
+  id: string;
+  name: string;
+}

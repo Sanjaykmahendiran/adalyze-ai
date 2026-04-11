@@ -49,11 +49,11 @@ export default function FixThisAdDrawer({
     onClose()
   }
 
-  const runFixChain = async () => {
+  const runFixChain = async (isRetry = false) => {
     if (!adUploadId || !userId) return
 
     try {
-      // Step 1 — extract brand DNA
+      // Step 1 — extract brand DNA (backend auto-resets any stuck job)
       setStep("extracting")
       const startRes = await axiosInstance.post("/api/fix/start", {
         user_id: userId,
@@ -82,8 +82,16 @@ export default function FixThisAdDrawer({
       setNewGoNoGo(analyzeRes.data.data.new_go_no_go)
       setStep("done")
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ?? "Something went wrong. Please try again."
+      const status = err?.response?.status
+      const msg = err?.response?.data?.message ?? "Something went wrong. Please try again."
+
+      // 409 = stuck job from a previous run. Backend resets it on the next call,
+      // so auto-retry once silently before showing an error to the user.
+      if (status === 409 && !isRetry) {
+        await runFixChain(true)
+        return
+      }
+
       setErrorMessage(msg)
       setStep("error")
     }

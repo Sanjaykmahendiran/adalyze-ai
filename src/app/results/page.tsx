@@ -652,6 +652,9 @@ export default function ResultsPage() {
           }
         }
         const data = await getAdDetail(adUploadId, userId);
+        // Normalize go_no_go: old backend returns "No-Go" (hyphen),
+        // all downstream comparisons expect "No Go" (space form).
+        if (data && (data as any).go_no_go === "No-Go") (data as any).go_no_go = "No Go";
         if (!didCancel) setApiData(data as unknown as ApiResponse);
       } catch (err) {
         if (!didCancel) setError(err instanceof Error ? err.message : 'An error occurred');
@@ -682,6 +685,9 @@ export default function ResultsPage() {
       try {
         const userId = userDetails?.user_id;
         const data = await getAdDetail(adUploadId, userId);
+        // Normalize go_no_go: old backend returns "No-Go" (hyphen),
+        // all downstream comparisons expect "No Go" (space form).
+        if (data && (data as any).go_no_go === "No-Go") (data as any).go_no_go = "No Go";
         if (!didCancel) setApiData(data as unknown as ApiResponse);
       } catch (err) {
         if (!didCancel) setError(err instanceof Error ? err.message : 'An error occurred');

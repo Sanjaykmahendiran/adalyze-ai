@@ -119,7 +119,7 @@ const useFetchUserDetails = () => {
         };
 
         try {
-          const response = await axiosInstance.get<UserDetails>("", { params });
+          const response = await axiosInstance.get<UserDetails>("/api.php", { params });
 
           if (!response.data || response.status !== 200) {
             logout();

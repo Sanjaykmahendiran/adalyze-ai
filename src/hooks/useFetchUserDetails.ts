@@ -53,10 +53,16 @@ const useFetchUserDetails = () => {
 
           setUserDetails(response.data);
           fetchedUserIdRef.current = userId;
-        } catch (err) {
+        } catch (err: unknown) {
           console.error("Error fetching user details:", err);
           fetchedUserIdRef.current = null;
-          logout();
+          // Only force-logout on a real 401 (expired / invalid session).
+          // Network errors (CORS, timeout, 5xx) must NOT kill a valid session —
+          // a transient backend failure should never log the user out.
+          const status = (err as { response?: { status?: number } })?.response?.status;
+          if (status === 401) {
+            logout();
+          }
         } finally {
           setLoading(false);
           isFetchingRef.current = false;

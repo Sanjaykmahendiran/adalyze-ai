@@ -20,31 +20,8 @@ import TotalSuggestions from "@/assets/dashboard/total-suggestion.png"
 import UserLayout from "@/components/layouts/user-layout"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { getBrands, deleteBrand } from "@/services/brandService"
-import type { BrandWithStats } from "@/types/api"
-
-// Define the API response interface
-interface AdsApiResponse {
-    total: number
-    limit: number
-    offset: number
-    ads: Ad[]
-}
-
-// Define the Ad interface based on API response
-interface Ad {
-    ads_type: string
-    ad_id: number
-    ads_name: string
-    image_path: string
-    industry: string
-    score: number
-    platforms: string
-    uploaded_on: string
-    go_nogo?: string
-}
-
-
-// Define the A/B Ad interface
+import { getAds } from "@/services/adService"
+import type { Ad, AdsListParams, AdsListResponse, BrandWithStats } from "@/types/api"
 
 const platformIcons = {
     facebook: Facebook,
@@ -135,15 +112,12 @@ export default function MyAdsPage() {
             const userId = Cookies.get('userId')
             if (!userId) return
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=0&limit=12`
-            )
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch all ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const data = await getAds({
+                user_id: userId,
+                brand_id: brandId ?? undefined,
+                offset: 0,
+                limit: 12,
+            })
             setAllAds(data.ads)
             setTotalAds(data.total)
         } catch (error) {
@@ -182,18 +156,14 @@ export default function MyAdsPage() {
             }
 
             const offset = (currentPage - 1) * itemsPerPage
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=${offset}&limit=${itemsPerPage}`
-            )
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const data = await getAds({
+                user_id: userId,
+                brand_id: brandId ?? undefined,
+                offset,
+                limit: itemsPerPage,
+            })
             setAds(data.ads)
             setTotalAds(data.total)
-            // Removed fetchAllAds call from here to avoid duplicate request
 
         } catch (error) {
             console.error('Error fetching ads:', error)

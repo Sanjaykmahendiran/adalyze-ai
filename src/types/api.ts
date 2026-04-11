@@ -246,3 +246,332 @@ export interface AddBrandPayload {
 export interface EditBrandPayload extends AddBrandPayload {
   brand_id: string;
 }
+
+// ─── Sprint 3 additions ───────────────────────────────────────────────────────
+
+// ── Ad service ───────────────────────────────────────────────────────────────
+
+/**
+ * Ad — single ad record returned by adslist.
+ * platforms: JSON-encoded array OR comma-separated string — callers own parsing.
+ */
+export interface Ad {
+  ads_type: string;
+  ad_id: number;
+  ads_name: string;
+  image_path: string;
+  industry: string;
+  score: number;
+  platforms: string;
+  uploaded_on: string;
+  go_nogo?: string;
+}
+
+/**
+ * AdsListParams — query params for GET adslist.
+ * brand_id is optional: omit for own-ads, supply for brand-detail view.
+ */
+export interface AdsListParams {
+  user_id: string | number;
+  offset: number;
+  limit: number;
+  brand_id?: string | number;
+  platform?: string;
+  score?: string;
+  ad_type?: string;
+}
+
+/**
+ * AdsListResponse — paginated wrapper from adslist.
+ */
+export interface AdsListResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  ads: Ad[];
+}
+
+/**
+ * AbAdItem — one side of an A/B pair.
+ * go_nogoA / go_nogoB are backend aliases — callers normalise to go_nogo.
+ */
+export interface AbAdItem extends Ad {
+  go_nogoA?: string;
+  go_nogoB?: string;
+}
+
+/**
+ * AbAdPair — one A/B comparison record from abadslist.
+ */
+export interface AbAdPair {
+  ad_a: AbAdItem;
+  ad_b: AbAdItem;
+}
+
+// ── Dashboard service ─────────────────────────────────────────────────────────
+
+/** RecentAd — item inside Dashboard1Response.recentads. */
+export interface RecentAd {
+  ads_type: string;
+  estimated_ctr: number;
+  ad_id: number;
+  ads_name: string | null;
+  image_path: string;
+  industry: string;
+  score: number;
+  platforms: string;
+  uploaded_on: string;
+}
+
+/** Dashboard1Response — KPI aggregation from /api/dashboard. */
+export interface Dashboard1Response {
+  AdAnalysed: number;
+  "A/BTested": number;
+  AccountType: string;
+  AverageScore: number;
+  TopPlatform: string;
+  TotalSuggestions: number;
+  CommonIssue: string;
+  CommonFeedback: string;
+  LastAnalysedOn: string;
+  TotalGos: number;
+  recentads: RecentAd[];
+}
+
+/** GlobalInsight — item inside Dashboard2Response.global_insights. */
+export interface GlobalInsight {
+  id: number;
+  content: string;
+  source: string;
+}
+
+/** Dashboard2Response — monthly breakdown from /api/dashboard/monthly. */
+export interface Dashboard2Response {
+  viral_potential_score: number;
+  predicted_reach: number;
+  estimated_ctr: number;
+  conversion_probability: number;
+  scroll_stoppower: number;
+  latest_feedbacks: string[];
+  global_insights: GlobalInsight[];
+}
+
+/**
+ * ExpertTalkPayload — body for POST exptalkrequest.
+ */
+export interface ExpertTalkPayload {
+  user_id: number;
+  prefdate: string;
+  preftime: string;
+  comments: string;
+}
+
+// ── Content service ───────────────────────────────────────────────────────────
+
+/** CaseStudy — item from recentcslist. */
+export interface CaseStudy {
+  cs_id: number;
+  title: string;
+  slug: string;
+  banner_title: string;
+  client_name: string;
+  challenge: string;
+  insight: string;
+  action_taken: string;
+  outcome: string;
+  status: number;
+  created_at: string;
+  banner_subtitle: string;
+  banner_image_url: string;
+  banner_cta_label: string;
+  banner_cta_url: string;
+  industry: string;
+  platform: string;
+  region: string;
+  timeframe: string;
+  objectives: string;
+  strategy: string;
+  results_summary: string;
+  kpi_primary_label: string;
+  kpi_primary_value: string;
+  sidebar_metrics: string;
+  metrics_json: string;
+  testimonial_quote: string;
+  testimonial_name: string;
+  testimonial_role: string;
+  read_time_minutes: number;
+  order_index: number;
+  thumbnail_url: string;
+  tags: string;
+}
+
+/** Top10Ad — item from top10ads. */
+export interface Top10Ad {
+  ad_id: number;
+  ads_name: string | null;
+  image_path: string;
+  ads_type: string;
+  industry: string;
+  score: number;
+  confidence: number;
+  match_score: string;
+  uniqueness: string;
+  platforms: string;
+  top_platform?: string;
+  uploaded_on: string;
+  weighted_rank: number;
+  user_id: number;
+}
+
+/** TrendingAd — item inside TrendingAdsResponse.trending_ads. */
+export interface TrendingAd {
+  ad_id: number;
+  ads_name: string | null;
+  ads_type: string;
+  image_path: string;
+  industry: string;
+  score: number;
+  confidence: number;
+  match_score: string;
+  uniqueness: string;
+  platforms: string;
+  uploaded_on: string;
+  weighted_rank: number;
+  user_id: number;
+}
+
+/** TrendingAdsResponse — from trendingads. */
+export interface TrendingAdsResponse {
+  trending_ads: TrendingAd[];
+  time_frame: string;
+}
+
+/** Testimonial — item from testilist. */
+export interface Testimonial {
+  testi_id: number;
+  content: string;
+  name: string;
+  role: string;
+  status: number;
+  created_date: string;
+}
+
+// ── Pricing service ───────────────────────────────────────────────────────────
+
+/** PricingPlan — item from packages. Service returns only status:1 plans. */
+export interface PricingPlan {
+  package_id: number;
+  type: number;
+  plan_name: string;
+  price_inr: number;
+  base_price: string;
+  tax: number;
+  ori_price_inr: number;
+  ori_price_usd: number;
+  price_usd: string;
+  features: string;
+  brands_count: number;
+  ads_limit: string;
+  valid_till: string;
+  status: number;
+}
+
+/** FAQ — item from faqlist. */
+export interface FAQ {
+  faq_id: number;
+  question: string;
+  answer: string;
+  category: string;
+  status: number;
+  created_date: string;
+}
+
+/** AppConfig — from config gofor. */
+export interface AppConfig {
+  rzpaykey: string;
+  [key: string]: unknown;
+}
+
+/** FreeTrialResponse — normalised return from activateFreeTrial. */
+export interface FreeTrialResponse {
+  activated: boolean;
+  message: string;
+}
+
+// ── Payment service ───────────────────────────────────────────────────────────
+
+/** CreateOrderParams — body for POST /razorpay.php. */
+export interface CreateOrderParams {
+  user_id: string;
+  package_id: string;
+  ctype: "INR" | "USD";
+  period: "monthly" | "half-yearly" | "yearly";
+  order_type: "new" | "upgrade" | "downgrade" | "agency";
+}
+
+/** CreateOrderResponse — from /razorpay.php. */
+export interface CreateOrderResponse {
+  order_id: string;
+  message?: string;
+}
+
+/** VerifyPaymentParams — body for POST /verify.php. */
+export interface VerifyPaymentParams {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+/** VerifyPaymentResponse — from /verify.php. */
+export interface VerifyPaymentResponse {
+  response: string;
+  message?: string;
+}
+
+/** Transaction — item from paymenthistory. order_status: 0=Failed, 1=Completed, 2=Processing. */
+export interface Transaction {
+  id: string;
+  order_id: string;
+  payment_id: string;
+  razorpay_signature: string;
+  package_id: number;
+  type: string;
+  amount: string;
+  base_price: string;
+  tax: number;
+  currency: string;
+  date: string;
+  order_status: number;
+  plan_name: string;
+}
+
+// ── Checklist service ─────────────────────────────────────────────────────────
+
+/** EvidenceFormat — the three supported evidence kinds. */
+export type EvidenceFormat = "SCREENSHOT" | "URL" | "MESSAGE BOX";
+
+/** ChecklistItem — item from prechecklistlist response.data. */
+export interface ChecklistItem {
+  checklist_id: number;
+  slug: string;
+  title: string;
+  description: string;
+  status: "done" | "open";
+  evidence_url: string;
+  format: EvidenceFormat;
+}
+
+/** MarkChecklistDonePayload — body for POST markchecklistdone. */
+export interface MarkChecklistDonePayload {
+  ad_upload_id: string;
+  checklist_id: string;
+  status: "done";
+  updated_by: string;
+  evidence_url: string;
+}
+
+/** ChecklistMutationResult — normalised return from markChecklistDone. */
+export interface ChecklistMutationResult {
+  success: boolean;
+  message?: string;
+}

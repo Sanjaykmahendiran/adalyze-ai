@@ -30,6 +30,21 @@
 # Disable directory listing
 Options -Indexes
 
+# Cache control — HTML never cached, hashed assets cached forever
+<IfModule mod_headers.c>
+    # HTML pages: always revalidate (Next.js static export, no hash in filename)
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+
+    # Next.js hashed chunks: immutable (filename changes on every build)
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
 # Allow images to load without Content-Type override
 <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|avif)$">
     Header unset Content-Type

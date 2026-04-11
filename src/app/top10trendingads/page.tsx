@@ -8,34 +8,14 @@ import "react-circular-progressbar/dist/styles.css"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
-
-interface TrendingAdData {
-  ad_id: number
-  ads_name: string
-  ads_type: string
-  image_path: string
-  industry: string
-  score: number
-  confidence: number
-  match_score: string
-  uniqueness: string
-  platforms: string
-  uploaded_on: string
-  weighted_rank: number
-  user_id: number
-}
-
-interface TrendingAdsResponse {
-  time_frame: string
-  total_ads_considered: number
-  trending_ads: TrendingAdData[]
-}
+import { getTrendingAds } from "@/services/contentService"
+import type { TrendingAd, TrendingAdsResponse } from "@/types/api"
 
 export default function Top10TrendingAdsWall() {
   // Use the new ad navigation hook
   const { navigateToTrendingAdResults } = useAdNavigation()
   const router = useRouter()
-  const [adsData, setAdsData] = useState<TrendingAdData[]>([])
+  const [adsData, setAdsData] = useState<TrendingAd[]>([])
   const [timeFrame, setTimeFrame] = useState<string>("")
   const [totalAdsConsidered, setTotalAdsConsidered] = useState<number>(0)
   const [loading, setLoading] = useState(true)
@@ -50,15 +30,7 @@ export default function Top10TrendingAdsWall() {
     const fetchAdsData = async () => {
       try {
         setLoading(true)
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=trendingads`
-        )
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch trending ads data")
-        }
-
-        const data: TrendingAdsResponse = await response.json()
+        const data: TrendingAdsResponse = await getTrendingAds()
         setAdsData(data.trending_ads?.slice(0, 10) || [])
         setTimeFrame(data.time_frame || "")
         setTotalAdsConsidered(data.total_ads_considered || 0)
@@ -231,7 +203,7 @@ export default function Top10TrendingAdsWall() {
                 >
                   <img
                     src={ad.image_path || "/api/placeholder/300/300"}
-                    alt={ad.ads_name}
+                    alt={ad.ads_name ?? ''}
                     className="w-full h-full object-cover"
                     onError={handleImageError}
                     loading="lazy"
@@ -239,8 +211,8 @@ export default function Top10TrendingAdsWall() {
                 </motion.div>
 
                 <p className="text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 truncate max-w-28 sm:max-w-32">
-                  {ad.ads_name.length > 15
-                    ? ad.ads_name.slice(0, 15) + "..."
+                  {(ad.ads_name ?? '').length > 15
+                    ? (ad.ads_name ?? '').slice(0, 15) + "..."
                     : ad.ads_name}
                 </p>
                 <p className="text-[11px] sm:text-xs text-gray-300 mb-0.5">
@@ -287,7 +259,7 @@ export default function Top10TrendingAdsWall() {
                 <div className="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 aspect-square overflow-hidden flex-shrink-0">
                   <img
                     src={ad.image_path || "/api/placeholder/300/200"}
-                    alt={ad.ads_name}
+                    alt={ad.ads_name ?? ''}
                     className="w-full h-full object-cover rounded-lg sm:rounded-xl"
                     onError={handleImageError}
                     loading="lazy"
@@ -300,8 +272,8 @@ export default function Top10TrendingAdsWall() {
                     {ad.ads_type || "Unknown Type"}
                   </p>
                   <h3 className="text-white font-semibold text-sm sm:text-base line-clamp-1">
-                    {ad.ads_name.length > 15
-                      ? ad.ads_name.slice(0, 15) + "..."
+                    {(ad.ads_name ?? '').length > 15
+                      ? (ad.ads_name ?? '').slice(0, 15) + "..."
                       : ad.ads_name}
                   </h3>
                   <div className="flex gap-1 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">

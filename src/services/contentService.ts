@@ -38,10 +38,14 @@ export const getFaqs = async (): Promise<FAQ[]> => {
   return res.json() as Promise<FAQ[]>;
 };
 
-export const getTestimonials = async (): Promise<Testimonial[]> => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=testilist`
-  );
+export const getTestimonials = async (
+  params?: { category?: string }
+): Promise<Testimonial[]> => {
+  let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=testilist`;
+  if (params?.category) {
+    url += `&category=${encodeURIComponent(params.category)}`;
+  }
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`testilist failed: ${res.status}`);
   return res.json() as Promise<Testimonial[]>;
 };

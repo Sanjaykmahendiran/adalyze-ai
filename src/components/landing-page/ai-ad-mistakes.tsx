@@ -6,22 +6,8 @@ import { Button } from "../ui/button";
 import { trackEvent } from "@/lib/eventTracker";
 import { ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface Issue {
-  issue_id: number;
-  title: string;
-  industry?: string;
-  platform?: string;
-  image_url?: string;
-  issue_1?: string;
-  issue_2?: string;
-  issue_3?: string;
-  predicted_ctr_change?: string;
-  overall_score?: string;
-  cta_text?: string;
-  show_priority?: number;
-  status?: number;
-}
+import { getIssues } from "@/services/cmsService"
+import type { IssueItem } from "@/types/api"
 
 const containerVariants = {
   hidden: {},
@@ -50,7 +36,7 @@ function SkeletonCard() {
 }
 
 export default function AiAdMistakes({ category }: { category: string }) {
-  const [issues, setIssues] = useState<Issue[] | null>(null);
+  const [issues, setIssues] = useState<IssueItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -60,12 +46,7 @@ export default function AiAdMistakes({ category }: { category: string }) {
     async function load() {
       try {
         setError(null);
-        const url = category
-          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=issueslist&category=${encodeURIComponent(category)}`
-          : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=issueslist`;
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`Failed: ${res.status}`);
-        const data = (await res.json()) as Issue[] | unknown;
+        const data = await getIssues({ category: category || undefined, cache: "no-store" });
         if (!active) return;
         setIssues(Array.isArray(data) ? data : []);
       } catch (e: any) {

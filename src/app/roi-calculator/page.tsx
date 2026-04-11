@@ -20,30 +20,14 @@ import { motion } from "framer-motion"
 import Image from "next/image"
 import { trackEvent } from "@/lib/eventTracker"
 import Spinner from "@/components/overlay"
-
-interface ROIData {
-    Return_on_Investment?: string
-    Cost_Savings?: string
-    Time_Saved?: string
-    ROI?: string
-}
+import { getTestimonials } from "@/services/contentService"
+import { calculateROI } from "@/services/cmsService"
+import { submitROIQuery } from "@/services/supportService"
+import type { Testimonial, ROIResult, ROIQueryPayload } from "@/types/api"
 
 interface FormState {
     email: string
     description: string
-}
-
-// removed Country interface as we now use a static list
-
-interface Testimonial {
-    testi_id: number
-    content: string
-    name: string
-    imgname: string
-    role: string
-    company: string
-    status: number
-    created_date: string
 }
 
 function ContactFormModal({ onClose }: { onClose: () => void }) {
@@ -75,18 +59,7 @@ function ContactFormModal({ onClose }: { onClose: () => void }) {
         try {
             setIsSubmitting(true)
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    gofor: "sendquery",
-                    email,
-                    category: "roi-call",
-                    description,
-                }),
-            })
+            const response = await submitROIQuery({ email, category: "roi-call", description })
 
             const result = await response.json()
 
@@ -197,8 +170,7 @@ function TestimonialSlider() {
     useEffect(() => {
         const fetchTestimonials = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=testilist`)
-                const data = await response.json()
+                const data = await getTestimonials()
                 if (Array.isArray(data)) {
                     setTestimonials(data.filter(item => item.status === 1))
                 }
@@ -328,7 +300,7 @@ export default function ROICalculator() {
     const [country, setCountry] = useState("")
     const [teamMembers, setTeamMembers] = useState("")
     const [creativesPerWeek, setCreativesPerWeek] = useState("")
-    const [roiData, setRoiData] = useState<ROIData | null>(null)
+    const [roiData, setRoiData] = useState<ROIResult | null>(null)
     const [loading, setLoading] = useState(false)
     const [showContactForm, setShowContactForm] = useState(false)
 
@@ -366,10 +338,7 @@ export default function ROICalculator() {
                     const users = getUserCount(teamMembers)
                     const weeklyRange = getWeeklyRangeMidpoint(creativesPerWeek)
 
-                    const response = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=calculateROI&country=${country}&users=${users}&weekly_range=${weeklyRange}`
-                    )
-                    const data = await response.json()
+                    const data = await calculateROI({ country, users, weekly_range: weeklyRange })
                     setRoiData(data)
                 } catch (error) {
                     console.error("Error fetching ROI data:", error)

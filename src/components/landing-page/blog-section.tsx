@@ -13,22 +13,11 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { trackEvent } from "@/lib/eventTracker"
 import { useRouter } from "next/navigation";
+import { getBlogs } from "@/services/cmsService";
+import type { BlogPost } from "@/types/api";
 
 export default function BlogSection() {
   const router = useRouter();
-
-  interface BlogPost {
-    blogs_id: number;
-    title: string;
-    slug: string;
-    banner: string;
-    outline: string;
-    content: string;
-    reading_time: string;
-    key_takeaways: string;
-    status: number;
-    created_at: string;
-  }
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,15 +27,7 @@ export default function BlogSection() {
     const fetchBlogPosts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=blogslist`
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await getBlogs();
         // Only take the first three posts
         setBlogPosts(data.slice(0, 3));
       } catch (err) {

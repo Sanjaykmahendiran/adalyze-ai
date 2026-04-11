@@ -1,14 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { trackEvent } from "@/lib/eventTracker"
-interface FAQItem {
-  faq_id: number;
-  question: string;
-  answer: string;
-  category: string;
-  status: number;
-  created_date: string;
-}
+import { getFaqList } from "@/services/cmsService"
+import type { FAQItem } from "@/types/api"
 
 const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ ButtonText, category = "General" }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -24,13 +18,7 @@ const FAQSection: React.FC<{ ButtonText: string, category: string }> = ({ Button
     const fetchFAQs = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=prefaqlist&category=${category}`);
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch FAQs');
-        }
-
-        const data: FAQItem[] = await response.json();
+        const data: FAQItem[] = await getFaqList({ category });
         setFaqs(data);
         setError(null);
       } catch (err) {

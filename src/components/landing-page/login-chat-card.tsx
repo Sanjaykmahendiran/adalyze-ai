@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import Captcha, { CaptchaHandle } from "../Captcha";
+import { submitGuestSupportRequest } from "@/services/supportService"
 
 interface LoginChatCardProps {
   onClose: () => void;
@@ -62,16 +63,7 @@ const LoginChatCard: React.FC<LoginChatCardProps> = ({ onClose }) => {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gofor: "needhelp",
-          email,
-          category,
-          description,
-        }),
-      });
+      const response = await submitGuestSupportRequest({ user_id: null, email, category, description });
 
       const result = await response.json();
       if (response.ok && result?.status !== "error") {

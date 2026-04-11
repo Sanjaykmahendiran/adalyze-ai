@@ -7,6 +7,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { trackEvent } from "@/lib/eventTracker"
+import { getCaseStudies } from "@/services/cmsService"
 import {
     Carousel,
     CarouselContent,
@@ -26,15 +27,8 @@ export default function CaseStudySection({ category }: { category: string }) {
     useEffect(() => {
         const fetchCaseStudies = async () => {
             try {
-                const url = category
-                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=casestudylist&category=${encodeURIComponent(category)}`
-                    : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=casestudylist`;
-                const response = await fetch(url)
-                if (!response.ok) {
-                    throw new Error('Failed to fetch case studies')
-                }
-                const data = await response.json()
-                setCaseStudies(data.slice(0, 3))
+                const response_data = await getCaseStudies(category ? { category } : undefined)
+                setCaseStudies(response_data.slice(0, 3))
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'An error occurred')
             } finally {

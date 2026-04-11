@@ -8,6 +8,8 @@ import type {
   SupportRequestPayload,
   FeedbackPayload,
   ExpertCallPayload,
+  GuestSupportPayload,
+  ROIQueryPayload,
 } from "@/types/api";
 
 export const getFullAdsList = async (
@@ -133,5 +135,41 @@ export const submitExpertCallRequest = async (
     }
   );
   if (!res.ok) throw new Error(`exptalkrequest failed: ${res.status}`);
+  return res;
+};
+
+export const submitGuestSupportRequest = async (
+  payload: GuestSupportPayload
+): Promise<Response> => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        gofor: "needhelp",
+        ...payload,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(`needhelp (guest) failed: ${res.status}`);
+  return res;
+};
+
+export const submitROIQuery = async (
+  payload: ROIQueryPayload
+): Promise<Response> => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        gofor: "sendquery",
+        ...payload,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(`sendquery failed: ${res.status}`);
   return res;
 };

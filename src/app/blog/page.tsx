@@ -9,19 +9,8 @@ import Spinner from "@/components/overlay"
 import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
-
-interface BlogPost {
-  blogs_id: number
-  title: string
-  slug: string
-  banner: string
-  outline: string
-  content: string
-  reading_time: string
-  key_takeaways: string
-  status: number
-  created_at: string
-}
+import { getBlogs } from "@/services/cmsService"
+import type { BlogPost } from "@/types/api"
 
 export default function Blogs() {
   const router = useRouter()
@@ -36,11 +25,7 @@ export default function Blogs() {
     const fetchBlogPosts = async () => {
       try {
         setLoading(true)
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=blogslist`
-        )
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
-        const data = await response.json()
+        const data = await getBlogs()
         setBlogPosts(data)
       } catch (err) {
         console.error("Error fetching blog posts:", err)

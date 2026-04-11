@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import LandingPageFooter from "@/components/landing-page/landing-page-footer";
 import Header from "@/components/landing-page/header";
-
+import { getPrivacyPolicy } from "@/services/supportService";
 
 // Simple HTML sanitizer function (you might want to use a library like DOMPurify)
 const sanitizeHTML = (html: string): string => {
@@ -34,14 +34,7 @@ export default function PrivacyPolicy() {
     useEffect(() => {
         const fetchPrivacyPolicy = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=privacypolicy`);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                // Since the API returns HTML directly, use text() instead of json()
-                const htmlContent = await response.text();
+                const htmlContent = await getPrivacyPolicy();
 
                 // Check if we actually got HTML content
                 if (!htmlContent || htmlContent.trim() === '') {

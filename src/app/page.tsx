@@ -10,32 +10,8 @@ import ChatIcon from "@/assets/Chat-icon.png";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/eventTracker";
-
-
-// Shared type for banner data (same shape as before)
-interface BannerData {
-  tagline: string;
-  heading: string;
-  subheading: string;
-  brief: string;
-  pcta: string;
-  scta: string;
-  trust_line: string;
-  typeword1: string;
-  typeword2: string;
-  typeword3: string;
-  typeword4: string;
-  counter_content: string;
-  metric_content1: string;
-  metric_value1: number;
-  metric_content2: string;
-  metric_value2: number;
-  metric_content3: string;
-  metric_value3: number;
-  metric_content4: string;
-  metric_value4: number;
-  counter: number;
-}
+import { getLiveBanner } from "@/services/cmsService";
+import type { BannerData } from "@/types/api";
 
 // Only import critical above-the-fold components directly
 import LandingPageHeader from "@/components/landing-page/landing-header-section";
@@ -77,11 +53,7 @@ const LandingPage = () => {
     // Defer banner data fetch to improve FCP - don't block initial render
     const fetchBannerData = async () => {
       try {
-        const baseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=livebanner`;
-        const url = variant && variant !== "default" ? `${baseUrl}&variant=${variant}` : baseUrl;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
+        const data = await getLiveBanner(variant ? { variant } : undefined);
         // Validate shape — must have at least one typeword field
         if (!data || typeof data !== "object" || !data.typeword1) throw new Error("Invalid banner data");
         setBannerData(data);

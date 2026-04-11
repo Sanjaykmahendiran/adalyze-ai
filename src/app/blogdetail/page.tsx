@@ -11,27 +11,12 @@ import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import Spinner from "@/components/overlay"
 import { Button } from "@/components/ui/button"
-
-interface BlogPost {
-    blogs_id: number;
-    title: string;
-    slug: string;
-    banner: string;
-    outline: string;
-    content: string;
-    reading_time: string;
-    key_takeaways: string;
-    status: number;
-    created_at: string;
-}
+import { getBlogBySlug, getBlogs } from "@/services/cmsService"
+import type { BlogPost } from "@/types/api"
 
 async function getBlogPostById(slug: string): Promise<BlogPost | null> {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=getblog&slug=${slug}`, {
-            cache: 'no-store'
-        })
-        if (!response.ok) throw new Error("Failed to fetch blog post")
-        return (await response.json()) as BlogPost
+        return await getBlogBySlug(slug, { cache: "no-store" })
     } catch (error) {
         console.error("Error fetching blog post:", error)
         return null
@@ -40,11 +25,7 @@ async function getBlogPostById(slug: string): Promise<BlogPost | null> {
 
 async function getAllBlogPosts(): Promise<BlogPost[]> {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=blogslist`, {
-            cache: 'no-store'
-        })
-        if (!response.ok) throw new Error("Failed to fetch blog posts")
-        return (await response.json()) as BlogPost[]
+        return await getBlogs({ cache: "no-store" })
     } catch (error) {
         console.error("Error fetching blog posts:", error)
         return []

@@ -444,6 +444,7 @@ export interface TrendingAd {
 export interface TrendingAdsResponse {
   trending_ads: TrendingAd[];
   time_frame: string;
+  total_ads_considered?: number;
 }
 
 /** Testimonial — item from testilist. */
@@ -454,6 +455,8 @@ export interface Testimonial {
   role: string;
   status: number;
   created_date: string;
+  imgname?: string;
+  company?: string;
 }
 
 // ── Pricing service ───────────────────────────────────────────────────────────
@@ -738,4 +741,186 @@ export interface ExpertCallPayload {
 export interface GeoItem {
   id: string;
   name: string;
+}
+
+// ── Sprint 6 additions ────────────────────────────────────────────────────────
+
+// ── CMS service ───────────────────────────────────────────────────────────────
+
+/** FAQItem — item from prefaqlist (public FAQ endpoint). */
+export interface FAQItem {
+  faq_id: number;
+  question: string;
+  answer: string;
+  category: string;
+  status: number;
+  created_date?: string;
+}
+
+/** Guide — item from guideslist. */
+export interface Guide {
+  guide_id: number;
+  title: string;
+  slug: string;
+  type: string;
+  platform: string;
+  goal?: string;
+  read_time_sec?: number;
+  difficulty?: string;
+  summary: string;
+  body_md?: string;
+  media_url: string | null;
+  checklist_json: string | null;
+  troubleshoot_for: string | null;
+  status: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+/** BlogPost — item from blogslist / getblog. */
+export interface BlogPost {
+  blogs_id: number;
+  title: string;
+  slug: string;
+  banner: string;
+  outline: string;
+  content: string;
+  reading_time: string;
+  key_takeaways: string;
+  status: number;
+  created_at: string;
+}
+
+/** BannerData — single object from livebanner. NOT an array endpoint. */
+export interface BannerData {
+  tagline: string;
+  heading: string;
+  subheading: string;
+  brief: string;
+  pcta: string;
+  scta: string;
+  trust_line: string;
+  typeword1: string;
+  typeword2: string;
+  typeword3: string;
+  typeword4: string;
+  counter_content: string;
+  metric_content1: string;
+  metric_value1: number;
+  metric_content2: string;
+  metric_value2: number;
+  metric_content3: string;
+  metric_value3: number;
+  metric_content4: string;
+  metric_value4: number;
+  counter: number;
+}
+
+/** Client — item from clientslist. */
+export interface Client {
+  client_id: number;
+  client_name: string;
+  logo_url: string | null;
+  website_url: string | null;
+}
+
+/** ApiMenuItem — item from menulist. Recursive: children is optional array of same type. */
+export interface ApiMenuItem {
+  menu_id: number;
+  parent_id: number;
+  name: string;
+  link: string;
+  badge_text: string | null;
+  menu_type: string;
+  target: string;
+  sort_order: number;
+  visibility: string;
+  status: number;
+  created_date?: string;
+  modified_date?: string;
+  children?: ApiMenuItem[];
+}
+
+/** AgencyUseCaseResponse — item from agusecaselist (raw API shape). */
+export interface AgencyUseCaseResponse {
+  case_id: number;
+  agency_name: string;
+  tagline: string;
+  key_point1: string;
+  key_point2: string;
+  key_point3: string;
+  overview: string;
+  challenges: string;
+  solutions: string;
+  results: string;
+  logo_url: string;
+  cover_image: string;
+  status: number;
+}
+
+/** VersionData — item from versionlist. */
+export interface VersionData {
+  version_id: number;
+  version_name: string;
+  title: string;
+  description: string;
+  status: string;
+  release_date: string;
+  estatus: number;
+  created_date: string;
+  modified_date: string;
+  image: string;
+}
+
+/** IssueItem — item from issueslist. All fields except issue_id and title are optional. */
+export interface IssueItem {
+  issue_id: number;
+  title: string;
+  industry?: string;
+  platform?: string;
+  image_url?: string;
+  issue_1?: string;
+  issue_2?: string;
+  issue_3?: string;
+  predicted_ctr_change?: string;
+  overall_score?: string;
+  cta_text?: string;
+  show_priority?: number;
+  status?: number;
+}
+
+// ── ROI calculator ────────────────────────────────────────────────────────────
+
+/** ROIParams — query params for calculateROI endpoint. */
+export interface ROIParams {
+  country: string;
+  users: string | number;
+  weekly_range: string | number;
+}
+
+/** ROIResult — response from calculateROI. All values are strings from the PHP backend. */
+export interface ROIResult {
+  Return_on_Investment?: string;
+  Cost_Savings?: string;
+  Time_Saved?: string;
+  ROI?: string;
+  [key: string]: string | undefined;
+}
+
+// ── Guest support payloads ────────────────────────────────────────────────────
+
+/** GuestSupportPayload — body for POST needhelp (guest/anonymous variant). */
+export interface GuestSupportPayload {
+  user_id: string | null;
+  email: string | null;
+  category: string;
+  description: string;
+  imgname?: string;
+}
+
+/** ROIQueryPayload — body for POST sendquery (ROI calculator contact form). */
+export interface ROIQueryPayload {
+  email: string;
+  category: string;
+  description: string;
 }

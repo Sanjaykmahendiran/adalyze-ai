@@ -4,6 +4,7 @@ import { AnimatedTestimonials } from "@/components/landing-page/animated-testimo
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
+import { getTestimonials } from "@/services/contentService"
 
 type TestimonialType = {
   quote: string
@@ -23,11 +24,7 @@ export default function Testimonials({ category }: { category: string }) {
   useEffect(() => {
     const fetchTestimonials = async () => {
       try {
-        const url = category
-          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=testilist&category=${encodeURIComponent(category)}`
-          : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=testilist`;
-        const response = await fetch(url)
-        const data = await response.json()
+        const data = await getTestimonials(category ? { category } : undefined)
 
         const formatted: TestimonialType[] = data
           .filter((item: any) => item.status === 1)

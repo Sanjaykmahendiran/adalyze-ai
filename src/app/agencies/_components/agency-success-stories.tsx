@@ -6,24 +6,8 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { X, ArrowRight, TrendingUp, Clock, Target, DollarSign } from "lucide-react"
 import { trackEvent } from "@/lib/eventTracker"
-
-
-
-interface CaseStudyApiResponse {
-  case_id: number
-  agency_name: string
-  tagline: string
-  key_point1: string
-  key_point2: string
-  key_point3: string
-  overview: string
-  challenges: string
-  solutions: string
-  results: string
-  logo_url: string
-  cover_image: string
-  status: number
-}
+import { getAgencyUseCases } from "@/services/cmsService"
+import type { AgencyUseCaseResponse } from "@/types/api"
 
 interface CaseStudy {
   id: number
@@ -89,8 +73,7 @@ export default function AgencySuccessStories() {
       try {
         setIsLoading(true)
         setIsError(false)
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=agusecaselist`, { cache: "no-store" })
-        const data: CaseStudyApiResponse[] = await res.json()
+        const data: AgencyUseCaseResponse[] = await getAgencyUseCases()
         if (!Array.isArray(data)) throw new Error("Invalid response")
 
         const normalizeList = (text: string): string[] => {

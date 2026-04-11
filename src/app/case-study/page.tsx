@@ -8,18 +8,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import Header from "@/components/landing-page/header"
 import LandingPageFooter from "@/components/landing-page/landing-page-footer"
 import { useSearchParams, useRouter } from "next/navigation"
-
-interface CaseStudy {
-  cs_id: string
-  slug: string
-  title: string
-  banner_title: string
-  banner_subtitle: string
-  banner_image_url: string
-  client_name: string
-  industry: string
-  banner_cta_label: string
-}
+import { getCaseStudies } from "@/services/cmsService"
+import type { CaseStudy } from "@/types/api"
 
 export default function CaseStudiesPage() {
   const router = useRouter()
@@ -31,23 +21,16 @@ export default function CaseStudiesPage() {
   const isDashboard = searchParams.get("type") === "dashboard"
 
   useEffect(() => {
-    const fetchCaseStudies = () => {
-      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=casestudylist`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Failed to fetch case studies')
-          }
-          return response.json()
-        })
-        .then(data => {
-          setCaseStudies(data)
-          setLoading(false)
-        })
-        .catch(error => {
-          console.error('Error fetching case studies:', error)
-          setError('Failed to load case studies')
-          setLoading(false)
-        })
+    const fetchCaseStudies = async () => {
+      try {
+        const data = await getCaseStudies()
+        setCaseStudies(data)
+      } catch (error) {
+        console.error('Error fetching case studies:', error)
+        setError('Failed to load case studies')
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchCaseStudies()

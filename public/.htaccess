@@ -18,6 +18,12 @@
 
     RewriteBase /
 
+    # BUG-CORS-002: proxy legacy /api.php calls to evraapp.top/App/api.php.
+    # axiosInstance baseURL points to the new REST backend; services that still call
+    # "/api.php" as a relative path would resolve to the new backend and 404.
+    # This rule intercepts /api.php at the same origin and forwards server-side.
+    RewriteRule ^api\.php$ /legacy-proxy.php [QSA,L]
+
     # BUG-CORS-001 fix: route /api/* through same-origin PHP proxy.
     # Browser calls dev.adalyzeai.xyz/api/* (same origin → no CORS preflight).
     # api-proxy.php forwards server-side to dev.evraapp.top with a clean response.

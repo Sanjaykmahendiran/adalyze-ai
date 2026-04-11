@@ -32,7 +32,10 @@ jobs:
         if: github.ref == 'refs/heads/develop'
         env:
           NEXT_PUBLIC_API_BASE_URL: https://evraapp.top/App
-          NEXT_PUBLIC_REST_BASE_URL: ${{ secrets.DEV_API_BASE_URL }}
+          # BUG-CORS-001 fix: use the frontend domain as the REST base URL.
+          # api-proxy.php in public/ proxies /api/* to dev.evraapp.top server-side
+          # (no CORS — same-origin request from the browser's perspective).
+          NEXT_PUBLIC_REST_BASE_URL: https://dev.adalyzeai.xyz
         run: pnpm run build
 
       - name: Build (main branch)

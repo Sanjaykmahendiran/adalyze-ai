@@ -18,6 +18,11 @@
 
     RewriteBase /
 
+    # BUG-CORS-001 fix: route /api/* through same-origin PHP proxy.
+    # Browser calls dev.adalyzeai.xyz/api/* (same origin → no CORS preflight).
+    # api-proxy.php forwards server-side to dev.evraapp.top with a clean response.
+    RewriteRule ^api/(.*)$ /api-proxy.php?_proxy_path=$1 [QSA,L]
+
     # Pass through existing files and directories (assets, _next, App/, etc.)
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d

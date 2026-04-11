@@ -575,3 +575,82 @@ export interface ChecklistMutationResult {
   success: boolean;
   message?: string;
 }
+
+// ── Sprint 4 additions ───────────────────────────────────────────────────────
+
+// ── Results service ──────────────────────────────────────────────────────────
+
+export interface AdDetailResponse {
+  success: boolean;
+  message?: string;
+  data: AdDetailData;
+}
+
+export interface AdDetailData {
+  heatmapstatus: number;
+  platform_suits?: unknown[];
+  platform_notsuits?: unknown[];
+  [key: string]: unknown;
+}
+
+export interface HeatmapGetResponse {
+  heatmap_json: string;
+}
+
+export interface HeatmapGenerateResponse {
+  heatmap: {
+    zones: unknown[];
+  };
+}
+
+export interface DeleteAdResponse {
+  response: string;
+}
+
+// ── Chat service ─────────────────────────────────────────────────────────────
+
+export interface ChatLogEntry {
+  al_id: number;
+  ad_upload_id: number;
+  user_id: number;
+  question: string;
+  answer: string;
+  created_date: string;
+}
+
+export interface AskAdalyzePayload {
+  ad_upload_id: number;
+  question: string;
+}
+
+export interface AskAdalyzeResponse {
+  answer?: string;
+  suggested_questions?: string[];
+  ask_count?: number;
+  ask_limit?: number;
+  askCount?: number;
+  askLimit?: number;
+  limit_reached?: boolean;
+  limitReached?: boolean;
+  error?: string;
+}
+
+// ── A/B service ──────────────────────────────────────────────────────────────
+
+export interface AbAdDetailResult {
+  recommended_ad: string;
+  reason: string;
+  [key: string]: unknown;
+}
+
+export interface DeleteAbAdResponse {
+  response: string;
+}
+
+// ── Reference data service ───────────────────────────────────────────────────
+
+export interface LocationResult {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}

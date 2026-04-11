@@ -28,6 +28,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { getAdIdFromUrlParams, isTokenExpired, generateShareUrl, generateShareText, parseUserIdFromToken } from "@/lib/tokenUtils"
 import { trackEvent } from "@/lib/eventTracker"
 import Footer from "@/components/footer"
+import { getAdDetail, getHeatmap, generateHeatmap, deleteAd } from "@/services/resultsService"
 import UpgradePopup from "@/components/UpgradePopup"
 import Chart from 'chart.js/auto'
 import PreCampaignChecklist from "./_components/PreCampaignChecklist"
@@ -551,13 +552,7 @@ export default function ResultsPage() {
     setDeleteLoading(true)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=deletead&ad_upload_id=${adId}`)
-
-      if (!response.ok) {
-        throw new Error('Failed to delete ad')
-      }
-
-      const result = await response.json()
+      const result = await deleteAd(adId)
 
       if (result.response === "Ad Deleted") {
         toast.success("Ad deleted successfully")
@@ -595,17 +590,9 @@ export default function ResultsPage() {
     setHeatmapLoading(true)
 
     try {
-      let result: any;
-
       if (heatmapStatus === 1) {
         // If heatmapstatus is 1, call GET endpoint
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=getheatmap&ad_upload_id=${adId}`)
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch heatmap')
-        }
-
-        result = await response.json()
+        const result = await getHeatmap(adId)
 
         // Parse heatmap_json string to get zones
         if (result.heatmap_json) {
@@ -626,21 +613,7 @@ export default function ResultsPage() {
         }
       } else {
         // If heatmapstatus is 0 or undefined, call POST endpoint (default behavior)
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/heatmap.php`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ad_upload_id: Number(adId)
-          })
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch heatmap')
-        }
-
-        result = await response.json()
+        const result = await generateHeatmap(Number(adId))
 
         if (result.heatmap && result.heatmap.zones) {
           setHeatmapData(result.heatmap)
@@ -671,18 +644,15 @@ export default function ResultsPage() {
     const fetchAdDetails = async () => {
       try {
         const shareToken = searchParams.get('token') || searchParams.get('ad-token') || searchParams.get('top10-token') || searchParams.get('trending-token');
-        let userIdParam = '';
+        let userId: string | undefined;
         if (shareToken) {
           const userIdFromToken = parseUserIdFromToken(shareToken);
           if (userIdFromToken) {
-            userIdParam = `&user_id=${userIdFromToken}`;
+            userId = userIdFromToken;
           }
         }
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
-        if (!response.ok) throw new Error('Failed to fetch ad details');
-        const result = await response.json();
-        if (!result.success) throw new Error(result.message || 'API returned error');
-        if (!didCancel) setApiData(result.data);
+        const data = await getAdDetail(adUploadId, userId);
+        if (!didCancel) setApiData(data as unknown as ApiResponse);
       } catch (err) {
         if (!didCancel) setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -710,15 +680,9 @@ export default function ResultsPage() {
     let didCancel = false;
     const fetchAdDetails = async () => {
       try {
-        let userIdParam = '';
-        if (userDetails?.user_id) {
-          userIdParam = `&user_id=${userDetails.user_id}`;
-        }
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
-        if (!response.ok) throw new Error('Failed to fetch ad details');
-        const result = await response.json();
-        if (!result.success) throw new Error(result.message || 'API returned error');
-        if (!didCancel) setApiData(result.data);
+        const userId = userDetails?.user_id;
+        const data = await getAdDetail(adUploadId, userId);
+        if (!didCancel) setApiData(data as unknown as ApiResponse);
       } catch (err) {
         if (!didCancel) setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {

@@ -23,6 +23,8 @@ import toast from "react-hot-toast";
 import logo from "@/assets/ad-icon-logo.png"
 import { getAdIdFromUrlParams, parseUserIdFromToken } from "@/lib/tokenUtils"
 import { ABTestResult, ApiResponse } from "./type";
+import { getAdDetail } from "@/services/resultsService";
+import { getAbAdDetail, deleteAbAd } from "@/services/abService";
 
 // Array helper
 const safeArray = (arr: any): any[] => Array.isArray(arr) ? arr : arr ? [arr] : [];
@@ -66,25 +68,23 @@ export default function ABTestResults() {
                 const adIdB = tokenB ? getAdIdFromUrlParams(new URLSearchParams({ 'ad-token': tokenB })) : searchParams.get("ad_id_b") || "";
 
                 const token = tokenA || tokenB;
-                let userIdParam = '';
+                let userId: string | number | undefined;
                 if (token) {
                     const userIdFromToken = parseUserIdFromToken(token);
                     if (userIdFromToken) {
-                        userIdParam = `&user_id=${userIdFromToken}`;
+                        userId = userIdFromToken;
                     }
                 } else if (userDetails?.user_id) {
                     // If no token but userDetails available, use that user_id
-                    userIdParam = `&user_id=${userDetails.user_id}`;
+                    userId = userDetails.user_id;
                 }
                 if (!adIdA || !adIdB) throw new Error("Missing ad IDs for comparison");
-                const [responseA, responseB] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=addetail&ad_upload_id=${adIdA}${userIdParam}`),
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=addetail&ad_upload_id=${adIdB}${userIdParam}`),
+                const [adDataA, adDataB] = await Promise.all([
+                    getAdDetail(adIdA, userId),
+                    getAdDetail(adIdB, userId),
                 ]);
-                if (!responseA.ok || !responseB.ok) throw new Error("Failed to fetch ad details");
-                const [resultA, resultB] = await Promise.all([responseA.json(), responseB.json()]);
-                setAdDataA(resultA.data || resultA);
-                setAdDataB(resultB.data || resultB);
+                setAdDataA(adDataA as unknown as ApiResponse);
+                setAdDataB(adDataB as unknown as ApiResponse);
             } catch (err) {
                 setError(err instanceof Error ? err.message : "An error occurred");
             } finally {
@@ -168,16 +168,8 @@ export default function ABTestResults() {
                 return;
             }
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=abaddetail&ad_upload_id1=${adIdA}&ad_upload_id2=${adIdB}`
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            setAbTestResult(result);
+            const result = await getAbAdDetail(adIdA, adIdB);
+            setAbTestResult(result as unknown as ABTestResult);
 
             // Log the winner for checking
             console.log("A/B Test Winner:", result.recommended_ad);
@@ -205,13 +197,7 @@ export default function ABTestResults() {
         setDeleteLoading(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=deleteabad&ad_upload_id_a=${adIdA}&ad_upload_id_b=${adIdB}`);
-
-            if (!response.ok) {
-                throw new Error('Failed to delete A/B ad');
-            }
-
-            const result = await response.json();
+            const result = await deleteAbAd(adIdA, adIdB);
 
             if (result.response === "AB Ad Deleted") {
                 toast.success("A/B ad deleted successfully");

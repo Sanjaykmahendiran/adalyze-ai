@@ -2117,15 +2117,13 @@ export default function ResultsPage() {
                         <Button size="sm" variant="link" className="px-3 text-xs text-primary py-1 h-7" onClick={() => setShowMoreGoReasons(true)}>View more</Button>
                       </div>
                     </div>
-                    {/* Fix This Ad — only for No Go */}
-                    {apiData?.go_no_go === "No Go" && (
-                      <button
-                        onClick={() => setShowFixDrawer(true)}
-                        className="mt-3 w-full py-2.5 rounded-xl font-semibold text-sm bg-primary text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                      >
-                        ✨ Fix This Ad
-                      </button>
-                    )}
+                    {/* Fix This Ad — visible for all ads (testing image generation flow) */}
+                    <button
+                      onClick={() => setShowFixDrawer(true)}
+                      className="mt-3 w-full py-2.5 rounded-xl font-semibold text-sm bg-primary text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                    >
+                      ✨ Fix This Ad
+                    </button>
 
                     {/* Modal dialog for full reasons */}
                     <Dialog open={showMoreGoReasons} onOpenChange={setShowMoreGoReasons}>

@@ -37,7 +37,10 @@ jobs:
       - name: Build (main branch)
         if: github.ref == 'refs/heads/main'
         env:
-          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.PROD_API_BASE_URL }}
+          # Both vars point to api.evraapp.top — Slim backend handles all
+          # gofor-style calls (/api.php?gofor=X) and REST calls (/api/*)
+          NEXT_PUBLIC_API_BASE_URL: https://api.evraapp.top
+          NEXT_PUBLIC_REST_BASE_URL: https://api.evraapp.top
         run: pnpm run build
 
       - name: Deploy to dev (develop branch)
@@ -53,13 +56,14 @@ jobs:
           rm: false
 
       - name: Deploy to prod (main branch)
+        # Prod frontend lives on adlayzer cPanel (adalyzeai.xyz) — separate from eva
         if: github.ref == 'refs/heads/main'
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.CPANEL_FTP_HOST }}
-          username: ${{ secrets.CPANEL_FTP_USER }}
-          password: ${{ secrets.CPANEL_FTP_PASS }}
+          host: ${{ secrets.ADALYZE_FTP_HOST }}
+          username: ${{ secrets.ADALYZE_FTP_USER }}
+          password: ${{ secrets.ADALYZE_FTP_PASS }}
           source: "out/*"
-          target: ${{ secrets.CPANEL_PROD_PATH }}
+          target: ${{ secrets.ADALYZE_PROD_PATH }}
           strip_components: 1
           rm: false

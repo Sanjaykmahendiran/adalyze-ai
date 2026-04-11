@@ -7,7 +7,8 @@ import { test, expect } from "@playwright/test";
 test.describe("Auth Smoke Tests", () => {
   test("/login — page renders with email + password inputs", async ({ page }) => {
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    // Login page streams a video from adalyze.app — networkidle never settles.
+    await page.waitForLoadState("domcontentloaded");
 
     // Page heading
     await expect(page.locator("h1")).toContainText("Login to Your Account");

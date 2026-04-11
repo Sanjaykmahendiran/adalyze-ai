@@ -10,7 +10,8 @@ function collectCorsErrors(page: Page): string[] {
   const handler = (msg: ConsoleMessage) => {
     if (msg.type() === "error") {
       const text = msg.text();
-      if (/CORS|blocked|cross-origin/i.test(text)) {
+      // Only catch genuine CORS policy blocks — not auth 401s or other "blocked" messages
+      if (text.includes("blocked by CORS policy")) {
         errors.push(text);
       }
     }
@@ -22,14 +23,18 @@ function collectCorsErrors(page: Page): string[] {
 
 /** Wait for client-side data to finish loading (skeleton / pulse gone). */
 async function waitForDataLoad(page: Page) {
-  await page.waitForLoadState("networkidle");
+  // Use domcontentloaded — "networkidle" stalls indefinitely on pages with
+  // streaming video (login), analytics scripts, or failed background API calls.
+  await page.waitForLoadState("domcontentloaded");
+  // Then wait for any visible loading spinner / skeleton to disappear, which
+  // confirms that the primary API calls have resolved.
   await page
     .waitForSelector(".skeleton, .animate-pulse, .animate-spin", {
       state: "hidden",
       timeout: 12_000,
     })
     .catch(() => {
-      /* skeletons may not exist on every page */
+      /* no spinner on this page — proceed immediately */
     });
 }
 
@@ -74,11 +79,10 @@ test.describe("Home Page /", () => {
   });
 
   test("testimonials section is non-empty", async ({ page }) => {
-    // Testimonials component renders on the landing page
     // Scroll down to trigger lazy sections
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(1500);
-    await page.waitForLoadState("networkidle");
+    // No networkidle — streaming video on this page prevents it from settling.
 
     // Look for testimonial content containers
     const testimonials = page.locator('[class*="testimonial"], [class*="Testimonial"]');
@@ -86,21 +90,18 @@ test.describe("Home Page /", () => {
     if (testimonialCount > 0) {
       expect(testimonialCount).toBeGreaterThan(0);
     } else {
-      // Fallback: look for any section with review/quote-like content
+      // Fallback: at minimum ensure the page rendered without fatal error
       const quoteBlocks = page.locator("blockquote, [class*='testi']");
-      const fallbackCount = await quoteBlocks.count();
-      // If neither selector matches, the section may use a different class —
-      // at minimum ensure the page rendered without error
-      expect(fallbackCount).toBeGreaterThanOrEqual(0);
+      expect(await quoteBlocks.count()).toBeGreaterThanOrEqual(0);
     }
   });
 
   test("case study section is non-empty", async ({ page }) => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(1500);
-    await page.waitForLoadState("networkidle");
+    // No networkidle — streaming video on this page prevents it from settling.
 
-    // CaseStudySection component
+    // CaseStudySection heading
     const section = page.locator("text=Case Study, text=case study, text=Case Studies").first();
     if (await section.isVisible().catch(() => false)) {
       await expect(section).toBeVisible();
@@ -186,21 +187,16 @@ test.describe("/blog", () => {
   });
 
   test("renders at least 1 blog card with title", async ({ page }) => {
-    // Page heading
-    await expect(page.locator("h2").first()).toContainText(
-      /Insights and Tips|blog/i,
-    );
+    // Page heading — static, renders immediately
+    await expect(page.locator("h2").first()).toContainText(/Insights and Tips/i);
 
-    // Blog cards are rendered inside a grid; each card has a title in an h2
-    const blogTitles = page.locator(
-      ".grid h2, .grid [class*='font-semibold']",
-    );
-    const count = await blogTitles.count();
-    expect(count, "Expected at least 1 blog card").toBeGreaterThanOrEqual(1);
+    // Blog cards render after the API call resolves.
+    // Use toBeVisible() auto-retry on the first card's title instead of count().
+    const firstCardTitle = page.locator(".grid h2").first();
+    await expect(firstCardTitle).toBeVisible();
 
-    // First blog title should have non-empty text
-    const firstTitle = await blogTitles.first().textContent();
-    expect((firstTitle ?? "").trim().length, "Blog title should not be empty").toBeGreaterThan(0);
+    const titleText = await firstCardTitle.textContent();
+    expect((titleText ?? "").trim().length, "Blog title should not be empty").toBeGreaterThan(0);
   });
 
   test("no CORS errors on /blog", async () => {
@@ -222,16 +218,12 @@ test.describe("/faq", () => {
   });
 
   test("renders FAQ items with at least 1 visible", async ({ page }) => {
-    // Title
+    // Title is static — renders immediately
     await expect(page.locator("h2").first()).toContainText(/missed anything/i);
 
-    // FAQ accordion items: each question is inside an h5
-    const faqItems = page.locator("h5");
-    const count = await faqItems.count();
-    expect(count, "Expected at least 1 FAQ item").toBeGreaterThanOrEqual(1);
-
-    // First FAQ should be visible (index 0 is open by default)
-    await expect(faqItems.first()).toBeVisible();
+    // FAQ accordion items render only after the API call resolves.
+    // Use expect().toBeVisible() which auto-retries — NOT count() which is instant.
+    await expect(page.locator("h5").first()).toBeVisible();
   });
 
   test("no CORS errors on /faq", async () => {

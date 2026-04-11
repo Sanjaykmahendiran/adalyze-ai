@@ -8,13 +8,13 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0, // SIT = real failures, no retries
-  workers: process.env.CI ? 1 : 2,
-  reporter: [["html", { open: "never" }]],
+  workers: 1,
+  reporter: [["html", { open: "never" }], ["list"]],
 
-  timeout: 15_000,
+  timeout: 30_000,
 
   use: {
     baseURL: "https://dev.adalyzeai.xyz",

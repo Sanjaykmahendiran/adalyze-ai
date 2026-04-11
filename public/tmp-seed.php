@@ -6,11 +6,34 @@
 header('Content-Type: application/json');
 
 // ── Locate backend .env ──────────────────────────────────────────────────────
+$base = dirname(__DIR__); // document root of dev.adalyzeai.xyz → /home/aialadze/public_html
+$home = dirname($base);   // cPanel home → /home/aialadze
+
+// cPanel patterns: main docroot, addon domains, subdomains, parent dirs
 $candidates = [
-    '/home/evraapp/public_html/backend-dev/.env',
-    '/home/evraapp/public_html/backend-dev/config/.env',
-    dirname(__DIR__) . '/../backend-dev/.env',
+    // Most likely: backend-dev as sibling or cousin of public_html
+    $home . '/backend-dev/.env',
+    $home . '/public_html/backend-dev/.env',
+    $home . '/dev.evraapp.top/.env',
+    $home . '/dev.evraapp.top/backend-dev/.env',
+    $home . '/evraapp.top/.env',
+    $home . '/evraapp.top/backend-dev/.env',
+    $home . '/public_html/dev.evraapp.top/.env',
+    $home . '/public_html/dev.evraapp.top/backend-dev/.env',
+    // cPanel addon domain roots (common layout)
+    $home . '/dev.evraapp.top/public_html/.env',
+    $home . '/dev.evraapp.top/public_html/backend-dev/.env',
+    // One level up from cPanel home (unusual but possible shared hosting)
+    dirname($home) . '/evraapp/backend-dev/.env',
+    dirname($home) . '/evraapp/public_html/backend-dev/.env',
+    // Absolute fallbacks for evraapp account
     '/home/evraapp/backend-dev/.env',
+    '/home/evraapp/public_html/backend-dev/.env',
+    '/home/evraapp/dev.evraapp.top/.env',
+    '/home/evraapp/dev.evraapp.top/backend-dev/.env',
+    // Already-tried (kept for completeness)
+    $base . '/../backend-dev/.env',
+    $base . '/../../backend-dev/.env',
 ];
 
 $db_host = 'localhost'; $db_name = ''; $db_user = ''; $db_pass = ''; $db_port = '3306';
@@ -38,7 +61,41 @@ foreach ($candidates as $f) {
 }
 
 if (!$db_name) {
-    echo json_encode(['error' => 'Backend .env not found', 'tried' => $candidates]);
+    // ── Deep scan: look for any .env with DB_NAME under home ─────────────────
+    $found_envs = [];
+    $scan_roots = [$home, '/home/evraapp'];
+    foreach ($scan_roots as $root) {
+        if (!is_dir($root)) continue;
+        // Scan 3 levels deep
+        foreach (glob("$root/.env") ?: [] as $f) $found_envs[] = $f;
+        foreach (glob("$root/*/.env") ?: [] as $f) $found_envs[] = $f;
+        foreach (glob("$root/*/*/.env") ?: [] as $f) $found_envs[] = $f;
+        foreach (glob("$root/*/*/*/.env") ?: [] as $f) $found_envs[] = $f;
+    }
+
+    // ── Directory listings for debugging ─────────────────────────────────────
+    $nearby = [];
+    $scan_dirs = [
+        $home,
+        $base,
+        $home . '/dev.evraapp.top',
+        '/home/evraapp',
+        '/home',
+    ];
+    foreach ($scan_dirs as $dir) {
+        if (is_dir($dir)) {
+            $nearby[$dir] = array_values(array_diff(scandir($dir), ['.', '..']));
+        }
+    }
+
+    echo json_encode([
+        'error'      => 'Backend .env not found',
+        'tried'      => $candidates,
+        'base'       => $base,
+        'home'       => $home,
+        'found_envs' => $found_envs,   // any .env files discovered by glob
+        'nearby'     => $nearby,
+    ], JSON_PRETTY_PRINT);
     exit;
 }
 

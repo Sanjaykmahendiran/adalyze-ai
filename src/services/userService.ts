@@ -11,11 +11,20 @@ export const getProfile = async (
   userId: string | number
 ): Promise<ApiResponse<UserProfile>> => {
   try {
-    const response = await axiosInstance.get<ApiResponse<UserProfile>>(
+    const response = await axiosInstance.get<ApiResponse<UserProfile> | UserProfile>(
       "/api/user",
       { params: { user_id: userId } }
     );
-    return response.data;
+    const raw = response.data as Record<string, unknown>;
+
+    // New backend returns a flat UserProfile directly: { user_id, email, name, ... }
+    // Old/expected shape: { status: "success", data: { user_id, ... } }
+    // Detect by: flat if has `user_id` at root AND no `data` key.
+    if (raw && typeof raw === "object" && "user_id" in raw && !("data" in raw)) {
+      return { status: "success", data: raw as unknown as UserProfile };
+    }
+
+    return raw as unknown as ApiResponse<UserProfile>;
   } catch (error) {
     throw error;
   }

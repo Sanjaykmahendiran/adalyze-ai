@@ -12,6 +12,13 @@ interface FixThisAdDrawerProps {
   userId: number | undefined
   originalImageUrl: string | undefined
   originalScore: number | undefined
+  originalGoNoGo?: string
+  onFixComplete?: (result: {
+    fixedAdId: number
+    newScore: number
+    newGoNoGo: string
+    newAnalysis: Record<string, unknown>
+  }) => void
 }
 
 type Step = "consent" | "extracting" | "generating" | "analyzing" | "done" | "error"
@@ -23,6 +30,8 @@ export default function FixThisAdDrawer({
   userId,
   originalImageUrl,
   originalScore,
+  originalGoNoGo,
+  onFixComplete,
 }: FixThisAdDrawerProps) {
   const [step, setStep] = useState<Step>("consent")
   const [consentChecked, setConsentChecked] = useState(false)
@@ -31,6 +40,8 @@ export default function FixThisAdDrawer({
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
   const [newScore, setNewScore] = useState<number | null>(null)
   const [newGoNoGo, setNewGoNoGo] = useState<string | null>(null)
+  const [newAnalysis, setNewAnalysis] = useState<Record<string, unknown> | null>(null)
+  const [fixedAdId, setFixedAdId] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const reset = () => {
@@ -41,6 +52,8 @@ export default function FixThisAdDrawer({
     setGeneratedImageUrl(null)
     setNewScore(null)
     setNewGoNoGo(null)
+    setNewAnalysis(null)
+    setFixedAdId(null)
     setErrorMessage(null)
   }
 
@@ -78,9 +91,22 @@ export default function FixThisAdDrawer({
         user_id: userId,
         job_id,
       })
-      setNewScore(analyzeRes.data.data.new_score)
-      setNewGoNoGo(analyzeRes.data.data.new_go_no_go)
+      const data = analyzeRes.data.data
+      setNewScore(data.new_score)
+      setNewGoNoGo(data.new_go_no_go)
+      setNewAnalysis(data.new_analysis ?? null)
+      setFixedAdId(data.fixed_ad_id ?? null)
       setStep("done")
+
+      // Notify parent with full result
+      if (data.new_analysis) {
+        onFixComplete?.({
+          fixedAdId: data.fixed_ad_id,
+          newScore: data.new_score,
+          newGoNoGo: data.new_go_no_go,
+          newAnalysis: data.new_analysis,
+        })
+      }
     } catch (err: any) {
       const status = err?.response?.status
       const msg = err?.response?.data?.message ?? "Something went wrong. Please try again."
@@ -247,8 +273,10 @@ export default function FixThisAdDrawer({
                           <span className="text-white/40 text-xs ml-1">/ 100</span>
                         </p>
                       )}
-                      <p className="text-center text-red-400 text-xs font-semibold">
-                        No Go
+                      <p className={`text-center text-xs font-semibold ${
+                        originalGoNoGo === "Go" ? "text-green-400" : "text-red-400"
+                      }`}>
+                        {originalGoNoGo ?? "No Go"}
                       </p>
                     </div>
 
@@ -286,6 +314,20 @@ export default function FixThisAdDrawer({
                         >
                           {newGoNoGo}
                         </p>
+                      )}
+                      {newAnalysis && (
+                        <div className="mt-2 space-y-1 text-center">
+                          {typeof (newAnalysis as any).confidence_score === 'number' && (
+                            <p className="text-white/50 text-xs">
+                              Confidence: <span className="text-white/80 font-medium">{(newAnalysis as any).confidence_score}%</span>
+                            </p>
+                          )}
+                          {typeof (newAnalysis as any).impact_score === 'number' && (
+                            <p className="text-white/50 text-xs">
+                              Impact: <span className="text-white/80 font-medium">{(newAnalysis as any).impact_score}%</span>
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

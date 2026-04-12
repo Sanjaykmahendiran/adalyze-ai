@@ -4431,6 +4431,19 @@ export default function ResultsPage() {
         userId={userDetails?.user_id}
         originalImageUrl={apiData?.images?.[0]}
         originalScore={apiData?.score_out_of_100}
+        originalGoNoGo={apiData?.go_no_go}
+        onFixComplete={(result) => {
+          setApiData(prev =>
+            prev
+              ? {
+                  ...prev,
+                  ...(result.newAnalysis as any),
+                  score_out_of_100: result.newScore,
+                  go_no_go: result.newGoNoGo,
+                }
+              : prev
+          )
+        }}
       />
 
       {/* Creative Risk Details Popup */}

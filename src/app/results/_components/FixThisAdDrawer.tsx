@@ -15,6 +15,7 @@ interface FixThisAdDrawerProps {
   originalGoNoGo?: string
   onFixComplete?: (result: {
     fixedAdId: number
+    generatedImageUrl: string
     newScore: number
     newGoNoGo: string
     newAnalysis: Record<string, unknown>
@@ -41,7 +42,6 @@ export default function FixThisAdDrawer({
   const [newScore, setNewScore] = useState<number | null>(null)
   const [newGoNoGo, setNewGoNoGo] = useState<string | null>(null)
   const [newAnalysis, setNewAnalysis] = useState<Record<string, unknown> | null>(null)
-  const [fixedAdId, setFixedAdId] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const reset = () => {
@@ -53,7 +53,6 @@ export default function FixThisAdDrawer({
     setNewScore(null)
     setNewGoNoGo(null)
     setNewAnalysis(null)
-    setFixedAdId(null)
     setErrorMessage(null)
   }
 
@@ -95,16 +94,16 @@ export default function FixThisAdDrawer({
       setNewScore(data.new_score)
       setNewGoNoGo(data.new_go_no_go)
       setNewAnalysis(data.new_analysis ?? null)
-      setFixedAdId(data.fixed_ad_id ?? null)
       setStep("done")
 
       // Notify parent with full result
-      if (data.new_analysis) {
+      if (data.fixed_ad_id) {
         onFixComplete?.({
           fixedAdId: data.fixed_ad_id,
+          generatedImageUrl: generatedImageUrl ?? '',
           newScore: data.new_score,
           newGoNoGo: data.new_go_no_go,
-          newAnalysis: data.new_analysis,
+          newAnalysis: data.new_analysis ?? {},
         })
       }
     } catch (err: any) {
@@ -193,7 +192,7 @@ export default function FixThisAdDrawer({
 
                   <button
                     disabled={!consentChecked}
-                    onClick={runFixChain}
+                    onClick={() => runFixChain()}
                     className="w-full py-3 rounded-xl font-semibold text-sm transition-all
                       disabled:opacity-40 disabled:cursor-not-allowed
                       enabled:bg-primary enabled:text-white enabled:hover:opacity-90"
@@ -225,7 +224,7 @@ export default function FixThisAdDrawer({
                     status={
                       step === "generating"
                         ? "active"
-                        : step === "analyzing" || step === "done"
+                        : step === "analyzing"
                         ? "done"
                         : "waiting"
                     }

@@ -21,7 +21,9 @@ import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import ResultsPageLoadingSkeleton from "@/components/Skeleton-loading/results-loading"
 import { cn } from "@/lib/utils"
 import logo from "@/assets/ad-icon-logo.png"
-import { ApiResponse } from "./type"
+import { ApiResponse, FixedResult } from "./type"
+import { axiosInstance } from "@/configs/axios"
+import FixedAdPanel from "./_components/FixedAdPanel"
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 import { motion, AnimatePresence } from "framer-motion"
@@ -85,6 +87,7 @@ export default function ResultsPage() {
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [showMoreGoReasons, setShowMoreGoReasons] = useState(false);
   const [showFixDrawer, setShowFixDrawer] = useState(false)
+  const [fixedResult, setFixedResult] = useState<FixedResult | null>(null)
   const [selectedPlatformExplanation, setSelectedPlatformExplanation] = useState<{ platform: string; explanation: string; type: 'suitable' | 'notsuitable' } | null>(null);
   const [isExplanationDialogOpen, setIsExplanationDialogOpen] = useState(false);
   const chartRef = useRef<HTMLCanvasElement>(null)
@@ -119,6 +122,33 @@ export default function ResultsPage() {
     onScroll()
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Hydrate fixedResult from backend on mount (auth-path only)
+  useEffect(() => {
+    if (!apiData?.ad_upload_id || !userDetails?.user_id) return
+    axiosInstance
+      .post('/api/fix/result', {
+        user_id: userDetails.user_id,
+        ad_upload_id: apiData.ad_upload_id,
+      })
+      .then(res => {
+          const d = res.data.data
+          setFixedResult({
+            fixedAdId: d.fixed_ad_id,
+            generatedImageUrl: d.generated_image_url,
+            newScore: d.new_score,
+            newGoNoGo: d.new_go_no_go,
+            newAnalysis: d.new_analysis ?? null,
+            createdAt: d.created_at,
+          })
+        })
+      .catch(err => {
+        // 404 = not yet fixed (expected); 403 = not owner — both silent
+        if (err?.response?.status !== 404 && err?.response?.status !== 403) {
+          console.warn('[fix/result] Unexpected error:', err?.response?.status)
+        }
+      })
+  }, [apiData?.ad_upload_id, userDetails?.user_id])
 
   // Check if ad_id came from token (shared link)
   const top10Token = searchParams.get('top10-token')
@@ -2122,8 +2152,15 @@ export default function ResultsPage() {
                       onClick={() => setShowFixDrawer(true)}
                       className="mt-3 w-full py-2.5 rounded-xl font-semibold text-sm bg-primary text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                     >
-                      ✨ Fix This Ad
+                      ✨ {fixedResult !== null ? "Re-Fix This Ad" : "Fix This Ad"}
                     </button>
+                    {fixedResult && (
+                      <FixedAdPanel
+                        result={fixedResult}
+                        originalImageUrl={apiData?.images?.[0]}
+                        originalScore={apiData?.score_out_of_100}
+                      />
+                    )}
 
                     {/* Modal dialog for full reasons */}
                     <Dialog open={showMoreGoReasons} onOpenChange={setShowMoreGoReasons}>
@@ -4433,6 +4470,7 @@ export default function ResultsPage() {
         originalScore={apiData?.score_out_of_100}
         originalGoNoGo={apiData?.go_no_go}
         onFixComplete={(result) => {
+          // Update main analysis panels
           setApiData(prev =>
             prev
               ? {
@@ -4443,6 +4481,15 @@ export default function ResultsPage() {
                 }
               : prev
           )
+          // Populate fixed panel immediately (no reload needed)
+          setFixedResult({
+            fixedAdId: result.fixedAdId,
+            generatedImageUrl: result.generatedImageUrl,
+            newScore: result.newScore,
+            newGoNoGo: result.newGoNoGo,
+            newAnalysis: result.newAnalysis,
+            createdAt: new Date().toISOString(),
+          })
         }}
       />
 

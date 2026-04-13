@@ -147,7 +147,7 @@ export default function FixThisAdDrawer({
             <div className="flex items-center justify-between p-5 border-b border-white/10">
               <div>
                 <h2 className="text-white font-bold text-lg">Fix This Ad</h2>
-                <p className="text-white/50 text-xs mt-0.5">AI-powered ad repair</p>
+                <p className="text-white/50 text-xs mt-0.5">Powered by Claude AI</p>
               </div>
               <button
                 onClick={handleClose}
@@ -184,7 +184,7 @@ export default function FixThisAdDrawer({
                       )}
                     </div>
                     <span className="text-white/60 text-xs leading-relaxed">
-                      I consent to my ad image being processed by AI (OpenAI Vision +
+                      I consent to my ad image being processed by AI (Claude AI +
                       Google Imagen) to generate a fixed version. This data is used
                       solely for ad improvement and handled per our Privacy Policy.
                     </span>

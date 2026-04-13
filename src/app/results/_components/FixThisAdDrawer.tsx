@@ -82,7 +82,8 @@ export default function FixThisAdDrawer({
         user_id: userId,
         job_id,
       })
-      setGeneratedImageUrl(genRes.data.data.generated_image_url)
+      const genImageUrl = genRes.data.data.generated_image_url  // local var — avoids stale closure
+      setGeneratedImageUrl(genImageUrl)
 
       // Step 3 — re-analyze
       setStep("analyzing")
@@ -96,16 +97,14 @@ export default function FixThisAdDrawer({
       setNewAnalysis(data.new_analysis ?? null)
       setStep("done")
 
-      // Notify parent with full result
-      if (data.fixed_ad_id) {
-        onFixComplete?.({
-          fixedAdId: data.fixed_ad_id,
-          generatedImageUrl: generatedImageUrl ?? '',
-          newScore: data.new_score,
-          newGoNoGo: data.new_go_no_go,
-          newAnalysis: data.new_analysis ?? {},
-        })
-      }
+      // Always notify parent — removed fixed_ad_id gate, use local genImageUrl not stale state
+      onFixComplete?.({
+        fixedAdId: data.fixed_ad_id ?? 0,
+        generatedImageUrl: genImageUrl ?? '',
+        newScore: data.new_score,
+        newGoNoGo: data.new_go_no_go,
+        newAnalysis: data.new_analysis ?? {},
+      })
     } catch (err: any) {
       const status = err?.response?.status
       const msg = err?.response?.data?.message ?? "Something went wrong. Please try again."

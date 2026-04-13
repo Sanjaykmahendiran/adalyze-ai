@@ -17,8 +17,13 @@ if (!isset($_GET['_proxy_path']) && strpos($_SERVER['REQUEST_URI'] ?? '', '/api-
     // Still allow if path is set; this guards against direct ?-less calls
 }
 
-// ── Build upstream URL ───────────────────────────────────────────────────────────
+// ── Timeout budget — Fix Engine routes take 30-90 s (Claude + Imagen + OpenAI) ───
+// All other routes stay at 30 s so real hangs are still caught quickly.
 $proxy_path = $_GET['_proxy_path'] ?? '';
+$isFixRoute = str_starts_with($proxy_path, 'fix/');
+if ($isFixRoute) {
+    set_time_limit(180);   // PHP execution limit — must exceed curl timeout
+}
 unset($_GET['_proxy_path']);
 
 $query = $_GET ? '?' . http_build_query($_GET) : '';
@@ -41,7 +46,7 @@ curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_SSL_VERIFYPEER => true,
-    CURLOPT_TIMEOUT        => 30,
+    CURLOPT_TIMEOUT        => $isFixRoute ? 120 : 30,
     CURLOPT_CUSTOMREQUEST  => $method,
     CURLOPT_HEADER         => false,
 ]);

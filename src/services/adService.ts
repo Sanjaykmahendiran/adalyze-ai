@@ -26,7 +26,7 @@ export const getAds = async (
 export const getAbAds = async (
   userId: string | number
 ): Promise<AbAdPair[]> => {
-  const response = await axiosInstance.get<AbAdPair[]>("/api/ab-ads", {
+  const response = await axiosInstance.get<AbAdPair[]>("/api/ab-tests", {
     params: { user_id: userId },
   });
   return response.data ?? [];

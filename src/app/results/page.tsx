@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils"
 import logo from "@/assets/ad-icon-logo.png"
 import { ApiResponse, FixedResult } from "./type"
 import { axiosInstance } from "@/configs/axios"
-import FixedAdPanel from "./_components/FixedAdPanel"
+import FixedVersionsModal from "./_components/FixedVersionsModal"
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 import { motion, AnimatePresence } from "framer-motion"
@@ -87,6 +87,7 @@ export default function ResultsPage() {
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [showMoreGoReasons, setShowMoreGoReasons] = useState(false);
   const [showFixDrawer, setShowFixDrawer] = useState(false)
+  const [showFixHistory, setShowFixHistory] = useState(false)
   const [fixedResult, setFixedResult] = useState<FixedResult | null>(null)
   const [selectedPlatformExplanation, setSelectedPlatformExplanation] = useState<{ platform: string; explanation: string; type: 'suitable' | 'notsuitable' } | null>(null);
   const [isExplanationDialogOpen, setIsExplanationDialogOpen] = useState(false);
@@ -2155,11 +2156,12 @@ export default function ResultsPage() {
                       ✨ {fixedResult !== null ? "Re-Fix This Ad" : "Fix This Ad"}
                     </button>
                     {fixedResult && (
-                      <FixedAdPanel
-                        result={fixedResult}
-                        originalImageUrl={apiData?.images?.[0]}
-                        originalScore={apiData?.score_out_of_100}
-                      />
+                      <button
+                        onClick={() => setShowFixHistory(true)}
+                        className="mt-2 w-full text-center text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
+                      >
+                        View fix history
+                      </button>
                     )}
 
                     {/* Modal dialog for full reasons */}
@@ -4491,6 +4493,16 @@ export default function ResultsPage() {
             createdAt: new Date().toISOString(),
           })
         }}
+      />
+
+      {/* Fix History Modal */}
+      <FixedVersionsModal
+        open={showFixHistory}
+        onClose={() => setShowFixHistory(false)}
+        adUploadId={apiData?.ad_upload_id}
+        userId={userDetails?.user_id}
+        originalImageUrl={apiData?.images?.[0]}
+        originalScore={apiData?.score_out_of_100}
       />
 
       {/* Creative Risk Details Popup */}

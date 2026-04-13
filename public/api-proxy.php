@@ -46,7 +46,7 @@ curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_SSL_VERIFYPEER => true,
-    CURLOPT_TIMEOUT        => $isFixRoute ? 120 : 30,
+    CURLOPT_TIMEOUT        => $isFixRoute ? 180 : 30,
     CURLOPT_CUSTOMREQUEST  => $method,
     CURLOPT_HEADER         => false,
 ]);

@@ -1202,6 +1202,22 @@ export default function ResultsPage() {
                 </div>
               </div>
 
+              {/* Mobile: Fix This Ad button */}
+              <button
+                onClick={() => setShowFixDrawer(true)}
+                className="w-full py-2.5 rounded-xl font-semibold text-sm bg-primary text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                ✨ {fixedResult !== null ? "Re-Fix This Ad" : "Fix This Ad"}
+              </button>
+              {fixedResult && (
+                <button
+                  onClick={() => setShowFixHistory(true)}
+                  className="w-full text-center text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2 -mt-2"
+                >
+                  View fix history
+                </button>
+              )}
+
               {/* Mobile: Badges and Scores below */}
               <div className="lg:hidden space-y-4">
                 {/* Badges - Mobile Stacked */}

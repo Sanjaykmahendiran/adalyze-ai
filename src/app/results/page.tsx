@@ -114,6 +114,15 @@ export default function ResultsPage() {
     }
   }
 
+  // Safe numeric extractor — handles both legacy string values ("2.5%") and
+  // new Claude numeric values (2.5). Optional chaining alone doesn't guard
+  // against wrong types: (number)?.replace throws even though it's not null.
+  const toNum = (val: string | number | undefined | null, fallback = 0): number => {
+    if (val == null) return fallback;
+    if (typeof val === 'number') return val;
+    return parseFloat(String(val).replace('%', '') || String(fallback));
+  };
+
   useEffect(() => {
     const onScroll = () => {
       if (typeof window === 'undefined') return
@@ -2880,14 +2889,16 @@ export default function ResultsPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300 text-sm sm:text-base text-start">Estimated CTR</span>
                       <span
-                        className={`font-bold text-sm sm:text-base text-end ${parseFloat(apiData.estimated_ctr?.replace('%', '') || '0') >= 5
+                        className={`font-bold text-sm sm:text-base text-end ${toNum(apiData.estimated_ctr) >= 5
                           ? "text-green-400"
-                          : parseFloat(apiData.estimated_ctr?.replace('%', '') || '0') >= 2
+                          : toNum(apiData.estimated_ctr) >= 2
                             ? "text-[#F99244]"
                             : "text-red-400"
                           }`}
                       >
-                        {apiData.estimated_ctr || "N/A"}
+                        {apiData.estimated_ctr != null
+                          ? (typeof apiData.estimated_ctr === 'number' ? `${apiData.estimated_ctr}%` : apiData.estimated_ctr)
+                          : "N/A"}
                       </span>
                     </div>
 

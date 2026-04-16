@@ -21,32 +21,16 @@ import BrandsLoadingSkeleton from "@/components/Skeleton-loading/brands-loading"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import { useRouter } from "next/navigation"
 import UserLayout from "@/components/layouts/user-layout"
-
-interface Brand {
-  brand_id: number
-  user_id: number
-  brand_name: string
-  website: string
-  email: string
-  mobile: string
-  logo_url: string
-  verified: number
-  created_date: string
-  upload_count: number
-  average_score: number
-  latest_score: number
-  last_analysis_date: string
-  go_count: number
-  no_go_count: number
-}
+import { getBrands } from "@/services/brandService"
+import type { BrandWithStats } from "@/types/api"
 
 export default function BrandsPage() {
   const { userDetails,  } = useFetchUserDetails()
   const router = useRouter()
-  const [brands, setBrands] = useState<Brand[]>([])
+  const [brands, setBrands] = useState<BrandWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
+  const [editingBrand, setEditingBrand] = useState<BrandWithStats | null>(null)
 
 
   const formatTwoDigits = (value: number) => (value < 10 ? `0${value}` : `${value}`)
@@ -61,10 +45,7 @@ export default function BrandsPage() {
   const fetchBrands = async () => {
     try {
       setLoading(true)
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`
-      )
-      const data = await response.json()
+      const data = await getBrands(userDetails!.user_id)
       if (Array.isArray(data)) setBrands(data)
       else setBrands([])
     } catch (error) {
@@ -74,7 +55,7 @@ export default function BrandsPage() {
     }
   }
 
-  const handleEditBrand = (brand: Brand) => {
+  const handleEditBrand = (brand: BrandWithStats) => {
     setEditingBrand(brand)
     setShowForm(true)
   }

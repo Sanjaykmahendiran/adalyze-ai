@@ -17,9 +17,10 @@ import { useRouter } from "next/navigation"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Check, ChevronsUpDown, Search, ChevronDown, X } from "lucide-react"
-
-// Base URL configuration
-export const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`
+import { editProfile, addUserAgency, editUserAgency } from "@/services/userService"
+import { uploadImage } from "@/services/uploadService"
+import { getCountries, getStates, getCities } from "@/services/referenceDataService"
+import type { EditProfilePayload, AgencyPayload } from "@/types/api"
 
 interface ProfileProps {
   name?: string
@@ -306,9 +307,7 @@ export default function MyProfile({
     const loadCountries = async () => {
       try {
         setLoadingCountries(true)
-        const res = await fetch("https://techades.com/App/api.php?gofor=countrieslist")
-        const data = await res.json()
-        const mapped = (Array.isArray(data) ? data : []).map((c: any) => ({ id: String(c.id), name: String(c.name) }))
+        const mapped = await getCountries()
         setCountries(mapped)
       } catch (e) {
         console.error("Countries fetch error", e)
@@ -329,9 +328,7 @@ export default function MyProfile({
       }
       try {
         setLoadingStates(true)
-        const res = await fetch(`https://techades.com/App/api.php?gofor=stateslist&country_id=${encodeURIComponent(selectedCountryId)}`)
-        const data = await res.json()
-        const mapped = (Array.isArray(data) ? data : []).map((s: any) => ({ id: String(s.id), name: String(s.name) }))
+        const mapped = await getStates(selectedCountryId)
         setStates(mapped)
 
         // Try to match existing state based on which form is being edited
@@ -367,9 +364,7 @@ export default function MyProfile({
       }
       try {
         setLoadingCities(true)
-        const res = await fetch(`https://techades.com/App/api.php?gofor=citieslist&state_id=${encodeURIComponent(selectedStateId)}`)
-        const data = await res.json()
-        const mapped = (Array.isArray(data) ? data : []).map((c: any) => ({ id: String(c.id), name: String(c.name) }))
+        const mapped = await getCities(selectedStateId)
         setCities(mapped)
 
         // Try to match existing city based on which form is being edited
@@ -407,20 +402,8 @@ export default function MyProfile({
       setIsUploadingAgencyLogo(true)
     }
 
-    const payload = {
-      gofor: "image_upload",
-      imgname: base64Data,
-      type: type,
-    }
-
     try {
-      const response = await fetch(BASE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      const data = await response.json()
+      const data = await uploadImage({ imgname: base64Data, type })
 
       if (data.success === true) {
         toast.success(`${type === "profile" ? "Profile" : "Agency logo"} uploaded successfully`)
@@ -531,7 +514,6 @@ export default function MyProfile({
     const selectedCityName = cities.find((c) => c.id === selectedCityId)?.name || userCity || userDetails?.city || ""
 
     const payload: any = {
-      gofor: "editprofile",
       user_id: userId || "",
       mobileno: userMobileno,
       name: userName,
@@ -553,15 +535,9 @@ export default function MyProfile({
     }
 
     try {
-      const response = await fetch(BASE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const data = await editProfile(payload as EditProfilePayload)
 
-      const data = await response.json()
-
-      if (response.ok && data.user_id) {
+      if (data.user_id) {
         // Save the entire user object to sessionStorage
         sessionStorage.setItem("userDetails", JSON.stringify(data))
 
@@ -592,8 +568,6 @@ export default function MyProfile({
     const isEdit = agencyData.agency_id && agencyData.agency_id > 0;
 
     const payload = {
-      gofor: isEdit ? "edituseragency" : "adduseragency",
-      ...(isEdit && { agency_id: agencyData.agency_id }),
       user_id: userId || "",
       agency_name: agencyData.agency_name,
       agency_logo: uploadedAgencyLogoUrl || agencyData.agency_logo,
@@ -612,15 +586,11 @@ export default function MyProfile({
     };
 
     try {
-      const response = await fetch(BASE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const data = isEdit
+        ? await editUserAgency({ ...(payload as AgencyPayload), agency_id: Number(agencyData.agency_id) })
+        : await addUserAgency(payload as AgencyPayload);
 
-      const data = await response.json();
-
-      if (response.ok && data.status === "success") {
+      if (data.status === "success") {
         toast.success(data.message || `Agency ${isEdit ? "updated" : "created"} successfully`);
 
         // Update local state (optional)

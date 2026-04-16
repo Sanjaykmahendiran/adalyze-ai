@@ -19,6 +19,8 @@ import Cookies from "js-cookie";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trackEvent } from "@/lib/eventTracker";
 import { useRouter } from "next/navigation";
+import { register, getUserByReferral } from "@/services/authService";
+import { getLocations } from "@/services/referenceDataService";
 
 const registrationSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -85,10 +87,7 @@ export default function RegistrationStep2Form({
     lastSearchTermRef.current = searchTerm.trim();
     setLoadingCities(true);
     try {
-      const response = await fetch(
-        `https://techades.com/App/api.php?gofor=locationlist&search=${encodeURIComponent(searchTerm.trim())}`
-      );
-      const data: Array<{ id: string; name: string }> = await response.json();
+      const data = await getLocations(searchTerm.trim());
       const uniqueCities = Array.from(new Map(data.map((city) => [city.id, city])).values());
       setCities(uniqueCities);
     } catch (error) {
@@ -124,23 +123,14 @@ export default function RegistrationStep2Form({
     }
     setIsCheckingReferral(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=usergetbyref&referral_code=${code}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.user_id && data.name) {
-          setReferralUserId(data.user_id.toString());
-          setReferredBy(data.name);
-        } else {
-          setReferredBy("");
-          setReferralUserId("");
-          toast.error("Invalid referral code");
-        }
+      const result = await getUserByReferral(code);
+      if (result.status === "success" && result.user?.user_id && result.user?.name) {
+        setReferralUserId(result.user.user_id.toString());
+        setReferredBy(result.user.name);
       } else {
         setReferredBy("");
         setReferralUserId("");
-        toast.error("Invalid referral code");
+        toast.error(result.message || "Invalid referral code");
       }
     } catch (error) {
       console.error("Error checking referral code:", error);
@@ -174,8 +164,20 @@ export default function RegistrationStep2Form({
   async function onSubmitRegistration(values: z.infer<typeof registrationSchema>) {
     setIsLoading(true);
     try {
-      const payload: any = {
-        gofor: "register",
+      const payload: {
+        user_id: string;
+        name: string;
+        password: string;
+        type: string;
+        city: string;
+        source?: string;
+        referred_by?: number;
+        utm_source?: string;
+        utm_medium?: string;
+        utm_campaign?: string;
+        utm_content?: string;
+        utm_term?: string;
+      } = {
         user_id: userId,
         name: values.name,
         password: values.password,
@@ -191,12 +193,7 @@ export default function RegistrationStep2Form({
       if (utmCampaign) payload.utm_campaign = utmCampaign;
       if (utmContent) payload.utm_content = utmContent;
       if (utmTerm) payload.utm_term = utmTerm;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
+      const data = await register(payload);
       if (data.status === "success") {
         Cookies.set("userId", userId, { expires: 30 });
         Cookies.set("email", email, { expires: 30 });

@@ -1,6 +1,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Handle CORS preflight (OPTIONS) before anything else — return 200 immediately
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+
     # Canonical: force HTTPS + www
     # Fires when: HTTP (not HTTPS) OR bare domain (no www) — except /.well-known/
     RewriteCond %{HTTPS} off [OR]
@@ -13,6 +17,17 @@
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
     RewriteBase /
+
+    # BUG-CORS-002: proxy legacy /api.php calls to evraapp.top/App/api.php.
+    # axiosInstance baseURL points to the new REST backend; services that still call
+    # "/api.php" as a relative path would resolve to the new backend and 404.
+    # This rule intercepts /api.php at the same origin and forwards server-side.
+    RewriteRule ^api\.php$ /legacy-proxy.php [QSA,L]
+
+    # BUG-CORS-001 fix: route /api/* through same-origin PHP proxy.
+    # Browser calls dev.adalyzeai.xyz/api/* (same origin → no CORS preflight).
+    # api-proxy.php forwards server-side to dev.evraapp.top with a clean response.
+    RewriteRule ^api/(.*)$ /api-proxy.php?_proxy_path=$1 [QSA,L]
 
     # Pass through existing files and directories (assets, _next, App/, etc.)
     RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -50,13 +65,14 @@ Options -Indexes
     Header unset Content-Type
 </FilesMatch>
 
-# CORS headers for PHP API files (needed on production where App/ lives here)
+# CORS headers for PHP API files
+# "always" ensures headers fire on ALL responses including OPTIONS (204/200) and errors
 <FilesMatch "\.php$">
-    Header set Access-Control-Allow-Origin "*"
-    Header set Access-Control-Allow-Methods "GET, POST, PUT, OPTIONS, PATCH, DELETE"
-    Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, Token"
-    Header set Access-Control-Expose-Headers "Token"
-    Header set Content-Type "application/json; charset=utf-8"
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, OPTIONS, PATCH, DELETE"
+    Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, Token"
+    Header always set Access-Control-Expose-Headers "Token"
+    Header always set Access-Control-Max-Age "3600"
 </FilesMatch>
 
 # php -- BEGIN cPanel-generated handler, do not edit

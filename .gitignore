@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Nexus SDLC framework (agent-generated, not source)
+.nexus/results/
+.nexus/*.backup
+.nexus/*.pre-upgrade-backup
+.backups/
+
+# Claude Code agent memory & settings (framework-generated)
+.claude/
+
+# Playwright / test artifacts
+playwright-report/
+test-results/
+e2e/debug-*.spec.ts
+e2e/real-login-test.spec.ts

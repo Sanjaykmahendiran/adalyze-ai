@@ -24,6 +24,8 @@ import {
     SelectContent,
     SelectItem,
 } from "@/components/ui/select";
+import { submitGuestSupportRequest } from "@/services/supportService";
+import type { GuestSupportPayload } from "@/types/api";
 
 
 interface PricingHelpProps {
@@ -82,23 +84,11 @@ const PricingHelp: React.FC = () => {
         try {
             setIsSubmitting(true);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    gofor: "needhelp",
-                    user_id: userId || null,
-                    email: userId ? null : email,
-                    category,
-                    description,
-                }),
-            });
+            const res = await submitGuestSupportRequest({ user_id: userId || null, email: userId ? null : email, category, description });
 
-            const result = await response.json();
+            const result = await res.json();
 
-            if (response.ok && result?.status !== "error") {
+            if (res.ok && result?.status !== "error") {
                 toast.success(
                     "Enquiry submitted successfully.\nWe will get back within 24 hours.",
                     {

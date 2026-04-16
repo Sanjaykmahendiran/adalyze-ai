@@ -3,94 +3,24 @@ import { useState, useEffect, useRef } from "react";
 import Cookies from "js-cookie";
 import { usePathname } from "next/navigation";
 import useLogout from "@/hooks/useLogout";
-import { axiosInstance } from "@/configs/axios";
-
-interface Brand {
-  brand_id: number;
-  user_id: number;
-  brand_name: string;
-  email: string;
-  mobile: string;
-  logo_url: string;
-  logo_hash: string;
-  verified: number;
-  locked: number;
-  status: number;
-  created_date: string;
-  modified_date: string | null;
-}
-
-interface Agency {
-  agency_id: number;
-  user_id: number;
-  agency_name: string;
-  agency_logo: string;
-  contact_person: string;
-  designation: string;
-  business_email: string;
-  business_phone: string;
-  website_url: string;
-  gst_no: string;
-  address: string;
-  city: string;
-  country: string;
-  team_members: number;
-}
-
-
-interface UserDetails {
-  user_id: number;
-  mobileno: string;
-  password: string;
-  otp: string | null;
-  otp_status: string;
-  brands_count: number;
-  email: string;
-  name: string;
-  city: string;
-  role: string;
-  type: string;
-  imgname: string | null;
-  company: string;
-  source: string;
-  package_id: number | null;
-  coupon_id: string | null;
-  payment_status: number;
-  created_date: string;
-  modified_date: string;
-  register_level_status: string | null;
-  emailver_status: number;
-  fretra_status: number;
-  status: number;
-  ads_limit: number;
-  valid_till: string;
-  brand: Brand | false;
-  agency: Agency | false;
-}
+import { getProfile } from "@/services/userService";
+import type { UserProfile } from "@/types/api";
 
 const useFetchUserDetails = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+  const [userDetails, setUserDetails] = useState<UserProfile | null>(null);
 
   const pathname = usePathname();
   const logout = useLogout();
   const userId = Cookies.get("userId");
 
-  // Use refs to track if we've already fetched for this userId
   const fetchedUserIdRef = useRef<string | null>(null);
   const isFetchingRef = useRef<boolean>(false);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
-      // Prevent multiple simultaneous fetches
-      if (isFetchingRef.current) {
-        return;
-      }
-
-      // Don't fetch if we already have data for this userId
-      if (userId === fetchedUserIdRef.current && userDetails) {
-        return;
-      }
+      if (isFetchingRef.current) return;
+      if (userId === fetchedUserIdRef.current && userDetails) return;
 
       if (!userId) {
         if (
@@ -108,20 +38,14 @@ const useFetchUserDetails = () => {
         return;
       }
 
-      // If userId changed, reset and fetch
       if (userId !== fetchedUserIdRef.current) {
         isFetchingRef.current = true;
         setLoading(true);
 
-        const params = {
-          gofor: "userget",
-          user_id: userId,
-        };
-
         try {
-          const response = await axiosInstance.get<UserDetails>("/api.php", { params });
+          const response = await getProfile(userId);
 
-          if (!response.data || response.status !== 200) {
+          if (!response.data || response.status !== "success") {
             logout();
             fetchedUserIdRef.current = null;
             return;
@@ -129,10 +53,16 @@ const useFetchUserDetails = () => {
 
           setUserDetails(response.data);
           fetchedUserIdRef.current = userId;
-        } catch (err) {
+        } catch (err: unknown) {
           console.error("Error fetching user details:", err);
           fetchedUserIdRef.current = null;
-          logout();
+          // Only force-logout on a real 401 (expired / invalid session).
+          // Network errors (CORS, timeout, 5xx) must NOT kill a valid session —
+          // a transient backend failure should never log the user out.
+          const status = (err as { response?: { status?: number } })?.response?.status;
+          if (status === 401) {
+            logout();
+          }
         } finally {
           setLoading(false);
           isFetchingRef.current = false;
@@ -141,7 +71,7 @@ const useFetchUserDetails = () => {
     };
 
     fetchUserDetails();
-  }, [userId]); // Removed pathname from dependencies
+  }, [userId]);
 
   return { loading, userDetails };
 };

@@ -96,8 +96,6 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
       ...(userId && { user_id: userId })
     };
 
-    console.log("Sending cookie consent:", payload);
-
     const response = await axiosInstance.post("/api.php", payload, {
       headers: {
         "Content-Type": "application/json",
@@ -109,7 +107,6 @@ export async function sendCookieConsent(consent: CookieConsentData): Promise<Add
     // If successful, save the cookie_id from response to cookies
     if (result.status === "success" && result.cookie_id) {
       saveCookieId(result.cookie_id);
-      console.log("Cookie ID saved:", result.cookie_id);
     }
 
     return result;

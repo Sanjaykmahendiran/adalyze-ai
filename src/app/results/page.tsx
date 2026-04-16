@@ -21,13 +21,16 @@ import useFetchUserDetails from "@/hooks/useFetchUserDetails"
 import ResultsPageLoadingSkeleton from "@/components/Skeleton-loading/results-loading"
 import { cn } from "@/lib/utils"
 import logo from "@/assets/ad-icon-logo.png"
-import { ApiResponse } from "./type"
+import { ApiResponse, FixedResult } from "./type"
+import { axiosInstance } from "@/configs/axios"
+import FixedVersionsModal from "./_components/FixedVersionsModal"
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 import { motion, AnimatePresence } from "framer-motion"
 import { getAdIdFromUrlParams, isTokenExpired, generateShareUrl, generateShareText, parseUserIdFromToken } from "@/lib/tokenUtils"
 import { trackEvent } from "@/lib/eventTracker"
 import Footer from "@/components/footer"
+import { getAdDetail, getHeatmap, generateHeatmap, deleteAd } from "@/services/resultsService"
 import UpgradePopup from "@/components/UpgradePopup"
 import Chart from 'chart.js/auto'
 import PreCampaignChecklist from "./_components/PreCampaignChecklist"
@@ -84,6 +87,8 @@ export default function ResultsPage() {
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [showMoreGoReasons, setShowMoreGoReasons] = useState(false);
   const [showFixDrawer, setShowFixDrawer] = useState(false)
+  const [showFixHistory, setShowFixHistory] = useState(false)
+  const [fixedResult, setFixedResult] = useState<FixedResult | null>(null)
   const [selectedPlatformExplanation, setSelectedPlatformExplanation] = useState<{ platform: string; explanation: string; type: 'suitable' | 'notsuitable' } | null>(null);
   const [isExplanationDialogOpen, setIsExplanationDialogOpen] = useState(false);
   const chartRef = useRef<HTMLCanvasElement>(null)
@@ -109,6 +114,15 @@ export default function ResultsPage() {
     }
   }
 
+  // Safe numeric extractor — handles both legacy string values ("2.5%") and
+  // new Claude numeric values (2.5). Optional chaining alone doesn't guard
+  // against wrong types: (number)?.replace throws even though it's not null.
+  const toNum = (val: string | number | undefined | null, fallback = 0): number => {
+    if (val == null) return fallback;
+    if (typeof val === 'number') return val;
+    return parseFloat(String(val).replace('%', '') || String(fallback));
+  };
+
   useEffect(() => {
     const onScroll = () => {
       if (typeof window === 'undefined') return
@@ -118,6 +132,33 @@ export default function ResultsPage() {
     onScroll()
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Hydrate fixedResult from backend on mount (auth-path only)
+  useEffect(() => {
+    if (!apiData?.ad_upload_id || !userDetails?.user_id) return
+    axiosInstance
+      .post('/api/fix/result', {
+        user_id: userDetails.user_id,
+        ad_upload_id: apiData.ad_upload_id,
+      })
+      .then(res => {
+          const d = res.data.data
+          setFixedResult({
+            fixedAdId: d.fixed_ad_id,
+            generatedImageUrl: d.generated_image_url,
+            newScore: d.new_score,
+            newGoNoGo: d.new_go_no_go,
+            newAnalysis: d.new_analysis ?? null,
+            createdAt: d.created_at,
+          })
+        })
+      .catch(err => {
+        // 404 = not yet fixed (expected); 403 = not owner — both silent
+        if (err?.response?.status !== 404 && err?.response?.status !== 403) {
+          console.warn('[fix/result] Unexpected error:', err?.response?.status)
+        }
+      })
+  }, [apiData?.ad_upload_id, userDetails?.user_id])
 
   // Check if ad_id came from token (shared link)
   const top10Token = searchParams.get('top10-token')
@@ -551,13 +592,7 @@ export default function ResultsPage() {
     setDeleteLoading(true)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=deletead&ad_upload_id=${adId}`)
-
-      if (!response.ok) {
-        throw new Error('Failed to delete ad')
-      }
-
-      const result = await response.json()
+      const result = await deleteAd(adId)
 
       if (result.response === "Ad Deleted") {
         toast.success("Ad deleted successfully")
@@ -595,17 +630,9 @@ export default function ResultsPage() {
     setHeatmapLoading(true)
 
     try {
-      let result: any;
-
       if (heatmapStatus === 1) {
         // If heatmapstatus is 1, call GET endpoint
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=getheatmap&ad_upload_id=${adId}`)
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch heatmap')
-        }
-
-        result = await response.json()
+        const result = await getHeatmap(adId)
 
         // Parse heatmap_json string to get zones
         if (result.heatmap_json) {
@@ -626,21 +653,7 @@ export default function ResultsPage() {
         }
       } else {
         // If heatmapstatus is 0 or undefined, call POST endpoint (default behavior)
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/heatmap.php`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ad_upload_id: Number(adId)
-          })
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch heatmap')
-        }
-
-        result = await response.json()
+        const result = await generateHeatmap(Number(adId))
 
         if (result.heatmap && result.heatmap.zones) {
           setHeatmapData(result.heatmap)
@@ -671,18 +684,18 @@ export default function ResultsPage() {
     const fetchAdDetails = async () => {
       try {
         const shareToken = searchParams.get('token') || searchParams.get('ad-token') || searchParams.get('top10-token') || searchParams.get('trending-token');
-        let userIdParam = '';
+        let userId: string | undefined;
         if (shareToken) {
           const userIdFromToken = parseUserIdFromToken(shareToken);
           if (userIdFromToken) {
-            userIdParam = `&user_id=${userIdFromToken}`;
+            userId = userIdFromToken;
           }
         }
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
-        if (!response.ok) throw new Error('Failed to fetch ad details');
-        const result = await response.json();
-        if (!result.success) throw new Error(result.message || 'API returned error');
-        if (!didCancel) setApiData(result.data);
+        const data = await getAdDetail(adUploadId, userId);
+        // Normalize go_no_go: old backend returns "No-Go" (hyphen),
+        // all downstream comparisons expect "No Go" (space form).
+        if (data && (data as any).go_no_go === "No-Go") (data as any).go_no_go = "No Go";
+        if (!didCancel) setApiData(data as unknown as ApiResponse);
       } catch (err) {
         if (!didCancel) setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -710,15 +723,12 @@ export default function ResultsPage() {
     let didCancel = false;
     const fetchAdDetails = async () => {
       try {
-        let userIdParam = '';
-        if (userDetails?.user_id) {
-          userIdParam = `&user_id=${userDetails.user_id}`;
-        }
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=addetail&ad_upload_id=${adUploadId}${userIdParam}`);
-        if (!response.ok) throw new Error('Failed to fetch ad details');
-        const result = await response.json();
-        if (!result.success) throw new Error(result.message || 'API returned error');
-        if (!didCancel) setApiData(result.data);
+        const userId = userDetails?.user_id;
+        const data = await getAdDetail(adUploadId, userId);
+        // Normalize go_no_go: old backend returns "No-Go" (hyphen),
+        // all downstream comparisons expect "No Go" (space form).
+        if (data && (data as any).go_no_go === "No-Go") (data as any).go_no_go = "No Go";
+        if (!didCancel) setApiData(data as unknown as ApiResponse);
       } catch (err) {
         if (!didCancel) setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -1200,6 +1210,22 @@ export default function ResultsPage() {
                   <p className="text-white/50 text-xs text-center mt-1">Ready to run?</p>
                 </div>
               </div>
+
+              {/* Mobile: Fix This Ad button */}
+              <button
+                onClick={() => setShowFixDrawer(true)}
+                className="w-full py-2.5 rounded-xl font-semibold text-sm bg-primary text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                ✨ {fixedResult !== null ? "Re-Fix This Ad" : "Fix This Ad"}
+              </button>
+              {fixedResult && (
+                <button
+                  onClick={() => setShowFixHistory(true)}
+                  className="w-full text-center text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2 -mt-2"
+                >
+                  View fix history
+                </button>
+              )}
 
               {/* Mobile: Badges and Scores below */}
               <div className="lg:hidden space-y-4">
@@ -2147,13 +2173,19 @@ export default function ResultsPage() {
                         <Button size="sm" variant="link" className="px-3 text-xs text-primary py-1 h-7" onClick={() => setShowMoreGoReasons(true)}>View more</Button>
                       </div>
                     </div>
-                    {/* Fix This Ad — only for No Go */}
-                    {apiData?.go_no_go === "No Go" && (
+                    {/* Fix This Ad — visible for all ads (testing image generation flow) */}
+                    <button
+                      onClick={() => setShowFixDrawer(true)}
+                      className="mt-3 w-full py-2.5 rounded-xl font-semibold text-sm bg-primary text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                    >
+                      ✨ {fixedResult !== null ? "Re-Fix This Ad" : "Fix This Ad"}
+                    </button>
+                    {fixedResult && (
                       <button
-                        onClick={() => setShowFixDrawer(true)}
-                        className="mt-3 w-full py-2.5 rounded-xl font-semibold text-sm bg-primary text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                        onClick={() => setShowFixHistory(true)}
+                        className="mt-2 w-full text-center text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
                       >
-                        ✨ Fix This Ad
+                        View fix history
                       </button>
                     )}
 
@@ -2857,14 +2889,16 @@ export default function ResultsPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300 text-sm sm:text-base text-start">Estimated CTR</span>
                       <span
-                        className={`font-bold text-sm sm:text-base text-end ${parseFloat(apiData.estimated_ctr?.replace('%', '') || '0') >= 5
+                        className={`font-bold text-sm sm:text-base text-end ${toNum(apiData.estimated_ctr) >= 5
                           ? "text-green-400"
-                          : parseFloat(apiData.estimated_ctr?.replace('%', '') || '0') >= 2
+                          : toNum(apiData.estimated_ctr) >= 2
                             ? "text-[#F99244]"
                             : "text-red-400"
                           }`}
                       >
-                        {apiData.estimated_ctr || "N/A"}
+                        {apiData.estimated_ctr != null
+                          ? (typeof apiData.estimated_ctr === 'number' ? `${apiData.estimated_ctr}%` : apiData.estimated_ctr)
+                          : "N/A"}
                       </span>
                     </div>
 
@@ -4459,6 +4493,39 @@ export default function ResultsPage() {
       <FixThisAdDrawer
         open={showFixDrawer}
         onClose={() => setShowFixDrawer(false)}
+        adUploadId={apiData?.ad_upload_id}
+        userId={userDetails?.user_id}
+        originalImageUrl={apiData?.images?.[0]}
+        originalScore={apiData?.score_out_of_100}
+        originalGoNoGo={apiData?.go_no_go}
+        onFixComplete={(result) => {
+          // Update main analysis panels
+          setApiData(prev =>
+            prev
+              ? {
+                  ...prev,
+                  ...(result.newAnalysis as any),
+                  score_out_of_100: result.newScore,
+                  go_no_go: result.newGoNoGo,
+                }
+              : prev
+          )
+          // Populate fixed panel immediately (no reload needed)
+          setFixedResult({
+            fixedAdId: result.fixedAdId,
+            generatedImageUrl: result.generatedImageUrl,
+            newScore: result.newScore,
+            newGoNoGo: result.newGoNoGo,
+            newAnalysis: result.newAnalysis,
+            createdAt: new Date().toISOString(),
+          })
+        }}
+      />
+
+      {/* Fix History Modal */}
+      <FixedVersionsModal
+        open={showFixHistory}
+        onClose={() => setShowFixHistory(false)}
         adUploadId={apiData?.ad_upload_id}
         userId={userDetails?.user_id}
         originalImageUrl={apiData?.images?.[0]}

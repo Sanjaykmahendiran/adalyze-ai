@@ -11,6 +11,9 @@ import Image from 'next/image';
 import ExpertConsultationPopup from '@/components/expert-form';
 import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
+import { getChatHistory, askAdalyze } from '@/services/chatService';
+import { requestExpertTalk } from '@/services/dashboardService';
+import type { AskAdalyzeResponse, ChatLogEntry, ExpertTalkPayload } from '@/types/api';
 
 type Sender = "ai" | "user";
 
@@ -21,26 +24,6 @@ interface ChatMessage {
     thinking?: boolean;
 }
 
-interface AskAPIResponse {
-    answer?: string;
-    suggested_questions?: string[];
-    ask_count?: number;
-    ask_limit?: number;
-    askCount?: number;
-    askLimit?: number;
-    limit_reached?: boolean;
-    limitReached?: boolean;
-    error?: string;
-}
-
-interface ChatLogEntry {
-    al_id: number;
-    ad_upload_id: number;
-    user_id: number;
-    question: string;
-    answer: string;
-    created_date: string;
-}
 
 interface AdalyzeChatBotProps {
     adUploadId: number;
@@ -114,12 +97,7 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
         });
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/askadalyze.php`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ad_upload_id: adUploadId, question: "" })
-            });
-            const data: AskAPIResponse = await res.json();
+            const data: AskAdalyzeResponse = await askAdalyze({ ad_upload_id: adUploadId, question: "" });
 
             replaceLastThinking(data.answer || "Here are some suggestions to begin with.");
             setSuggested(data.suggested_questions || []);
@@ -138,24 +116,11 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
             fetchedInitialSuggestionsRef.current = true;
             setLoading(true);
             try {
-                const historyRes = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=getchathistory&ad_upload_id=${adUploadId}`,
-                    { cache: 'no-store' }
-                );
+                const entries = await getChatHistory(adUploadId);
 
-                const raw = await historyRes.text();
-                let parsed: unknown = raw;
-                try {
-                    parsed = JSON.parse(raw);
-                } catch {
-                    // keep as text; may be "0"
-                }
+                const isArray = Array.isArray(entries);
 
-                const isZero = parsed === 0 || parsed === "0";
-                const isArray = Array.isArray(parsed);
-
-                if (isArray && (parsed as ChatLogEntry[]).length > 0) {
-                    const entries = parsed as ChatLogEntry[];
+                if (isArray && entries.length > 0) {
 
                     const sorted = [...entries].sort((a, b) => {
                         const ta = new Date(a.created_date).getTime();
@@ -189,7 +154,7 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
                         setLimitReached(true);
                         setSuggested([]);
                     }
-                } else if (isZero || (isArray && (parsed as any[]).length === 0)) {
+                } else if (isArray && entries.length === 0) {
                     await runInitial();
                 } else {
                     await runInitial(); // unknown shape -> safe fallback
@@ -230,13 +195,7 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
             setLoading(true);
 
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/askadalyze.php`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ad_upload_id: adUploadId, question })
-                });
-
-                const data: AskAPIResponse = await res.json();
+                const data: AskAdalyzeResponse = await askAdalyze({ ad_upload_id: adUploadId, question });
 
                 if (data.error) {
                     replaceLastThinking(data.error);
@@ -565,29 +524,20 @@ export default function AdalyzeChatBot({ adUploadId, userName, userImage }: Adal
                             throw new Error('User ID not found');
                         }
 
-                        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                gofor: 'exptalkrequest',
-                                user_id: userId,
-                                prefdate: formData.prefdate,
-                                preftime: formData.preftime,
-                                comments: formData.comments
-                            })
+                        const expertPayload: ExpertTalkPayload = {
+                            user_id: Number(userId),
+                            prefdate: formData.prefdate,
+                            preftime: formData.preftime,
+                            comments: formData.comments,
+                        };
+                        await requestExpertTalk(expertPayload);
+                        toast.success('Expert call request submitted successfully!');
+                        // Show success message in chat
+                        appendMessage({
+                            id: crypto.randomUUID(),
+                            sender: 'ai',
+                            text: 'Your consultation request has been submitted successfully. Our expert will contact you soon!'
                         });
-
-                        if (response.ok) {
-                            toast.success('Expert call request submitted successfully!');
-                            // Show success message in chat
-                            appendMessage({
-                                id: crypto.randomUUID(),
-                                sender: 'ai',
-                                text: 'Your consultation request has been submitted successfully. Our expert will contact you soon!'
-                            });
-                        } else {
-                            throw new Error('Failed to submit request');
-                        }
                     } catch (error) {
                         console.error('Error submitting expert call request:', error);
                         toast.error(error instanceof Error ? error.message : 'Failed to submit expert call request. Please try again.');

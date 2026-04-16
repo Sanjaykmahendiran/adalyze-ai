@@ -19,6 +19,7 @@ import UserLayout from "@/components/layouts/user-layout"
 import { trackEvent } from "@/lib/eventTracker"
 import { Industry } from "../upload/type"
 import { generateAdToken } from "@/lib/tokenUtils"
+import { getIndustries, getLocations } from "@/services/referenceDataService"
 import Footer from "@/components/footer"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -129,16 +130,11 @@ export default function AdComparisonUpload() {
 
     const fetchIndustries = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=industrylist`)
-            if (!response.ok) {
-                throw new Error('Failed to fetch industries')
-            }
-            const data: Industry[] = await response.json()
+            const data = await getIndustries()
             setIndustries(data)
         } catch (error) {
             console.error('Error fetching industries:', error)
             toast.error('Failed to load industries')
-        } finally {
         }
     }
 
@@ -231,11 +227,7 @@ export default function AdComparisonUpload() {
 
         setLoadingCountries(true)
         try {
-            const response = await fetch(`https://techades.com/App/api.php?gofor=locationlist&search=${searchTerm}`)
-            if (!response.ok) {
-                throw new Error('Failed to fetch countries')
-            }
-            const data = await response.json()
+            const data = await getLocations(searchTerm)
 
             // Get currently selected country names to preserve them
             const selectedCountryNames = getCountryNamesFromIds(country)

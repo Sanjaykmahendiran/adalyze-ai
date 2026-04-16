@@ -8,6 +8,9 @@ import { Upload, X } from "lucide-react"
 import toast from "react-hot-toast"
 import Cookies from "js-cookie"
 import Image from "next/image"
+import { addBrand, editBrand } from "@/services/brandService"
+import { uploadImage } from "@/services/uploadService"
+import type { BrandMutationResponse } from "@/types/api"
 
 interface Brand {
     brand_id: number
@@ -105,19 +108,7 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
         setIsUploadingLogo(true)
         try {
             const base64String = await readFileAsBase64(file)
-            const imageUploadPayload = {
-                gofor: "image_upload",
-                imgname: base64String,
-                type: "Brand",
-            }
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(imageUploadPayload),
-            })
-
-            const result = await response.json()
+            const result = await uploadImage({ imgname: base64String, type: "Brand" })
 
             if (result?.success || result?.status === "success") {
                 const uploadedUrl: string = result?.url || ""
@@ -177,34 +168,28 @@ export default function AddBrandForm({ onCancel, onAdded, editingBrand, currentB
         setIsSubmitting(true)
         try {
             const isEditing = !!editingBrand
-            const payload = isEditing
-                ? {
-                    gofor: "editbrands",
-                    brand_id: editingBrand.brand_id.toString(),
-                    user_id: userId,
+            let result: BrandMutationResponse
+
+            if (isEditing) {
+                result = await editBrand({
+                    brand_id: editingBrand!.brand_id.toString(),
+                    user_id: userId || "",
                     brand_name: brandName.trim(),
                     email: brandEmail.trim(),
                     mobile: brandMobile.trim(),
                     website: website,
                     logo_url: logoUrl,
-                }
-                : {
-                    gofor: "addbrand",
-                    user_id: userId,
+                })
+            } else {
+                result = await addBrand({
+                    user_id: userId || "",
                     brand_name: brandName.trim(),
                     email: brandEmail.trim(),
                     mobile: brandMobile.trim(),
                     website: website,
                     logo_url: logoUrl,
-                }
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            })
-
-            const result = await response.json()
+                })
+            }
 
             if (result?.success || result?.status === "success") {
                 toast.success(isEditing ? "Brand updated successfully!" : "Brand added successfully!")

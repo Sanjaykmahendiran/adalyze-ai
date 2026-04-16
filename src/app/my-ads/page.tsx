@@ -14,6 +14,9 @@ import UserLayout from "@/components/layouts/user-layout"
 import MyAdsSkeleton from "@/components/Skeleton-loading/myads-loading"
 import { useAdNavigation } from "@/hooks/useAdNavigation"
 import Cookies from "js-cookie";
+import { getBrands } from "@/services/brandService"
+import { getAds, getAbAds } from "@/services/adService"
+import type { AdsListParams, AdsListResponse, AbAdPair, Ad } from "@/types/api"
 
 // NEW: shadcn pagination
 import {
@@ -26,32 +29,8 @@ import {
     PaginationEllipsis,
 } from "@/components/ui/pagination"
 
-// Define the API response interface
-interface AdsApiResponse {
-    total: number
-    limit: number
-    offset: number
-    ads: Ad[]
-}
 
-// Define the Ad interface based on API response
-interface Ad {
-    ads_type: string
-    ad_id: number
-    ads_name: string
-    image_path: string
-    industry: string
-    score: number
-    platforms: string
-    uploaded_on: string
-    go_nogo?: string
-}
 
-// Define the A/B Ad interface
-interface ABAdPair {
-    ad_a: Ad
-    ad_b: Ad
-}
 
 const platformIcons = {
     facebook: Facebook,
@@ -115,7 +94,7 @@ export default function MyAdsPage() {
     const [selectedPlatform, setSelectedPlatform] = useState("all")
     const [ads, setAds] = useState<Ad[]>([])
     const [allAds, setAllAds] = useState<Ad[]>([]) // Store all ads for filtering
-    const [abAds, setAbAds] = useState<ABAdPair[]>([])
+    const [abAds, setAbAds] = useState<AbAdPair[]>([])
     const [loading, setLoading] = useState(true)
     const [abLoading, setAbLoading] = useState(false)
     const [scoreFilter, setScoreFilter] = useState("all")
@@ -208,10 +187,8 @@ export default function MyAdsPage() {
         const fetchAbAdsCount = async () => {
             try {
                 if (!userId) return;
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=abadslist&user_id=${userId}`);
-                if (!response.ok) return;
-                const rawAbAds = await response.json();
-                setTotalAbAds(Array.isArray(rawAbAds) ? rawAbAds.length : 0);
+                const rawAbAds = await getAbAds(userId);
+                setTotalAbAds(rawAbAds.length);
             } catch (e) {
                 setTotalAbAds(0);
             }
@@ -227,9 +204,7 @@ export default function MyAdsPage() {
         const fetchBrands = async () => {
             try {
                 setClientBrandsLoading(true)
-                const resp = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userDetails?.user_id}`)
-                if (!resp.ok) throw new Error('Failed to fetch brands list')
-                const data = await resp.json()
+                const data = await getBrands(userDetails!.user_id)
                 const normalized = Array.isArray(data)
                     ? data.map((b: any) => ({ brand_id: Number(b.brand_id), brand_name: String(b.brand_name || 'Unnamed') }))
                     : []
@@ -243,42 +218,29 @@ export default function MyAdsPage() {
         fetchBrands()
     }, [userId, userDetails?.type, userDetails?.user_id])
 
-    // Helper function to build API URL with filters
-    const buildAdsListUrl = (offset: number, limit: number) => {
-        if (!userId) return ''
-
-        const baseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=adslist&user_id=${userId}&offset=${offset}&limit=${limit}`
-        const params: string[] = []
-
+    // Build typed params for getAds
+    const buildAdsParams = (offset: number, limit: number): AdsListParams => {
+        const params: AdsListParams = { user_id: userId!, offset, limit }
         if (selectedBrandId && selectedBrandId.trim() !== "" && selectedBrandId !== "All Brands") {
-            params.push(`brand_id=${encodeURIComponent(selectedBrandId)}`)
+            params.brand_id = selectedBrandId
         }
         if (selectedPlatform && selectedPlatform.trim() !== "" && selectedPlatform !== "all") {
-            params.push(`platform=${encodeURIComponent(selectedPlatform)}`)
+            params.platform = selectedPlatform
         }
         if (scoreFilter && scoreFilter.trim() !== "" && scoreFilter !== "all") {
-            params.push(`score=${encodeURIComponent(scoreFilter)}`)
+            params.score = scoreFilter
         }
         if (adTypeFilter && adTypeFilter.trim() !== "" && adTypeFilter !== "all") {
-            params.push(`ad_type=${encodeURIComponent(adTypeFilter)}`)
+            params.ad_type = adTypeFilter
         }
-
-        return params.length > 0 ? `${baseUrl}&${params.join('&')}` : baseUrl
+        return params
     }
 
     // Fetch all ads for filtering (no pagination)
     const fetchAllAds = async () => {
         try {
             if (!userId) return
-            const url = buildAdsListUrl(0, 1000)
-            if (!url) return
-
-            const response = await fetch(url)
-            if (!response.ok) {
-                throw new Error('Failed to fetch all ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const data = await getAds(buildAdsParams(0, 1000))
             setAllAds(data.ads)
             setTotalAds(data.total)
         } catch (error) {
@@ -295,20 +257,8 @@ export default function MyAdsPage() {
                 router.push('/login')
                 return
             }
-
             const offset = (currentPage - 1) * itemsPerPage
-            const url = buildAdsListUrl(offset, itemsPerPage)
-            if (!url) {
-                setLoading(false)
-                return
-            }
-
-            const response = await fetch(url)
-            if (!response.ok) {
-                throw new Error('Failed to fetch ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const data = await getAds(buildAdsParams(offset, itemsPerPage))
             setAds(data.ads)
             setTotalAds(data.total)
         } catch (error) {
@@ -347,27 +297,17 @@ export default function MyAdsPage() {
                 return
             }
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=abadslist&user_id=${userId}`)
-            if (!response.ok) {
-                throw new Error('Failed to fetch A/B ads')
-            }
-
-            const rawAbAds: any = await response.json()
-            const normalizedAbAds: ABAdPair[] = (rawAbAds || []).map((pair: any) => {
-                const adA = pair?.ad_a || {}
-                const adB = pair?.ad_b || {}
-                return {
-                    ad_a: {
-                        ...adA,
-                        go_nogo: adA.go_nogo ?? adA.go_nogoA ?? "",
-                    },
-                    ad_b: {
-                        ...adB,
-                        go_nogo: adB.go_nogo ?? adB.go_nogoB ?? "",
-                    },
-                }
-            })
-
+            const rawAbAds = await getAbAds(userId)
+            const normalizedAbAds: AbAdPair[] = (rawAbAds || []).map((pair) => ({
+                ad_a: {
+                    ...pair.ad_a,
+                    go_nogo: pair.ad_a.go_nogo ?? pair.ad_a.go_nogoA ?? "",
+                },
+                ad_b: {
+                    ...pair.ad_b,
+                    go_nogo: pair.ad_b.go_nogo ?? pair.ad_b.go_nogoB ?? "",
+                },
+            }))
             setAbAds(normalizedAbAds)
             setTotalAbAds(normalizedAbAds.length)
 
@@ -586,7 +526,7 @@ export default function MyAdsPage() {
         )
     }
 
-    const renderAbAdCard = (abAdPair: ABAdPair, index: number) => {
+    const renderAbAdCard = (abAdPair: AbAdPair, index: number) => {
         if (!abAdPair || !abAdPair.ad_a || !abAdPair.ad_b) return null
 
         const platformListA = parsePlatforms(abAdPair.ad_a.platforms)

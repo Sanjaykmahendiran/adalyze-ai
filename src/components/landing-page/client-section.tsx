@@ -5,13 +5,8 @@ import Image from 'next/image'
 import { AwardIcon } from "lucide-react";
 import { LazyLoadSection } from '@/components/lazy-load-section';
 import { motion } from 'framer-motion';
-
-interface Client {
-  client_id: number;
-  client_name: string;
-  logo_url: string | null;
-  website_url: string | null;
-}
+import { getClients } from "@/services/cmsService"
+import type { Client } from "@/types/api"
 
 export default function ClientSection({ category, counter, CounterText }: { category: string, counter: number, CounterText: string }) {
   const [count, setCount] = useState(0)
@@ -54,11 +49,7 @@ export default function ClientSection({ category, counter, CounterText }: { cate
     // Fetch dynamic client list
     const fetchClients = async () => {
       try {
-        const url = category
-          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=clientslist&category=${encodeURIComponent(category)}`
-          : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=clientslist`;
-        const response = await fetch(url)
-        const data = await response.json()
+        const data = await getClients(category ? { category } : undefined)
         // Validate and filter clients with valid logo URLs (handles URLs of any length/format)
         const validClients = data
           .map((c: Client) => ({

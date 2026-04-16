@@ -103,6 +103,9 @@ export default function RootLayout({
         />
 
         {/* Preload critical LCP image - highest priority */}
+        {/* Note: no crossOrigin here — actual <picture>/<video> elements load without
+            crossOrigin, so preload mode must match to avoid a cache miss.
+            adalyze.app does not serve CORS headers for cross-origin preloads. */}
         <link
           rel="preload"
           as="image"
@@ -110,23 +113,17 @@ export default function RootLayout({
           fetchPriority="high"
           imageSrcSet="https://adalyze.app/uploads/thumbnail.webp 1920w"
           imageSizes="100vw"
-          crossOrigin="anonymous"
         />
         <link
           rel="preload"
           as="image"
           href="https://adalyze.app/uploads/thumbnail-mobile.webp"
           fetchPriority="high"
-          crossOrigin="anonymous"
         />
 
         {/* Preconnect to image/video CDN for faster LCP */}
         <link rel="preconnect" href="https://adalyze.app" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://adalyze.app" />
-
-        {/* Preconnect to API domain for faster data fetching */}
-        <link rel="preconnect" href="https://adalyzeai.xyz" />
-        <link rel="dns-prefetch" href="https://adalyzeai.xyz" />
 
         {/* Preconnect to external domains - defer to improve FCP */}
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />

@@ -34,6 +34,10 @@ import ExpertConsultationPopup from "@/components/expert-form"
 import { Badge } from "@/components/ui/badge"
 import AddBrandForm from "@/app/brands/_components/add-brand-form"
 import { MainStatCard } from "./_components/main-status-card"
+import { getBrands } from "@/services/brandService"
+import { getDashboard1, getDashboard2, requestExpertTalk } from "@/services/dashboardService"
+import { getRecentCaseStudies, getTop10Ads, getTrendingAds } from "@/services/contentService"
+import type { ExpertTalkPayload } from "@/types/api"
 
 const platformIcons = {
   facebook: Facebook,
@@ -127,64 +131,28 @@ export default function Dashboard() {
 
   // API fetch functions (keeping original implementations)
   const fetchDashboardData = async (userId: string, brandId?: string) => {
-    try {
-      const brandParam = brandId && brandId.length > 0 && brandId !== "All Clients" ? `&brand_id=${encodeURIComponent(brandId)}` : ""
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=dashboard1&user_id=${userId}${brandParam}`)
-      if (!response.ok) throw new Error('Failed to fetch dashboard data')
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-      throw error
-    }
+    return getDashboard1(userId, brandId)
   }
 
   const fetchDashboard2Data = async (userId: string, brandId?: string) => {
-    try {
-      const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }).toUpperCase()
-      const brandParam = brandId && brandId.length > 0 && brandId !== "All Clients" ? `&brand_id=${encodeURIComponent(brandId)}` : ""
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=dashboard2&user_id=${userId}&month=${currentMonth}${brandParam}`)
-      if (!response.ok) throw new Error('Failed to fetch dashboard2 data')
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching dashboard2 data:', error)
-      throw error
-    }
+    const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }).toUpperCase()
+    return getDashboard2(userId, currentMonth, brandId)
   }
 
   const fetchCaseStudies = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=recentcslist`)
-      if (!response.ok) throw new Error('Failed to fetch case studies')
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching case studies:', error)
-      throw error
-    }
+    return getRecentCaseStudies()
   }
 
   const submitExpertRequest = async (formData: any) => {
     try {
-      const payload = {
-        gofor: "exptalkrequest",
+      const payload: ExpertTalkPayload = {
         user_id: parseInt(userId || ""),
         prefdate: formData.prefdate,
         preftime: formData.preftime,
-        comments: formData.comments
+        comments: formData.comments,
       }
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (!response.ok) throw new Error('Failed to submit expert request')
-      const result = await response.json()
-
-      toast.success(result);
-
+      const result = await requestExpertTalk(payload)
+      toast.success(result)
       return result
     } catch (error) {
       console.error('Error submitting expert request:', error)
@@ -193,25 +161,11 @@ export default function Dashboard() {
   }
 
   const fetchTop10Ads = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=top10ads`)
-      if (!response.ok) throw new Error('Failed to fetch top 10 ads')
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching top 10 ads:', error)
-      throw error
-    }
+    return getTop10Ads()
   }
 
   const fetchTrendingAds = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=trendingads`)
-      if (!response.ok) throw new Error('Failed to fetch trending ads')
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching trending ads:', error)
-      throw error
-    }
+    return getTrendingAds()
   }
 
   // Top 10 Ads card renderer
@@ -311,9 +265,7 @@ export default function Dashboard() {
     const fetchBrands = async () => {
       try {
         setClientBrandsLoading(true)
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userId}`)
-        if (!resp.ok) throw new Error('Failed to fetch brands list')
-        const data = await resp.json()
+        const data = await getBrands(userId)
         const normalized = Array.isArray(data)
           ? data.map((b: any) => ({ brand_id: Number(b.brand_id), brand_name: String(b.brand_name || 'Unnamed') }))
           : []

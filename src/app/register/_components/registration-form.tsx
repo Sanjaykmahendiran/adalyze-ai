@@ -20,7 +20,8 @@ import GoogleSignInButton from "@/app/login/_components/GoogleSign-In";
 import Cookies from "js-cookie";
 import { event, trackSignup } from "@/lib/gtm";
 import { trackSignUp } from "@/lib/ga4";
-import { login } from "@/services/authService";
+import { login, emailRegister, addRegistrationIdentifier, getUserByReferral, register } from "@/services/authService";
+import { getLocations } from "@/services/referenceDataService";
 import { trackEvent } from "@/lib/eventTracker";
 import RegistrationStep2Form from "./RegistrationStep2Form";
 
@@ -214,8 +215,7 @@ export default function RegistrationForm() {
 
     setLoadingCities(true);
     try {
-      const response = await fetch(`https://techades.com/App/api.php?gofor=locationlist&search=${encodeURIComponent(searchTerm.trim())}`);
-      const data: Array<{ id: string, name: string }> = await response.json();
+      const data = await getLocations(searchTerm.trim());
       // Remove duplicates based on city id to prevent React key warnings
       const uniqueCities = Array.from(
         new Map(data.map((city) => [city.id, city])).values()
@@ -223,8 +223,6 @@ export default function RegistrationForm() {
       setCities(uniqueCities);
     } catch (error) {
       console.error("Error fetching cities:", error);
-      // Don't show error toast for every search, just log it
-      console.log("City search failed for:", searchTerm);
       // Reset last search term on error so it can be retried
       lastSearchTermRef.current = "";
     } finally {
@@ -262,27 +260,14 @@ export default function RegistrationForm() {
 
     setIsCheckingReferral(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=usergetbyref&referral_code=${code}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.user_id && data.name) {
-          // Store the user_id separately
-          setReferralUserId(data.user_id.toString());
-          // Display the user name
-          setReferredBy(data.name);
-        } else {
-          setReferredBy("");
-          setReferralUserId("");
-          toast.error("Invalid referral code");
-        }
+      const result = await getUserByReferral(code);
+      if (result.status === "success" && result.user?.user_id && result.user?.name) {
+        setReferralUserId(result.user.user_id.toString());
+        setReferredBy(result.user.name);
       } else {
         setReferredBy("");
         setReferralUserId("");
-        toast.error("Invalid referral code");
+        toast.error(result.message || "Invalid referral code");
       }
     } catch (error) {
       console.error("Error checking referral code:", error);
@@ -322,22 +307,7 @@ export default function RegistrationForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          gofor: "eregister",
-          email: values.email,
-        }),
-      });
-
-      const data: {
-        user_id?: number;
-        status?: string;
-        message?: string;
-      } = await response.json();
+      const data = await emailRegister({ email: values.email });
 
       if (data.user_id) {
         setEmailValue(values.email);
@@ -345,25 +315,15 @@ export default function RegistrationForm() {
 
         trackEvent("1St_level_email_register", window.location.href, values.email);
 
-        // Call addidentifier API after step 1 completion
+        // Link cookie tracking to the new user — non-blocking
         try {
           const cookieId = Cookies.get('cookie_id') || '';
-          const addIdentifierResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              gofor: "addidentifier",
-              cookie_id: cookieId,
-              user_id: data.user_id,
-              email: values.email,
-              phone: "" // Phone will be added in step 2 if needed
-            }),
+          await addRegistrationIdentifier({
+            cookie_id: cookieId,
+            user_id: data.user_id,
+            email: values.email,
+            phone: "",
           });
-
-          const addIdentifierData = await addIdentifierResponse.json();
-          console.log("Add identifier response:", addIdentifierData);
         } catch (error) {
           console.error("Add identifier API error:", error);
           // Don't block the flow if this API fails
@@ -390,7 +350,6 @@ export default function RegistrationForm() {
     setIsLoading(true);
     try {
       const payload: {
-        gofor: string;
         user_id: string;
         name: string;
         password: string;
@@ -404,11 +363,10 @@ export default function RegistrationForm() {
         utm_content?: string;
         utm_term?: string;
       } = {
-        gofor: "register",
         user_id: userId,
         name: values.name,
         password: values.password,
-        type: values.type, // This will be "1" for Single Brand or "2" for Multiple Brand
+        type: values.type,
         city: values.city,
       };
 
@@ -440,15 +398,7 @@ export default function RegistrationForm() {
         payload.utm_term = utmTerm;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
+      const data = await register(payload);
 
       if (data.status === "success") {
         // Save user_id in cookies

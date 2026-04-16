@@ -11,43 +11,10 @@ import Image from "next/image"
 import { Suspense, useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import Spinner from "@/components/overlay"
+import { getCaseStudies, getCaseStudyBySlug } from "@/services/cmsService"
+import type { CaseStudy } from "@/types/api"
 
 // Type definitions
-interface CaseStudy {
-  cs_id: number
-  title: string
-  slug: string
-  banner_title: string
-  client_name: string
-  challenge: string
-  insight: string
-  action_taken: string
-  outcome: string
-  status: number
-  created_at: string
-  banner_subtitle: string
-  banner_image_url: string
-  banner_cta_label: string
-  banner_cta_url: string
-  industry: string
-  platform: string
-  region: string
-  timeframe: string
-  objectives: string
-  strategy: string
-  results_summary: string
-  kpi_primary_label: string
-  kpi_primary_value: string
-  sidebar_metrics: string
-  metrics_json: string
-  testimonial_quote: string
-  testimonial_name: string
-  testimonial_role: string
-  read_time_minutes: number
-  order_index: number
-  thumbnail_url: string
-  tags: string
-}
 
 interface SidebarMetric {
   value: string
@@ -88,34 +55,17 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
   // Client-side fetch functions
   const fetchAllCaseStudies = () => {
-    return fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=casestudylist`, {
-      cache: 'no-store'
+    return getCaseStudies({ cache: 'no-store' }).catch(error => {
+      console.error("Error fetching case studies:", error)
+      return [] as CaseStudy[]
     })
-      .then(response => {
-        if (!response.ok) throw new Error("Failed to fetch case studies")
-        return response.json()
-      })
-      .then(data => data as CaseStudy[])
-      .catch(error => {
-        console.error("Error fetching case studies:", error)
-        return []
-      })
   }
 
   const fetchCaseStudyById = (slug: string) => {
-    return fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=getcasestudy&slug=${slug}`,
-      { cache: 'no-store' }
-    )
-      .then(response => {
-        if (!response.ok) throw new Error("Failed to fetch case study")
-        return response.json()
-      })
-      .then(data => data as CaseStudy)
-      .catch(error => {
-        console.error("Error fetching case study:", error)
-        return undefined
-      })
+    return getCaseStudyBySlug(slug, { cache: 'no-store' }).catch(error => {
+      console.error("Error fetching case study:", error)
+      return undefined
+    })
   }
 
   useEffect(() => {

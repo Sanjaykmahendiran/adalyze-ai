@@ -13,30 +13,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, ReceiptText, X } from "lucide-react";
 import Cookies from "js-cookie";
+import { getPaymentHistory } from "@/services/paymentService";
+import type { Transaction } from "@/types/api";
 import { Card } from "@/components/ui/card";
 import InvoicePdf from "./invoice-pdf";
-
-const userId = Cookies.get("userId") || "";
-
-interface Transaction {
-  id: string;
-  order_id: string;
-  payment_id: string;
-  razorpay_signature: string;
-  package_id: number;
-  type: string;
-  amount: string;
-  currency: string;
-  date: string;
-  order_status: number;
-  plan_name: string;
-}
 
 interface TransactionTableProps {
   userDetails: any;
 }
 
 export default function TransactionTable({ userDetails }: TransactionTableProps) {
+  const userId = Cookies.get("userId") || "";
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -45,11 +32,8 @@ export default function TransactionTable({ userDetails }: TransactionTableProps)
     const fetchData = async () => {
       if (!userId) return;
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=paymenthistory&user_id=${userId}`
-        );
-        const data = await response.json();
-        setTransactions(data || []);
+        const data = await getPaymentHistory(userId);
+        setTransactions(data);
       } catch (error) {
         console.error("Error fetching payment history:", error);
       }

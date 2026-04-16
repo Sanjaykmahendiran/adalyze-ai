@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import NoDataFound from "@/components/no-data-found"
+import { getGuides } from "@/services/cmsService"
+import type { Guide } from "@/types/api"
 
 // Color system
 const colors = {
@@ -40,26 +42,6 @@ const colors = {
     secondary: "text-gray-300",
     muted: "text-gray-400",
   }
-}
-
-// Type definitions (keeping your existing interfaces)
-interface Guide {
-  guide_id: number
-  title: string
-  slug: string
-  type: 'glossary' | 'tip' | 'tutorial' | 'checklist' | 'troubleshooter' | 'formula' | 'policy'
-  platform: string
-  goal: string
-  read_time_sec: number
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  summary: string
-  body_md: string
-  media_url: string | null
-  checklist_json: string | null
-  troubleshoot_for: string | null
-  status: number
-  created_at: string
-  updated_at: string
 }
 
 const scoreBreakdown = [
@@ -105,8 +87,7 @@ export default function GuidePage() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=guideslist`)
-        const guidesData = await response.json() as Guide[]
+        const guidesData = await getGuides()
         setGuides(guidesData.filter(guide => guide.status === 1))
       } catch (err) {
         setError('Failed to load guides. Please try again later.')
@@ -204,7 +185,7 @@ export default function GuidePage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficultyStyles[guide.difficulty]}`}>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficultyStyles[guide.difficulty as keyof typeof difficultyStyles] ?? ""}`}>
               {guide.difficulty}
             </span>
             <PlatformIcon className="w-4 h-4 text-gray-400" />
@@ -224,7 +205,7 @@ export default function GuidePage() {
 
         <div className="flex items-center justify-between text-xs text-gray-400">
           <span className="capitalize">{guide.platform}</span>
-          <span>{formatReadTime(guide.read_time_sec)}</span>
+          <span>{formatReadTime(guide.read_time_sec ?? 0)}</span>
         </div>
       </div>
     )

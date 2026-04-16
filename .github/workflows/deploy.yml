@@ -31,15 +31,19 @@ jobs:
       - name: Build (dev branch)
         if: github.ref == 'refs/heads/develop'
         env:
-          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.DEV_API_BASE_URL }}
+          NEXT_PUBLIC_API_BASE_URL: https://evraapp.top/App
+          # BUG-CORS-001 fix: use the frontend domain as the REST base URL.
+          # api-proxy.php in public/ proxies /api/* to dev.evraapp.top server-side
+          # (no CORS — same-origin request from the browser's perspective).
+          NEXT_PUBLIC_REST_BASE_URL: https://dev.adalyzeai.xyz
         run: pnpm run build
 
       - name: Build (main branch)
         if: github.ref == 'refs/heads/main'
         env:
-          # Prod backend — old PHP backend on adlayzer cPanel (public_html/App/)
-          # Handles all gofor calls, analyze.php, heatmap.php, adupl.php, etc.
-          NEXT_PUBLIC_API_BASE_URL: https://www.adalyzeai.xyz/App
+          # Prod backend is at api.evraapp.top (Slim — handles all gofor + REST routes)
+          NEXT_PUBLIC_API_BASE_URL: https://api.evraapp.top
+          NEXT_PUBLIC_REST_BASE_URL: https://api.evraapp.top
         run: pnpm run build
 
       - name: Deploy to dev (develop branch)
@@ -55,7 +59,7 @@ jobs:
           rm: false
 
       - name: Deploy to prod (main branch)
-        # Prod frontend lives on adlayzer cPanel (adalyzeai.xyz) — separate from eva
+        # Prod frontend lives on adlayzer cPanel (adalyzeai.xyz) — separate account from eva
         if: github.ref == 'refs/heads/main'
         uses: appleboy/scp-action@v0.1.7
         with:

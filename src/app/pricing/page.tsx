@@ -21,6 +21,10 @@ import { trackEvent } from "@/lib/eventTracker"
 import Cookies from "js-cookie"
 import PricingHelp from "./_components/pricing-help"
 import { trackPaymentSuccess, trackConversion } from "@/lib/ga4"
+import { getPackages, getAppConfig, activateFreeTrial as activateFreeTrialService } from "@/services/pricingService"
+import { getFaqs } from "@/services/contentService"
+import { createOrder, verifyPayment as verifyPaymentService } from "@/services/paymentService"
+import type { PricingPlan, FAQ, AppConfig, FreeTrialResponse, CreateOrderParams, VerifyPaymentParams } from "@/types/api"
 
 // Extend Window interface for Razorpay
 declare global {
@@ -29,32 +33,7 @@ declare global {
     }
 }
 
-// Updated interface to include original prices and type
-interface PricingPlan {
-    package_id: number
-    type: number  // Added type field
-    plan_name: string
-    price_inr: number
-    base_price: string  // Base price before tax
-    tax: number  // Tax amount
-    ori_price_inr: number  // Added original INR price
-    ori_price_usd: number  // Added original USD price
-    price_usd: string
-    features: string
-    brands_count: number  // Added brands_count field
-    ads_limit: string  // Changed to string to handle "Unlimited"
-    valid_till: string
-    status: number
-}
 
-interface FAQ {
-    faq_id: number
-    question: string
-    answer: string
-    category: string
-    status: number
-    created_date: string
-}
 
 interface Testimonial {
     testi_id: number
@@ -180,21 +159,15 @@ const ProPage: React.FC = () => {
 
         const fetchData = async () => {
             try {
-                const [pricingRes, faqRes] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=packages`),
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=faqlist`),
+                const [pricing, faqs] = await Promise.all([
+                    getPackages(),
+                    getFaqs(),
                 ])
-
-                if (!pricingRes.ok || !faqRes.ok ) {
-                    throw new Error("One or more network responses were not ok")
-                }
-
-                const pricing: PricingPlan[] = await pricingRes.json()
-                const faqs: FAQ[] = await faqRes.json()
 
                 if (cancelled) return
 
-                setPricingData(pricing.filter((plan) => plan.status === 1))
+                // getPackages already filters status === 1; apply faq status filter here
+                setPricingData(pricing)
                 setFaqData(faqs.filter((faq) => faq.status === 1))
                 setError(null)
             } catch (err) {
@@ -340,22 +313,15 @@ const ProPage: React.FC = () => {
         setFreeTrialLoading(true)
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=fretra&user_id=${userDetails.user_id}`)
+            const result = await activateFreeTrialService(userDetails.user_id)
 
-            if (!response.ok) {
-                throw new Error('Failed to activate free trial')
-            }
-
-            const result = await response.json()
-
-            // Check if the response indicates success
-            if (result.response === "Free Trial Activated") {
+            if (result.activated) {
                 trackFreeTrial("Free Trial", userDetails?.user_id?.toString());
                 trackConversion.trialStart("Free Trial", userDetails?.user_id?.toString());
                 trackEvent("Free_Trial_Activated", window.location.href, userDetails?.email?.toString());
                 router.push("/thanks?order_id=free_trial")
             } else {
-                throw new Error(result.response || 'Failed to activate free trial')
+                throw new Error(result.message || 'Failed to activate free trial')
             }
         } catch (error) {
             console.error('Free trial activation error:', error)
@@ -368,19 +334,12 @@ const ProPage: React.FC = () => {
     // Payment verification function
     const verifyPayment = async (paymentData: RazorpayResponse, selectedPlan: PricingPlan) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/verify.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    razorpay_payment_id: paymentData.razorpay_payment_id,
-                    razorpay_order_id: paymentData.razorpay_order_id,
-                    razorpay_signature: paymentData.razorpay_signature,
-                }),
-            })
-
-            const result = await response.json()
+            const verifyParams: VerifyPaymentParams = {
+                razorpay_payment_id: paymentData.razorpay_payment_id,
+                razorpay_order_id: paymentData.razorpay_order_id,
+                razorpay_signature: paymentData.razorpay_signature,
+            }
+            const result = await verifyPaymentService(verifyParams)
 
             if (result.response === 'Payment Successful & User Upgraded') {
                 toast.success("Payment Successful! Your subscription has been activated.")
@@ -430,33 +389,18 @@ const ProPage: React.FC = () => {
 
         try {
             // Fetch Razorpay key from API
-            const configResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=config`);
-            const configData = await configResponse.json();
-
-            if (!configResponse.ok || !configData.rzpaykey) {
-                throw new Error('Failed to fetch Razorpay key');
-            }
-
+            const configData = await getAppConfig();
             const rzpKey = configData.rzpaykey;
 
             // Create order
-            const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/razorpay.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userDetails.user_id.toString(),
-                    package_id: selectedPlan.package_id.toString(),
-                    ctype: currency,
-                    period: getBillingPeriod(selectedPlan.package_id),
-                    order_type: "new"
-                }),
-            });
-
-            const orderData = await orderResponse.json();
-
-            if (!orderResponse.ok || !orderData.order_id) {
-                throw new Error(orderData.message || 'Failed to create order');
-            }
+            const orderParams: CreateOrderParams = {
+                user_id: userDetails.user_id.toString(),
+                package_id: selectedPlan.package_id.toString(),
+                ctype: currency,
+                period: getBillingPeriod(selectedPlan.package_id),
+                order_type: "new",
+            };
+            const orderData = await createOrder(orderParams);
 
             // Calculate the final price based on billing period
             const finalPrice = currency === 'INR'

@@ -14,30 +14,14 @@ import {
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Card } from "@/components/ui/card";
+import { getFullAdsList, submitFeedback } from "@/services/supportService";
+import type { FeedbackPayload } from "@/types/api";
 
-interface Ad {
-  ads_type: string
-  ad_id: number
-  ads_name: string
-  image_path: string
-  industry: string
-  score: number
-  platforms: string
-  uploaded_on: string
-  go_nogo?: string
-}
-
-interface AdsApiResponse {
-  total: number
-  limit: number
-  offset: number
-  ads: Ad[]
-}
 
 const FeedbackForm: React.FC = () => {
   const userId = Cookies.get('userId')
   const [loading, setLoading] = useState(false);
-  const [ads, setAds] = useState<Ad[]>([])
+  const [ads, setAds] = useState<import("@/types/api").SupportAd[]>([])
   const [feedbackData, setFeedbackData] = useState({
     ad_upload_id: "",
     rating: "",
@@ -49,20 +33,10 @@ const FeedbackForm: React.FC = () => {
   }, [])
 
   const fetchAds = async () => {
+    if (!userId) return;
     try {
-      if (!userId) return;
-
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=fulladsnamelist&user_id=${userId}`;
-      const response = await fetch(url);
-      const result = await response.json();
-
-      if (result.status && Array.isArray(result.data)) {
-        setAds(result.data);
-      } else {
-        setAds([]);
-      }
-    } catch (error) {
-      console.error("Error fetching ads:", error);
+      setAds(await getFullAdsList(userId));
+    } catch {
       setAds([]);
     }
   };
@@ -71,27 +45,15 @@ const FeedbackForm: React.FC = () => {
     e.preventDefault();
     try {
       setLoading(true);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gofor: "feedback",
-          user_id: userId,
-          ad_upload_id: feedbackData.ad_upload_id,
-          rating: feedbackData.rating,
-          comments: feedbackData.comments,
-        }),
+      await submitFeedback({
+        user_id: userId!,
+        ad_upload_id: feedbackData.ad_upload_id,
+        rating: feedbackData.rating,
+        comments: feedbackData.comments,
       });
-
-      if (response.ok) {
-        toast.success("Feedback submitted successfully!");
-        setFeedbackData({ ad_upload_id: "", rating: "", comments: "" });
-      } else {
-        toast.error("Failed to submit feedback. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error submitting feedback:", error);
+      toast.success("Feedback submitted successfully!");
+      setFeedbackData({ ad_upload_id: "", rating: "", comments: "" });
+    } catch {
       toast.error("Failed to submit feedback. Please try again.");
     } finally {
       setLoading(false);

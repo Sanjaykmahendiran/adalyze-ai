@@ -12,6 +12,9 @@ import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import ChecklistStaticImage from "@/assets/result-checklist-static.webp"
+import { uploadImage } from "@/services/uploadService"
+import { getChecklist, markChecklistDone } from "@/services/checklistService"
+import type { ChecklistItem, MarkChecklistDonePayload } from "@/types/api"
 
 type StatusAPI = "done" | "not_done";
 
@@ -217,16 +220,11 @@ export default function PreCampaignChecklist({
         try {
             setLoading(true);
             setErr(null);
-            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=prechecklistlist&ad_upload_id=${adUploadId}`;
-            const res = await fetch(url, { method: "GET", cache: "no-store" });
-            const data = await res.json();
-            if (data?.status && Array.isArray(data?.data)) {
-                setItems(data.data as APIChecklistItem[]);
-            } else {
-                setItems([]);
-            }
+            const items = await getChecklist(adUploadId);
+            setItems(items as APIChecklistItem[]);
         } catch (e: any) {
             setErr(e?.message || "Failed to load checklist");
+            setItems([]);
         } finally {
             setLoading(false);
         }
@@ -335,21 +333,9 @@ export default function PreCampaignChecklist({
             reader.readAsDataURL(file);
         });
 
-        const payload = {
-            gofor: "image_upload",
-            imgname: base64, // raw base64 (no data: prefix)
-            type: "checklist-evidence",
-        };
-
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
+        const data = await uploadImage({ imgname: base64, type: "checklist-evidence" })
         // Try common fields that could contain the URL
-        const url = data?.url || data?.image_url || data?.data?.url || data?.result?.url || "";
+        const url = (data as any)?.url || (data as any)?.image_url || (data as any)?.data?.url || (data as any)?.result?.url || "";
         if (data.error) {
             throw new Error(data.error);
         }
@@ -383,8 +369,7 @@ export default function PreCampaignChecklist({
                 }
             }
 
-            const payload = {
-                gofor: "markchecklistdone",
+            const checklistPayload: MarkChecklistDonePayload = {
                 ad_upload_id: String(adUploadId),
                 checklist_id: String(markDoneItem.checklist_id),
                 status: "done",
@@ -392,19 +377,12 @@ export default function PreCampaignChecklist({
                 evidence_url: finalEvidence,
             };
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
+            const result = await markChecklistDone(checklistPayload);
 
-            const data = await res.json();
-
-            // Keep existing success check, but allow a fallback success condition
-            if ((data.status && data.message === "Checklist Created successfully.") || data.status === true || data.success === true) {
+            if (result.success) {
                 toast.success("Checklist updated successfully!");
             } else {
-                toast.error(data.message || "Something went wrong.");
+                toast.error(result.message || "Something went wrong.");
             }
 
             setShowMarkDone(false);

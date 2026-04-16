@@ -139,3 +139,12 @@ export interface ApiResponse {
   recommended_run_days: string;
   optimal_ad_schedule: string;
 }
+
+export interface FixedResult {
+  fixedAdId: number
+  generatedImageUrl: string
+  newScore: number | null
+  newGoNoGo: string | null
+  newAnalysis: Record<string, unknown> | null
+  createdAt: string
+}

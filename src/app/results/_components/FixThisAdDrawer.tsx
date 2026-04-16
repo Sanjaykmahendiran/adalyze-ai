@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, CheckCircle, Loader2, Sparkles } from "lucide-react"
 import { axiosInstance } from "@/configs/axios"
@@ -12,6 +12,14 @@ interface FixThisAdDrawerProps {
   userId: number | undefined
   originalImageUrl: string | undefined
   originalScore: number | undefined
+  originalGoNoGo?: string
+  onFixComplete?: (result: {
+    fixedAdId: number
+    generatedImageUrl: string
+    newScore: number
+    newGoNoGo: string
+    newAnalysis: Record<string, unknown>
+  }) => void
 }
 
 type Step = "consent" | "extracting" | "generating" | "analyzing" | "done" | "error"
@@ -23,6 +31,8 @@ export default function FixThisAdDrawer({
   userId,
   originalImageUrl,
   originalScore,
+  originalGoNoGo,
+  onFixComplete,
 }: FixThisAdDrawerProps) {
   const [step, setStep] = useState<Step>("consent")
   const [consentChecked, setConsentChecked] = useState(false)
@@ -31,7 +41,24 @@ export default function FixThisAdDrawer({
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
   const [newScore, setNewScore] = useState<number | null>(null)
   const [newGoNoGo, setNewGoNoGo] = useState<string | null>(null)
+  const [newAnalysis, setNewAnalysis] = useState<Record<string, unknown> | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Freeze the original score/verdict the moment the drawer opens.
+  // onFixComplete updates apiData in the parent — which changes the originalScore prop —
+  // so reading it directly in the BEFORE column causes it to flip to the new score.
+  const frozenOriginalScore  = useRef(originalScore)
+  const frozenOriginalGoNoGo = useRef(originalGoNoGo)
+  useEffect(() => {
+    if (open) {
+      frozenOriginalScore.current  = originalScore
+      frozenOriginalGoNoGo.current = originalGoNoGo
+    }
+  }, [open]) // only re-freeze when drawer (re-)opens, not on every prop change
+
+  // Pending result — held until Done is clicked so the main page updates
+  // the moment the drawer closes, not while it is still visible.
+  const pendingResult = useRef<Parameters<NonNullable<typeof onFixComplete>>[0] | null>(null)
 
   const reset = () => {
     setStep("consent")
@@ -41,19 +68,36 @@ export default function FixThisAdDrawer({
     setGeneratedImageUrl(null)
     setNewScore(null)
     setNewGoNoGo(null)
+    setNewAnalysis(null)
     setErrorMessage(null)
   }
 
   const handleClose = () => {
+    // If fix completed and Done was not explicitly clicked (e.g. user closed via X),
+    // still flush the result to the parent so the main page reflects the latest data.
+    if (pendingResult.current) {
+      onFixComplete?.(pendingResult.current)
+      pendingResult.current = null
+    }
     reset()
     onClose()
   }
 
-  const runFixChain = async () => {
+  const handleDone = () => {
+    // Flush result → parent updates main results page → then close drawer.
+    if (pendingResult.current) {
+      onFixComplete?.(pendingResult.current)
+      pendingResult.current = null
+    }
+    reset()
+    onClose()
+  }
+
+  const runFixChain = async (isRetry = false) => {
     if (!adUploadId || !userId) return
 
     try {
-      // Step 1 — extract brand DNA
+      // Step 1 — extract brand DNA (backend auto-resets any stuck job)
       setStep("extracting")
       const startRes = await axiosInstance.post("/api/fix/start", {
         user_id: userId,
@@ -70,7 +114,8 @@ export default function FixThisAdDrawer({
         user_id: userId,
         job_id,
       })
-      setGeneratedImageUrl(genRes.data.data.generated_image_url)
+      const genImageUrl = genRes.data.data.generated_image_url  // local var — avoids stale closure
+      setGeneratedImageUrl(genImageUrl)
 
       // Step 3 — re-analyze
       setStep("analyzing")
@@ -78,12 +123,33 @@ export default function FixThisAdDrawer({
         user_id: userId,
         job_id,
       })
-      setNewScore(analyzeRes.data.data.new_score)
-      setNewGoNoGo(analyzeRes.data.data.new_go_no_go)
+      const data = analyzeRes.data.data
+      setNewScore(data.new_score)
+      setNewGoNoGo(data.new_go_no_go)
+      setNewAnalysis(data.new_analysis ?? null)
       setStep("done")
+
+      // Store result — notify parent only when Done is clicked (not here).
+      // Calling onFixComplete here would update apiData.score_out_of_100 while the
+      // drawer is still open, causing the BEFORE column to flip to the new score.
+      pendingResult.current = {
+        fixedAdId: data.fixed_ad_id ?? 0,
+        generatedImageUrl: genImageUrl ?? '',
+        newScore: data.new_score,
+        newGoNoGo: data.new_go_no_go,
+        newAnalysis: data.new_analysis ?? {},
+      }
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ?? "Something went wrong. Please try again."
+      const status = err?.response?.status
+      const msg = err?.response?.data?.message ?? "Something went wrong. Please try again."
+
+      // 409 = stuck job from a previous run. Backend resets it on the next call,
+      // so auto-retry once silently before showing an error to the user.
+      if (status === 409 && !isRetry) {
+        await runFixChain(true)
+        return
+      }
+
       setErrorMessage(msg)
       setStep("error")
     }
@@ -114,7 +180,7 @@ export default function FixThisAdDrawer({
             <div className="flex items-center justify-between p-5 border-b border-white/10">
               <div>
                 <h2 className="text-white font-bold text-lg">Fix This Ad</h2>
-                <p className="text-white/50 text-xs mt-0.5">AI-powered ad repair</p>
+                <p className="text-white/50 text-xs mt-0.5">Powered by Claude AI</p>
               </div>
               <button
                 onClick={handleClose}
@@ -131,8 +197,8 @@ export default function FixThisAdDrawer({
               {step === "consent" && (
                 <div className="space-y-5">
                   <p className="text-white/70 text-sm leading-relaxed">
-                    Our AI will analyze your ad, extract your brand DNA, generate an
-                    improved version, and re-score it. This process takes about 30–60
+                    Our AI will analyse your ad, extract your brand DNA, apply targeted
+                    fixes, and re-score it. This process takes about 30–60
                     seconds.
                   </p>
 
@@ -151,15 +217,15 @@ export default function FixThisAdDrawer({
                       )}
                     </div>
                     <span className="text-white/60 text-xs leading-relaxed">
-                      I consent to my ad image being processed by AI (OpenAI Vision +
-                      Google Imagen) to generate a fixed version. This data is used
+                      I consent to my ad image being processed by AI (Claude AI +
+                      Google Gemini) to apply targeted fixes. This data is used
                       solely for ad improvement and handled per our Privacy Policy.
                     </span>
                   </label>
 
                   <button
                     disabled={!consentChecked}
-                    onClick={runFixChain}
+                    onClick={() => runFixChain()}
                     className="w-full py-3 rounded-xl font-semibold text-sm transition-all
                       disabled:opacity-40 disabled:cursor-not-allowed
                       enabled:bg-primary enabled:text-white enabled:hover:opacity-90"
@@ -179,7 +245,7 @@ export default function FixThisAdDrawer({
                     This takes about 30–60 seconds — hold tight.
                   </p>
                   <StepIndicator
-                    label="Extracting brand DNA"
+                    label="Analysing your ad"
                     status={
                       step === "extracting"
                         ? "active"
@@ -187,17 +253,17 @@ export default function FixThisAdDrawer({
                     }
                   />
                   <StepIndicator
-                    label="Generating fixed ad"
+                    label="Applying fixes"
                     status={
                       step === "generating"
                         ? "active"
-                        : step === "analyzing" || step === "done"
+                        : step === "analyzing"
                         ? "done"
                         : "waiting"
                     }
                   />
                   <StepIndicator
-                    label="Re-analyzing ad"
+                    label="Re-scoring"
                     status={step === "analyzing" ? "active" : "waiting"}
                   />
                 </div>
@@ -231,16 +297,20 @@ export default function FixThisAdDrawer({
                           />
                         )}
                       </div>
-                      {originalScore !== undefined && (
+                      {frozenOriginalScore.current !== undefined && (
                         <p className="text-center">
-                          <span className="text-red-400 font-bold text-xl">
-                            {originalScore}
+                          <span className={`font-bold text-xl ${
+                            frozenOriginalGoNoGo.current === "Go" ? "text-green-400" : "text-red-400"
+                          }`}>
+                            {frozenOriginalScore.current}
                           </span>
                           <span className="text-white/40 text-xs ml-1">/ 100</span>
                         </p>
                       )}
-                      <p className="text-center text-red-400 text-xs font-semibold">
-                        No Go
+                      <p className={`text-center text-xs font-semibold ${
+                        frozenOriginalGoNoGo.current === "Go" ? "text-green-400" : "text-red-400"
+                      }`}>
+                        {frozenOriginalGoNoGo.current ?? "No Go"}
                       </p>
                     </div>
 
@@ -279,11 +349,25 @@ export default function FixThisAdDrawer({
                           {newGoNoGo}
                         </p>
                       )}
+                      {newAnalysis && (
+                        <div className="mt-2 space-y-1 text-center">
+                          {typeof (newAnalysis as any).confidence_score === 'number' && (
+                            <p className="text-white/50 text-xs">
+                              Confidence: <span className="text-white/80 font-medium">{(newAnalysis as any).confidence_score}%</span>
+                            </p>
+                          )}
+                          {typeof (newAnalysis as any).impact_score === 'number' && (
+                            <p className="text-white/50 text-xs">
+                              Impact: <span className="text-white/80 font-medium">{(newAnalysis as any).impact_score}%</span>
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <button
-                    onClick={handleClose}
+                    onClick={handleDone}
                     className="w-full py-3 rounded-xl font-semibold text-sm bg-white/10 text-white hover:bg-white/20 transition-colors"
                   >
                     Done

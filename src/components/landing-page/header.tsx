@@ -11,23 +11,8 @@ import { Button } from "../ui/button"
 import { AnimatePresence, motion } from "framer-motion"
 import loginlogo from "@/assets/ad-logo.webp"
 import { trackEvent } from "@/lib/eventTracker"
-
-// API type definitions
-type ApiMenuItem = {
-  menu_id: number
-  parent_id: number
-  name: string
-  link: string
-  badge_text: string | null
-  menu_type: string
-  target: "_self" | "_blank" | string
-  sort_order: number
-  visibility: "both" | "public" | "private" | string
-  status: number
-  created_date?: string
-  modified_date?: string
-  children?: ApiMenuItem[]
-}
+import { getMenuItems } from "@/services/cmsService"
+import type { ApiMenuItem } from "@/types/api"
 
 // UI menu shape used by the component
 type UIMenuItem = {
@@ -89,11 +74,7 @@ const fetchMenuData = async (): Promise<UIMenuItem[]> => {
   // Create new fetch promise
   menuFetchPromise = (async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=menulist`, {
-        cache: "no-store",
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: unknown = await res.json()
+      const data: unknown = await getMenuItems()
       if (!Array.isArray(data)) return []
 
       // Filter out any non-object entries like stray strings

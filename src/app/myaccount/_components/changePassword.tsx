@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { toast } from "react-hot-toast"
+import { changePassword } from "@/services/authService"
 
 type ChangePasswordFormProps = {
   email: string;
@@ -44,21 +45,15 @@ export default function ChangePasswordForm({ email }: ChangePasswordFormProps) {
     }
 
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=loggedupdatepassword&email=${encodeURIComponent(email)}&oldpassword=${encodeURIComponent(formData.oldPassword)}&password=${encodeURIComponent(formData.newPassword)}&confirmpassword=${encodeURIComponent(formData.confirmPassword)}`;
-
-      const response = await fetch(url, {
-        method: "GET",
+      const data = await changePassword({
+        email,
+        oldpassword: formData.oldPassword,
+        password: formData.newPassword,
       });
-
-      const data = await response.json();
 
       if (data?.message === "Password Updated Successfully") {
         setShowSuccess(true);
-        setFormData({
-          oldPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        });
+        setFormData({ oldPassword: "", newPassword: "", confirmPassword: "" });
       } else {
         toast.error(data?.message || "Failed to change password. Please try again.");
       }

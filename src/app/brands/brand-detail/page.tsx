@@ -19,48 +19,9 @@ import AverageScore from "@/assets/dashboard/average-score.png"
 import TotalSuggestions from "@/assets/dashboard/total-suggestion.png"
 import UserLayout from "@/components/layouts/user-layout"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-
-// Define the API response interface
-interface AdsApiResponse {
-    total: number
-    limit: number
-    offset: number
-    ads: Ad[]
-}
-
-// Define the Ad interface based on API response
-interface Ad {
-    ads_type: string
-    ad_id: number
-    ads_name: string
-    image_path: string
-    industry: string
-    score: number
-    platforms: string
-    uploaded_on: string
-    go_nogo?: string
-}
-
-// Brand stats interface from brandslist API (used in @page.tsx)
-interface BrandStats {
-    brand_id: number
-    user_id: number
-    brand_name: string
-    website: string
-    email: string
-    mobile: string
-    logo_url: string
-    verified: number
-    created_date: string
-    upload_count: number
-    average_score: number
-    latest_score: number
-    last_analysis_date: string
-    go_count: number
-    no_go_count: number
-}
-
-// Define the A/B Ad interface
+import { getBrands, deleteBrand } from "@/services/brandService"
+import { getAds } from "@/services/adService"
+import type { Ad, AdsListParams, AdsListResponse, BrandWithStats } from "@/types/api"
 
 const platformIcons = {
     facebook: Facebook,
@@ -133,7 +94,7 @@ export default function MyAdsPage() {
     const [loading, setLoading] = useState(true)
     const [scoreFilter, setScoreFilter] = useState("all")
     const [adTypeFilter, setAdTypeFilter] = useState("all")
-    const [brandStats, setBrandStats] = useState<BrandStats | null>(null)
+    const [brandStats, setBrandStats] = useState<BrandWithStats | null>(null)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
 
@@ -151,15 +112,12 @@ export default function MyAdsPage() {
             const userId = Cookies.get('userId')
             if (!userId) return
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=0&limit=12`
-            )
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch all ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const data = await getAds({
+                user_id: userId,
+                brand_id: brandId ?? undefined,
+                offset: 0,
+                limit: 12,
+            })
             setAllAds(data.ads)
             setTotalAds(data.total)
         } catch (error) {
@@ -173,11 +131,7 @@ export default function MyAdsPage() {
             const userId = Cookies.get('userId')
             if (!userId || !brandId) return
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=brandslist&user_id=${userId}`
-            )
-            if (!response.ok) throw new Error('Failed to fetch brand stats')
-            const data: BrandStats[] = await response.json()
+            const data = await getBrands(userId)
             const current = Array.isArray(data)
                 ? data.find((b) => String(b.brand_id) === String(brandId))
                 : null
@@ -202,18 +156,14 @@ export default function MyAdsPage() {
             }
 
             const offset = (currentPage - 1) * itemsPerPage
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=adslist&user_id=${userId}&brand_id=${brandId}&offset=${offset}&limit=${itemsPerPage}`
-            )
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch ads')
-            }
-
-            const data: AdsApiResponse = await response.json()
+            const data = await getAds({
+                user_id: userId,
+                brand_id: brandId ?? undefined,
+                offset,
+                limit: itemsPerPage,
+            })
             setAds(data.ads)
             setTotalAds(data.total)
-            // Removed fetchAllAds call from here to avoid duplicate request
 
         } catch (error) {
             console.error('Error fetching ads:', error)
@@ -751,11 +701,7 @@ export default function MyAdsPage() {
                                                 if (!brandId) return
                                                 setIsDeleting(true)
                                                 try {
-                                                    const response = await fetch(
-                                                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=deletebrand&brand_id=${brandId}`,
-                                                        { method: "DELETE" }
-                                                    )
-                                                    const result = await response.json()
+                                                    const result = await deleteBrand(brandId)
                                                     if (result?.response === "Brand deleted successfully") {
                                                         toast.success("Brand deleted successfully!")
                                                         setShowDeleteModal(false)

@@ -3,20 +3,8 @@
 import React, { JSX, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { CheckCircle, Loader2, Clock } from 'lucide-react';
-
-
-interface VersionData {
-    version_id: number;
-    version_name: string;
-    title: string;
-    description: string;
-    status: string;
-    release_date: string;
-    estatus: number;
-    created_date: string;
-    modified_date: string;
-    image: string;
-}
+import { getPricingVersions } from '@/services/cmsService';
+import type { VersionData } from '@/types/api';
 
 const VersionCard: React.FC = () => {
     const [versions, setVersions] = useState<VersionData[]>([]);
@@ -26,9 +14,7 @@ const VersionCard: React.FC = () => {
     useEffect(() => {
         const fetchVersions = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api.php?gofor=versionlist`);
-                if (!response.ok) throw new Error('Failed to fetch versions');
-                const data = await response.json();
+                const data = await getPricingVersions();
                 setVersions(data);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'An error occurred');
